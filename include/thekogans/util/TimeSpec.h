@@ -85,6 +85,10 @@ namespace thekogans {
             i32 nanoseconds;
 
             /// \brief
+            /// Serialized TimeSpec size.
+            static const std::size_t SIZE = I64_SIZE + I32_SIZE;
+
+            /// \brief
             /// ctor. Init to Infinite.
             /// NOTE: This ctor is explicit. You provide either no values or both of them.
             /// \param[in] seconds_ Seconds value to initialize to.
@@ -341,11 +345,6 @@ namespace thekogans {
 
             // Serializable
             /// \brief
-            /// Return the serialized key size.
-            /// \return Serialized key size.
-            virtual std::size_t Size () const noexcept override;
-
-            /// \brief
             /// Read the key from the given serializer.
             /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the key from.
@@ -381,10 +380,6 @@ namespace thekogans {
             /// \param[out] node Parent node.
             virtual void WriteJSON (JSON::Object &object) const override;
         };
-
-        /// \brief
-        /// Serialized TimeSpec size.
-        const std::size_t TIME_SPEC_SIZE = I64_SIZE + I32_SIZE;
 
         /// \brief
         /// Compare two TimeSpecs for equality.

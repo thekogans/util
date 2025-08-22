@@ -24,7 +24,8 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::Fraction, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::Fraction, 1, UI32_SIZE + UI32_SIZE + UI8_SIZE)
 
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);
@@ -151,10 +152,6 @@ namespace thekogans {
             assert (gcd != 0);
             numerator /= gcd;
             denominator /= gcd;
-        }
-
-        std::size_t Fraction::Size () const noexcept {
-            return UI32_SIZE + UI32_SIZE + UI8_SIZE;
         }
 
         void Fraction::Read (

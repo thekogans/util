@@ -128,7 +128,10 @@ namespace thekogans {
             }
         }
 
-        void Roots::Init () {
+        void Roots::Read (
+                const SerializableHeader &header,
+                Serializer &serializer) {
+            util::ArrayValue<Root::SharedPtr>::Read (header, serializer);
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 util::Subscriber<RootEvents>::Subscribe (*value[i]);
             }

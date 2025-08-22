@@ -525,7 +525,7 @@ namespace thekogans {
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::Directory::Entry, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::Directory::Entry, 1, 0)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {

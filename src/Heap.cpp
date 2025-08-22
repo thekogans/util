@@ -45,7 +45,7 @@ namespace thekogans {
                 const char *buildTime,
                 const char *format,
                 ...) {
-            std::string header = GlobalLoggerMgr::Instance ()->FormatHeader (
+            std::string header = LoggerMgr::FormatHeader (
                 decorations,
                 subsystem,
                 level,
@@ -84,6 +84,11 @@ namespace thekogans {
             }
         }
 
+        HeapRegistry::HeapErrorCallback HeapRegistry::GetHeapErrorCallback () {
+            LockGuard<SpinLock> guard (spinLock);
+            return heapErrorCallback;
+        }
+
         void HeapRegistry::SetHeapErrorCallback (HeapErrorCallback heapErrorCallback_) {
             LockGuard<SpinLock> guard (spinLock);
             heapErrorCallback = heapErrorCallback_;
@@ -92,6 +97,7 @@ namespace thekogans {
         void HeapRegistry::CallHeapErrorCallback (
                 HeapError heapError,
                 const char *type) {
+            HeapErrorCallback heapErrorCallback = GetHeapErrorCallback ();
             if (heapErrorCallback != nullptr) {
                 heapErrorCallback (heapError, type);
             }

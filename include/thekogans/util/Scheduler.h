@@ -41,7 +41,6 @@ namespace thekogans {
         /// in parallel (prioritized round-robin), but need to make
         /// sequential progress. Scheduler is designed to execute in
         /// O(1) time no mater the number of active queues.
-
         struct _LIB_THEKOGANS_UTIL_DECL Scheduler {
             /// \brief
             /// Forward declaration of JobQueue.

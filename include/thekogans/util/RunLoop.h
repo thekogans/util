@@ -587,8 +587,8 @@ namespace thekogans {
 
                     // Serializable
                     /// \brief
-                    /// Return the serialized key size.
-                    /// \return Serialized key size.
+                    /// Return the serialized job size.
+                    /// \return Serialized job size.
                     virtual std::size_t Size () const noexcept override;
 
                     /// \brief

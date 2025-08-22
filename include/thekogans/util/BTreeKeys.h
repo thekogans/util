@@ -157,13 +157,6 @@ namespace thekogans {
 
             // Serializable
             /// \brief
-            /// Return the serialized key size.
-            /// \return Serialized key size.
-            virtual std::size_t Size () const noexcept override {
-                return Serializer::Size (key);
-            }
-
-            /// \brief
             /// Read the key from the given serializer.
             /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the key from.

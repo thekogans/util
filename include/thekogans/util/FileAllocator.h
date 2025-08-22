@@ -134,16 +134,6 @@ namespace thekogans {
                 /// Object is a \see{util::DynamicCreatable} abstract base.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
 
-            #if defined (THEKOGANS_UTIL_TYPE_Static)
-                /// \brief
-                /// Because Object uses dynamic initialization, when using
-                /// it in static builds call this method to have the Object
-                /// explicitly include all internal object types. Without
-                /// calling this api, the only objects that will be available
-                /// to your application are the ones you explicitly link to.
-                static void StaticInit ();
-            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
             protected:
                 /// \brief
                 /// \see{FileAllocator} where this object resides.

@@ -96,6 +96,36 @@ namespace thekogans {
             /// Default \see{Serializable} factory.
             DynamicCreatable::FactoryType factory;
 
+            /// \struct Serializer::ContextGuard Serializer.h thekogans/util/Serializer.h
+            ///
+            /// \brief
+            /// ContextGuard provides scope for context.
+            struct ContextGuard {
+                /// \brief
+                /// Serializer whose context to guard.
+                Serializer &serializer;
+                /// \brief
+                /// Saved context.
+                SerializableHeader context;
+
+                /// \brief
+                /// ctor,
+                /// \param[in] serializer_ Serializer whose context to guard.
+                /// \param[in] context_ New context.
+                ContextGuard (
+                        Serializer &serializer_,
+                        const SerializableHeader &context_) :
+                        serializer (serializer_),
+                        context (serializer.context) {
+                    serializer.context = context_;
+                }
+                /// \brief
+                /// dtor,
+                ~ContextGuard () {
+                    serializer.context = context;
+                }
+            };
+
             /// \brief
             /// ctor.
             /// \param[in] endianness Serializer endianness.

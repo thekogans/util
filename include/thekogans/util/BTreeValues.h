@@ -47,14 +47,6 @@ namespace thekogans {
             StringValue (const std::string &value_ = std::string ()) :
                 value (value_) {}
 
-            // BTree::Value
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the value.
-            virtual std::string ToString () const override {
-                return value;
-            }
-
             // Serializable
             /// \brief
             /// Return the serialized value size.
@@ -62,7 +54,6 @@ namespace thekogans {
             virtual std::size_t Size () const noexcept override {
                 return Serializer::Size (value);
             }
-
             /// \brief
             /// Read the value from the given serializer.
             /// \param[in] header \see{Serializable::Header}.
@@ -77,6 +68,14 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the value to.
             virtual void Write (Serializer &serializer) const override {
                 serializer << value;
+            }
+
+            // BTree::Value
+            /// \brief
+            /// This method is only used in Dump for debugging purposes.
+            /// \return String representation of the value.
+            virtual std::string ToString () const override {
+                return value;
             }
         };
 
@@ -99,22 +98,7 @@ namespace thekogans {
             PtrValue (FileAllocator::PtrType value_ = 0) :
                 value (value_) {}
 
-            // BTree::Value
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the value.
-            virtual std::string ToString () const override {
-                return ui64Tostring (value);
-            }
-
             // Serializable
-            /// \brief
-            /// Return the serialized value size.
-            /// \return Serialized value size.
-            virtual std::size_t Size () const noexcept override {
-                return Serializer::Size (value);
-            }
-
             /// \brief
             /// Read the value from the given serializer.
             /// \param[in] header \see{SerializableHeader}.
@@ -129,6 +113,14 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the value to.
             virtual void Write (Serializer &serializer) const override {
                 serializer << value;
+            }
+
+            // BTree::Value
+            /// \brief
+            /// This method is only used in Dump for debugging purposes.
+            /// \return String representation of the value.
+            virtual std::string ToString () const override {
+                return ui64Tostring (value);
             }
         };
 
@@ -182,14 +174,6 @@ namespace thekogans {
                 }
             }
 
-            // BTree::Value
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the value.
-            virtual std::string ToString () const override {
-                return TYPE;
-            }
-
             // Serializable
             /// \brief
             /// Return the serialized value size.
@@ -197,7 +181,6 @@ namespace thekogans {
             virtual std::size_t Size () const noexcept override {
                 return Serializer::Size (value);
             }
-
             /// \brief
             /// Read the value from the given serializer.
             /// \param[in] header \see{SerializableHeader}.
@@ -212,6 +195,14 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the value to.
             virtual void Write (Serializer &serializer) const override {
                 serializer << value;
+            }
+
+            // BTree::Value
+            /// \brief
+            /// This method is only used in Dump for debugging purposes.
+            /// \return String representation of the value.
+            virtual std::string ToString () const override {
+                return TYPE;
             }
         };
 

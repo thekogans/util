@@ -23,18 +23,22 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::StringValue,
             1,
+            0,
             BTree::Value::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::PtrValue,
             1,
+            FileAllocator::PTR_TYPE_SIZE,
             BTree::Value::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::StringArrayValue,
             1,
+            0,
             BTree::Value::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::GUIDArrayValue,
             1,
+            0,
             BTree::Value::TYPE)
 
     } // namespace util

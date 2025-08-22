@@ -55,7 +55,7 @@ namespace thekogans {
             virtual void OnBufferedFileTransactionBegin (
                 RefCounted::SharedPtr<BufferedFile> /*file*/) noexcept {}
             /// \brief
-            /// Transaction is committing. Depending on the phase do what ever
+            /// Transaction is committing. Depending on the phase do whatever
             /// is appropriate.
             /// If your object derives from \see{BufferedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need

@@ -24,6 +24,7 @@
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
     #include "thekogans/util/BTree.h"
+    #include "thekogans/util/SerializableArray.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
@@ -62,7 +63,7 @@ namespace thekogans {
 
         std::size_t Serializable::GetSize (const SerializableHeader &context) const noexcept {
             SerializableHeader header = GetHeader (context);
-            return header.Size () + header.size;
+            return header.Size () + (context.NeedSize () ? header.size : context.size);
         }
 
         const char *Blob::Type () const noexcept {
@@ -79,7 +80,7 @@ namespace thekogans {
             return header.version;
         }
 
-        std::size_t Blob::Size () const noexcept {
+        std::size_t Blob::ClassSize () const noexcept {
             return header.size;
         }
 
@@ -184,7 +185,6 @@ namespace thekogans {
             serializer >> header;
             if (header.type == serializable.Type ()) {
                 serializable.Read (header, serializer);
-                serializable.Init ();
                 return serializer;
             }
             else {
@@ -202,7 +202,6 @@ namespace thekogans {
             node >> header;
             if (header.type == serializable.Type ()) {
                 serializable.ReadXML (header, node);
-                serializable.Init ();
                 return node;
             }
             else {
@@ -220,7 +219,6 @@ namespace thekogans {
             object >> header;
             if (header.type == serializable.Type ()) {
                 serializable.ReadJSON (header, object);
-                serializable.Init ();
                 return object;
             }
             else {
@@ -241,7 +239,6 @@ namespace thekogans {
                 Serializable::CreateType (header.type.c_str ());
             if (serializable != nullptr) {
                 serializable->Read (header, serializer);
-                serializable->Init ();
                 return serializer;
             }
             else {
@@ -259,7 +256,6 @@ namespace thekogans {
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable != nullptr) {
                 serializable->ReadXML (header, node);
-                serializable->Init ();
                 return node;
             }
             else {
@@ -277,7 +273,6 @@ namespace thekogans {
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable == nullptr) {
                 serializable->ReadJSON (header, object);
-                serializable->Init ();
                 return object;
             }
             else {
@@ -330,7 +325,6 @@ namespace thekogans {
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
                     value.Read (header, payload);
-                    value.Init ();
                     Reset (serializer);
                     return true;
                 }
@@ -376,7 +370,6 @@ namespace thekogans {
                         Serializable::CreateType (header.type.c_str ());
                     if (value != nullptr) {
                         value->Read (header, payload);
-                        value->Init ();
                         Reset (serializer);
                         return true;
                     }

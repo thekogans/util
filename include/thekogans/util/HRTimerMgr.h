@@ -226,7 +226,6 @@ namespace thekogans {
                 /// Return the serializable size.
                 /// \return Serializable size.
                 virtual std::size_t Size () const noexcept override;
-
                 /// \brief
                 /// Read the serializable from the given serializer.
                 /// \param[in] header \see{SerializableHeader}.
@@ -269,12 +268,14 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_SERIALIZABLE (_T)\
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T, version, minItemsInPage)
+            /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T, version, classSize, minItemsInPage)
             /// Common implementations used by all Value derivatives.
-            #define THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE(_T, version, minItemsInPage)\
+            #define THEKOGANS_UTIL_IMPLEMENT_HRTIMERMGR_TIMERINFOBASE(\
+                    _T, version, classSize, minItemsInPage)\
                 THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (\
                     _T,\
                     version,\
+                    classSize,\
                     TimerInfoBase::TYPE)\
                 THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (\
                     _T,\

@@ -39,7 +39,6 @@ namespace thekogans {
         /// different mission. Arrays are meant to be lightweight, single use
         /// containers with some first class properties (\see{SortedArray} and
         /// serialization).
-
         template<typename T>
         struct Array {
             /// \brief
@@ -49,8 +48,8 @@ namespace thekogans {
             /// Array elements.
             T *array;
             /// \brief
-            /// Alias for std::function<void (T * /*array*/)>.
-            using Deleter = std::function<void (T * /*array*/)>;
+            /// Alias for std::function<void (T * /*array*/, std::size_t /*length*/)>.
+            using Deleter = std::function<void (T * /*array*/, std::size_t /*length*/)>;
             /// \brief
             /// Deleter used to deallocate the array pointer.
             Deleter deleter;
@@ -63,23 +62,26 @@ namespace thekogans {
             Array (
                 std::size_t length_,
                 T *array_ = nullptr,
-                const Deleter &deleter_ = [] (T * /*array*/) {}) :
+                const Deleter &deleter_ = [] (T * /*array*/, std::size_t /*length*/) {}) :
                 length (length_),
                 array (array_ == nullptr ? new T[length] : array_),
-                deleter (array_ == nullptr ? [] (T *array) {delete [] array;} : deleter_) {}
+                deleter (
+                    array_ == nullptr ?
+                        [] (T *array, std::size_t /*length*/) {delete [] array;} :
+                        deleter_) {}
             /// \brief
             /// Move ctor.
             /// \param[in,out] other Array to move.
             Array (Array<T> &&other) :
                     length (0),
                     array (nullptr),
-                    deleter ([] (T * /*array*/) {}) {
+                    deleter ([] (T * /*array*/, std::size_t /*length*/) {}) {
                 swap (other);
             }
             /// \brief
             /// dtor. Release the memory held by Array.
             ~Array () {
-                deleter (array);
+                deleter (array, length);
             }
 
             /// \brief
@@ -172,7 +174,6 @@ namespace thekogans {
         /// \brief
         /// Extends the capabilities of Array by imposing order on it's elements.
         /// It's a seperate class because it imposes additional properties on T.
-
         template<typename T>
         struct SortedArray : public Array<T> {
             /// \brief
@@ -183,7 +184,8 @@ namespace thekogans {
             SortedArray (
                 std::size_t length,
                 T *array = nullptr,
-                const typename Array<T>::Deleter &deleter = [] (T * /*array*/) {}) :
+                const typename Array<T>::Deleter &deleter =
+                    [] (T * /*array*/, std::size_t /*length*/) {}) :
                 Array<T> (length, array, deleter) {}
             /// \brief
             /// Move ctor.

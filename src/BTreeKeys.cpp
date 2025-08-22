@@ -18,13 +18,15 @@
 #include <cstring>
 #include <regex>
 #include "thekogans/util/Heap.h"
+#include "thekogans/util/GUID.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/BTreeKeys.h"
 
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::StringKey, 1, BTree::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::StringKey, 1, 0, BTree::Key::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (StringKey)
 
         i32 StringKey::PrefixCompare (const Key &key_) const {
@@ -39,7 +41,8 @@ namespace thekogans {
                 StringCompare (key.c_str (), key_.ToString ().c_str ());
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::GUIDKey, 1, BTree::Key::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::GUIDKey, 1, GUID::SIZE, BTree::Key::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (GUIDKey)
 
         i32 GUIDKey::PrefixCompare (const Key &key_) const {

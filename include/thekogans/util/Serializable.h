@@ -45,9 +45,8 @@ namespace thekogans {
         /// facilities for three distinct protocols; binary, XML and JSON. It is an abstract
         /// base for all supported serializable types and exposes machinery used by descendants
         /// to register themselves for dynamic discovery, creation and serializable insertion and
-        /// extraction. Serializable has built in support for binary, XML and JSON
-        /// serialization and de-serialization. (For a good real world example have a
-        /// look at \see{crypto::Serializable} and it's derivatives.)
+        /// extraction. (For a good real world example have a look at \see{crypto::Serializable}
+        /// and it's derivatives.)
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
             /// \brief
             /// Serializable is a \see{util::DynamicCreatable} abstract base.
@@ -63,37 +62,35 @@ namespace thekogans {
             /// \brief
             /// Given a context, return the header needed to insert this
             /// serializable in to a \see{Serializer}.
-            /// \return \see{SerializableHeader} header containing the
-            /// missing \see{Serializer::context} pieces.
+            /// \param[in] context Partially filled in \see{SerializableHeader}.
+            /// \return \see{SerializableHeader} containing the missing context pieces.
             SerializableHeader GetHeader (
                 const SerializableHeader &context = SerializableHeader ()) const noexcept;
             /// \brief
             /// Return the binary size of the serializable including the header.
+            /// \param[in] context Partially filled in \see{SerializableHeader}.
             /// \return Size of the binary serializable including the header.
             std::size_t GetSize (
                 const SerializableHeader &context = SerializableHeader ()) const noexcept;
 
             /// \brief
-            /// Serializable objects come in to existance in one of two ways.
-            /// Either their shell is created and the contents are read from
-            /// a \see{Serializer}, or you create one explicitly and pass the
-            /// parameters to a ctor. The first case must defer initialization
-            /// until after the object is read. To accomodate both cases use
-            /// this methdod to do all object initialization. Serializable
-            /// machinery calls it after object extraction automatically. You
-            /// can call it in your ctor after initializing the members with
-            /// the passed in values.
-            virtual void Init () {}
-
-            /// \brief
             /// Return the serializable version.
             /// \return Serializable version.
             virtual ui16 Version () const noexcept = 0;
+            /// \brief
+            /// Return the serializable class size.
+            /// If CLASS_SIZE != 0, this serializable is fixed size.
+            /// If CLASS_SIZE == 0, this serializable is variable size
+            /// and you need to call Size to get the size of this instance.
+            /// \return Serializable class size.
+            virtual std::size_t ClassSize () const noexcept = 0;
 
             /// \brief
-            /// Return the serializable binary size.
-            /// \return Serializable binary size.
-            virtual std::size_t Size () const noexcept = 0;
+            /// Return the serializable instance size (excluding the header).
+            /// \return Serializable instance size.
+            virtual std::size_t Size () const noexcept {
+                return ClassSize ();
+            }
             /// \brief
             /// Write the serializable from the given serializer.
             /// \param[in] header
@@ -181,25 +178,62 @@ namespace thekogans {
                 return VERSION;\
             }
 
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_CLASS_SIZE(_T)
+        /// Declare the \see{Serializable} class size. If class
+        /// size is != 0 that means that the class is fixed size.
+        /// Every instance is this size. If it's == 0 that means
+        /// the class is variable size and every instance will
+        /// need to be queried (ThisSize) individually to get its
+        /// size.
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_CLASS_SIZE(_T)\
+        public:\
+            static const std::size_t CLASS_SIZE;
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_CLASS_SIZE(_T, classSize)
+        /// Implement the \see{Serializable} class size.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_CLASS_SIZE(_T, classSize)\
+            const std::size_t _T::CLASS_SIZE = classSize;
+
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_ClassSize(_T)
+        /// Declare the \see{Serializable} class size getter.
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_ClassSize(_T)\
+        public:\
+            virtual std::size_t ClassSize () const noexcept override;
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)
+        /// Implement the \see{Serializable} class size getter.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)\
+            std::size_t _T::ClassSize () const noexcept {\
+                return CLASS_SIZE;\
+            }
+
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)
         /// Common defines for Serializable.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)\
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_CLASS_SIZE(_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_ClassSize(_T)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version, classSize)
         /// Serializable overrides.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version, classSize)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_CLASS_SIZE(_T, classSize)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version, classSize)
         /// Serializable overrides.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T(_T, version)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T(_T, version, classSize)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_CLASS_SIZE(_T, classSize)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
         /// Serializable declaration macro. Instantiate one of these
@@ -221,45 +255,46 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (_T)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (_T)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, ...)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, classSize, ...)
         /// Serializable implementation macro. Instantiate one of these
         /// in your class cpp. Ex;
         ///
         /// namespace thekogans {
         ///     namespace util {
         ///
-        ///         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::TimeSpec, 1)
+        ///         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        ///             thekogans::util::TimeSpec, 1, TimeSpec::SIZE)
         ///
         ///     } // namespace util
         /// } // namespace thekogans
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, ...)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE(_T, version, classSize, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (_T,\
                 thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version, classSize)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, ...)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, classSize, ...)
         /// Serializable implementation macro. Instantiate one of these
         /// in your \see{Singleton} derived class cpp.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, ...)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_S(_T, version, classSize, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (_T,\
                 thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version, classSize)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, ...)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, classSize, ...)
         /// Serializable implementation macro. Instantiate one of these
         /// in your template instantiation class cpp.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, ...)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T(_T, version, classSize, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_T (_T,\
                 thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version, classSize)
 
-        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, ...)
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, classSize, ...)
         /// Serializable implementation macro. Instantiate one of these
         /// in your \see{Singleton},  template instantiation class cpp.
-        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, ...)\
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, classSize, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (_T,\
                 thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version, classSize)
 
         /// \struct Blob Serializable.h thekogans/util/Serializable.h
         ///
@@ -303,11 +338,14 @@ namespace thekogans {
             /// Return the serializable version.
             /// \return Serializable version.
             virtual ui16 Version () const noexcept override;
-
             /// \brief
-            /// Return the serializable size (not including the header).
-            /// \return Serializable size.
-            virtual std::size_t Size () const noexcept override;
+            /// Return the serializable class size.
+            /// If CLASS_SIZE != 0, this serializable is fixed size.
+            /// If CLASS_SIZE == 0, this serializable is variable size
+            /// and you need to call Size to get the size of this instance.
+            /// \return Serializable class size.
+            virtual std::size_t ClassSize () const noexcept;
+
             /// \brief
             /// Write the serializable from the given serializer.
             /// \param[in] header_ SerializableHeader to deserialize.

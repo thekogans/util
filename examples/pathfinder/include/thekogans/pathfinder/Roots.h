@@ -117,11 +117,14 @@ namespace thekogans {
                 bool ignoreCase,
                 bool ordered);
 
-            // util::Serializable
+            // util::ArrayValue<Root::SharedPtr>.
             /// \brief
-            /// Called by \see{util::Serializable} after extraction.
-            /// Subscribes to events
-            virtual void Init () override;
+            /// Read the value from the given serializer.
+            /// \param[in] header \see{SerializableHeader}.
+            /// \param[in] serializer \see{Serializer} to read the value from.
+            virtual void Read (
+                const SerializableHeader &header,
+                Serializer &serializer) override;
 
             // util::Subscriber<RootEvents>.
             virtual void OnRootScanPath (

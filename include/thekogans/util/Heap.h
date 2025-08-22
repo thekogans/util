@@ -403,6 +403,10 @@ namespace thekogans {
                 heapErrorCallback (0) {}
 
             /// \brief
+            /// Return callback function that will receive heap errors.
+            /// \return Callback function that will receive heap errors.
+            HeapErrorCallback GetHeapErrorCallback ();
+            /// \brief
             /// Set callback function that will receive heap errors.
             /// \param[in] heapErrorCallback_ Function to call describing heap errors.
             void SetHeapErrorCallback (HeapErrorCallback heapErrorCallback_);

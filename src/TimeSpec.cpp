@@ -35,7 +35,7 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::TimeSpec, 1)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::TimeSpec, 1, TimeSpec::SIZE)
 
         TimeSpec::TimeSpec (
                 i64 seconds_,
@@ -152,10 +152,6 @@ namespace thekogans {
 
         TimeSpec TimeSpec::AddNanoseconds (i64 nanoseconds) const {
             return *this + FromNanoseconds (nanoseconds);
-        }
-
-        std::size_t TimeSpec::Size () const noexcept {
-            return Serializer::Size (seconds) + Serializer::Size (nanoseconds);
         }
 
         void TimeSpec::Read (
