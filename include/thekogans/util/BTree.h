@@ -23,6 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Serializable.h"
+#include "thekogans/util/SerializableArray.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/FileAllocator.h"
@@ -331,6 +332,7 @@ namespace thekogans {
                 /// \brief
                 /// Key/value array offset.
                 FileAllocator::PtrType keyValueOffset;
+                SerializableArray<TimeSpec> keys;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief

@@ -30,8 +30,6 @@
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/JSON.h"
 #include "thekogans/util/Buffer.h"
-#include "thekogans/util/SpinLock.h"
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/ValueParser.h"
 

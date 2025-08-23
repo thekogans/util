@@ -114,7 +114,7 @@ namespace thekogans {
                 /// \param[in] context_ New context.
                 ContextGuard (
                         Serializer &serializer_,
-                        const SerializableHeader &context_) :
+                        const SerializableHeader &context_ = SerializableHeader ()) :
                         serializer (serializer_),
                         context (serializer.context) {
                     serializer.context = context_;

@@ -60,11 +60,11 @@ namespace thekogans {
             /// \param[in] array_ Optional array pointer to wrap.
             /// \param[in] deleter_ Deleter used to deallocate the array pointer.
             Array (
-                std::size_t length_,
+                std::size_t length_ = 0,
                 T *array_ = nullptr,
                 const Deleter &deleter_ = [] (T * /*array*/, std::size_t /*length*/) {}) :
                 length (length_),
-                array (array_ == nullptr ? new T[length] : array_),
+                array (array_ == nullptr && length > 0 ? new T[length] : array_),
                 deleter (
                     array_ == nullptr ?
                         [] (T *array, std::size_t /*length*/) {delete [] array;} :
@@ -81,7 +81,7 @@ namespace thekogans {
             /// \brief
             /// dtor. Release the memory held by Array.
             ~Array () {
-                deleter (array, length);
+                Resize (0);
             }
 
             /// \brief
@@ -109,6 +109,30 @@ namespace thekogans {
                 std::swap (length, other.length);
                 std::swap (array, other.array);
                 std::swap (deleter, other.deleter);
+            }
+
+            void Resize (std::size_t length_) {
+                if (length != length_) {
+                    if (length_ > 0) {
+                        T *array_ = new T[length_];
+                        if (array != nullptr) {
+                            for (std::size_t i = 0,
+                                    count = std::min (length_, length); i < count; ++i) {
+                                array_[i] = array[i];
+                            }
+                            deleter (array, length);
+                        }
+                        array = array_;
+                        length = length_;
+                        deleter = [] (T *array, std::size_t /*length*/) {delete [] array;};
+                    }
+                    else {
+                        deleter (array, length);
+                        array = nullptr;
+                        length = 0;
+                        deleter = [] (T *array, std::size_t /*length*/) {};
+                    }
+                }
             }
 
             /// \brief
@@ -182,7 +206,7 @@ namespace thekogans {
             /// \param[in] array Optional array pointer to wrap.
             /// \param[in] deleter Deleter used to deallocate the array pointer.
             SortedArray (
-                std::size_t length,
+                std::size_t length = 0,
                 T *array = nullptr,
                 const typename Array<T>::Deleter &deleter =
                     [] (T * /*array*/, std::size_t /*length*/) {}) :

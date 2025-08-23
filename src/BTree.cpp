@@ -182,6 +182,7 @@ namespace thekogans {
                 leftOffset (0),
                 left (nullptr),
                 keyValueOffset (0),
+                keys (btree.header.entriesPerNode),
                 entries ((Entry *)(this + 1)) {
             Reload ();
         }

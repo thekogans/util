@@ -24,7 +24,6 @@
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
     #include "thekogans/util/BTree.h"
-    #include "thekogans/util/SerializableArray.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
