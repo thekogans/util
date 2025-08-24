@@ -31,7 +31,6 @@ namespace thekogans {
         /// \brief
         /// Uses system new/delete to allocate from the global heap.
         /// StdAllocator is part of the \see{Allocator} framework.
-
         struct _LIB_THEKOGANS_UTIL_DECL StdAllocator :
                 public Allocator,
                 public RefCountedSingleton<StdAllocator> {

@@ -26,6 +26,8 @@
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
+#include "thekogans/util/Allocator.h"
+#include "thekogans/util/DefaultAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -37,45 +39,43 @@ namespace thekogans {
         /// represents an array of first class objects. Also, unlike \see{Buffer},
         /// which is meant to be a \see{Serializer}, Array has a completelly
         /// different mission. Arrays are meant to be lightweight, single use
-        /// containers with some first class properties (\see{SortedArray} and
-        /// serialization).
+        /// containers with some first class properties (order and serialization).
         template<typename T>
         struct Array {
             /// \brief
             /// Array length.
-            std::size_t length;
+            SizeT length;
             /// \brief
             /// Array elements.
             T *array;
             /// \brief
-            /// Alias for std::function<void (T * /*array*/, std::size_t /*length*/)>.
-            using Deleter = std::function<void (T * /*array*/, std::size_t /*length*/)>;
-            /// \brief
-            /// Deleter used to deallocate the array pointer.
-            Deleter deleter;
+            /// \see{Allocator} used for memory management.
+            Allocator::SharedPtr allocator;
 
             /// \brief
-            /// ctor. Create (or wrap) Array of length elements.
+            /// ctor. Create (or wrap) array of length elements.
             /// \param[in] length_ Number of elements in the array.
             /// \param[in] array_ Optional array pointer to wrap.
-            /// \param[in] deleter_ Deleter used to deallocate the array pointer.
+            /// \param[in] allocator_ \see{Allocator} used for memory management.
             Array (
-                std::size_t length_ = 0,
-                T *array_ = nullptr,
-                const Deleter &deleter_ = [] (T * /*array*/, std::size_t /*length*/) {}) :
-                length (length_),
-                array (array_ == nullptr && length > 0 ? new T[length] : array_),
-                deleter (
-                    array_ == nullptr ?
-                        [] (T *array, std::size_t /*length*/) {delete [] array;} :
-                        deleter_) {}
+                    std::size_t length_ = 0,
+                    T *array_ = nullptr,
+                    Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
+                    length (length_),
+                    array (length_ > 0 && array_ == nullptr ?
+                        (T *)allocator_->Alloc (length_ * sizeof (T)) :
+                        array_),
+                    allocator (allocator_) {
+                for (std::size_t i = 0; i < length; ++i) {
+                    new (&array[i]) T ();
+                }
+            }
             /// \brief
             /// Move ctor.
             /// \param[in,out] other Array to move.
             Array (Array<T> &&other) :
                     length (0),
-                    array (nullptr),
-                    deleter ([] (T * /*array*/, std::size_t /*length*/) {}) {
+                    array (nullptr) {
                 swap (other);
             }
             /// \brief
@@ -90,7 +90,7 @@ namespace thekogans {
             /// \return *this;
             Array<T> &operator = (Array<T> &&other) {
                 if (this != &other) {
-                    Array<T> temp (std::move (other));
+                    Array<T> temp (std::move (*this));
                     swap (other);
                 }
                 return *this;
@@ -108,30 +108,41 @@ namespace thekogans {
             inline void swap (Array<T> &other) {
                 std::swap (length, other.length);
                 std::swap (array, other.array);
-                std::swap (deleter, other.deleter);
+                std::swap (allocator, other.allocator);
             }
 
-            void Resize (std::size_t length_) {
+            /// \brief
+            /// Resize the array.
+            /// \param[in] length_ New array length.
+            /// \param[in] allocator_ New \see{Allocator} (nullptr == use the existing allocator).
+            void Resize (
+                    std::size_t length_,
+                    Allocator::SharedPtr allocator_ = nullptr) {
                 if (length != length_) {
+                    if (allocator_ == nullptr) {
+                        allocator_ = allocator;
+                    }
+                    T *array_ = nullptr;
                     if (length_ > 0) {
-                        T *array_ = new T[length_];
+                        array_ = (T *)allocator_->Alloc (length_ * sizeof (T));
                         if (array != nullptr) {
-                            for (std::size_t i = 0,
-                                    count = std::min (length_, length); i < count; ++i) {
-                                array_[i] = array[i];
+                            std::size_t i = 0;
+                            for (std::size_t count =
+                                    std::min (length_, (std::size_t)length.value); i < count; ++i) {
+                                new (&array_[i]) T (array[i]);
                             }
-                            deleter (array, length);
+                            for (; i < length_; ++i) {
+                                new (&array_[i]) T ();
+                            }
                         }
-                        array = array_;
-                        length = length_;
-                        deleter = [] (T *array, std::size_t /*length*/) {delete [] array;};
                     }
-                    else {
-                        deleter (array, length);
-                        array = nullptr;
-                        length = 0;
-                        deleter = [] (T *array, std::size_t /*length*/) {};
+                    for (std::size_t i = 0; i < length; ++i) {
+                        array[i].~T ();
                     }
+                    allocator->Free (array, length);
+                    array = array_;
+                    length = length_;
+                    allocator = allocator_;
                 }
             }
 
@@ -140,8 +151,8 @@ namespace thekogans {
             /// NOTE: This is the same Size used by all objects
             /// to return the binary serialized size on disk.
             /// \return Serialized binary size, in bytes, of the array.
-            inline std::size_t Size () const {
-                std::size_t size = SizeT (length).Size ();
+            inline std::size_t Size () const noexcept {
+                std::size_t size = Serializer::Size (length);
                 for (std::size_t i = 0; i < length; ++i) {
                     size += Serializer::Size (array[i]);
                 }
@@ -189,42 +200,13 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Array is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Array)
-        };
-
-        /// \struct SortedArray Array.h thekogans/util/Array.h
-        ///
-        /// \brief
-        /// Extends the capabilities of Array by imposing order on it's elements.
-        /// It's a seperate class because it imposes additional properties on T.
-        template<typename T>
-        struct SortedArray : public Array<T> {
-            /// \brief
-            /// ctor. Create (or wrap) Array of length elements.
-            /// \param[in] length Number of elements in the array.
-            /// \param[in] array Optional array pointer to wrap.
-            /// \param[in] deleter Deleter used to deallocate the array pointer.
-            SortedArray (
-                std::size_t length = 0,
-                T *array = nullptr,
-                const typename Array<T>::Deleter &deleter =
-                    [] (T * /*array*/, std::size_t /*length*/) {}) :
-                Array<T> (length, array, deleter) {}
-            /// \brief
-            /// Move ctor.
-            /// \param[in,out] other Array to move.
-            SortedArray (Array<T> &&other) :
-                Array<T> (other) {}
-
-            /// \brief
             /// Sort the array elements in assending order.
             inline void Sort () {
-                std::sort (this->array, this->array + this->length);
+                std::sort (array, array + length);
             }
 
             /// \brief
-            /// Uses a binary search to locate elements in an ordered (Sort)ed array.
+            /// Uses a binary search to locate elements in an ordered array.
             /// WARNING: If you don't want garbage answers call this method
             /// only after you called Sort or you know a priori the array
             /// elements are sorted in assending order.
@@ -237,14 +219,14 @@ namespace thekogans {
                     const T &t,
                     std::size_t &index) {
                 index = 0;
-                std::size_t last = this->length;
+                std::size_t last = length;
                 while (index < last) {
                     std::size_t middle = (index + last) / 2;
-                    if (t == this->array[middle]) {
+                    if (t == array[middle]) {
                         index = middle;
                         return true;
                     }
-                    if (t < this->array[middle]) {
+                    if (t < array[middle]) {
                         last = middle;
                     }
                     else {
@@ -253,6 +235,10 @@ namespace thekogans {
                 }
                 return false;
             }
+
+            /// \brief
+            /// Array is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Array)
         };
 
         /// \brief
@@ -264,9 +250,8 @@ namespace thekogans {
         Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const Array<T> &array) {
-            std::size_t length = array.GetLength ();
-            serializer << SizeT (length);
-            for (std::size_t i = 0; i < length; ++i) {
+            serializer << array.length;
+            for (std::size_t i = 0; i < array.length; ++i) {
                 serializer << array[i];
             }
             return serializer;

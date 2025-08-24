@@ -31,7 +31,6 @@ namespace thekogans {
         /// Allocator is a base class for all allocators. It defines
         /// the interface and lets concrete classes handle implementation
         /// details.
-
         struct _LIB_THEKOGANS_UTIL_DECL Allocator : public DynamicCreatable {
             /// \brief
             /// Allocator is a \see{util::DynamicCreatable} abstract base.

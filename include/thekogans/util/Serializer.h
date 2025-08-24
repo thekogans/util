@@ -35,6 +35,10 @@
 namespace thekogans {
     namespace util {
 
+        /// \brief
+        /// Forward declaration of \see{Serializable}.
+        struct Serializable;
+
         /// \struct Serializer Serializer.h thekogans/util/Serializer.h
         ///
         /// \brief
@@ -176,6 +180,15 @@ namespace thekogans {
             static std::size_t Size (const T &t) {
                 return t.Size ();
             }
+
+            /// \brief
+            /// Return serialized size of a \see{Serializable}.
+            /// \param[in] value \see{Serializable} whose size to return.
+            /// \param[in] context Partially filled in \see{SerializableHeader}.
+            /// \return Serialized size of a \see{Serializable}.
+            static std::size_t Size (
+                const Serializable &value,
+                const SerializableHeader &context = SerializableHeader ());
 
             /// \brief
             /// Return serialized size of an \see{Endianness}.

@@ -171,27 +171,21 @@ namespace thekogans {
                 if (allocator_ == nullptr) {
                     allocator_ = allocator;
                 }
+                ui8 *data_ = nullptr;
                 if (length_ > 0) {
-                    ui8 *data_ = (ui8 *)allocator_->Alloc (length_);
+                    data_ = (ui8 *)allocator_->Alloc (length_);
                     if (data != nullptr) {
                         memcpy (data_, data, std::min (length_, (std::size_t)length.value));
-                        allocator->Free (data, length);
-                    }
-                    data = data_;
-                    length = length_;
-                    if (readOffset > length) {
-                        readOffset = length;
-                    }
-                    if (writeOffset > length) {
-                        writeOffset = length;
                     }
                 }
-                else {
-                    allocator->Free (data, length);
-                    data = nullptr;
-                    length = 0;
-                    readOffset = 0;
-                    writeOffset = 0;
+                allocator->Free (data, length);
+                data = data_;
+                length = length_;
+                if (readOffset > length) {
+                    readOffset = length;
+                }
+                if (writeOffset > length) {
+                    writeOffset = length;
                 }
                 allocator = allocator_;
             }

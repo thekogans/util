@@ -34,7 +34,6 @@ namespace thekogans {
         /// thekogans::util::DefaultAllocator::CreateInstance (pointer to your
         /// default allocator) to change the default (\see{StdAllocator).
         /// DefaultAllocator is part of the \see{Allocator} framework.
-
         struct _LIB_THEKOGANS_UTIL_DECL DefaultAllocator :
                 public Allocator,
                 public RefCountedSingleton<DefaultAllocator> {

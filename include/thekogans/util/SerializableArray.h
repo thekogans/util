@@ -20,6 +20,8 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Allocator.h"
+#include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/Array.h"
 #include "thekogans/util/SerializableHeader.h"
 #include "thekogans/util/Serializable.h"
@@ -31,6 +33,10 @@ namespace thekogans {
         /// \struct SerializableArray SerializableArray.h thekogans/util/SerializableArray.h
         ///
         /// \brief
+        /// SerializableArray aggregates \see{Serializable} derived types in to an array
+        /// container. SerializableArray uses the type \see{Serializable} information to
+        /// create a \see{SerializableHeader} contex so that the array elements are packed
+        /// without wasting space writting the same header information.
         template<typename T>
         struct SerializableArray : public Serializable {
             /// \brief
@@ -41,84 +47,51 @@ namespace thekogans {
             /// Context for the elements of the array.
             const SerializableHeader context;
             /// \brief
-            ///
+            /// \see{Array} of T elements.
             Array<T> array;
 
+            /// \brief
+            /// ctor. Create (or wrap) an array of length elements.
+            /// \param[in] length_ Number of elements in the array.
+            /// \param[in] array_ Optional array pointer to wrap.
+            /// \param[in] allocator_ \see{Allocator} used for memory management.
             SerializableArray (
                 std::size_t length = 0,
                 T *array_ = nullptr,
-                const typename Array<T>::Deleter &deleter =
-                    [] (T * /*array*/, std::size_t /*length*/) {}) :
+                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                 context (T::TYPE, T::VERSION, T::CLASS_SIZE),
-                array (length, array_, deleter) {}
+                array (length, array_, allocator) {}
 
             // Serializable
             /// \brief
-            /// Return the serializable binary size.
-            /// \return Serializable binary size.
-            virtual std::size_t Size () const noexcept {
-                std::size_t size = SizeT (array.GetLength ()).Size ();
-                for (std::size_t i = 0, count = array.GetLength (); i < count; ++i) {
-                    size += array[i].GetSize (context);
+            /// Return the serialized array size.
+            /// \return Serialized array size.
+            virtual std::size_t Size () const noexcept override {
+                std::size_t size = Serializer::Size (array.length);
+                for (std::size_t i = 0; i < array.length; ++i) {
+                    size += Serializer::Size (array[i], context);
                 }
                 return size;
 
             }
             /// \brief
-            /// Write the serializable from the given serializer.
-            /// \param[in] header
-            /// \param[in] serializer Serializer to read the serializable from.
+            /// Read the array from the given \see{Serializer}.
+            /// \param[in] header Serialized array header.
+            /// \param[in] serializer \see{Serializer} to read the array from.
             virtual void Read (
                     const SerializableHeader & /*header*/,
-                    Serializer &serializer) {
+                    Serializer &serializer) override {
                 Serializer::ContextGuard guard (serializer, context);
                 serializer >> array;
             }
             /// \brief
-            /// Write the serializable to the given serializer.
-            /// \param[out] serializer Serializer to write the serializable to.
-            virtual void Write (Serializer &serializer) const {
+            /// Write the array to the given \see{Serializer}.
+            /// \param[out] serializer \see{Serializer} to write the array to.
+            virtual void Write (Serializer &serializer) const override {
                 Serializer::ContextGuard guard (serializer, context);
                 serializer << array;
             }
         };
-
-        /// \brief
-        /// Serialize a Array<T>.
-        /// \param[in] serializer Where to write the given Array<T>.
-        /// \param[in] array Array<T> to serialize.
-        /// \return serializer.
-        template<typename T>
-        Serializer & _LIB_THEKOGANS_UTIL_API operator << (
-                Serializer &serializer,
-                const SerializableArray<T> &array) {
-            serializer << array.GetHeader (serializer.context);
-            array.Write (serializer);
-            return serializer;
-        }
-
-        /// \brief
-        /// Extract a Array<T> from the given \see{Serializer}.
-        /// \param[in] serializer Where to read the Array<T> from.
-        /// \param[out] Array Where to place the extracted Array<T>.
-        /// \return serializer.
-        template<typename T>
-        Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-                Serializer &serializer,
-                SerializableArray<T> &array) {
-            SerializableHeader header;
-            serializer >> header;
-            if (header.type == array.Type ()) {
-                serializable.Read (header, serializer);
-                return serializer;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Header type (%s) is not the same as Array type (%s).",
-                    header.type.c_str (),
-                    array.Type ());
-            }
-        }
 
     } // namespace util
 } // namespace thekogans

@@ -31,6 +31,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Serializable.h"
+#include "thekogans/util/SerializableArray.h"
 #include "thekogans/util/Exception.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsUtils.h"
@@ -380,6 +381,10 @@ namespace thekogans {
             /// \param[out] node Parent node.
             virtual void WriteJSON (JSON::Object &object) const override;
         };
+
+        /// \brief
+        /// Alias for SerializableArray<TimeSpec>.
+        using TimeSpecArray = SerializableArray<TimeSpec>;
 
         /// \brief
         /// Compare two TimeSpecs for equality.

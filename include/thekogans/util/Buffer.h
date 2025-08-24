@@ -104,7 +104,7 @@ namespace thekogans {
             /// Current write position.
             SizeT writeOffset;
             /// \brief
-            /// Allocator used for memory management.
+            /// \see{Allocator} used for memory management.
             Allocator::SharedPtr allocator;
 
             /// \brief
@@ -130,7 +130,7 @@ namespace thekogans {
             /// \param[in] length_ Length of data.
             /// \param[in] readOffset_ Offset at which to read.
             /// \param[in] writeOffset_ Offset at which to write.
-            /// \param[in] allocator_ Allocator used for memory management.
+            /// \param[in] allocator_ \see{Allocator} used for memory management.
             Buffer (
                 Endianness endianness = HostEndian,
                 void *data_ = nullptr,
@@ -150,7 +150,7 @@ namespace thekogans {
             /// \param[in] length_ Length of data.
             /// \param[in] readOffset_ Offset at which to read.
             /// \param[in] writeOffset_ Offset at which to write.
-            /// \param[in] allocator_ Allocator used for memory management.
+            /// \param[in] allocator_ \see{Allocator} used for memory management.
             Buffer (
                 Endianness endianness,
                 std::size_t length_,
@@ -170,7 +170,7 @@ namespace thekogans {
             /// \param[in] end Just past the end of range.
             /// \param[in] readOffset_ Offset at which to read.
             /// \param[in] writeOffset_ Offset at which to write.
-            /// \param[in] allocator_ Allocator used for memory management.
+            /// \param[in] allocator_ \see{Allocator} used for memory management.
             Buffer (
                 Endianness endianness,
                 const void *begin,
@@ -237,7 +237,7 @@ namespace thekogans {
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length_ New buffer length.
-            /// \param[in] allocator_ Allocator to use to allocate new data.
+            /// \param[in] allocator_ \see{Allocator} to use to allocate new data.
             /// If nullptr than use the buffers allocator.
             virtual void Resize (
                 std::size_t length_,
@@ -255,7 +255,7 @@ namespace thekogans {
             /// Return subset of the buffer.
             /// \param[in] offset Beginning of sub-buffer.
             /// \param[in] count Size of sub-buffer.
-            /// \param[in] allocator_ Allocator for the returned buffer.
+            /// \param[in] allocator_ \see{Allocator} for the returned buffer.
             /// If nullptr than use the buffers allocator.
             /// \return A subset of this buffer.
             /// NOTE: Unlike other methods, this one does NOT take
@@ -355,7 +355,7 @@ namespace thekogans {
 
             /// \brief
             /// Use zlib to compress the buffer.
-            /// \param[in] allocator_ Allocator for the returned buffer.
+            /// \param[in] allocator_ \see{Allocator} for the returned buffer.
             /// If nullptr than use the buffers allocator.
             /// \return A buffer containing deflated data.
             virtual SharedPtr Deflate (
@@ -373,7 +373,7 @@ namespace thekogans {
             /// \param[in] endianness Specifies how multi-byte values are stored.
             /// \param[in] hexBuffer Hex encoded string.
             /// \param[in] hexBufferLength hexBuffer length (must be even).
-            /// \param[in] allocator Allocator for the returned buffer.
+            /// \param[in] allocator \see{Allocator} for the returned buffer.
             /// If nullptr than use \see{DefaultAllocator}::Instance () allocator.
             /// \return Buffer containing the decoded hex string.
             static SharedPtr FromHexBuffer (
@@ -553,16 +553,18 @@ namespace thekogans {
             /// \brief
             /// Resize the buffer. Adjust readOffset and writeOffset to stay within [0, length).
             /// \param[in] length New buffer length.
-            /// \param[in] allocator Allocator to use to allocate new data.
-            /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
+            /// \param[in] allocator \see{Allocator} to use to allocate new data.
+            /// NOTE: The allocator paramater is ignored as SecureBuffer uses
+            /// the \see{SecureAllocator}.
             virtual void Resize (
                 std::size_t length,
                 Allocator::SharedPtr /*allocator*/ = nullptr) override;
 
             /// \brief
             /// Clone the buffer.
-            /// \param[in] allocator Allocator for the returned buffer.
-            /// NOTE: The allocator paramater is ignored as SecureBuffer uses the SecureAllocator.
+            /// \param[in] allocator \see{Allocator} for the returned buffer.
+            /// NOTE: The allocator paramater is ignored as SecureBuffer uses
+            /// the \see{SecureAllocator}.
             /// \return A clone of this buffer.
             virtual SharedPtr Clone (
                 Allocator::SharedPtr /*allocator*/ = nullptr) const override;

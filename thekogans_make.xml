@@ -715,7 +715,6 @@
     <cpp_source>SecureAllocator.cpp</cpp_source>
     <cpp_source>Semaphore.cpp</cpp_source>
     <cpp_source>Serializable.cpp</cpp_source>
-    <cpp_source>SerializableArray.cpp</cpp_source>
     <cpp_source>SerializableHeader.cpp</cpp_source>
     <cpp_source>SerializableString.cpp</cpp_source>
     <cpp_source>Serializer.cpp</cpp_source>
