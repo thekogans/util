@@ -23,6 +23,7 @@
 #include <functional>
 #include <algorithm>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
@@ -128,7 +129,7 @@ namespace thekogans {
                         if (array != nullptr) {
                             std::size_t i = 0;
                             for (std::size_t count =
-                                    std::min (length_, (std::size_t)length.value); i < count; ++i) {
+                                    MIN (length_, (std::size_t)length.value); i < count; ++i) {
                                 new (&array_[i]) T (array[i]);
                             }
                             for (; i < length_; ++i) {
