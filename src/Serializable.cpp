@@ -40,6 +40,7 @@ namespace thekogans {
             RunLoop::Stats::Job::StaticInit ();
             RunLoop::Stats::StaticInit ();
             TimeSpec::StaticInit ();
+            TimeSpecArray::StaticInit ();
             BTree::Key::StaticInit ();
             BTree::Value::StaticInit ();
         }
@@ -242,7 +243,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to create s Serializable of type: %s.",
+                    "Unable to create a Serializable of type: %s.",
                     header.type.c_str ());
             }
         }
@@ -259,7 +260,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to create s Serializable of type: %s.",
+                    "Unable to create a Serializable of type: %s.",
                     header.type.c_str ());
             }
         }
@@ -276,7 +277,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to create s Serializable of type: %s.",
+                    "Unable to create a Serializable of type: %s.",
                     header.type.c_str ());
             }
         }
@@ -375,7 +376,7 @@ namespace thekogans {
                     else {
                         Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Unable to create s Serializable of type: %s.",
+                            "Unable to create a Serializable of type: %s.",
                             header.type.c_str ());
                     }
                 }

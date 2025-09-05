@@ -387,7 +387,7 @@ namespace thekogans {
             bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
             if (found) {
-                // Release the key and the value. They will
+                // Release the key and value. They will
                 // either be overwritten or removed below.
                 entries[index].key->Release ();
                 entries[index].value->Release ();

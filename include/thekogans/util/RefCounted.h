@@ -63,7 +63,6 @@ namespace thekogans {
         /// inherited from, than your classes' inheritance must be virtual
         /// to ward off the dreaded diamond pattern that can result from
         /// multiple inheritance.
-
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
         private:
             /// \struct RefCounted::References RefCounted.h thekogans/util/RefCounted.h

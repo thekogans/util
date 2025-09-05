@@ -103,7 +103,7 @@ namespace thekogans {
             /// \struct Serializer::ContextGuard Serializer.h thekogans/util/Serializer.h
             ///
             /// \brief
-            /// ContextGuard provides scope for context.
+            /// ContextGuard provides scope for context and factory.
             struct ContextGuard {
                 /// \brief
                 /// Serializer whose context to guard.
@@ -111,22 +111,30 @@ namespace thekogans {
                 /// \brief
                 /// Saved context.
                 SerializableHeader context;
+                /// \brief
+                /// Saved \see{Serializable} factory.
+                DynamicCreatable::FactoryType factory;
 
                 /// \brief
                 /// ctor,
                 /// \param[in] serializer_ Serializer whose context to guard.
                 /// \param[in] context_ New context.
+                /// \param[in] factory_ New factory.
                 ContextGuard (
                         Serializer &serializer_,
-                        const SerializableHeader &context_ = SerializableHeader ()) :
+                        const SerializableHeader &context_ = SerializableHeader (),
+                        DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType ()) :
                         serializer (serializer_),
-                        context (serializer.context) {
+                        context (serializer.context),
+                        factory (serializer.factory) {
                     serializer.context = context_;
+                    serializer.factory = factory_;
                 }
                 /// \brief
                 /// dtor,
                 ~ContextGuard () {
                     serializer.context = context;
+                    serializer.factory = factory;
                 }
             };
 
@@ -188,6 +196,14 @@ namespace thekogans {
             /// \return Serialized size of a \see{Serializable}.
             static std::size_t Size (
                 const Serializable &value,
+                const SerializableHeader &context = SerializableHeader ());
+            /// \brief
+            /// Return serialized size of a \see{Serializable::SharedPtr}.
+            /// \param[in] value \see{Serializable::SharedPtr} whose size to return.
+            /// \param[in] context Partially filled in \see{SerializableHeader}.
+            /// \return Serialized size of a \see{Serializable::SharedPtr}.
+            static std::size_t Size (
+                const RefCounted::SharedPtr<Serializable> &value,
                 const SerializableHeader &context = SerializableHeader ());
 
             /// \brief

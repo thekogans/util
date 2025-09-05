@@ -43,6 +43,12 @@ namespace thekogans {
             return value.GetSize (context);
         }
 
+        std::size_t Serializer::Size (
+                const Serializable::SharedPtr &value,
+                const SerializableHeader &context) {
+            return value->GetSize (context);
+        }
+
         Serializer &Serializer::operator << (Endianness value) {
             if (Write (&value, ENDIANNESS_SIZE) != ENDIANNESS_SIZE) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

@@ -39,7 +39,7 @@ namespace thekogans {
         /// needed to extract a \see{Serializable} instance from a \see{Serializer}
         /// without knowing it's concrete type. It's variable size because the members
         /// inserted in to or extracted out of the \see{Serializer} depend on the current
-        /// context. This context commes in the form of \see{Serializer::context} which
+        /// context. This context comes in the form of \see{Serializer::context} which
         /// tells operators << and >> whats missing and needs to be inserted or extracted.
         /// The more members the context has filled in, the fewer the header will need
         /// to insert or extract. This design allows for creation of containers aggregating
@@ -101,13 +101,26 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the binary header size.
-            /// \return SerializableHeader binary size.
-            std::size_t Size () const;
+            /// Return the header size.
+            /// \param[in] all true == return size of the entire structure
+            /// including the empty members.
+            /// \return SerializableHeader size.
+            std::size_t Size (bool all = false) const;
+            /// \brief
+            /// Read the entire structure from \see{Serializer} ignoring
+            /// \see{Serializer::context}.
+            /// \param[in] serializer \see{Serializer} to read the members from.
+            void Read (Serializer &serializer);
+            /// \brief
+            /// Write the entire structure to the given \see{Serializer} ignoring
+            /// \see{Serializer::context}.
+            /// \param[in] serializer \see{Serializer} to write the members to.
+            void Write (Serializer &serializer);
         };
 
         /// \brief
-        /// SerializableHeader insertion operator.
+        /// SerializableHeader insertion operator. Write the portion of the
+        /// structure that dovetails the \see{Serializer::context}.
         /// \param[in] serializer Where to serialize the serializable header.
         /// \param[in] header SerializableHeader to serialize.
         /// \return serializer.
@@ -115,7 +128,8 @@ namespace thekogans {
             Serializer &serializer,
             const SerializableHeader &header);
         /// \brief
-        /// SerializableHeader extraction operator.
+        /// SerializableHeader extraction operator. Read the portion of the
+        /// structure that dovetails the \see{Serializer::context}.
         /// \param[in] serializer Where to deserialize the serializable header.
         /// \param[in] header SerializableHeader to extract in to.
         /// \return serializer.

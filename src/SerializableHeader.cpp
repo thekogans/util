@@ -23,18 +23,26 @@
 namespace thekogans {
     namespace util {
 
-        std::size_t SerializableHeader::Size () const {
-            std::size_t totalSize = 0;
-            if (!NeedType ()) {
-                totalSize += Serializer::Size (type);
+        std::size_t SerializableHeader::Size (bool all) const {
+            std::size_t size_ = 0;
+            if (all || !NeedType ()) {
+                size_ += Serializer::Size (type);
             }
-            if (!NeedVersion ()) {
-                totalSize += Serializer::Size (version);
+            if (all || !NeedVersion ()) {
+                size_ += Serializer::Size (version);
             }
-            if (!NeedSize ()) {
-                totalSize += Serializer::Size (size);
+            if (all || !NeedSize ()) {
+                size_ += Serializer::Size (size);
             }
-            return totalSize;
+            return size_;
+        }
+
+        void SerializableHeader::Read (Serializer &serializer) {
+            serializer << type << version << size;
+        }
+
+        void SerializableHeader::Write (Serializer &serializer) {
+            serializer >> type >> version >> size;
         }
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (

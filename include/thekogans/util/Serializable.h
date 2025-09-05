@@ -181,8 +181,7 @@ namespace thekogans {
         /// size is != 0 that means that the class is fixed size.
         /// Every instance is this size. If it's == 0 that means
         /// the class is variable size and every instance will
-        /// need to be queried (ThisSize) individually to get its
-        /// size.
+        /// need to be queried (Size) individually to get its size.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_CLASS_SIZE(_T)\
         public:\
             static const std::size_t CLASS_SIZE;
@@ -205,13 +204,28 @@ namespace thekogans {
                 return CLASS_SIZE;\
             }
 
+        /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_GetContext(_T)
+        /// Declare the \see{Serializable} GetContext method.
+        #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_GetContext(_T)\
+        public:\
+            static thekogans::util::SerializableHeader GetContext ();
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_GetContext(_T)
+        /// Implement the \see{Serializable} GetContext method.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_GetContext(_T)\
+            thekogans::util::SerializableHeader _T::GetContext () {\
+                return thekogans::util::SerializableHeader (\
+                    _T::TYPE, _T::VERSION, _T::CLASS_SIZE);\
+            }
+
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)
         /// Common defines for Serializable.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)\
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_CLASS_SIZE(_T)\
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_ClassSize(_T)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_ClassSize(_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_GetContext(_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version, classSize)
         /// Serializable overrides.
@@ -219,7 +233,8 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_CLASS_SIZE(_T, classSize)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_GetContext(_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE(_T, version, classSize)
         /// Serializable overrides.
@@ -231,7 +246,9 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_CLASS_SIZE(_T, classSize)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ClassSize(_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_GetContext(_T)
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE(_T)
         /// Serializable declaration macro. Instantiate one of these

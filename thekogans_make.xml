@@ -113,6 +113,7 @@
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocator.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/FileAllocatorArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocatorBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileAllocatorRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>

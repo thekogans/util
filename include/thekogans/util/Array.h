@@ -39,8 +39,8 @@ namespace thekogans {
         /// Unlike \see{Buffer}, which models an array of ui8, Array
         /// represents an array of first class objects. Also, unlike \see{Buffer},
         /// which is meant to be a \see{Serializer}, Array has a completelly
-        /// different mission. Arrays are meant to be lightweight, single use
-        /// containers with some first class properties (order and serialization).
+        /// different mission. Arrays are meant to be lightweight containers
+        /// with some first class properties (order and serialization).
         template<typename T>
         struct Array {
             /// \brief
@@ -67,8 +67,14 @@ namespace thekogans {
                         (T *)allocator_->Alloc (length_ * sizeof (T)) :
                         array_),
                     allocator (allocator_) {
-                for (std::size_t i = 0; i < length; ++i) {
-                    new (&array[i]) T ();
+                if (allocator != nullptr) {
+                    for (std::size_t i = 0; i < length; ++i) {
+                        new (&array[i]) T ();
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
             }
             /// \brief
@@ -130,15 +136,20 @@ namespace thekogans {
                             std::size_t i = 0;
                             for (std::size_t count =
                                     MIN (length_, (std::size_t)length.value); i < count; ++i) {
-                                new (&array_[i]) T (array[i]);
+                                new (&array_[i]) T (std::move (array[i]));
                             }
                             for (; i < length_; ++i) {
                                 new (&array_[i]) T ();
                             }
+                            for (; i < length; ++i) {
+                                array[i].~T ();
+                            }
                         }
                     }
-                    for (std::size_t i = 0; i < length; ++i) {
-                        array[i].~T ();
+                    else {
+                        for (std::size_t i = 0; i < length; ++i) {
+                            array[i].~T ();
+                        }
                     }
                     allocator->Free (array, length);
                     array = array_;

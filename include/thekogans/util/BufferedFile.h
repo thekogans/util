@@ -329,8 +329,8 @@ namespace thekogans {
             ///
             /// \brief
             /// Buffer tiles the file address space providing incremental,
-            /// sparse access to the data. Use \see{DeleteCache} to manage memory
-            /// usage.
+            /// sparse access to the data. Use \see{DeleteCache} to manage
+            /// memory usage.
             /// WARNING: Spent an hour chasing my tail looking for a stack
             /// overflow bug. Long story short, don't allocate buffers on
             /// the stack. They're too big.
