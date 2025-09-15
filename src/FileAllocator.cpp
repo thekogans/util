@@ -22,6 +22,13 @@
 namespace thekogans {
     namespace util {
 
+        FileAllocator::PtrType FileAllocator::Object::ForceFlush () {
+            SetDirty (true);
+            Alloc ();
+            Flush ();
+            return GetOffset ();
+        }
+
         void FileAllocator::Object::Alloc () {
             if (!IsFixedSize () || offset == 0) {
                 FileAllocator::PtrType newOffset =

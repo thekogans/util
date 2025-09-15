@@ -722,6 +722,7 @@ namespace thekogans {
             }
             else if (keyValueOffset != 0) {
                 fileAllocator->Free (keyValueOffset);
+                keyValueOffset = 0;
             }
         }
 

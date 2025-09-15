@@ -32,10 +32,10 @@ namespace thekogans {
         ///
         /// \brief
         /// \see{FileAllocatorRegistry} is a \see{BTree}. It's also a
-        /// \see{FileAllocator} root object. It provides global ordered,
-        /// associative storage for \see{FileAllocator} clients. Use it
-        /// to store and retrieve practically any value derived from
-        /// \see{BTree::Value}. The key type is std::string.
+        /// \see{FileAllocator::Header::rootObject} . It provides global
+        /// ordered, associative storage for \see{FileAllocator} clients.
+        /// Use it to store and retrieve practically any value derived
+        /// from \see{BTree::Value}. The key type is std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
                 private BTree,
                 public Subscriber<FileAllocator::ObjectEvents> {
@@ -73,7 +73,7 @@ namespace thekogans {
             /// Given a key, do one of the following three;
             /// 1. If value != nullptr and key is not found, insert new key/value.
             /// 2. If value != nullptr and key is found, replace the old value with new.
-            /// 3. if value == nullptr, delete the key from the registry (if found).
+            /// 3. if value == nullptr, and key if found, delete the key from the registry.
             /// \param[in] key Key to search/delete.
             /// \param[in] value Value to set/replace/delete.
             void SetValue (

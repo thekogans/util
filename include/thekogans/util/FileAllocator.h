@@ -170,6 +170,12 @@ namespace thekogans {
                     return offset;
                 }
 
+                /// \brief
+                /// A convenience method used to synchronize the
+                /// in memory cache with on disk image.
+                /// \return Offset of the on disk image.
+                FileAllocator::PtrType ForceFlush ();
+
             protected:
                 /// \brief
                 /// Optimization for Alloc below. If an object declares

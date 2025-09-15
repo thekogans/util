@@ -65,7 +65,7 @@ namespace thekogans {
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                     FileAllocator::Object (fileAllocator, offset),
                     array (length, array_, allocator) {
-                if (GetOffset () != 0) {
+                if (GetOffset () != 0 && GetLength () == 0) {
                     Reload ();
                 }
             }
@@ -136,7 +136,7 @@ namespace thekogans {
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                     FileAllocator::Object (fileAllocator, offset),
                     array (context, length, array_, allocator) {
-                if (GetOffset () != 0) {
+                if (GetOffset () != 0 && GetLength () == 0) {
                     Reload ();
                 }
             }
