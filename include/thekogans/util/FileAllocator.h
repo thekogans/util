@@ -839,6 +839,14 @@ namespace thekogans {
             /// Free a previously Alloc(ated) block.
             /// \param[in] offset Offset of block to free.
             void Free (PtrType offset);
+            /// \brief
+            /// Resize a block. Make it bigger or smaller.
+            /// \param[in] offset Offset of \see{Block} to resize.
+            /// \param[in] newSize New \see{Block} size.
+            /// \param[in] moveData true == Copy the data to the new block.
+            /// \return If newSize is greater than current size, return the
+            /// new \see{Block} offset. If not, return the old \see{Block}
+            /// offset.
             PtrType Realloc (
                 PtrType offset,
                 std::size_t newSize,
@@ -850,6 +858,8 @@ namespace thekogans {
             /// Nothing for us to allocate.
             /// The header is the first thing in the file.
             virtual void Alloc () override {}
+            /// \brief
+            /// Since there's nothing to allocate, there's nothing to free.
             virtual void Free () override {}
             /// \brief
             /// Flush the header to file.
@@ -857,6 +867,8 @@ namespace thekogans {
             /// \brief
             /// Reload the header from file.
             virtual void Reload () override;
+            /// \brief
+            /// Reset the allocator to it's default initial state.
             virtual void Reset () override;
 
         private:

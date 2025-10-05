@@ -30,6 +30,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::pathfinder::Roots,
             1,
+            0,
             util::BTree::Value::TYPE)
 
         void Roots::ScanRoot (
@@ -129,8 +130,8 @@ namespace thekogans {
         }
 
         void Roots::Read (
-                const SerializableHeader &header,
-                Serializer &serializer) {
+                const util::SerializableHeader &header,
+                util::Serializer &serializer) {
             util::ArrayValue<Root::SharedPtr>::Read (header, serializer);
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 util::Subscriber<RootEvents>::Subscribe (*value[i]);

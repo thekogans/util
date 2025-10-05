@@ -24,6 +24,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::pathfinder::IgnoreList,
             1,
+            0,
             util::BTree::Value::TYPE)
 
         bool IgnoreList::AddIgnore (const std::string &ignore) {
