@@ -110,14 +110,14 @@ namespace thekogans {
                 /// \see{Object} allocated a block in the file.
                 /// \param[in] object \see{Object} whose offset has become valid.
                 /// VERY IMPORTANT SEMANTICS: When you get this notification,
-                /// object->GetOffset () will tell you which block has been freed.
+                /// object->GetOffset () will tell you which block has been allocated.
                 virtual void OnFileAllocatorObjectAlloc (
                     RefCounted::SharedPtr<Object> /*object*/) noexcept {}
                 /// \brief
                 /// \see{Object} freed its file block.
                 /// \param[in] object \see{Object} whose offset has become invalid.
                 /// VERY IMPORTANT SEMANTICS: When you get this notification,
-                /// object->GetOffset () will tell you which block has been allocated.
+                /// object->GetOffset () will tell you which block has been freed.
                 virtual void OnFileAllocatorObjectFree (
                     RefCounted::SharedPtr<Object> /*object*/) noexcept {}
             };
@@ -419,7 +419,8 @@ namespace thekogans {
                 /// If this flag is set, the block is free. Otherwise it's allocated.
                 static const ui32 FLAGS_FREE = 1;
                 /// \brief
-                /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
+                /// If this flag is set the block is a \see{BTree::Node}.
+                /// Otherwise it's random size.
                 static const ui32 FLAGS_BTREE_NODE = 2;
                 /// \brief
                 /// Exposed because header is private.
@@ -619,6 +620,7 @@ namespace thekogans {
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to read.
                 /// (0 == read the whole block).
+                /// \return Number of bytes read.
                 inline std::size_t BlockRead (
                         std::size_t blockOffset = 0,
                         std::size_t blockLength = 0) {
@@ -629,6 +631,7 @@ namespace thekogans {
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to write.
                 /// (0 == write the whole block).
+                /// \return Number of bytes written.
                 inline std::size_t BlockWrite (
                         std::size_t blockOffset = 0,
                         std::size_t blockLength = 0) {
@@ -643,6 +646,8 @@ namespace thekogans {
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to read or write.
                 /// (0 == read or write the whole block).
+                /// \param[in] read true == read the block. false == write the block.
+                /// \return Number of bytes read or written.
                 std::size_t BlockIO (
                     std::size_t blockOffset,
                     std::size_t blockLength,
@@ -735,7 +740,7 @@ namespace thekogans {
                 }
             } header;
             /// \brief
-            /// Include the \see{BTree} header.
+            /// Include the \see{FileAllocator::BTree} header.
             /// I split it out because this file was getting too big to maintain.
             #include "thekogans/util/FileAllocatorBTree.h"
             /// \brief

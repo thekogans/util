@@ -95,9 +95,9 @@ namespace thekogans {
             /// \struct Value BTree.h thekogans/util/BTree.h
             ///
             /// \brief
-            /// Value part of the [Key, Value] pair.Since values
+            /// Value part of the [Key, Value] pair. Since values
             /// derive from \see{Serializable}, they can be practicaly
-            /// anything as long imlement the interface.
+            /// anything as long as they implement the interface.
             struct _LIB_THEKOGANS_UTIL_DECL Value : public Serializable {
                 /// \brief
                 /// Value is a \see{util::DynamicCreatable} abstract base.
@@ -316,21 +316,6 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
-                /// \brief
-                /// BTree to which this node belongs.
-                BTree &btree;
-                /// \brief
-                /// Count of entries.
-                ui32 count;
-                /// \brief
-                /// Left most child node block offset.
-                FileAllocator::PtrType leftOffset;
-                /// \brief
-                /// Left most child node.
-                Node *left;
-                /// \brief
-                /// Key/value array offset.
-                FileAllocator::PtrType keyValueOffset;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -339,6 +324,9 @@ namespace thekogans {
                     /// \brief
                     /// Entry key.
                     Key *key;
+                    /// \brief
+                    /// Entry value block offset.
+                    FileAllocator::PtrType valueOffset;
                     /// \brief
                     /// Entry value.
                     Value *value;
@@ -351,10 +339,6 @@ namespace thekogans {
 
                     /// \brief
                     /// ctor.
-                    /// NOTE: Because of the way we allocate Node this ctor
-                    /// is here for show. It will never be called as we're
-                    /// treating Entry as POT. It actually gets initialized
-                    /// in the operator >>.
                     /// \param[in] key_ Entry key.
                     /// \param[in] value_ Entry value.
                     Entry (
@@ -368,12 +352,37 @@ namespace thekogans {
                     /// \brief
                     /// Entry size on disk.
                     static const std::size_t SIZE =
+                        FileAllocator::PTR_TYPE_SIZE + // valueOffset;
                         FileAllocator::PTR_TYPE_SIZE; // rightOffset;
                 };
+
+            protected:
+                /// \brief
+                /// BTree to which this node belongs.
+                BTree &btree;
+                /// \brief
+                /// Count of entries.
+                ui32 count;
+                /// \brief
+                /// Left most child node block offset.
+                FileAllocator::PtrType leftOffset;
+                /// \brief
+                /// Left most child node.
+                Node *left;
+                /// \brief
+                /// Keys array offset.
+                FileAllocator::PtrType keysOffset;
+                /// \brief
+                /// Values array offset.
+                FileAllocator::PtrType valuesOffset;
                 /// \brief
                 /// Entry array. Allocated when the node is allocated.
+                /// NOTE: Because of the way we allocate Node Entry ctor
+                /// is never called as we're treating entries as POT.
+                /// It actually gets initialized in the operator >>.
                 Entry *entries;
 
+            public:
                 /// \brief
                 /// ctor.
                 /// \param[in] btree_ BTree to which this node belongs.
@@ -399,11 +408,15 @@ namespace thekogans {
                     FileAllocator::PtrType offset = 0);
                 /// \brief
                 /// Delete the node and it's sub-tree.
-                /// \param[in] fileAllocator Btree heap.
-                /// \param[in] offset Node offset.
+                /// \param[in] btree BTree to which this node belongs.
+                /// \param[in] offset Node offset on disk.
                 static void FreeSubtree (
-                    FileAllocator &fileAllocator,
+                    BTree &btree,
                     FileAllocator::PtrType offset);
+
+                inline ui32 GetCount () const {
+                    return count;
+                }
 
                 /// \brief
                 /// Set value at the given \see{Entry} index.
@@ -609,7 +622,8 @@ namespace thekogans {
                         UI32_SIZE + // magic
                         UI32_SIZE + // count
                         FileAllocator::PTR_TYPE_SIZE + // leftOffset
-                        FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
+                        FileAllocator::PTR_TYPE_SIZE + // keysOffset
+                        FileAllocator::PTR_TYPE_SIZE + // valuesOffset
                         btree.header.entriesPerNode * Entry::SIZE; // entries
                 }
                 /// \brief

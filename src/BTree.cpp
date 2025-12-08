@@ -35,13 +35,13 @@ namespace thekogans {
         inline Serializer &operator >> (
                 Serializer &serializer,
                 BTree::Node::Entry &entry) {
-            serializer >> entry.rightOffset;
             // Because of the way we allocate the BTree::Node the
             // Entry cror is never called. In a way this extraction
             // operator is our ctor. Make sure all members are
             // properly initialized.
             entry.key = nullptr;
             entry.value = nullptr;
+            serializer >> entry.rightOffset;
             entry.right = nullptr;
             return serializer;
         }
@@ -53,6 +53,7 @@ namespace thekogans {
                 header.keyType <<
                 header.valueType <<
                 header.entriesPerNode <<
+                header.flags <<
                 header.rootOffset;
             return serializer;
         }
@@ -64,6 +65,7 @@ namespace thekogans {
                 header.keyType >>
                 header.valueType >>
                 header.entriesPerNode >>
+                header.flags >>
                 header.rootOffset;
             return serializer;
         }
@@ -95,7 +97,7 @@ namespace thekogans {
         bool BTree::Iterator::Next () {
             if (!finished) {
                 finished = true;
-                while (node.second < node.first->count || !parents.empty ()) {
+                while (node.second < node.first->GetCount () || !parents.empty ()) {
                     ++node.second;
                     Node *child = node.first->GetChild (node.second);
                     if (child != nullptr) {
@@ -109,9 +111,9 @@ namespace thekogans {
                         node = parents.back ();
                         parents.pop_back ();
                     }
-                    if (node.second < node.first->count) {
+                    if (node.second < node.first->GetCount ()) {
                         finished = prefix != nullptr &&
-                            prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
+                            prefix->PrefixCompare (*node.first->GetKey (node.second)) != 0;
                         break;
                     }
                     else if (!parents.empty ()) {
@@ -128,8 +130,8 @@ namespace thekogans {
 
         BTree::Key::SharedPtr BTree::Iterator::GetKey () const {
             if (!finished) {
-                assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->entries[node.second].key;
+                assert (node.first != nullptr && node.second < node.first->GetCount ());
+                return node.first->GetKey (node.second);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -139,8 +141,8 @@ namespace thekogans {
 
         BTree::Value::SharedPtr BTree::Iterator::GetValue () const {
             if (!finished) {
-                assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->entries[node.second].value;
+                assert (node.first != nullptr && node.second < node.first->GetCount ());
+                return node.first->GetValue (node.second);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -151,7 +153,7 @@ namespace thekogans {
         void BTree::Iterator::SetValue (Value::SharedPtr value) {
             if (value != nullptr) {
                 if (!finished) {
-                    assert (node.first != nullptr && node.second < node.first->count);
+                    assert (node.first != nullptr && node.second < node.first->GetCount ());
                     node.first->SetValue (node.second, value);
                 }
                 else {
@@ -205,7 +207,7 @@ namespace thekogans {
         }
 
         void BTree::Node::FreeSubtree (
-                FileAllocator &fileAllocator,
+                BTree &btree,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
                 FileAllocator::BlockBuffer buffer (fileAllocator, offset);
@@ -217,10 +219,12 @@ namespace thekogans {
                     buffer >> count;
                     if (count > 0) {
                         FileAllocator::PtrType leftOffset;
-                        FileAllocator::PtrType keyValueOffset;
-                        buffer >> leftOffset >> keyValueOffset;
-                        fileAllocator.Free (keyValueOffset);
-                        FreeSubtree (fileAllocator, leftOffset);
+                        FileAllocator::PtrType keysOffset;
+                        FileAllocator::PtrType valuesOffset;
+                        buffer >> leftOffset >> keysOffset >> valuesOffset;
+                        btree.keys->Free (keysOffset);
+                        btree.keys->Free (valuesOffset);
+                        FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
                             Entry entry;
                             buffer >> entry;
@@ -237,14 +241,27 @@ namespace thekogans {
             }
         }
 
+        BTree::Key *BTree::Node::GetKey (ui32 index) {
+            if (entries[index].key == nullptr) {
+                entries[index].key = btree.keys.Get (*this, index);
+            }
+            return entries[index].key;
+        }
+
+        BTree::Value *BTree::Node::GetValue (ui32 index) {
+            if (entries[index].value == nullptr) {
+                entries[index].value = btree.values.Get (*this, index);
+            }
+            return entries[index].value;
+        }
+
         void BTree::Node::SetValue (
                 ui32 index,
                 Value::SharedPtr value) {
             if (entries[index].value != nullptr) {
                 entries[index].value->Release ();
             }
-            entries[index].value = value.Release ();
-            SetDirty (true);
+            btree.values.Set (*this, index, value);
         }
 
         BTree::Node *BTree::Node::GetChild (ui32 index) {
@@ -272,7 +289,7 @@ namespace thekogans {
             index = 0;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                i32 result = prefix.PrefixCompare (*entries[middle].key);
+                i32 result = prefix.PrefixCompare (*GetKey (middle));
                 if (result == 0) {
                     index = middle;
                     return true;
@@ -308,7 +325,7 @@ namespace thekogans {
             index = 0;
             while (index < last) {
                 ui32 middle = (index + last) / 2;
-                i32 result = key.Compare (*entries[middle].key);
+                i32 result = key.Compare (*GetKey (middle));
                 if (result == 0) {
                     index = middle;
                     return true;
@@ -371,6 +388,8 @@ namespace thekogans {
                             --it.node.second;
                         }
                     }
+                    btree.keys->Get (*right, 0);
+                    btree.values->Get (*right, 0);
                     entry = right->entries[0];
                     right->RemoveEntry (0);
                 }
@@ -580,13 +599,6 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Read (Serializer &serializer) {
-            ui32 magic;
-            serializer >> magic;
-            if (magic == MAGIC32) {
-                serializer >> count;
-                if (count > 0) {
-                    serializer >> leftOffset >> keyValueOffset;
                     FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
                     keyValueBuffer.BlockRead ();
                     SerializableHeader keyHeader (btree.header.keyType, 0, 0);
@@ -618,6 +630,19 @@ namespace thekogans {
                             }
                         }
                     }
+
+        void BTree::Node::Read (Serializer &serializer) {
+            ui32 magic;
+            serializer >> magic;
+            if (magic == MAGIC32) {
+                serializer >> count;
+                if (count > 0) {
+                    serializer >> leftOffset >> keysOffset >> valuesOffset;
+                    for (ui32 i = 0; i < count; ++i) {
+                        serializer >> entries[i];
+                    }
+                    btree.keys->Read (*this);
+                    btree.values->Read (*this);
                 }
             }
             else {
@@ -885,7 +910,7 @@ namespace thekogans {
 
         void BTree::Free () {
             if (GetOffset () != 0) {
-                Node::FreeSubtree (*fileAllocator, header.rootOffset);
+                Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
                 Object::Free ();
             }

@@ -37,6 +37,11 @@ namespace thekogans {
         /// container. FileAllocatorArray uses the type \see{Serializable} information to
         /// create a \see{SerializableHeader} context so that the array elements are packed
         /// without wasting space writting the same header information.
+        /// IMPORTANT: FileAllocatorArray is very simple. It reads and writes
+        /// it's contents all at once, not incrementally. Keep that in mind
+        /// when designing your \see{FileAllocator} objects. If you need more
+        /// sophisticated, incremental access to associative, ordered data
+        /// take a look at \see{BTree}.
         template<typename T>
         struct FileAllocatorArray : public FileAllocator::Object {
             /// \brief
@@ -49,9 +54,9 @@ namespace thekogans {
 
             /// \brief
             /// ctor. Create (or wrap) an array of length elements.
-            /// VERY IMPORTANT: Array does not make a copy of the array_
+            /// VERY IMPORTANT: FileAllocatorArray does not make a copy of the array
             /// passed in. It's up to you to make sure the pointer survives
-            /// the Array lifetime.
+            /// the FileAllocatorArray lifetime.
             /// \param[in] fileAllocator
             /// \param[in] offset
             /// \param[in] length Number of elements in the array.

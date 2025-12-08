@@ -27,14 +27,14 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-            BTree (
-                fileAllocator,
-                fileAllocator->GetRootOffset (),
-                StringKey::TYPE,
-                std::string (),
-                entriesPerNode,
-                nodesPerPage,
-                allocator) {
+                BTree (
+                    fileAllocator,
+                    fileAllocator->GetRootOffset (),
+                    StringKey::TYPE,
+                    std::string (),
+                    entriesPerNode,
+                    nodesPerPage,
+                    allocator) {
             Subscriber<FileAllocator::ObjectEvents>::Subscribe (*this);
         }
 

@@ -50,6 +50,9 @@ namespace thekogans {
             Reset ();
             if (!IsDeleted ()) {
                 SetDeleted (true);
+                // Actual delete is delayed until transaction processing below.
+                // Take out a reference so that the object owner can release theirs.
+                // We will release it in OnBufferedFileTransactionCommit below.
                 AddRef ();
             }
         }

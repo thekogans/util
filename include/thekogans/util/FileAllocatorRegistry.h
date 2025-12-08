@@ -20,6 +20,7 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Subscriber.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/FileAllocator.h"
@@ -32,7 +33,7 @@ namespace thekogans {
         ///
         /// \brief
         /// \see{FileAllocatorRegistry} is a \see{BTree}. It's also a
-        /// \see{FileAllocator::Header::rootObject} . It provides global
+        /// \see{FileAllocator::Header::rootObject}. It provides global,
         /// ordered, associative storage for \see{FileAllocator} clients.
         /// Use it to store and retrieve practically any value derived
         /// from \see{BTree::Value}. The key type is std::string.

@@ -15,74 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if defined (THEKOGANS_UTIL_TYPE_Static)
-    #include "thekogans/util/DynamicCreatable.h"
-#endif // defined (THEKOGANS_UTIL_TYPE_Static)
-#include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/StringUtils.h"
+#include <cassert>
+#include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/ConsoleLogger.h"
-#include "thekogans/util/Console.h"
 #include "thekogans/util/Heap.h"
 
 namespace thekogans {
     namespace util {
-
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void StaticInit () {
-            DynamicCreatable::StaticInit ();
-        }
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
-        _LIB_THEKOGANS_UTIL_DECL void Log (
-                unsigned int decorations,
-                const char *subsystem,
-                unsigned int level,
-                const char *file,
-                const char *function,
-                unsigned int line,
-                const char *buildTime,
-                const char *format,
-                ...) {
-            std::string header = LoggerMgr::FormatHeader (
-                decorations,
-                subsystem,
-                level,
-                file,
-                function,
-                line,
-                buildTime);
-            va_list argptr;
-            va_start (argptr, format);
-            std::string message = FormatStringHelper (format, argptr);
-            va_end (argptr);
-            Log (subsystem, level, header, message);
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Log (
-                const char *subsystem,
-                unsigned int level,
-                const std::string &header,
-                const std::string &message) {
-            if (GlobalLoggerMgr::IsInstanceCreated ()) {
-                GlobalLoggerMgr::Instance ()->Log (subsystem, level, header, message);
-                // This function is usually called right before the
-                // process exits. In case the user forgot to call flush,
-                // we do it here so that this important error message is
-                // written to the logs.
-                GlobalLoggerMgr::Instance ()->Flush ();
-            }
-            else if (Console::IsInstanceCreated ()) {
-                Console::Instance ()->PrintString (
-                    header + message,
-                    Console::StdErr,
-                    ConsoleLogger::DefaultColorScheme::GetColorForLevel (level));
-            }
-            else {
-                std::cerr << header << message;
-            }
-        }
 
         HeapRegistry::HeapErrorCallback HeapRegistry::GetHeapErrorCallback () {
             LockGuard<SpinLock> guard (spinLock);
