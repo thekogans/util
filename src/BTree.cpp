@@ -27,20 +27,6 @@ namespace thekogans {
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                const BTree::Node::Entry &entry) {
-            serializer << entry.keyOffset << entry.valueOffset << entry.rightOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                BTree::Node::Entry &entry) {
-            serializer >> entry.keyOffset >> entry.valueOffset >> entry.rightOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator << (
-                Serializer &serializer,
                 const BTree::Header &header) {
             serializer <<
                 header.keyContext <<
@@ -183,19 +169,14 @@ namespace thekogans {
 
         std::size_t BTree::Node::FileSize (
                 std::size_t entriesPerNode,
-                const Flags32 flags) {
+                bool valuesAsVector) {
             std::size_t size =
                 UI32_SIZE + // magic
                 UI32_SIZE + // count
-                FileAllocator::PTR_TYPE_SIZE; // leftOffset
+                FileAllocator::PTR_TYPE_SIZE + // leftOffset
+                FileAllocator::PTR_TYPE_SIZE; // keysOffset
             std::size_t entrySize = FileAllocator::PTR_TYPE_SIZE; // Entry::rightOffset
-            if (flags.Test ()) {
-                size += FileAllocator::PTR_TYPE_SIZE; // keysOffset
-            }
-            else {
-                entrySize += FileAllocator::PTR_TYPE_SIZE; // Entry::keyOffset
-            }
-            if (flags.Test ()) {
+            if (valuesAsVector) {
                 size += FileAllocator::PTR_TYPE_SIZE; // valuesOffset
             }
             else {
@@ -256,14 +237,6 @@ namespace thekogans {
         }
 
         BTree::Key *BTree::Node::GetKey (ui32 index) {
-            if (entries[index].key == nullptr) {
-                Key::SharedPtr key = Key::CreateKey (
-                    btree.header.keyContext,
-                    btree.keyFactory,
-                    fileAllocator,
-                    entries[index].keyOffset);
-                entries[index].key = key.Release ();
-            }
             return entries[index].key;
         }
 
@@ -287,7 +260,6 @@ namespace thekogans {
                 entries[index].value->Release ();
             }
             entries[index].value = value.Release ();
-            entries[index].flags.Set (Entry::FLAGS_VALUE_DIRTY, true);
             SetDirty (true);
         }
 
@@ -617,22 +589,22 @@ namespace thekogans {
                 if (count > 0) {
                     serializer >> leftOffset >> keysOffset;
                     left = nullptr;
-                    FileAllocator::BlockBuffer keysBuffer (*fileAllocator, keysOffset);
-                    keysBuffer.BlockRead ();
-                    SerializableSharedPtrArray<Key> keys (
-                        btree.header.keyContext, btree.keyFactory);
-                    keysBuffer >> keys;
-                    SerializableSharedPtrArray<Serializable> values (
-                        btree.header.valueContext, btree.valueFactory);
+                    FileAllocatorSharedPtrArray<Key> keys (
+                        *fileAllocator,
+                        keysOffset,
+                        btree.header.keyContext,
+                        btree.keyFactory);
                     if (btree.header.flags.Test (BTree::Header::FLAGS_VALUES_AS_VECTOR)) {
                         serializer >> valuesOffset;
-                        FileAllocator::BlockBuffer valuesBuffer (*fileAllocator, valuesOffset);
-                        valuesBuffer.BlockRead ();
-                        valuesBuffer >> values;
                     }
                     else {
                         valuesOffset = 0;
                     }
+                    FileAllocatorSharedPtrArray<Serializable> values (
+                        *fileAllocator,
+                        valuesOffset,
+                        btree.header.valueContext,
+                        btree.valueFactory);
                     for (ui32 i = 0; i < count; ++i) {
                         entries[i].key = keys[i].array.Release ();
                         if (btree.header.flags.Test (BTree::Header::FLAGS_VALUES_AS_VECTOR)) {
@@ -759,6 +731,7 @@ namespace thekogans {
                 FileAllocator::PtrType offset,
                 const SerializableHeader &keyContext,
                 const SerializableHeader &valueContext,
+                bool valuesAsVector,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
@@ -771,6 +744,7 @@ namespace thekogans {
                         Node::Size (entriesPerNode),
                         nodesPerPage,
                         allocator)),
+                nodeFileSize (Node::FileSize (entriesPerNode, valuesAsVector)),
                 root (Node::Alloc (*this, header.rootOffset)) {
             if (!Key::IsType (header.keyContext.c_str ()) ||
                     (!header.valueContext.empty () &&
@@ -932,7 +906,8 @@ namespace thekogans {
                 Header header_;
                 serializer >> header_;
                 if ((header.keyContext.empty () || header.keyContext == header_.keyContext) &&
-                        (header.valueContext.empty () || header.valueContext == header_.valueContext)) {
+                        (header.valueContext.empty () ||
+                            header.valueContext == header_.valueContext)) {
                     header = header_;
                 }
                 else {
@@ -955,6 +930,9 @@ namespace thekogans {
                     Node::Size (header.entriesPerNode),
                     nodeAllocator->GetBlocksPerPage (),
                     nodeAllocator->GetAllocator ()));
+            nodeFileSize = Node::FileSize (
+                header.entriesPerNode,
+                header.flags.Test (Header::FLAGS_VALUES_AS_VECTOR));
             root = Node::Alloc (*this, header.rootOffset);
         }
 

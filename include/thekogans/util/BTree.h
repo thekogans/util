@@ -243,8 +243,7 @@ namespace thekogans {
                 /// fixed size and 2. if you need more than 4G enries in
                 /// one node, you don't need a tree. You need something else.
                 ui32 entriesPerNode;
-                static ui32 FLAGS_KEYS_AS_VECTOR = 1;
-                static ui32 FLAGS_VALUES_AS_VECTOR = 2;
+                static ui32 FLAGS_VALUES_AS_VECTOR = 1;
                 Flags32 flags;
                 /// \brief
                 /// Root node offset.
@@ -290,6 +289,10 @@ namespace thekogans {
             /// \brief
             /// See comment for keyFactory.
             DynamicCreatable::FactoryType valueFactory;
+            /// \brief
+            /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
+            BlockAllocator::SharedPtr nodeAllocator;
+            std::size_t nodeFileSize;
             /// \struct BTree::Node BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -305,9 +308,6 @@ namespace thekogans {
                 /// Node entries contain keys, values and right (grater then) children.
                 struct Entry {
                     /// \brief
-                    /// Entry key block offset.
-                    FileAllocator::PtrType keyOffset;
-                    /// \brief
                     /// Entry key.
                     Key *key;
                     /// \brief
@@ -322,15 +322,6 @@ namespace thekogans {
                     /// \brief
                     /// Right child node.
                     Node *right;
-                    /// \brief
-                    ///
-                    static const ui32 FLAGS_KEY_DIRTY = 1;
-                    /// \brief
-                    ///
-                    static const ui32 FLAGS_VALUE_DIRTY = 2;
-                    /// \brief
-                    ///
-                    Flags32 flags;
 
                     /// \brief
                     /// ctor.
@@ -339,13 +330,11 @@ namespace thekogans {
                     Entry (
                         Key *key_ = nullptr,
                         Serializable *value_ = nullptr) :
-                        keyOffset (0),
                         key (key_),
                         valueOffset (0),
                         value (value_),
                         rightOffset (0),
-                        right (nullptr),
-                        flags (0) {}
+                        right (nullptr) {}
                 };
 
             protected:
@@ -388,7 +377,7 @@ namespace thekogans {
 
                 static std::size_t FileSize (
                     std::size_t entriesPerNode,
-                    const Flags32 flags);
+                    bool valuesAsVector);
                 /// \brief
                 /// Given the number of entries, return the node size in bytes.
                 /// \param[in] entriesPerNode Entries per node.
@@ -602,7 +591,9 @@ namespace thekogans {
                 /// \brief
                 /// Return the node size on disk.
                 /// \return Node size.
-                virtual std::size_t Size () const noexcept override;
+                virtual std::size_t Size () const noexcept override {
+                    return btree.nodeFileSize;
+                }
                 /// \brief
                 /// Read the key from the given serializer.
                 /// \param[in] serializer \see{Serializer} to read the key from.
@@ -613,11 +604,15 @@ namespace thekogans {
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) override;
+
+                // FileAllocator::Object
+                /// \brief
+                /// Nodes are fixed size. This optimization helps performance.
+                /// \return true.
+                virtual bool IsFizedSize () const override {
+                    return true;
+                }
             } *root;
-            /// \brief
-            /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
-            BlockAllocator::SharedPtr nodeAllocator;
-            const std::size_t nodeFileSize;
 
         public:
             /// \brief
@@ -636,6 +631,9 @@ namespace thekogans {
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
             /// will store any type derived from \see{Serializable}.
+            /// \param[in] valuesAsVector true == Store \see{Node} values as compact vector
+            /// instead of individual objects. For small values this results in smaller
+            /// trees and faster reads/writes.
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
             /// \see{Node}. If we're reading an existing btree, this value will come from the
             /// \see{Header}.
@@ -659,6 +657,7 @@ namespace thekogans {
                 FileAllocator::PtrType offset,
                 const SerializableHeader &keyContext = SerializableHeader (),
                 const SerializableHeader &valueContext = SerializableHeader (),
+                bool valuesAsVector = true,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
@@ -724,26 +723,25 @@ namespace thekogans {
                 return header.Size ();
             }
             /// \brief
-            /// Read the key from the given serializer.
-            /// \param[in] serializer \see{Serializer} to read the key from.
+            /// Read the \see{Header} from the given serializer.
+            /// \param[in] header \see{SerializableHeader}.
+            /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
             virtual void Read (
                 const SerializableHeader &header,
                 Serializer &serializer) override;
             /// \brief
-            /// Write the key to the given serializer.
-            /// \param[out] serializer \see{Serializer} to write the key to.
+            /// Write the \see{Header} to the given serializer.
+            /// \param[out] serializer \see{Serializer} to write the \see{Header} to.
             virtual void Write (Serializer &serializer) override;
 
+            // FileAllocator::Object
             /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Node::Entry &entry);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Node::Entry &entry);
+            /// \see{Header} is fixed size. This optimization helps performance.
+            /// \return true.
+            virtual bool IsFizedSize () const override {
+                return true;
+            }
+
             /// \brief
             /// Needs access to private members.
             friend Serializer &operator << (

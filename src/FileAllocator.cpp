@@ -30,7 +30,7 @@ namespace thekogans {
         }
 
         void FileAllocator::Object::Alloc () {
-            if (ClassSize () == 0 || offset == 0) {
+            if (!IsFixedSize () || offset == 0) {
                 FileAllocator::PtrType newOffset =
                     fileAllocator->Realloc (offset, GetSize (), false);
                 if (offset != newOffset) {

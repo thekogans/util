@@ -212,6 +212,12 @@ namespace thekogans {
                 virtual void Reload () override;
 
                 /// \brief
+                /// Optimization for Alloc.
+                virtual bool IsFixedSize () const {
+                    return false;
+                }
+
+                /// \brief
                 /// Object is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
             };
