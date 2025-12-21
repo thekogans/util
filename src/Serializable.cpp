@@ -24,6 +24,7 @@
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
     #include "thekogans/util/BTree.h"
+    #include "thekogans/util/BTreeValues.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
@@ -43,6 +44,10 @@ namespace thekogans {
             TimeSpecArray::StaticInit ();
             BTree::Key::StaticInit ();
             BTree::Value::StaticInit ();
+            StringValue::StaticInit ();
+            PtrValue::StaticInit ();
+            StringArrayValue::StaticInit ();
+            GUIDArrayValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -235,8 +240,8 @@ namespace thekogans {
             SerializableHeader header;
             serializer >> header;
             serializable = serializer.factory ?
-                serializer.factory (nullptr) :
-                Serializable::CreateType (header.type.c_str ());
+                serializer.factory (serializer.parameters) :
+                Serializable::CreateType (header.type.c_str (), serializer.parameters);
             if (serializable != nullptr) {
                 serializable->Read (header, serializer);
                 return serializer;
@@ -253,7 +258,7 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             SerializableHeader header;
             node >> header;
-            serializable = Serializable::CreateType (header.type.c_str ());
+            serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
             if (serializable != nullptr) {
                 serializable->ReadXML (header, node);
                 return node;
@@ -270,7 +275,7 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             SerializableHeader header;
             object >> header;
-            serializable = Serializable::CreateType (header.type.c_str ());
+            serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
             if (serializable == nullptr) {
                 serializable->ReadJSON (header, object);
                 return object;
@@ -367,7 +372,7 @@ namespace thekogans {
                 if (payload.IsFull ()) {
                     value = serializer.factory ?
                         serializer.factory (nullptr) :
-                        Serializable::CreateType (header.type.c_str ());
+                        Serializable::CreateType (header.type.c_str (), serializer.parameters);
                     if (value != nullptr) {
                         value->Read (header, payload);
                         Reset (serializer);

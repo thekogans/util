@@ -128,11 +128,27 @@ namespace thekogans {
             /// A FileAllocator Object is an object that has allocated at least one block
             /// from \see{FileAllocator} and participates in \see{BufferedFileEvents}.
             struct _LIB_THEKOGANS_UTIL_DECL Object :
+                    public Serializable,
                     public BufferedFile::TransactionParticipant,
                     public Producer<ObjectEvents> {
                 /// \brief
                 /// Object is a \see{util::DynamicCreatable} abstract base.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Object)
+
+            #if defined (THEKOGANS_UTIL_TYPE_Static)
+                /// \brief
+                /// Because Object uses dynamic initialization, when using
+                /// it in static builds call this method to have the Object
+                /// explicitly include all internal object types. Without
+                /// calling this api, the only objects that will be available
+                /// to your application are the ones you explicitly link to.
+                static void StaticInit ();
+            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+                static SharedPtr CreateObject (
+                        FileAllocator::SharedPtr fileAllocator,
+                        FileAllocator::PtrType offset) {
+                }
 
             protected:
                 /// \brief
@@ -145,12 +161,13 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] fileAllocator \see{FileAllocator} where this object resides.
-                /// \param[in] offset Offset of the \see{FileAllocator::Block}.
+                /// \param[in] fileAllocator_ \see{FileAllocator} where this object resides.
+                /// \param[in] offset_ Offset of the \see{FileAllocator::Block}.
                 Object (
-                    FileAllocator::SharedPtr fileAllocator_,
-                    FileAllocator::PtrType offset_) :
-                    BufferedFile::TransactionParticipant (fileAllocator_->GetFile ()),
+                    FileAllocator::SharedPtr fileAllocator_ = FileAllocator::SharedPtr (),
+                    FileAllocator::PtrType offset_ = 0) :
+                    BufferedFile::TransactionParticipant (
+                        fileAllocator_ != nullptr ? fileAllocator_->GetFile () : nullptr),
                     fileAllocator (fileAllocator_),
                     offset (offset_) {}
                 /// \brief
@@ -177,29 +194,6 @@ namespace thekogans {
                 FileAllocator::PtrType ForceFlush ();
 
             protected:
-                /// \brief
-                /// Optimization for Alloc below. If an object declares
-                /// itself as fixed size, Alloc will not check the object
-                /// block size, only offset. And if offset == 0, it will allocate
-                /// a block once and that's it.
-                /// \return true == object is fixed size.
-                virtual bool IsFixedSize () const {
-                    return false;
-                }
-                /// \brief
-                /// Return the serializable binary size (not including the header).
-                /// \return Serializable binary size.
-                virtual std::size_t Size () const noexcept = 0;
-
-                /// \brief
-                /// Write the serializable from the given serializer.
-                /// \param[in] serializer Serializer to read the serializable from.
-                virtual void Read (Serializer & /*serializer*/) = 0;
-                /// \brief
-                /// Write the serializable to the given serializer.
-                /// \param[out] serializer Serializer to write the serializable to.
-                virtual void Write (Serializer & /*serializer*/) = 0;
-
                 // BufferedFile::TransactionParticipant
                 /// \brief
                 /// If needed allocate space from \see{FileAllocator}.
@@ -327,14 +321,14 @@ namespace thekogans {
                     }
 
                     /// \brief
-                    /// Read the header from the disk.
+                    /// Read the header from disk.
                     /// \param[in] file File to read from.
                     /// \param[in] offset Offset where the header begins.
                     void Read (
                         File &file,
                         PtrType offset);
                     /// \brief
-                    /// Write the header to the disk.
+                    /// Write the header to disk.
                     /// \param[in] file File to write to.
                     /// \param[in] offset Offset where the header begins.
                     void Write (
@@ -400,14 +394,14 @@ namespace thekogans {
                     }
 
                     /// \brief
-                    /// Read the footer from the disk.
+                    /// Read the footer from disk.
                     /// \param[in] file File to read from.
                     /// \param[in] offset Offset where the footer begins.
                     void Read (
                         File &file,
                         PtrType offset);
                     /// \brief
-                    /// Write the footer to the disk.
+                    /// Write the footer to disk.
                     /// \param[in] file File to write to.
                     /// \param[in] offset Offset where the footer begins.
                     void Write (
@@ -616,7 +610,7 @@ namespace thekogans {
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 /// \brief
-                /// Read a block range in to the buffer.
+                /// Read a block range in to buffer.
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to read.
                 /// (0 == read the whole block).
@@ -627,7 +621,7 @@ namespace thekogans {
                     return BlockIO (blockOffset, blockLength, true);
                 }
                 /// \brief
-                /// Write a block range from the buffer.
+                /// Write a block range from buffer.
                 /// \param[in] blockOffset Logical offset within block.
                 /// \param[in] blockLength How much of the block we want to write.
                 /// (0 == write the whole block).

@@ -30,9 +30,9 @@ namespace thekogans {
         }
 
         void FileAllocator::Object::Alloc () {
-            if (!IsFixedSize () || offset == 0) {
+            if (ClassSize () == 0 || offset == 0) {
                 FileAllocator::PtrType newOffset =
-                    fileAllocator->Realloc (offset, Size (), false);
+                    fileAllocator->Realloc (offset, GetSize (), false);
                 if (offset != newOffset) {
                     if (offset != 0) {
                         Produce (
@@ -67,7 +67,7 @@ namespace thekogans {
             assert (IsDirty ());
             assert (GetOffset () != 0);
             FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-            Write (buffer);
+            buffer << *this;
             if (fileAllocator->IsSecure ()) {
                 buffer.AdvanceWriteOffset (
                     SecureZeroMemory (
@@ -82,7 +82,7 @@ namespace thekogans {
             if (GetOffset () != 0) {
                 FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
                 buffer.BlockRead ();
-                Read (buffer);
+                buffer >> *this;
             }
         }
 

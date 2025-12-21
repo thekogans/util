@@ -645,7 +645,7 @@ namespace thekogans {
                     if (IsDirty ()) {
                         SetSize (sizeOnDisk);
                         // If SetSize did not delete the current buffer and
-                        // if it is dirty, it will be deleted bu root.Clear.
+                        // if it is dirty, it will be deleted by root.Clear.
                         if (currBuffer != nullptr && currBuffer->dirty) {
                             currBufferOffset = NOFFS;
                             currBuffer = nullptr;

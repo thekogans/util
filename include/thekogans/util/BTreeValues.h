@@ -23,7 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/BTree.h"
+#include "thekogans/util/Serializable.h"
 
 namespace thekogans {
     namespace util {
@@ -32,7 +32,7 @@ namespace thekogans {
         ///
         /// \brief
         /// Variable size string value.
-        struct _LIB_THEKOGANS_UTIL_DECL StringValue : public BTree::Value {
+        struct _LIB_THEKOGANS_UTIL_DECL StringValue : public Serializable {
             /// \brief
             /// StringValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringValue)
@@ -69,21 +69,13 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) const override {
                 serializer << value;
             }
-
-            // BTree::Value
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the value.
-            virtual std::string ToString () const override {
-                return value;
-            }
         };
 
         /// \struct PtrValue BTreeValues.h thekogans/util/BTreeValues.h
         ///
         /// \brief
         /// \see{FileAllocator::PtrType} value.
-        struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public BTree::Value {
+        struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public Serializable {
             /// \brief
             /// PtrValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (PtrValue)
@@ -114,14 +106,6 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) const override {
                 serializer << value;
             }
-
-            // BTree::Value
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the value.
-            virtual std::string ToString () const override {
-                return ui64Tostring (value);
-            }
         };
 
         /// \struct ArrayValue BTreeValues.h thekogans/util/BTreeValues.h
@@ -129,7 +113,7 @@ namespace thekogans {
         /// \brief
         /// ArrayValue is a template for storing arrays of types.
         template<typename T>
-        struct ArrayValue : public BTree::Value {
+        struct ArrayValue : public Serializable {
             /// \brief
             /// The actual array.
             std::vector<T> value;
@@ -195,14 +179,6 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the value to.
             virtual void Write (Serializer &serializer) const override {
                 serializer << value;
-            }
-
-            // BTree::Value
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the value.
-            virtual std::string ToString () const override {
-                return TYPE;
             }
         };
 

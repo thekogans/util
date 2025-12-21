@@ -280,7 +280,7 @@ namespace thekogans {
                 Array<T> &array) {
             SizeT length;
             serializer >> length;
-            Array<T> temp (length);
+            Array<T> temp (length, nullptr, array.allocator);
             for (std::size_t i = 0; i < length; ++i) {
                 serializer >> temp[i];
             }

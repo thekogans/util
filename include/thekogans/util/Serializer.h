@@ -99,6 +99,9 @@ namespace thekogans {
             /// \brief
             /// Default \see{Serializable} factory.
             DynamicCreatable::FactoryType factory;
+            /// \brief
+            /// Default \see{Serializable} factory parameters.
+            DynamicCreatable::Parameters::SharedPtr parameters;
 
             /// \struct Serializer::ContextGuard Serializer.h thekogans/util/Serializer.h
             ///
@@ -114,6 +117,9 @@ namespace thekogans {
                 /// \brief
                 /// Saved \see{Serializable} factory.
                 DynamicCreatable::FactoryType factory;
+                /// \brief
+                /// Saved \see{Serializable} factory parameters.
+                DynamicCreatable::Parameters::SharedPtr parameters;
 
                 /// \brief
                 /// ctor,
@@ -123,18 +129,22 @@ namespace thekogans {
                 ContextGuard (
                         Serializer &serializer_,
                         const SerializableHeader &context_ = SerializableHeader (),
-                        DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType ()) :
+                        DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType (),
+                        DynamicCreatable::Parameters::SharedPtr parameters_ = nullptr) :
                         serializer (serializer_),
                         context (serializer.context),
-                        factory (serializer.factory) {
+                        factory (serializer.factory),
+                        parameters (serializer.parameters) {
                     serializer.context = context_;
                     serializer.factory = factory_;
+                    serializer.parameters = parameters_;
                 }
                 /// \brief
                 /// dtor,
                 ~ContextGuard () {
                     serializer.context = context;
                     serializer.factory = factory;
+                    serializer.parameters = parameters;
                 }
             };
 

@@ -49,8 +49,8 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (FileAllocatorArray<T>)
 
             /// \brief
-            /// \see{SerializerArray} of T elements.
-            SerializerArray<T> array;
+            /// \see{SerializableArray} of T elements.
+            SerializableArray<T> array;
 
             /// \brief
             /// ctor. Create (or wrap) an array of length elements.
@@ -79,11 +79,11 @@ namespace thekogans {
             /// \brief
             /// Reset internal state.
             virtual void Reset () override {
-                SerializableArray<T> temp;
+                SerializableArray<T> temp (0, nullptr, allocator);
                 array.swap (temp);
             }
 
-            // FileAllocator::Object
+            // Serializable
             /// \brief
             /// Return the serialized array size.
             /// \return Serialized array size.
@@ -94,8 +94,10 @@ namespace thekogans {
             /// Read the array from the given \see{Serializer}.
             /// \param[in] header Serialized array header.
             /// \param[in] serializer \see{Serializer} to read the array from.
-            virtual void Read (Serializer &serializer) override {
-                array.Read (serializer);
+            virtual void Read (
+                    const SerializableHeader &header,
+                    Serializer &serializer) override {
+                array.Read (header, serializer);
             }
             /// \brief
             /// Write the array to the given \see{Serializer}.
@@ -136,11 +138,13 @@ namespace thekogans {
                     FileAllocator::SharedPtr fileAllocator,
                     FileAllocator::PtrType offset,
                     const FileAllocatorHeader &context = FileAllocatorHeader (),
+                    DynamicCreatable::FactoryType factory = DynamicCreatable::FactoryType (),
+                    DynamicCreatable::Parameters::SharedPtr parameters = nullptr,
                     std::size_t length = 0,
                     typename T::SharedPtr *array_ = nullptr,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                     FileAllocator::Object (fileAllocator, offset),
-                    array (context, length, array_, allocator) {
+                    array (context, factory, parameters, length, array_, allocator) {
                 if (GetOffset () != 0 && GetLength () == 0) {
                     Reload ();
                 }
@@ -150,29 +154,32 @@ namespace thekogans {
             /// \brief
             /// Reset internal state.
             virtual void Reset () override {
-                SerializableSharedPtrArray<typename T::SharedPtr> temp;
+                SerializableSharedPtrArray<typename T::SharedPtr> temp (
+                    context, factory, parameters, 0, nullptr, allocator);
                 array.swap (temp);
             }
 
-            // FileAllocator::Object
+            // Serializable
             /// \brief
             /// Return the serialized array size.
             /// \return Serialized array size.
             virtual std::size_t Size () const noexcept override {
-                return array.Size ();
+                return array.GetSize ();
             }
             /// \brief
             /// Read the array from the given \see{Serializer}.
             /// \param[in] header Serialized array header.
             /// \param[in] serializer \see{Serializer} to read the array from.
-            virtual void Read (Serializer &serializer) override {
-                array.Read (serializer);
+            virtual void Read (
+                    const SerializableHeader & /*header*/,
+                    Serializer &serializer) override {
+                serializer >> array;
             }
             /// \brief
             /// Write the array to the given \see{Serializer}.
             /// \param[out] serializer \see{Serializer} to write the array to.
             virtual void Write (Serializer &serializer) const override {
-                array.Write (serializer);
+                serializer << array;
             }
         };
 

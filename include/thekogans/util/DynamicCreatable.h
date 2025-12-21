@@ -437,7 +437,7 @@ namespace thekogans {
             /// \brief
             /// Return the list of base types (ancestors).
             /// DynamicCreatable derived types will have at least one
-            /// base (DynamicCreatable).
+            /// base (see \see{DynamicCreatable}).
             /// \return BASES.
             virtual const char * const *Bases () const noexcept = 0;
         };
