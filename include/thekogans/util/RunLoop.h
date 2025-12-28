@@ -322,7 +322,6 @@ namespace thekogans {
             ///
             /// \brief
             /// A helper class used to execute lambda (function) jobs.
-
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
                 /// Alias for std::function<void (Job & /*job*/,

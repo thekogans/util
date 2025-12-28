@@ -22,6 +22,58 @@
 namespace thekogans {
     namespace util {
 
+        FileAllocator::Object::SharedPtr FileAllocator::Object::Load (
+                FileAllocator::SharedPtr fileAllocator,
+                FileAllocator::PtrType offset) {
+            if (fileAllocator != nullptr && offset != 0) {
+                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                buffer.BlockRead ();
+                {
+                    Serializer::ContextGuard guard (buffer, SerializableHeader (), nullptr,
+                        [fileAllocator, offset] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                            SharedPtr object = dynamicCreatable;
+                            if (object != nullptr) {
+                                object->fileAllocator = fileAllocator;
+                                object->offset = offset;
+                            }
+                        }
+                    );
+                    SharedPtr object;
+                    buffer >> object;
+                    return object;
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        void FileAllocator::Object::Free (
+                FileAllocator::SharedPtr fileAllocator,
+                FileAllocator::PtrType offset) {
+            if (fileAllocator != nullptr && offset != 0) {
+                fileAllocator->GetFile ()->Seek (offset, SEEK_SET);
+                SerializableHeader header;
+                buffer >> header;
+                SharedPtr object = Object::CreateType (
+                    header.type.c_str (),
+                    [fileAllocator, offset] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                        SharedPtr object = dynamicCreatable;
+                        if (object != nullptr) {
+                            object->fileAllocator = fileAllocator;
+                            object->offset = offset;
+                        }
+                    }
+                );
+                object->Free ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         FileAllocator::PtrType FileAllocator::Object::ForceFlush () {
             SetDirty (true);
             Alloc ();
@@ -30,7 +82,7 @@ namespace thekogans {
         }
 
         void FileAllocator::Object::Alloc () {
-            if (!IsFixedSize () || offset == 0) {
+            if (ClassSize () == 0 || offset == 0) {
                 FileAllocator::PtrType newOffset =
                     fileAllocator->Realloc (offset, GetSize (), false);
                 if (offset != newOffset) {

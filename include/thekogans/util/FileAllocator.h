@@ -145,10 +145,12 @@ namespace thekogans {
                 static void StaticInit ();
             #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-                static SharedPtr CreateObject (
-                        FileAllocator::SharedPtr fileAllocator,
-                        FileAllocator::PtrType offset) {
-                }
+                static SharedPtr Load (
+                    FileAllocator::SharedPtr fileAllocator,
+                    FileAllocator::PtrType offset);
+                static void Free (
+                    FileAllocator::SharedPtr fileAllocator,
+                    FileAllocator::PtrType offset);
 
             protected:
                 /// \brief
@@ -210,12 +212,6 @@ namespace thekogans {
                 /// \brief
                 /// Reload the internal cache from file.
                 virtual void Reload () override;
-
-                /// \brief
-                /// Optimization for Alloc.
-                virtual bool IsFixedSize () const {
-                    return false;
-                }
 
                 /// \brief
                 /// Object is neither copy constructable, nor assignable.

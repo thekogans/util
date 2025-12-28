@@ -203,7 +203,7 @@ namespace thekogans {
                 BTree &btree,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                FileAllocator::BlockBuffer buffer (btree.fileAllocator, offset);
                 buffer.BlockRead ();
                 ui32 magic;
                 buffer >> magic;
@@ -213,17 +213,26 @@ namespace thekogans {
                     if (count > 0) {
                         FileAllocator::PtrType leftOffset;
                         FileAllocator::PtrType keysOffset;
-                        FileAllocator::PtrType valuesOffset;
-                        buffer >> leftOffset >> keysOffset >> valuesOffset;
-                        fileAllocator.Free (keysOffset);
-                        fileAllocator.Free (valuesOffset);
+                        buffer >> leftOffset >> keysOffset;
+                        if (btree.header.flags.Test (FLAGS_VALUES_AS_VECTOR)) {
+                            FileAllocator::PtrType valuesOffset;
+                            buffer >> valuesOffset;
+                            FileAllocatorSharedPtrArray<Serializable>::Free (
+                                btree.fileAllocator, valuesOffset);
+                        }
+                        FileAllocatorSharedPtrArray<Key>::Free (
+                            btree.fileAllocator, keysOffset);
                         FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
-                            Entry entry;
-                            buffer >> entry;
-                            fileAllocator.Free (entry.keyOffset);
-                            fileAllocator.Free (entry.valueOffset);
-                            FreeSubtree (fileAllocator, entry.rightOffset);
+                            if (!btree.header.flags.Test (FLAGS_VALUES_AS_VECTOR)) {
+                                FileAllocator::PtrType valueOffset;
+                                buffer >> valueOffset;
+                                FileAllocator::Object::Free (
+                                    btree.fileAllocator, valuesOffset);
+                            }
+                            FileAllocator::PtrType rightOffset;
+                            buffer >> rightOffset;
+                            FreeSubtree (btree, rightOffset);
                         }
                     }
                     fileAllocator.Free (offset);
@@ -243,9 +252,7 @@ namespace thekogans {
         Serializable *BTree::Node::GetValue (ui32 index) {
             if (entries[index].value == nullptr) {
                 assert (entries[index].valueOffset != 0);
-                Serializable::SharedPtr value = Fileallocator::Object::CreateObject (
-                    btree.header.valueContext,
-                    btree.valueFactory,
+                Serializable::SharedPtr value = Fileallocator::Object::Load (
                     fileAllocator,
                     entries[index].valueOffset);
                 entries[index].value = value.Release ();
@@ -590,7 +597,7 @@ namespace thekogans {
                     serializer >> leftOffset >> keysOffset;
                     left = nullptr;
                     FileAllocatorSharedPtrArray<Key> keys (
-                        *fileAllocator,
+                        fileAllocator,
                         keysOffset,
                         btree.header.keyContext,
                         btree.keyFactory);
@@ -601,7 +608,7 @@ namespace thekogans {
                         valuesOffset = 0;
                     }
                     FileAllocatorSharedPtrArray<Serializable> values (
-                        *fileAllocator,
+                        fileAllocator,
                         valuesOffset,
                         btree.header.valueContext,
                         btree.valueFactory);
@@ -640,7 +647,7 @@ namespace thekogans {
                     totalKeyValueSize +=
                         // key version + key size + key bytes
                         UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first;
-                    if (!btree.header.valueContext.empty ()) {
+                    if (!btree.header.valueContext.IsEmpty ()) {
                         totalKeyValueSize +=
                             // value version + value size + value bytes
                             UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
@@ -695,7 +702,7 @@ namespace thekogans {
                         entries[i].key->Version () <<
                         SizeT (keyValueSizes[i].first);
                     entries[i].key->Write (keyValueBuffer);
-                    if (!btree.header.valueContext.empty ()) {
+                    if (!btree.header.valueContext.IsEmpty ()) {
                         keyValueBuffer <<
                             entries[i].value->Version () <<
                             SizeT (keyValueSizes[i].second);
@@ -746,12 +753,12 @@ namespace thekogans {
                         allocator)),
                 nodeFileSize (Node::FileSize (entriesPerNode, valuesAsVector)),
                 root (Node::Alloc (*this, header.rootOffset)) {
-            if (!Key::IsType (header.keyContext.c_str ()) ||
-                    (!header.valueContext.empty () &&
-                        !Value::IsType (header.valueContext.c_str ()))) {
+            if (!Key::IsType (header.keyContext.type.c_str ()) ||
+                    (!header.valueContext.IsEmpty () &&
+                        !Value::IsType (header.valueContext.type.c_str ()))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
-                    keyContext.c_str (), valueContext.c_str ());
+                    keyContext.type.c_str (), valueContext.type.c_str ());
             }
             Reload ();
         }
@@ -763,7 +770,7 @@ namespace thekogans {
         bool BTree::Find (
                 const Key &key,
                 Iterator &it) {
-            if (key.IsKindOf (header.keyContext.c_str ())) {
+            if (key.IsKindOf (header.keyContext.type.c_str ())) {
                 it.Clear ();
                 ui32 index = 0;
                 for (Node *node = root; node != nullptr;
@@ -786,8 +793,9 @@ namespace thekogans {
                 Value::SharedPtr value,
                 Iterator &it) {
             if (key != nullptr && value != nullptr &&
-                    key->IsKindOf (header.keyContext.c_str ()) &&
-                    (header.valueContext.empty () || value->IsKindOf (header.valueContext.c_str ()))) {
+                    key->IsKindOf (header.keyContext.type.c_str ()) &&
+                    (header.valueContext.IsEmpty () ||
+                        value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
                 Node::Entry entry (key.Get (), value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
@@ -824,7 +832,7 @@ namespace thekogans {
         }
 
         bool BTree::Remove (const Key &key) {
-            if (key.IsKindOf (header.keyContext.c_str ())) {
+            if (key.IsKindOf (header.keyContext.type.c_str ())) {
                 bool removed = root->Remove (key);
                 if (removed) {
                     if (root->IsEmpty () && root->GetChild (0) != nullptr) {
@@ -848,7 +856,7 @@ namespace thekogans {
         }
 
         bool BTree::FindFirst (Iterator &it) {
-            if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyContext.c_str ())) {
+            if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyContext.type.c_str ())) {
                 it.Clear ();
                 Node *node = root;
                 if (node != nullptr && node->count > 0) {
@@ -905,8 +913,8 @@ namespace thekogans {
             if (magic == MAGIC32) {
                 Header header_;
                 serializer >> header_;
-                if ((header.keyContext.empty () || header.keyContext == header_.keyContext) &&
-                        (header.valueContext.empty () ||
+                if ((header.keyContext.IsEmpty () || header.keyContext == header_.keyContext) &&
+                        (header.valueContext.IsEmpty () ||
                             header.valueContext == header_.valueContext)) {
                     header = header_;
                 }
@@ -914,8 +922,8 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Requested key (%s)/value (%s) types do not "
                         "match existing key (%s)/value (%s) types @" THEKOGANS_UTIL_UI64_FORMAT,
-                        header.keyContext.c_str (), header.valueContext.c_str (),
-                        header_.keyContext.c_str (), header_.valueContext.c_str (),
+                        header.keyContext.type.c_str (), header.valueContext.type.c_str (),
+                        header_.keyContext.type.c_str (), header_.valueContext.type.c_str (),
                         GetOffset ());
                 }
             }

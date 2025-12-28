@@ -133,7 +133,7 @@ namespace thekogans {
             DynamicCreatable::FactoryType factory;
             /// \brief
             /// Default T factory parameters.
-            DynamicCreatable::Parameters::SharedPtr parameters;
+            DynamicCreatable::ParametersType parameters;
             /// \brief
             /// \see{Array} of T::SharedPtr elements.
             Array<typename T::SharedPtr> array;
@@ -149,7 +149,7 @@ namespace thekogans {
             SerializableSharedPtrArray (
                     const SerializableHeader &context_ = SerializableHeader (),
                     DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType (),
-                    DynamicCreatable::Parameters::SharedPtr parameters_ = nullptr,
+                    DynamicCreatable::ParametersType parameters_ = nullptr,
                     std::size_t length = 0,
                     typename T::SharedPtr *array_ = nullptr,
                     Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :

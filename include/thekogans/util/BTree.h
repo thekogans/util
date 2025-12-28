@@ -589,9 +589,10 @@ namespace thekogans {
 
                 // Serializable
                 /// \brief
-                /// Return the node size on disk.
-                /// \return Node size.
-                virtual std::size_t Size () const noexcept override {
+                /// Return the node class size (size on disk). Nodes are fixed size
+                /// but the size needs to be calculated @runtime.
+                /// \return Node class size.
+                virtual std::size_t ClassSize () const noexcept override {
                     return btree.nodeFileSize;
                 }
                 /// \brief
@@ -604,14 +605,6 @@ namespace thekogans {
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) override;
-
-                // FileAllocator::Object
-                /// \brief
-                /// Nodes are fixed size. This optimization helps performance.
-                /// \return true.
-                virtual bool IsFizedSize () const override {
-                    return true;
-                }
             } *root;
 
         public:
@@ -619,7 +612,7 @@ namespace thekogans {
             /// Default number of entries per node.
             /// NOTE: This is a tunable parameter that should be used
             /// during system integration to provide the best performance
-            /// for your needs. Once the heap is created though, this
+            /// for your needs. Once the tree is created though, this
             /// value is set in stone and the only way to change it is
             /// to delete the file and try again.
             static const std::size_t DEFAULT_ENTRIES_PER_NODE = 256;
@@ -719,7 +712,7 @@ namespace thekogans {
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
-            virtual std::size_t Size () const noexcept override {
+            virtual std::size_t ClassSize () const noexcept override {
                 return header.Size ();
             }
             /// \brief
@@ -733,14 +726,6 @@ namespace thekogans {
             /// Write the \see{Header} to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the \see{Header} to.
             virtual void Write (Serializer &serializer) override;
-
-            // FileAllocator::Object
-            /// \brief
-            /// \see{Header} is fixed size. This optimization helps performance.
-            /// \return true.
-            virtual bool IsFizedSize () const override {
-                return true;
-            }
 
             /// \brief
             /// Needs access to private members.

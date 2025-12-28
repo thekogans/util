@@ -101,7 +101,7 @@ namespace thekogans {
             DynamicCreatable::FactoryType factory;
             /// \brief
             /// Default \see{Serializable} factory parameters.
-            DynamicCreatable::Parameters::SharedPtr parameters;
+            DynamicCreatable::ParametersType parameters;
 
             /// \struct Serializer::ContextGuard Serializer.h thekogans/util/Serializer.h
             ///
@@ -119,18 +119,19 @@ namespace thekogans {
                 DynamicCreatable::FactoryType factory;
                 /// \brief
                 /// Saved \see{Serializable} factory parameters.
-                DynamicCreatable::Parameters::SharedPtr parameters;
+                DynamicCreatable::ParametersType parameters;
 
                 /// \brief
                 /// ctor,
                 /// \param[in] serializer_ Serializer whose context to guard.
                 /// \param[in] context_ New context.
                 /// \param[in] factory_ New factory.
+                /// \param[in] parameters_ New parameters.
                 ContextGuard (
                         Serializer &serializer_,
                         const SerializableHeader &context_ = SerializableHeader (),
                         DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType (),
-                        DynamicCreatable::Parameters::SharedPtr parameters_ = nullptr) :
+                        DynamicCreatable::ParametersType parameters_ = nullptr) :
                         serializer (serializer_),
                         context (serializer.context),
                         factory (serializer.factory),
