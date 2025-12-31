@@ -755,7 +755,7 @@ namespace thekogans {
                 root (Node::Alloc (*this, header.rootOffset)) {
             if (!Key::IsType (header.keyContext.type.c_str ()) ||
                     (!header.valueContext.IsEmpty () &&
-                        !Value::IsType (header.valueContext.type.c_str ()))) {
+                        !Serializable::IsType (header.valueContext.type.c_str ()))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyContext.type.c_str (), valueContext.type.c_str ());
@@ -790,7 +790,7 @@ namespace thekogans {
 
         bool BTree::Insert (
                 Key::SharedPtr key,
-                Value::SharedPtr value,
+                Serializable::SharedPtr value,
                 Iterator &it) {
             if (key != nullptr && value != nullptr &&
                     key->IsKindOf (header.keyContext.type.c_str ()) &&
@@ -838,6 +838,7 @@ namespace thekogans {
                     if (root->IsEmpty () && root->GetChild (0) != nullptr) {
                         Node *node = root;
                         root = root->GetChild (0);
+                        root->AddRef ();
                         node->Delete ();
                         node->Release ();
                     }
@@ -907,7 +908,9 @@ namespace thekogans {
             root = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Read (Serializer &serializer) {
+        void BTree::Read (
+                const SerializableHeader & /*header*/,
+                Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {

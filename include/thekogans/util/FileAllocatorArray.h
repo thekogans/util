@@ -63,7 +63,7 @@ namespace thekogans {
             /// \param[in] array_ Optional array pointer to wrap.
             /// \param[in] allocator \see{Allocator} used for memory management.
             FileAllocatorArray (
-                    FileAllocator::SharedPtr fileAllocator = FileAllocator::SharedPtr (),
+                    FileAllocator::SharedPtr fileAllocator = nullptr,
                     FileAllocator::PtrType offset = 0,
                     std::size_t length = 0,
                     T *array = nullptr,
@@ -135,7 +135,7 @@ namespace thekogans {
             /// \param[in] array_ Optional array pointer to wrap.
             /// \param[in] allocator \see{Allocator} used for memory management.
             FileAllocatorSharedPtrArray (
-                    FileAllocator::SharedPtr fileAllocator = FileAllocator::SharedPtr (),
+                    FileAllocator::SharedPtr fileAllocator = nullptr,
                     FileAllocator::PtrType offset = 0,
                     const FileAllocatorHeader &context = FileAllocatorHeader (),
                     DynamicCreatable::FactoryType factory = DynamicCreatable::FactoryType (),

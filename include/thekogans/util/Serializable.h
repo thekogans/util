@@ -84,10 +84,19 @@ namespace thekogans {
             virtual std::size_t ClassSize () const noexcept = 0;
 
             /// \brief
+            /// This method is a hook. It allows you to declare a class size @runtime.
+            /// Unlike CLASS_SIZE, whick is a compile time constant, this method is
+            /// called @runtime to calculate class size.
+            /// \return Serializable class size.
+            virtual std::size_t DynamicClassSize () const noexcept {
+                return ClassSize ();
+            }
+
+            /// \brief
             /// Return the serializable instance size (excluding the header).
             /// \return Serializable instance size.
             virtual std::size_t Size () const noexcept {
-                return ClassSize ();
+                return DynamicClassSize ();
             }
             /// \brief
             /// Write the serializable from the given serializer.

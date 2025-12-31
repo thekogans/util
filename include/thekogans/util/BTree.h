@@ -592,7 +592,7 @@ namespace thekogans {
                 /// Return the node class size (size on disk). Nodes are fixed size
                 /// but the size needs to be calculated @runtime.
                 /// \return Node class size.
-                virtual std::size_t ClassSize () const noexcept override {
+                virtual std::size_t DynamicClassSize () const noexcept override {
                     return btree.nodeFileSize;
                 }
                 /// \brief
@@ -712,7 +712,7 @@ namespace thekogans {
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
-            virtual std::size_t ClassSize () const noexcept override {
+            virtual std::size_t DynamicClassSize () const noexcept override {
                 return header.Size ();
             }
             /// \brief
@@ -720,7 +720,7 @@ namespace thekogans {
             /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
             virtual void Read (
-                const SerializableHeader &header,
+                const SerializableHeader & /*header*/,
                 Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the given serializer.

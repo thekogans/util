@@ -196,6 +196,53 @@ namespace thekogans {
             }
         }
 
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API TimeInsensitiveCompare (
+                const void *buffer1,
+                const void *buffer2,
+                std::size_t length) {
+            if (buffer1 != nullptr && buffer2 != nullptr && length > 0) {
+                const ui8 *ptr1 = (const ui8 *)buffer1;
+                const ui8 *ptr2 = (const ui8 *)buffer2;
+                // Prime the return value.
+                ui64 result = *ptr1++ ^ *ptr2++;
+                --length;
+                // Process 64 bit chunks.
+                while (length >= UI64_SIZE) {
+                    result |= *(const ui64 *)ptr1 ^ *(const ui64 *)ptr2;
+                    ptr1 += UI64_SIZE;
+                    ptr2 += UI64_SIZE;
+                    length -= UI64_SIZE;
+                }
+                // After the above loop is done,
+                // at most 7 bytes are left untested.
+                // Process the last ui32.
+                if ((length & UI32_SIZE) != 0) {
+                    result |= *(const ui32 *)ptr1 ^ *(const ui32 *)ptr2;
+                    ptr1 += UI32_SIZE;
+                    ptr2 += UI32_SIZE;
+                    length -= UI32_SIZE;
+                }
+                // Process the last ui16.
+                if ((length & UI16_SIZE) != 0) {
+                    result |= *(const ui16 *)ptr1 ^ *(const ui16 *)ptr2;
+                    ptr1 += UI16_SIZE;
+                    ptr2 += UI16_SIZE;
+                    length -= UI16_SIZE;
+                }
+                // Process the last ui8.
+                if ((length & UI8_SIZE) != 0) {
+                    result |= *ptr1 ^ *ptr2;
+                    // No need to increment ptr1 and ptr2 and
+                    // decrement length here. We're done.
+                }
+                return result == 0;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
         _LIB_THEKOGANS_UTIL_DECL const char * _LIB_THEKOGANS_UTIL_API IsUTF8String (
                 const char *utf8,
                 std::size_t length,

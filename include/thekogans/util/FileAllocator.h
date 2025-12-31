@@ -166,7 +166,7 @@ namespace thekogans {
                 /// \param[in] fileAllocator_ \see{FileAllocator} where this object resides.
                 /// \param[in] offset_ Offset of the \see{FileAllocator::Block}.
                 Object (
-                    FileAllocator::SharedPtr fileAllocator_ = FileAllocator::SharedPtr (),
+                    FileAllocator::SharedPtr fileAllocator_ = nullptr,
                     FileAllocator::PtrType offset_ = 0) :
                     BufferedFile::TransactionParticipant (
                         fileAllocator_ != nullptr ? fileAllocator_->GetFile () : nullptr),
