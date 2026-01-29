@@ -36,6 +36,50 @@
 namespace thekogans {
     namespace util {
 
+        /// \struct SerializableBase Serializable.h thekogans/util/Serializable.h
+        ///
+        /// \brief
+        struct _LIB_THEKOGANS_UTIL_DECL SerializableBase : public virtual RefCounted {
+            /// \brief
+            /// Return the serializable version.
+            /// \return Serializable version.
+            virtual ui16 Version () const noexcept = 0;
+
+            /// \brief
+            /// Return the serializable class size.
+            /// If CLASS_SIZE != 0, this serializable is fixed size.
+            /// If CLASS_SIZE == 0, this serializable is variable size
+            /// and you need to call Size to get the size of this instance.
+            /// \return Serializable class size.
+            virtual std::size_t ClassSize () const noexcept = 0;
+            /// \brief
+            /// This method is a hook. It allows you to declare a class size @runtime.
+            /// Unlike CLASS_SIZE, whick is a compile time constant, this method is
+            /// called @runtime to calculate class size.
+            /// \return Serializable class size (0 == variable size).
+            virtual std::size_t DynamicClassSize () const noexcept {
+                return ClassSize ();
+            }
+            /// \brief
+            /// Return the serializable instance size (excluding the header).
+            /// \return Serializable instance size.
+            virtual std::size_t Size () const noexcept {
+                return DynamicClassSize ();
+            }
+
+            /// \brief
+            /// Write the serializable from the given serializer.
+            /// \param[in] header
+            /// \param[in] serializer Serializer to read the serializable from.
+            virtual void Read (
+                const SerializableHeader & /*header*/,
+                Serializer & /*serializer*/) = 0;
+            /// \brief
+            /// Write the serializable to the given serializer.
+            /// \param[out] serializer Serializer to write the serializable to.
+            virtual void Write (Serializer & /*serializer*/) const = 0;
+        };
+
         /// \struct Serializable Serializable.h thekogans/util/Serializable.h
         ///
         /// \brief
@@ -47,7 +91,7 @@ namespace thekogans {
         /// and it's derivatives.)
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
             /// \brief
-            /// Serializable is a \see{util::DynamicCreatable} abstract base.
+            /// Serializable is a \see{DynamicCreatable} abstract base.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Serializable)
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)

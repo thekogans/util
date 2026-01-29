@@ -23,10 +23,10 @@ namespace thekogans {
     namespace util {
 
         FileAllocator::Object::SharedPtr FileAllocator::Object::Load (
-                FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset) {
+                SharedPtr fileAllocator,
+                PtrType offset) {
             if (fileAllocator != nullptr && offset != 0) {
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
+                BlockBuffer buffer (fileAllocator, offset);
                 buffer.BlockRead ();
                 {
                     Serializer::ContextGuard guard (buffer, SerializableHeader (), nullptr,
@@ -50,8 +50,8 @@ namespace thekogans {
         }
 
         void FileAllocator::Object::Free (
-                FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset) {
+                SharedPtr fileAllocator,
+                PtrType offset) {
             if (fileAllocator != nullptr && offset != 0) {
                 fileAllocator->GetFile ()->Seek (offset, SEEK_SET);
                 SerializableHeader header;
@@ -82,9 +82,9 @@ namespace thekogans {
         }
 
         void FileAllocator::Object::Alloc () {
-            if (ClassSize () == 0 || offset == 0) {
-                FileAllocator::PtrType newOffset =
-                    fileAllocator->Realloc (offset, GetSize (), false);
+            if (!IsFixedSize () || offset == 0) {
+                PtrType newOffset =
+                    fileAllocator->Realloc (offset, Size (), false);
                 if (offset != newOffset) {
                     if (offset != 0) {
                         Produce (
@@ -118,8 +118,8 @@ namespace thekogans {
         void FileAllocator::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-            buffer << *this;
+            BlockBuffer buffer (*fileAllocator, GetOffset ());
+            Write (buffer);
             if (fileAllocator->IsSecure ()) {
                 buffer.AdvanceWriteOffset (
                     SecureZeroMemory (
@@ -132,9 +132,9 @@ namespace thekogans {
         void FileAllocator::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+                BlockBuffer buffer (*fileAllocator, GetOffset ());
                 buffer.BlockRead ();
-                buffer >> *this;
+                Read (buffer);
             }
         }
 
@@ -505,7 +505,7 @@ namespace thekogans {
                 Block block (*this, offset);
                 block.Read ();
                 if (block.GetSize () < size) {
-                    FileAllocator::PtrType oldOffset = offset;
+                    PtrType oldOffset = offset;
                     offset = Alloc (size);
                     if (moveData) {
                         BlockBuffer oldBuffer (*this, oldOffset);

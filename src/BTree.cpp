@@ -149,8 +149,7 @@ namespace thekogans {
         BTree::Node::Node (
                 BTree &btree_,
                 FileAllocator::PtrType offset) :
-                FileAllocator::Object (btree_.GetFileAllocator (), offset),
-                btree (btree_),
+                BufferedFile::TransactionParticipant (btree_.GetFileAllocator (), offset),
                 count (0),
                 leftOffset (0),
                 left (nullptr),
@@ -586,9 +585,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) {
+        void BTree::Node::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -895,11 +892,9 @@ namespace thekogans {
         }
 
         void BTree::Free () {
-            if (GetOffset () != 0) {
-                Node::FreeSubtree (*this, header.rootOffset);
-                header.rootOffset = 0;
-                Object::Free ();
-            }
+            Node::FreeSubtree (*this, header.rootOffset);
+            header.rootOffset = 0;
+            Object::Free ();
         }
 
         void BTree::Reset () {
@@ -908,9 +903,7 @@ namespace thekogans {
             root = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) {
+        void BTree::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {

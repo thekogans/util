@@ -300,7 +300,7 @@ namespace thekogans {
             struct Node : public FileAllocator::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Node)
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
@@ -587,20 +587,21 @@ namespace thekogans {
                 /// Every leaf class must have one.
                 virtual void Reset () override;
 
-                // Serializable
+                // FileAllocator::Object
+                virtual bool IsFixedSize () const noexcept {
+                    return true;
+                }
                 /// \brief
                 /// Return the node class size (size on disk). Nodes are fixed size
                 /// but the size needs to be calculated @runtime.
                 /// \return Node class size.
-                virtual std::size_t DynamicClassSize () const noexcept override {
+                virtual std::size_t Size () const noexcept override {
                     return btree.nodeFileSize;
                 }
                 /// \brief
                 /// Read the key from the given serializer.
                 /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (
-                    const SerializableHeader &header,
-                    Serializer &serializer) override;
+                virtual void Read (Serializer &serializer) override;
                 /// \brief
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
@@ -708,20 +709,20 @@ namespace thekogans {
             /// Reset needs to be implemented by all concrete classes.
             virtual void Reset () override;
 
-            // Serializable
+            // FileAllocator::Object
+            virtual bool IsFixedSize () const noexcept {
+                return true;
+            }
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
-            virtual std::size_t DynamicClassSize () const noexcept override {
+            virtual std::size_t Size () const noexcept override {
                 return header.Size ();
             }
             /// \brief
             /// Read the \see{Header} from the given serializer.
-            /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
-            virtual void Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) override;
+            virtual void Read (Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the \see{Header} to.

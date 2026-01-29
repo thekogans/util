@@ -128,7 +128,6 @@ namespace thekogans {
             /// A FileAllocator Object is an object that has allocated at least one block
             /// from \see{FileAllocator} and participates in \see{BufferedFileEvents}.
             struct _LIB_THEKOGANS_UTIL_DECL Object :
-                    public Serializable,
                     public BufferedFile::TransactionParticipant,
                     public Producer<ObjectEvents> {
                 /// \brief
@@ -145,13 +144,6 @@ namespace thekogans {
                 static void StaticInit ();
             #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-                static SharedPtr Load (
-                    FileAllocator::SharedPtr fileAllocator,
-                    FileAllocator::PtrType offset);
-                static void Free (
-                    FileAllocator::SharedPtr fileAllocator,
-                    FileAllocator::PtrType offset);
-
             protected:
                 /// \brief
                 /// \see{FileAllocator} where this object resides.
@@ -166,10 +158,9 @@ namespace thekogans {
                 /// \param[in] fileAllocator_ \see{FileAllocator} where this object resides.
                 /// \param[in] offset_ Offset of the \see{FileAllocator::Block}.
                 Object (
-                    FileAllocator::SharedPtr fileAllocator_ = nullptr,
+                    FileAllocator::SharedPtr fileAllocator_,
                     FileAllocator::PtrType offset_ = 0) :
-                    BufferedFile::TransactionParticipant (
-                        fileAllocator_ != nullptr ? fileAllocator_->GetFile () : nullptr),
+                    BufferedFile::TransactionParticipant (fileAllocator_->GetFile ()),
                     fileAllocator (fileAllocator_),
                     offset (offset_) {}
                 /// \brief
@@ -196,6 +187,16 @@ namespace thekogans {
                 FileAllocator::PtrType ForceFlush ();
 
             protected:
+                virtual bool IsFixedSize () const noexcept {
+                    return false;
+                }
+                virtual std::size_t Size () const noexcept = 0;
+                virtual void Read (Serializer & /*serializer*/) = 0;
+                /// \brief
+                /// Write the object to the given serializer.
+                /// \param[out] serializer Serializer to write the object to.
+                virtual void Write (Serializer & /*serializer*/) const = 0;
+
                 // BufferedFile::TransactionParticipant
                 /// \brief
                 /// If needed allocate space from \see{FileAllocator}.

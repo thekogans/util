@@ -258,7 +258,9 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             SerializableHeader header;
             node >> header;
-            serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
+            serializable = serializer.factory ?
+                serializer.factory (serializer.parameters) :
+                Serializable::CreateType (header.type.c_str (), serializer.parameters);
             if (serializable != nullptr) {
                 serializable->ReadXML (header, node);
                 return node;
@@ -275,7 +277,9 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             SerializableHeader header;
             object >> header;
-            serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
+            serializable = serializer.factory ?
+                serializer.factory (serializer.parameters) :
+                Serializable::CreateType (header.type.c_str (), serializer.parameters);
             if (serializable == nullptr) {
                 serializable->ReadJSON (header, object);
                 return object;
