@@ -567,10 +567,14 @@ namespace thekogans {
                     left = nullptr;
                 }
                 for (ui32 i = 0; i < count; ++i) {
-                    entries[i].key->Release ();
-                    entries[i].key = nullptr;
-                    entries[i].value->Release ();
-                    entries[i].value = nullptr;
+                    if (entries[i].key != nullptr) {
+                        entries[i].key->Release ();
+                        entries[i].key = nullptr;
+                    }
+                    if (entries[i].value != nullptr) {
+                        entries[i].value->Release ();
+                        entries[i].value = nullptr;
+                    }
                     if (entries[i].right != nullptr) {
                         entries[i].right->Release ();
                         entries[i].right = nullptr;
