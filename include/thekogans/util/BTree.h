@@ -307,6 +307,9 @@ namespace thekogans {
             /// \brief
             /// See comment for keyFactory.
             DynamicCreatable::FactoryType valueFactory;
+            /// \brief
+            /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
+            BlockAllocator::SharedPtr nodeAllocator;
             /// \struct BTree::Node BTree.h thekogans/util/BTree.h
             ///
             /// \brief
@@ -621,9 +624,6 @@ namespace thekogans {
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) override;
             } *root;
-            /// \brief
-            /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
-            BlockAllocator::SharedPtr nodeAllocator;
 
         public:
             /// \brief

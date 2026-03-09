@@ -71,6 +71,9 @@ private:
             entriesPerNode (entriesPerNode_),
             rootOffset (0) {}
     } header;
+    /// \brief
+    /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
+    BlockAllocator::SharedPtr nodeAllocator;
     /// \struct Fileallocator::BTree::Node FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -276,9 +279,6 @@ private:
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
         }
     } *rootNode;
-    /// \brief
-    /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
-    BlockAllocator::SharedPtr nodeAllocator;
 
 public:
     /// \brief
