@@ -30,8 +30,8 @@ namespace thekogans {
             BTree (
                 fileAllocator,
                 fileAllocator->GetRootOffset (),
-                StringKey::TYPE,
-                std::string (),
+                StringKey::GetContext (),
+                SerializableHeader (),
                 entriesPerNode,
                 nodesPerPage,
                 allocator) {

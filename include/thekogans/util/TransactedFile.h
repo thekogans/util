@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_BufferedFile_h)
-#define __thekogans_util_BufferedFile_h
+#if !defined (__thekogans_util_TransactedFile_h)
+#define __thekogans_util_TransactedFile_h
 
 #include <string>
 #include "thekogans/util/Config.h"
@@ -35,70 +35,70 @@ namespace thekogans {
     namespace util {
 
         /// \brief
-        /// Forward declaration of \see{BufferedFile} needed by \see{BufferedFileEvents}.
-        struct BufferedFile;
+        /// Forward declaration of \see{TransactedFile} needed by \see{TransactedFileEvents}.
+        struct TransactedFile;
 
-        /// \struct BufferedFileEvents BufferedFile.h thekogans/util/BufferedFile.h
+        /// \struct TransactedFileEvents TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
-        /// Subscribe to BufferedFileEvents to receive transaction notifications.
-        struct _LIB_THEKOGANS_UTIL_DECL BufferedFileEvents {
+        /// Subscribe to TransactedFileEvents to receive transaction notifications.
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileEvents {
             /// \brief
             /// dtor.
-            virtual ~BufferedFileEvents () {}
+            virtual ~TransactedFileEvents () {}
 
             /// \brief
             /// Transaction is beginning. Time to flush the internal cache.
-            /// If your object derives from \see{BufferedFile::TransactionParticipant}
+            /// If your object derives from \see{TransactedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need
             /// to do is implement Flush.
-            virtual void OnBufferedFileTransactionBegin (
-                RefCounted::SharedPtr<BufferedFile> /*file*/) noexcept {}
+            virtual void OnTransactedFileTransactionBegin (
+                RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
             /// \brief
             /// Transaction is committing. Depending on the phase do whatever
             /// is appropriate.
-            /// If your object derives from \see{BufferedFile::TransactionParticipant}
+            /// If your object derives from \see{TransactedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need
             /// to do is implement Alloc (phase 1) and Flush (phase 2).
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
-            virtual void OnBufferedFileTransactionCommit (
-                RefCounted::SharedPtr<BufferedFile> /*file*/,
+            virtual void OnTransactedFileTransactionCommit (
+                RefCounted::SharedPtr<TransactedFile> /*file*/,
                 int phase) noexcept {}
             /// \brief
             /// Transaction is aborting. Time to reload the object.
-            /// If your object derives from \see{BufferedFile::TransactionParticipant}
+            /// If your object derives from \see{TransactedFile::TransactionParticipant}
             /// all this is done under the hood for you. All you will need
             /// to do is implement Reload.
-            virtual void OnBufferedFileTransactionAbort (
-                RefCounted::SharedPtr<BufferedFile> /*file*/) noexcept {}
+            virtual void OnTransactedFileTransactionAbort (
+                RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
         };
 
-        /// \struct BufferedFile BufferedFile.h thekogans/util/BufferedFile.h
+        /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
-        /// BufferedFile is a drop in replacement for \see{File}. BufferedFile
+        /// TransactedFile is a drop in replacement for \see{File}. TransactedFile
         /// will accumulate all changes in memory and will commit them all at
-        /// once in \see{Flush} or \see{CommitTransaction}. BufferedFile has
+        /// once in \see{Flush} or \see{CommitTransaction}. TransactedFile has
         /// support for simple, flat (not nested) transactions (see \see{BeginTransaction}).
-        /// BufferedFile design principle is; if you have it, might as well use it.
+        /// TransactedFile design principle is; if you have it, might as well use it.
         /// Meaning today's (early March 2025) state of the art has some servers
         /// sporting up to 6TB of main memory. All that memory is there for a
-        /// reason. You paid good money for it. BufferedFile will use as much
-        /// as you have (give it). By default, BufferedFile uses 1MB tiles (\see{Buffer}).
+        /// reason. You paid good money for it. TransactedFile will use as much
+        /// as you have (give it). By default, TransactedFile uses 1MB tiles (\see{Buffer}).
         /// It will load and hold available as much of the file as you have room.
         /// That's where \see{Flush}, \see{Transaction::Commit} and \see{DeleteCache}
         /// come in. As you eventually start to run out of room (even with 6TB it's
         /// a drop in the bucket compared to 64 bit address space), call \see{Flush}
         /// to commit the changes to disk followed by a call to \see{DeleteCache} to
-        /// release the cache. While with proper tuning BufferedFile should work just
+        /// release the cache. While with proper tuning TransactedFile should work just
         /// fine for 'small' (under 1MB) files, it's strength lies with it's ability
         /// to handle multi GB or even TB files with ease. It's hierarchical address
         /// space partitioning allows for very efficient, sparse file handling.
         /// ************************** PLEASE READ ****************************
-        /// VERY IMPORTANT: BufferedFile is NOT thread safe. I felt introducing
+        /// VERY IMPORTANT: TransactedFile is NOT thread safe. I felt introducing
         /// a lock with every file access would be very costly performance wise.
-        /// Instead, BufferedFile exposes two types of guards; a read only guard
-        /// (\see{LockGuard}<\see{Mutex}>) and a read/write guard (\see{BufferedFile::Transaction}).
+        /// Instead, TransactedFile exposes two types of guards; a read only guard
+        /// (\see{LockGuard}<\see{Mutex}>) and a read/write guard (\see{TransactedFile::Transaction}).
         /// Use the first to gain exclusive read access to the file's data. Use
         /// the later for exclusive modify access. This design choice has the
         /// following advantages;
@@ -110,25 +110,25 @@ namespace thekogans {
         /// This also plays nice with the currBuffer cache as it promotes locality
         /// of reference.
         /// The one drawback of this design choice is;
-        /// The various threads sharing the same BufferedFile have to consciously
+        /// The various threads sharing the same TransactedFile have to consciously
         /// cooperate with eachother (by using the provided guards). On the other
         /// hand, if you only have one thread accessing the file, there's nothing
         /// to do and no need to pay the cost of a lock.
         /// *******************************************************************
-        struct _LIB_THEKOGANS_UTIL_DECL BufferedFile :
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFile :
                 public File,
-                public Producer<BufferedFileEvents> {
+                public Producer<TransactedFileEvents> {
             /// \brief
-            /// BufferedFile participates in the \see{DynamicCreatable}
+            /// TransactedFile participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BufferedFile)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (TransactedFile)
 
             /// \brief
-            /// BufferedFile implements a two phase commit. The
+            /// TransactedFile implements a two phase commit. The
             /// first phase (usually called the allocation phase)
             /// will have all objects allocate the space they need
             /// to commit themselves to disk. How the space is
-            /// allocated is outside the scope of the BufferedFile
+            /// allocated is outside the scope of the TransactedFile
             /// (See \see{FileAllocator} for one such example).
             /// This is also the time when all offset pointers
             /// are updated (Again see \see{FileAllocator::Object}
@@ -144,7 +144,7 @@ namespace thekogans {
             /// Commit phase 2 (flush).
             static const int COMMIT_PHASE_2 = 2;
 
-            /// \struct BufferedFile::Transaction BufferedFile.h thekogans/util/BufferedFile.h
+            /// \struct TransactedFile::Transaction TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
             /// A very simple transaction scope guard. Will call
@@ -156,8 +156,8 @@ namespace thekogans {
             /// instead.
             struct _LIB_THEKOGANS_UTIL_DECL Transaction {
             private:
-                /// \see{BufferedFile} we're guarding.
-                BufferedFile::SharedPtr file;
+                /// \see{TransactedFile} we're guarding.
+                TransactedFile::SharedPtr file;
                 /// \brief
                 /// This guard will serialize all transactions.
                 LockGuard<Mutex> guard;
@@ -165,8 +165,8 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] file_ \see{BufferedFile} to transact.
-                explicit Transaction (BufferedFile::SharedPtr file_);
+                /// \param[in] file_ \see{TransactedFile} to transact.
+                explicit Transaction (TransactedFile::SharedPtr file_);
                 /// \brief
                 /// dtor.
                 ~Transaction ();
@@ -180,24 +180,24 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
             };
 
-            /// \struct BufferedFile::TransactionParticipant BufferedFile.h
-            /// thekogans/util/BufferedFile.h
+            /// \struct TransactedFile::TransactionParticipant TransactedFile.h
+            /// thekogans/util/TransactedFile.h
             ///
             /// \brief
             /// TransactionParticipants are objects that listen to
-            /// \see{BufferedFileEvents} and are able to flush and reload
-            /// themselves to and from a \see{BufferedFile}.
+            /// \see{TransactedFileEvents} and are able to flush and reload
+            /// themselves to and from a \see{TransactedFile}.
             struct _LIB_THEKOGANS_UTIL_DECL TransactionParticipant :
-                    public Subscriber<BufferedFileEvents> {
+                    public Subscriber<TransactedFileEvents> {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactionParticipant)
 
             protected:
                 /// \brief
-                /// \see{BufferedFile} whose \see{BufferedFileEvents}
+                /// \see{TransactedFile} whose \see{TransactedFileEvents}
                 /// we're participants of.
-                BufferedFile::SharedPtr file;
+                TransactedFile::SharedPtr file;
                 /// \brief
                 /// Set if the internal cache is dirty.
                 static const ui32 FLAGS_DIRTY = 1;
@@ -211,8 +211,8 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] file_ \see{BufferedFile} we're a transaction participant of.
-                TransactionParticipant (BufferedFile::SharedPtr file_) :
+                /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
+                TransactionParticipant (TransactedFile::SharedPtr file_) :
                     file (file_),
                     flags (0) {}
                 /// \brief
@@ -222,7 +222,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the file.
                 /// \return file.
-                inline BufferedFile::SharedPtr GetFile () const {
+                inline TransactedFile::SharedPtr GetFile () const {
                     return file;
                 }
 
@@ -252,7 +252,7 @@ namespace thekogans {
 
             protected:
                 // NOTE: The following API abstracts out the protocol called for in
-                // OnBufferedFileTransactionCommit, OnBufferedFileTransactionAbort
+                // OnTransactedFileTransactionCommit, OnTransactedFileTransactionAbort
                 // and Delete.
 
                 /// \brief
@@ -271,19 +271,19 @@ namespace thekogans {
                 /// Reset internal state.
                 virtual void Reset () = 0;
 
-                // BufferedFileEvents
+                // TransactedFileEvents
                 /// \brief
                 /// Transaction is commiting. Flush the internal cache to file.
-                /// \param[in] file \see{BufferedFile} commiting the transaction.
-                /// \param[in] phase \see{BufferedFile} implements two phase commit.
-                virtual void OnBufferedFileTransactionCommit (
-                    BufferedFile::SharedPtr /*file*/,
+                /// \param[in] file \see{TransactedFile} commiting the transaction.
+                /// \param[in] phase \see{TransactedFile} implements two phase commit.
+                virtual void OnTransactedFileTransactionCommit (
+                    TransactedFile::SharedPtr /*file*/,
                     int phase) noexcept override;
                 /// \brief
                 /// Transaction is aborting. Reload the internal cache from file.
-                /// \param[in] file \see{BufferedFile} aborting the transaction.
-                virtual void OnBufferedFileTransactionAbort (
-                    BufferedFile::SharedPtr /*file*/) noexcept override;
+                /// \param[in] file \see{TransactedFile} aborting the transaction.
+                virtual void OnTransactedFileTransactionAbort (
+                    TransactedFile::SharedPtr /*file*/) noexcept override;
 
             private:
                 /// \brief
@@ -325,7 +325,7 @@ namespace thekogans {
             /// For use by \see{Guard} and \see{Transaction}
             Mutex mutex;
 
-            /// \struct BufferedFile::Buffer BufferedFile.h thekogans/util/BufferedFile.h
+            /// \struct TransactedFile::Buffer TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
             /// Buffer tiles the file address space providing incremental,
@@ -376,7 +376,7 @@ namespace thekogans {
                     dirty (false) {}
             };
 
-            /// \struct BufferedFile::Node BufferedFile.h thekogans/util/BufferedFile.h
+            /// \struct TransactedFile::Node TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
             /// The file 64 bit address space is partitioned such that it can be
@@ -429,7 +429,7 @@ namespace thekogans {
                     bool segment = false) = 0;
             };
 
-            /// \struct BufferedFile::Segment BufferedFile.h thekogans/util/BufferedFile.h
+            /// \struct TransactedFile::Segment TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
             /// Leaf node representing a 4GB chunk of the file.
@@ -496,7 +496,7 @@ namespace thekogans {
                 }
             };
 
-            /// \struct BufferedFile::Internal BufferedFile.h thekogans/util/BufferedFile.h
+            /// \struct TransactedFile::Internal TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
             /// Internal structure node representing 4G of 4GB segments.
@@ -589,7 +589,7 @@ namespace thekogans {
             /// \param[in] endianness File endianness.
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
-            BufferedFile (
+            TransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
                 const std::string &path = std::string ()) :
@@ -609,7 +609,7 @@ namespace thekogans {
             /// \param[in] dwShareMode Windows CreateFile parameter.
             /// \param[in] dwCreationDisposition Windows CreateFile parameter.
             /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
-            BufferedFile (
+            TransactedFile (
                 Endianness endianness,
                 const std::string &path,
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
@@ -636,7 +636,7 @@ namespace thekogans {
             /// \param[in] path Path to file to open.
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
-            BufferedFile (
+            TransactedFile (
                 Endianness endianness,
                 const std::string &path,
                 i32 flags = O_RDWR | O_CREAT,
@@ -651,23 +651,23 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// dtor.
-            virtual ~BufferedFile ();
+            virtual ~TransactedFile ();
 
             /// \brief
             /// Use the lock to gain exclusive access to the file.
-            /// NOTE: BufferedFile does not use mutex (at all). As
+            /// NOTE: TransactedFile does not use mutex (at all). As
             /// noted elsewhere, locking with every seek/read/write
             /// would be prohibitively expensive (not to mention it
             /// would do nothing to preserve the atomicity of seek/read
             /// and seek/write operations). Instead each
-            /// BufferedFile exposes a mutex that your threads can
+            /// TransactedFile exposes a mutex that your threads can
             /// use to synchronize access to the file based on
             /// access patterns that are more appropriate to your
             /// particular situation. Again, the use of the lock
             /// is completely optional and in order for the entire
             /// scheme to work your threads must manually cooperate
             /// by acquiring the lock before use. To help this pattern,
-            /// BufferedFile::Transaction should be used for all
+            /// TransactedFile::Transaction should be used for all
             /// writes. LockGuard<Mutex> should be used for all reads.
             /// \return mutex.
             inline Mutex &GetLock () {
@@ -762,7 +762,7 @@ namespace thekogans {
             /// \brief
             /// Lock a range of bytes in the file.
             /// Since there's no direct access to the file,
-            /// BufferedFile does not support region locking.
+            /// TransactedFile does not support region locking.
             /// \region[in] region region to lock.
             /// \region[in] exclusive lock for exclusive access.
             virtual void LockRegion (
@@ -835,37 +835,37 @@ namespace thekogans {
             static std::string GetLogPath (const std::string &path);
 
             /// \brief
-            /// BufferedFile is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BufferedFile)
+            /// TransactedFile is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFile)
         };
 
-        /// \struct SimpleBufferedFile BufferedFile.h thekogans/util/BufferedFile.h
+        /// \struct SimpleTransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
-        /// SimpleBufferedFile exposes the basic flags supported by the standard
+        /// SimpleTransactedFile exposes the basic flags supported by the standard
         /// library open that are portable across Windows, Linux and OS X.
         /// NOTE: On Linux and OS X if a file needs to be created, it's
         /// mode will be 0644. This is fine for most cases but might not
         /// be appropriate for some. If you need to control the mode of
-        /// the created file use BufferedFile instead.
+        /// the created file use TransactedFile instead.
 
-        struct _LIB_THEKOGANS_UTIL_DECL SimpleBufferedFile : public BufferedFile {
+        struct _LIB_THEKOGANS_UTIL_DECL SimpleTransactedFile : public TransactedFile {
             /// \brief
             /// Default ctor.
             /// \param[in] endianness File endianness.
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
-            SimpleBufferedFile (
+            SimpleTransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
                 const std::string &path = std::string ()) :
-                BufferedFile (endianness, handle, path) {}
+                TransactedFile (endianness, handle, path) {}
             /// \brief
             /// ctor. Abstracts most useful functionality from POSIX open.
             /// \param[in] endianness File endianness.
             /// \param[in] path Path to file to open.
             /// \param[in] flags Most useful POSIX open flags.
-            SimpleBufferedFile (
+            SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
                 Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
@@ -879,11 +879,11 @@ namespace thekogans {
                 Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
 
             /// \brief
-            /// SimpleBufferedFile is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SimpleBufferedFile)
+            /// SimpleTransactedFile is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SimpleTransactedFile)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // __thekogans_util_BufferedFile_h
+#endif // __thekogans_util_TransactedFile_h

@@ -70,7 +70,7 @@ namespace thekogans {
                 }
             }
 
-            // BufferedFile::TransactionParticipant
+            // TransactedFile::TransactionParticipant
             /// \brief
             /// Reset internal state.
             virtual void Reset () override {
@@ -141,7 +141,7 @@ namespace thekogans {
                 }
             }
 
-            // BufferedFile::TransactionParticipant
+            // TransactedFile::TransactionParticipant
             /// \brief
             /// Reset internal state.
             virtual void Reset () override {

@@ -84,14 +84,14 @@ namespace thekogans {
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         pathBTreeOffset,
-                        util::GUIDKey::TYPE,
-                        util::StringValue::TYPE)),
+                        util::GUIDKey::GetContext (),
+                        util::StringValue::GetContext ())),
                 componentBTree (
                     new util::BTree (
                         Database::Instance ()->GetFileAllocator (),
                         componentBTreeOffset,
-                        util::StringKey::TYPE,
-                        util::GUIDArrayValue::TYPE)),
+                        util::StringKey::GetContext (),
+                        util::GUIDArrayValue::GetContext ())),
                 active (active_) {}
 
             inline const std::string &GetPath () const {

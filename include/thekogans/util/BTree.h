@@ -215,7 +215,8 @@ namespace thekogans {
                 /// Step to the next entry in the range.
                 /// \return true == Iterator is now pointing at the next entry.
                 /// Use GetKey and GetValue to examine it's contents.
-                /// false == the iterator is finished through the range.
+                /// false == the iterator is finished through the range or the
+                /// range was empty to begin with.
                 bool Next ();
 
                 /// \brief
@@ -258,10 +259,10 @@ namespace thekogans {
             struct Header {
                 /// \brief
                 /// Key type.
-                std::string keyType;
+                SerializableHeader keyContext;
                 /// \brief
                 /// Value type.
-                std::string valueType;
+                SerializableHeader valueContext;
                 /// \brief
                 /// Entries per node.
                 /// NOTE: Its type is ui32 because 1. we want something
@@ -274,15 +275,15 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] keyType_ \see{DynamicCreatable} type.
-                /// \param[in] valueType_ \see{DynamicCreatable} type.
+                /// \param[in] keyContext_ \see{DynamicCreatable} type.
+                /// \param[in] valueContext_ \see{DynamicCreatable} type.
                 /// \param[in] entriesPerNode_ Entries per node.
                 Header (
-                    const std::string &keyType_ = std::string (),
-                    const std::string &valueType_ = std::string (),
+                    const SerializableHeader &keyContext_ = SerializableHeader (),
+                    const SerializableHeader &valueContext_ = SerializableHeader (),
                     ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
-                    keyType (keyType_),
-                    valueType (valueType_),
+                    keyContext (keyContext_),
+                    valueContext (valueContext_),
                     entriesPerNode (entriesPerNode_),
                     rootOffset (0) {}
 
@@ -291,8 +292,8 @@ namespace thekogans {
                 inline std::size_t Size () const {
                     return
                         UI32_SIZE + // magic
-                        Serializer::Size (keyType) +
-                        Serializer::Size (valueType) +
+                        keyContext.Size (true) +
+                        valueContext.Size (true) +
                         Serializer::Size (entriesPerNode) +
                         Serializer::Size (rootOffset);
                 }
@@ -591,9 +592,9 @@ namespace thekogans {
                 /// Undo what Alloc does.
                 virtual void Harakiri () override;
 
-                // BufferedFile::TransactionParticipant
+                // TransactedFile::TransactionParticipant
                 /// \brief
-                /// Compulsory implementation of \see{BufferedFile::TransactionParticipant::Reset}.
+                /// Compulsory implementation of \see{TransactedFile::TransactionParticipant::Reset}.
                 /// Every leaf class must have one.
                 virtual void Reset () override;
 
@@ -639,8 +640,8 @@ namespace thekogans {
             /// ctor.
             /// \param[in] fileAllocator BTree heap (see \see{FileAllocator}).
             /// \param[in] offset Heap offset of the \see{Header} block.
-            /// \param[in] keyType \see{DynamicCreatable} key type.
-            /// \param[in] valueType \see{DynamicCreatable} value type. If empty,
+            /// \param[in] keyContext \see{DynamicCreatable} key type.
+            /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
             /// will store any type derived from \see{Value}.
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
             /// \see{Node}. If we're reading an existing btree, this value will come from the
@@ -663,8 +664,8 @@ namespace thekogans {
             BTree (
                 FileAllocator::SharedPtr fileAllocator,
                 FileAllocator::PtrType offset,
-                const std::string &keyType = std::string (),
-                const std::string &valueType = std::string (),
+                const SerializableHeader &keyContext = SerializableHeader (),
+                const SerializableHeader &valueContext = SerializableHeader (),
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
@@ -682,7 +683,7 @@ namespace thekogans {
                 Iterator &it);
             /// \brief
             /// Insert the given key in to the btree.
-            /// \param[in] key KeyType to insert.
+            /// \param[in] key Key to insert.
             /// \param[in] value Value associated with the given key.
             /// \param[out] it If inserted, will point at the node entry.
             /// \return true == added. false == duplicate. If false, return
@@ -693,7 +694,7 @@ namespace thekogans {
                 Iterator &it);
             /// \brief
             /// Delete the given key from the btree.
-            /// \param[in] key KeyType whose entry to delete.
+            /// \param[in] key Key to delete.
             /// \return true == entry deleted. false == entry not found.
             bool Remove (const Key &key);
 
@@ -720,7 +721,7 @@ namespace thekogans {
             }
 
         protected:
-            // BufferedFile::TransactionParticipant
+            // TransactedFile::TransactionParticipant
             /// \brief
             /// We have a pointer to root we need to dispose of.
             virtual void Free () override;

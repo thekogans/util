@@ -27,7 +27,7 @@
 /// in near by entries being returned if they suit the need of an allocation.
 /// It's broken out in to its own file because FileAllocator.h was getting
 /// too big to maintain.
-struct BTree : public BufferedFile::TransactionParticipant {
+struct BTree : public TransactedFile::TransactionParticipant {
     /// \brief
     /// Declare \see{RefCounted} pointers.
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -79,7 +79,7 @@ private:
     ///
     /// \brief
     /// BTree nodes store sorted keys and pointers to children nodes.
-    struct Node : public BufferedFile::TransactionParticipant {
+    struct Node : public TransactedFile::TransactionParticipant {
         /// \brief
         /// BTree to which this node belongs.
         BTree &btree;
@@ -254,7 +254,7 @@ private:
         void Dump ();
 
     protected:
-        // BufferedFile::TransactionParticipant
+        // TransactedFile::TransactionParticipant
         /// \brief
         /// Allocate space for the node.
         virtual void Alloc () override;
@@ -328,7 +328,7 @@ public:
     }
 
 protected:
-    // BufferedFile::TransactionParticipant
+    // TransactedFile::TransactionParticipant
     /// \brief
     /// Allocate space for the \see{Header}.
     virtual void Alloc () override;

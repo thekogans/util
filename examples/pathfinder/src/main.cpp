@@ -122,7 +122,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction transaction (
+                        util::TransactedFile::Transaction transaction (
                             Database::Instance ()->GetFile ());
                         roots->ScanRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
@@ -144,7 +144,7 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction transaction (
+                        util::TransactedFile::Transaction transaction (
                             Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                         transaction.Commit ();
@@ -163,7 +163,7 @@ int main (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction transaction (
+                        util::TransactedFile::Transaction transaction (
                             Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                         transaction.Commit ();
@@ -177,7 +177,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::BufferedFile::Transaction transaction (
+                        util::TransactedFile::Transaction transaction (
                             Database::Instance ()->GetFile ());
                         if (roots->DeleteRoot (
                                 NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
@@ -223,7 +223,7 @@ int main (
                         commit |= ignoreList->AddIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction transaction (
+                        util::TransactedFile::Transaction transaction (
                             Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ()->SetValue (
                             "ignore_list", ignoreList);
@@ -242,7 +242,7 @@ int main (
                         commit |= ignoreList->DeleteIgnore (ignoreList_[i]);
                     }
                     if (commit) {
-                        util::BufferedFile::Transaction transaction (
+                        util::TransactedFile::Transaction transaction (
                             Database::Instance ()->GetFile ());
                         Database::Instance ()->GetRegistry ()->SetValue (
                             "ignore_list", ignoreList);

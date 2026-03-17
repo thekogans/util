@@ -260,12 +260,12 @@ namespace thekogans {
         }
 
         FileAllocator::FileAllocator (
-                BufferedFile::SharedPtr file,
+                TransactedFile::SharedPtr file,
                 bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BufferedFile::TransactionParticipant (file),
+                TransactedFile::TransactionParticipant (file),
                 header (secure ? Header::FLAGS_SECURE : 0),
                 btree (new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator)),
                 btreeNodeFileSize (BTree::Node::FileSize (btree->header.entriesPerNode)) {

@@ -25,7 +25,7 @@ namespace thekogans {
         FileAllocator::BTree::Node::Node (
                 BTree &btree_,
                 PtrType offset_) :
-                BufferedFile::TransactionParticipant (btree_.fileAllocator.GetFile ()),
+                TransactedFile::TransactionParticipant (btree_.fileAllocator.GetFile ()),
                 btree (btree_),
                 offset (offset_),
                 count (0),
@@ -399,7 +399,7 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BufferedFile::TransactionParticipant (fileAllocator_.GetFile ()),
+                TransactedFile::TransactionParticipant (fileAllocator_.GetFile ()),
                 fileAllocator (fileAllocator_),
                 header ((ui32)entriesPerNode),
                 nodeAllocator (

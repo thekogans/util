@@ -20,7 +20,7 @@
 
 #include <string>
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/BufferedFile.h"
+#include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/FileAllocator.h"
 #include "thekogans/util/FileAllocatorRegistry.h"
 #include "thekogans/util/DefaultAllocator.h"
@@ -38,8 +38,8 @@ namespace thekogans {
         struct Database : public util::Singleton<Database> {
         protected:
             /// \brief
-            /// \see{util::BufferedFile} where the database lives.
-            util::BufferedFile::SharedPtr file;
+            /// \see{util::TransactedFile} where the database lives.
+            util::TransactedFile::SharedPtr file;
             /// \brief
             /// \see{util::FileAllocator} for managing random size blocks in the file.
             util::FileAllocator::SharedPtr fileAllocator;
@@ -88,7 +88,7 @@ namespace thekogans {
             /// \brief
             /// Return the file.
             /// \return file.
-            inline util::BufferedFile::SharedPtr GetFile () const {
+            inline util::TransactedFile::SharedPtr GetFile () const {
                 return file;
             }
 

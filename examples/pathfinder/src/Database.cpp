@@ -30,14 +30,14 @@ namespace thekogans {
                 std::size_t registryNodesPerPage_,
                 util::Allocator::SharedPtr allocator_) :
                 file (
-                    new util::SimpleBufferedFile (
+                    new util::SimpleTransactedFile (
                         util::HostEndian,
                         path,
                         util::SimpleFile::ReadWrite | util::SimpleFile::Create)),
                 registryEntriesPerNode (registryEntriesPerNode_),
                 registryNodesPerPage (registryNodesPerPage_),
                 allocator (allocator_) {
-            util::BufferedFile::Transaction transaction (file);
+            util::TransactedFile::Transaction transaction (file);
             fileAllocator.Reset (
                 new util::FileAllocator (
                     file,

@@ -21,7 +21,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
-#include "thekogans/util/BufferedFile.h"
+#include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/BlockAllocator.h"
 
@@ -75,9 +75,9 @@ namespace thekogans {
         ///            8            var
         ///
         /// NOTE: Because of it's design, FileAllocator (including it's creation)
-        /// can only be used inside \see{BufferedFile::Transaction}.
+        /// can only be used inside \see{TransactedFile::Transaction}.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocator :
-                public BufferedFile::TransactionParticipant {
+                public TransactedFile::TransactionParticipant {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
@@ -126,9 +126,9 @@ namespace thekogans {
             ///
             /// \brief
             /// A FileAllocator Object is an object that has allocated at least one block
-            /// from \see{FileAllocator} and participates in \see{BufferedFileEvents}.
+            /// from \see{FileAllocator} and participates in \see{TransactedFileEvents}.
             struct _LIB_THEKOGANS_UTIL_DECL Object :
-                    public BufferedFile::TransactionParticipant,
+                    public TransactedFile::TransactionParticipant,
                     public Producer<ObjectEvents> {
                 /// \brief
                 /// Object is a \see{util::DynamicCreatable} abstract base.
@@ -139,7 +139,7 @@ namespace thekogans {
                 /// \see{FileAllocator} where this object resides.
                 FileAllocator::SharedPtr fileAllocator;
                 /// \brief
-                /// Our address inside the \see{BufferedFile}.
+                /// Our address inside the \see{TransactedFile}.
                 FileAllocator::PtrType offset;
 
             public:
@@ -150,7 +150,7 @@ namespace thekogans {
                 Object (
                     FileAllocator::SharedPtr fileAllocator_,
                     FileAllocator::PtrType offset_) :
-                    BufferedFile::TransactionParticipant (fileAllocator_->GetFile ()),
+                    TransactedFile::TransactionParticipant (fileAllocator_->GetFile ()),
                     fileAllocator (fileAllocator_),
                     offset (offset_) {}
                 /// \brief
@@ -200,7 +200,7 @@ namespace thekogans {
                 /// \param[out] serializer Serializer to write the serializable to.
                 virtual void Write (Serializer & /*serializer*/) = 0;
 
-                // BufferedFile::TransactionParticipant
+                // TransactedFile::TransactionParticipant
                 /// \brief
                 /// If needed allocate space from \see{FileAllocator}.
                 virtual void Alloc () override;
@@ -777,7 +777,7 @@ namespace thekogans {
             /// a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.
             FileAllocator (
-                BufferedFile::SharedPtr file,
+                TransactedFile::SharedPtr file,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
@@ -853,7 +853,7 @@ namespace thekogans {
                 bool moveData = true);
 
         protected:
-            // BufferedFile::TransactionParticipant
+            // TransactedFile::TransactionParticipant
             /// \brief
             /// Nothing for us to allocate.
             /// The header is the first thing in the file.

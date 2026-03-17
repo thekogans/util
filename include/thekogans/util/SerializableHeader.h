@@ -115,61 +115,88 @@ namespace thekogans {
             /// Write the entire structure to the given \see{Serializer} ignoring
             /// \see{Serializer::context}.
             /// \param[in] serializer \see{Serializer} to write the members to.
-            void Write (Serializer &serializer);
+            void Write (Serializer &serializer) const;
         };
 
         /// \brief
-        /// SerializableHeader insertion operator. Write the portion of the
+        /// \see{SerializableHeader} insertion operator. Write the portion of the
         /// structure that dovetails the \see{Serializer::context}.
         /// \param[in] serializer Where to serialize the serializable header.
-        /// \param[in] header SerializableHeader to serialize.
+        /// \param[in] header \see{SerializableHeader} to serialize.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
             Serializer &serializer,
             const SerializableHeader &header);
         /// \brief
-        /// SerializableHeader extraction operator. Read the portion of the
+        /// \see{SerializableHeader} extraction operator. Read the portion of the
         /// structure that dovetails the \see{Serializer::context}.
         /// \param[in] serializer Where to deserialize the serializable header.
-        /// \param[in] header SerializableHeader to extract in to.
+        /// \param[in] header \see{SerializableHeader} to extract in to.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
             SerializableHeader &header);
 
         /// \brief
-        /// SerializableHeader insertion operator.
+        /// \see{SerializableHeader} insertion operator.
         /// \param[in] node Where to serialize the serializable header.
-        /// \param[in] header SerializableHeader to serialize.
+        /// \param[in] header \see{SerializableHeader} to serialize.
         /// \return node.
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
             pugi::xml_node &node,
             const SerializableHeader &header);
         /// \brief
-        /// SerializableHeader extraction operator.
+        /// \see{SerializableHeader} extraction operator.
         /// \param[in] node Where to deserialize the serializable header.
-        /// \param[in] header SerializableHeader to extract in to.
+        /// \param[in] header \see{SerializableHeader} to extract in to.
         /// \return node.
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
             const pugi::xml_node &node,
             SerializableHeader &header);
 
         /// \brief
-        /// SerializableHeader insertion operator.
+        /// \see{SerializableHeader} insertion operator.
         /// \param[in] object \see{JSON::Object} that will contain the serializable header.
-        /// \param[in] header SerializableHeader to insert.
+        /// \param[in] header \see{SerializableHeader} to insert.
         /// \return object.
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
             JSON::Object &object,
             const SerializableHeader &header);
         /// \brief
-        /// SerializableHeader extraction operator.
+        /// \see{SerializableHeader} extraction operator.
         /// \param[in] object \see{JSON::Object} containing the serializable header.
-        /// \param[in] header SerializableHeader to extract in to.
+        /// \param[in] header \see{SerializableHeader} to extract in to.
         /// \return object.
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
             const JSON::Object &object,
             SerializableHeader &header);
+
+        /// \brief
+        /// \see{SerializableHeader} equality operator.
+        /// \param[in] header1 First \see{SerializableHeader} to compare for equality.
+        /// \param[in] header2 Second \see{SerializableHeader} to compare for equality.
+        /// \return true if header1 == header2.
+        inline bool _LIB_THEKOGANS_UTIL_API operator == (
+                const SerializableHeader &header1,
+                const SerializableHeader &header2) {
+            return
+                header1.type == header2.type &&
+                header1.version == header2.version &&
+                header1.size == header2.size;
+        }
+        /// \brief
+        /// \see{SerializableHeader} inequality operator.
+        /// \param[in] header1 First \see{SerializableHeader} to compare for inequality.
+        /// \param[in] header2 Second \see{SerializableHeader} to compare for inequality.
+        /// \return true if header1 != header2.
+        inline bool _LIB_THEKOGANS_UTIL_API operator != (
+                const SerializableHeader &header1,
+                const SerializableHeader &header2) {
+            return
+                header1.type != header2.type ||
+                header1.version != header2.version ||
+                header1.size != header2.size;
+        }
 
     } // namespace util
 } // namespace thekogans

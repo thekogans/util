@@ -23,30 +23,30 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/BufferedFile.h"
+#include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
     namespace util {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
-            thekogans::util::BufferedFile,
+            thekogans::util::TransactedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
-        BufferedFile::Transaction::Transaction (BufferedFile::SharedPtr file_) :
+        TransactedFile::Transaction::Transaction (TransactedFile::SharedPtr file_) :
                 file (file_),
                 guard (file->GetLock ()) {
             file->BeginTransaction ();
         }
 
-        BufferedFile::Transaction::~Transaction () {
+        TransactedFile::Transaction::~Transaction () {
             file->AbortTransaction ();
         }
 
-        void BufferedFile::Transaction::Commit () {
+        void TransactedFile::Transaction::Commit () {
             file->CommitTransaction ();
         }
 
-        void BufferedFile::TransactionParticipant::Delete () {
+        void TransactedFile::TransactionParticipant::Delete () {
             Reset ();
             if (!IsDeleted ()) {
                 SetDeleted (true);
@@ -54,8 +54,8 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::TransactionParticipant::OnBufferedFileTransactionCommit (
-                BufferedFile::SharedPtr /*file*/,
+        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 if (phase == COMMIT_PHASE_1) {
@@ -80,8 +80,8 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void BufferedFile::TransactionParticipant::OnBufferedFileTransactionAbort (
-                BufferedFile::SharedPtr /*file*/) noexcept {
+        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
                 assert (flags);
                 Reload ();
@@ -90,28 +90,28 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void BufferedFile::TransactionParticipant::SetFlags (ui32 flags_) {
+        void TransactedFile::TransactionParticipant::SetFlags (ui32 flags_) {
             if (flags != flags_) {
                 ui32 oldFlags = flags;
                 flags = flags_;
                 if (!oldFlags && flags) {
-                    Subscriber<BufferedFileEvents>::Subscribe (*file);
+                    Subscriber<TransactedFileEvents>::Subscribe (*file);
                 }
                 else if (oldFlags && !flags) {
-                    Subscriber<BufferedFileEvents>::Unsubscribe (*file);
+                    Subscriber<TransactedFileEvents>::Unsubscribe (*file);
                 }
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Buffer)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Segment)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BufferedFile::Internal)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Buffer)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
 
-        BufferedFile::Segment::~Segment () {
+        TransactedFile::Segment::~Segment () {
             Delete ();
         }
 
-        void BufferedFile::Segment::Delete () {
+        void TransactedFile::Segment::Delete () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
                     DeleteBuffer (i);
@@ -119,7 +119,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Segment::Clear () {
+        void TransactedFile::Segment::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
                     if (buffers[i]->dirty) {
@@ -129,7 +129,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Segment::Save (
+        void TransactedFile::Segment::Save (
                 File &log,
                 ui64 &count) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
@@ -144,7 +144,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Segment::Flush (File &file) {
+        void TransactedFile::Segment::Flush (File &file) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
                     if (buffers[i]->dirty) {
@@ -156,7 +156,7 @@ namespace thekogans {
             }
         }
 
-        bool BufferedFile::Segment::SetSize (ui64 newSize) {
+        bool TransactedFile::Segment::SetSize (ui64 newSize) {
             for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
                 if (buffers[i] != nullptr) {
                     if (buffers[i]->offset > newSize) {
@@ -176,11 +176,11 @@ namespace thekogans {
             return true;
         }
 
-        BufferedFile::Internal::~Internal () {
+        TransactedFile::Internal::~Internal () {
             Delete ();
         }
 
-        void BufferedFile::Internal::Delete () {
+        void TransactedFile::Internal::Delete () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     DeleteNode (i);
@@ -188,7 +188,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Internal::Clear () {
+        void TransactedFile::Internal::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     nodes[i]->Clear ();
@@ -196,7 +196,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Internal::Save (
+        void TransactedFile::Internal::Save (
                 File &log,
                 ui64 &count) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
@@ -206,7 +206,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Internal::Flush (File &file) {
+        void TransactedFile::Internal::Flush (File &file) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     nodes[i]->Flush (file);
@@ -214,7 +214,7 @@ namespace thekogans {
             }
         }
 
-        bool BufferedFile::Internal::SetSize (ui64 newSize) {
+        bool TransactedFile::Internal::SetSize (ui64 newSize) {
             for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
                 if (nodes[i] != nullptr && !nodes[i]->SetSize (newSize)) {
                     return false;
@@ -224,7 +224,7 @@ namespace thekogans {
             return true;
         }
 
-        BufferedFile::Internal::Node *BufferedFile::Internal::GetNode (
+        TransactedFile::Internal::Node *TransactedFile::Internal::GetNode (
                 ui8 index,
                 bool segment) {
             if (nodes[index] == nullptr) {
@@ -238,14 +238,14 @@ namespace thekogans {
             return nodes[index];
         }
 
-        BufferedFile::~BufferedFile () {
+        TransactedFile::~TransactedFile () {
             THEKOGANS_UTIL_TRY {
                 Close ();
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        std::size_t BufferedFile::Read (
+        std::size_t TransactedFile::Read (
                 void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
@@ -275,7 +275,7 @@ namespace thekogans {
             }
         }
 
-        std::size_t BufferedFile::Write (
+        std::size_t TransactedFile::Write (
                 const void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
@@ -313,7 +313,7 @@ namespace thekogans {
             }
         }
 
-        i64 BufferedFile::Seek (
+        i64 TransactedFile::Seek (
                 i64 offset,
                 i32 fromWhere) {
             if (IsOpen ()) {
@@ -352,14 +352,14 @@ namespace thekogans {
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
-        void BufferedFile::Open (
+        void TransactedFile::Open (
                 const std::string &path,
                 DWORD dwDesiredAccess,
                 DWORD dwShareMode,
                 DWORD dwCreationDisposition,
                 DWORD dwFlagsAndAttributes) {
     #else // defined (TOOLCHAIN_OS_Windows)
-        void BufferedFile::Open (
+        void TransactedFile::Open (
                 const std::string &path,
                 i32 flags,
                 i32 mode) {
@@ -383,7 +383,7 @@ namespace thekogans {
             currBuffer = nullptr;
         }
 
-        void BufferedFile::Close () {
+        void TransactedFile::Close () {
             if (IsOpen ()) {
                 // All transactions must be commited before file close.
                 // On the other hand dirty pages get flushed out to disk
@@ -400,7 +400,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::Flush () {
+        void TransactedFile::Flush () {
             if (IsOpen ()) {
                 if (IsDirty ()) {
                     if (IsTransactionPending ()) {
@@ -454,7 +454,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::SetSize (ui64 newSize) {
+        void TransactedFile::SetSize (ui64 newSize) {
             if (IsOpen ()) {
                 if (size != newSize) {
                     if (size > newSize) {
@@ -477,7 +477,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::DeleteCache () {
+        void TransactedFile::DeleteCache () {
             if (IsOpen ()) {
                 Flush ();
                 root.Delete ();
@@ -490,7 +490,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::CommitLog (const std::string &path) {
+        void TransactedFile::CommitLog (const std::string &path) {
             std::string logPath = GetLogPath (path);
             if (Path (path).Exists () && Path (logPath).Exists ()) {
                 {
@@ -553,13 +553,13 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::BeginTransaction () {
+        void TransactedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!IsTransactionPending ()) {
                     SetTransactionPending (true);
                     Produce (
                         std::bind (
-                            &BufferedFileEvents::OnBufferedFileTransactionBegin,
+                            &TransactedFileEvents::OnTransactedFileTransactionBegin,
                             std::placeholders::_1,
                             this));
                     Flush ();
@@ -571,18 +571,18 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::CommitTransaction () {
+        void TransactedFile::CommitTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     Produce (
                         std::bind (
-                            &BufferedFileEvents::OnBufferedFileTransactionCommit,
+                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
                             std::placeholders::_1,
                             this,
                             COMMIT_PHASE_1));
                     Produce (
                         std::bind (
-                            &BufferedFileEvents::OnBufferedFileTransactionCommit,
+                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
                             std::placeholders::_1,
                             this,
                             COMMIT_PHASE_2));
@@ -636,7 +636,7 @@ namespace thekogans {
             }
         }
 
-        void BufferedFile::AbortTransaction () {
+        void TransactedFile::AbortTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
@@ -657,7 +657,7 @@ namespace thekogans {
                     SetTransactionPending (false);
                     Produce (
                         std::bind (
-                            &BufferedFileEvents::OnBufferedFileTransactionAbort,
+                            &TransactedFileEvents::OnTransactedFileTransactionAbort,
                             std::placeholders::_1,
                             this));
                 }
@@ -668,7 +668,7 @@ namespace thekogans {
             }
         }
 
-        BufferedFile::Buffer *BufferedFile::GetBuffer () {
+        TransactedFile::Buffer *TransactedFile::GetBuffer () {
             ui64 bufferOffset = position & ~(Buffer::SIZE - 1);
             if (currBufferOffset != bufferOffset) {
                 // --
@@ -712,21 +712,21 @@ namespace thekogans {
             return currBuffer;
         }
 
-        std::string BufferedFile::GetLogPath (const std::string &path) {
+        std::string TransactedFile::GetLogPath (const std::string &path) {
             std::string name = Path (path).GetFullFileName ();
             return path + "-" +
                 GUID::FromBuffer (name.data (), name.size ()).ToHexString () + ".log";
         }
 
-        SimpleBufferedFile::SimpleBufferedFile (
+        SimpleTransactedFile::SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
                 Flags32 flags) :
-                BufferedFile (endianness) {
+                TransactedFile (endianness) {
             SimpleOpen (path, flags);
         }
 
-        void SimpleBufferedFile::SimpleOpen (
+        void SimpleTransactedFile::SimpleOpen (
                 const std::string &path,
                 Flags32 flags) {
         #if defined (TOOLCHAIN_OS_Windows)
@@ -759,7 +759,7 @@ namespace thekogans {
                 dwCreationDisposition |= OPEN_EXISTING;
             }
             DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-            BufferedFile::Open (
+            TransactedFile::Open (
                 path,
                 dwDesiredAccess,
                 dwShareMode,
@@ -788,7 +788,7 @@ namespace thekogans {
                 flags_ |= O_APPEND;
             }
             i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            BufferedFile::Open (path, flags_, mode);
+            TransactedFile::Open (path, flags_, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

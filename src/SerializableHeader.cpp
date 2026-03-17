@@ -38,11 +38,11 @@ namespace thekogans {
         }
 
         void SerializableHeader::Read (Serializer &serializer) {
-            serializer << type << version << size;
+            serializer >> type >> version >> size;
         }
 
-        void SerializableHeader::Write (Serializer &serializer) {
-            serializer >> type >> version >> size;
+        void SerializableHeader::Write (Serializer &serializer) const {
+            serializer << type << version << size;
         }
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
