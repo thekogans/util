@@ -63,13 +63,20 @@ namespace thekogans {
                     T *array_ = nullptr,
                     Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
                     length (length_),
-                    array (length_ > 0 && array_ == nullptr ?
-                        (T *)allocator_->Alloc (length_ * sizeof (T)) :
-                        array_),
+                    array (array_),
                     allocator (allocator_) {
                 if (allocator != nullptr) {
-                    for (std::size_t i = 0; i < length; ++i) {
-                        new (&array[i]) T ();
+                    if (length > 0) {
+                        if (array == nullptr) {
+                            array = (T *)allocator->Alloc (length * sizeof (T));
+                            for (std::size_t i = 0; i < length; ++i) {
+                                new (&array[i]) T ();
+                            }
+                        }
+                    }
+                    else if (array != nullptr) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }
                 }
                 else {
@@ -82,7 +89,8 @@ namespace thekogans {
             /// \param[in,out] other Array to move.
             Array (Array<T> &&other) :
                     length (0),
-                    array (nullptr) {
+                    array (nullptr),
+                    allocator (DefaultAllocator::Instance ()) {
                 swap (other);
             }
             /// \brief

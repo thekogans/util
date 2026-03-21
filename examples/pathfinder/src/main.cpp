@@ -138,17 +138,14 @@ int main (
             else if (Options::Instance ()->action == "enable_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
-                    bool commit = false;
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        commit |= roots->EnableRoot (
+                        roots->EnableRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
-                    if (commit) {
-                        util::TransactedFile::Transaction transaction (
-                            Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
-                        transaction.Commit ();
-                    }
+                    Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
+                    transaction.Commit ();
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to enable.\n");
@@ -157,17 +154,14 @@ int main (
             else if (Options::Instance ()->action == "disable_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
-                    bool commit = false;
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        commit |= roots->DisableRoot (
+                        roots->DisableRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
-                    if (commit) {
-                        util::TransactedFile::Transaction transaction (
-                            Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
-                        transaction.Commit ();
-                    }
+                    Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
+                    transaction.Commit ();
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to disable.\n");
@@ -218,17 +212,13 @@ int main (
             else if (Options::Instance ()->action == "add_ignore") {
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
-                    bool commit = false;
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
-                        commit |= ignoreList->AddIgnore (ignoreList_[i]);
+                        ignoreList->AddIgnore (ignoreList_[i]);
                     }
-                    if (commit) {
-                        util::TransactedFile::Transaction transaction (
-                            Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ()->SetValue (
-                            "ignore_list", ignoreList);
-                        transaction.Commit ();
-                    }
+                    Database::Instance ()->GetRegistry ()->SetValue ("ignore_list", ignoreList);
+                    transaction.Commit ();
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one ignore to add.\n");
@@ -237,17 +227,13 @@ int main (
             else if (Options::Instance ()->action == "delete_ignore") {
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
-                    bool commit = false;
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
-                        commit |= ignoreList->DeleteIgnore (ignoreList_[i]);
+                        ignoreList->DeleteIgnore (ignoreList_[i]);
                     }
-                    if (commit) {
-                        util::TransactedFile::Transaction transaction (
-                            Database::Instance ()->GetFile ());
-                        Database::Instance ()->GetRegistry ()->SetValue (
-                            "ignore_list", ignoreList);
-                        transaction.Commit ();
-                    }
+                    Database::Instance ()->GetRegistry ()->SetValue ("ignore_list", ignoreList);
+                    transaction.Commit ();
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one ignore to add.\n");
