@@ -235,7 +235,7 @@ namespace thekogans {
             SerializableHeader header;
             serializer >> header;
             serializable = serializer.factory ?
-                serializer.factory (nullptr) :
+                (Serializable::SharedPtr)serializer.factory (nullptr) :
                 Serializable::CreateType (header.type.c_str ());
             if (serializable != nullptr) {
                 serializable->Read (header, serializer);
@@ -366,7 +366,7 @@ namespace thekogans {
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
                     value = serializer.factory ?
-                        serializer.factory (nullptr) :
+                        (Serializable::SharedPtr)serializer.factory (nullptr) :
                         Serializable::CreateType (header.type.c_str ());
                     if (value != nullptr) {
                         value->Read (header, payload);

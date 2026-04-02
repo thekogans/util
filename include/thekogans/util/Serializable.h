@@ -359,7 +359,7 @@ namespace thekogans {
             /// If CLASS_SIZE == 0, this serializable is variable size
             /// and you need to call Size to get the size of this instance.
             /// \return Serializable class size.
-            virtual std::size_t ClassSize () const noexcept;
+            virtual std::size_t ClassSize () const noexcept override;
 
             /// \brief
             /// Write the serializable from the given serializer.
