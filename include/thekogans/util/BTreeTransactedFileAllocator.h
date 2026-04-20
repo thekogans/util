@@ -37,7 +37,6 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL BTreeTransactedFileAllocator :
                 public TransactedFile::Allocator {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (BTreeTransactedFileAllocator)
 
             /// \struct BTreeTransactedFileAllocator::Block BTreeTransactedFileAllocator.h
@@ -47,15 +46,15 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Block : public Allocator::Block {
             private:
                 /// \brief
+                /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
+                static const ui32 FLAGS_BTREE_NODE = 1 << 16;
+
+                /// \brief
                 /// If FLAGS_BTREE_NODE and FLAGS_FREE are set this offset
                 /// will point to the next \see{BTree::Node} offset in the free list.
                 /// Otherwise this field is ignored. This is the only
                 /// difference between header and footer.
                 PtrType nextBTreeNodeOffset;
-
-                /// \brief
-                /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
-                static const ui32 FLAGS_BTREE_NODE = 2;
 
             public:
                 /// \brief
@@ -126,9 +125,9 @@ namespace thekogans {
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
-                    Allocator::Header::SIZE +     // magic
-                    PTR_TYPE_SIZE + // heapStart
-                    PTR_TYPE_SIZE;  // rootOffset
+                    Allocator::Header::SIZE +
+                    PTR_TYPE_SIZE + // btreeOffset
+                    PTR_TYPE_SIZE;  // freeBTreeNodeOffset
 
                 /// \brief
                 /// ctor.
@@ -142,7 +141,7 @@ namespace thekogans {
             /// \brief
             /// Include the \see{BTree} header.
             /// I split it out because this file was getting too big to maintain.
-            #include "thekogans/util/FileAllocatorBTree.h"
+            #include "thekogans/util/BTreeTransactedFileAllocatorBTree.h"
             /// \brief
             /// \see{BTree} to manage heap free space.
             BTree::SharedPtr btree;
