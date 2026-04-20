@@ -103,6 +103,70 @@ namespace thekogans {
             }
         }
 
+        TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
+            SetDirty (true);
+            Alloc ();
+            Flush ();
+            return GetOffset ();
+        }
+
+        void TransacedFile::Object::Alloc () {
+            if (!IsFixedSize () || offset == 0) {
+                Allocator::PtrType newOffset =
+                    fileAllocator->Realloc (offset, Size (), false);
+                if (offset != newOffset) {
+                    if (offset != 0) {
+                        Produce (
+                            std::bind (
+                                &ObjectEvents::OnFileAllocatorObjectFree,
+                                std::placeholders::_1,
+                                this));
+                    }
+                    offset = newOffset;
+                    Produce (
+                        std::bind (
+                            &ObjectEvents::OnFileAllocatorObjectAlloc,
+                            std::placeholders::_1,
+                            this));
+                }
+            }
+        }
+
+        void TransactedFile::Object::Free () {
+            if (offset != 0) {
+                fileAllocator->Free (offset);
+                Produce (
+                    std::bind (
+                        &ObjectEvents::OnFileAllocatorObjectFree,
+                        std::placeholders::_1,
+                        this));
+                offset = 0;
+            }
+        }
+
+        void TransactedFile::Object::Flush () {
+            assert (IsDirty ());
+            assert (GetOffset () != 0);
+            Allocator::Block::Buffer buffer (*file, GetOffset ());
+            Write (buffer);
+            if (fileAllocator->IsSecure ()) {
+                buffer.AdvanceWriteOffset (
+                    SecureZeroMemory (
+                        buffer.GetWritePtr (),
+                        buffer.GetDataAvailableForWriting ()));
+            }
+            buffer.BlockWrite (*file);
+        }
+
+        void TransactedFile::Object::Reload () {
+            Reset ();
+            if (GetOffset () != 0) {
+                Allocator::Block::Buffer buffer (*file, GetOffset ());
+                buffer.BlockRead (*file);
+                Read (buffer);
+            }
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Buffer)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
