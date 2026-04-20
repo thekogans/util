@@ -79,7 +79,6 @@ namespace thekogans {
         /// intended. If you can't process the buffer during the
         /// callback and you don't know if there are other event
         /// recipients it's best to make a copy.
-
         struct _LIB_THEKOGANS_UTIL_DECL Buffer : public Serializer {
             /// \brief
             /// Buffer participates in the \see{DynamicCreatable}
@@ -604,7 +603,6 @@ namespace thekogans {
         ///
         /// \brief
         /// TenantReadBuffer is used to wrap a raw byte stream for reading.
-
         struct TenantReadBuffer : public Buffer {
             /// \brief
             /// ctor.
@@ -670,7 +668,6 @@ namespace thekogans {
         ///
         /// \brief
         /// TenantWriteBuffer is used to wrap a raw byte stream for writing.
-
         struct TenantWriteBuffer : public Buffer {
             /// \brief
             /// ctor for wrapping a raw data pointer.
@@ -696,7 +693,6 @@ namespace thekogans {
         ///
         /// \brief
         /// A convenience class to obviate the need to provide NetworkEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL NetworkBuffer : public Buffer {
             /// \brief
             /// Copy ctor.
@@ -754,7 +750,6 @@ namespace thekogans {
         ///
         /// \brief
         /// A convenience class to obviate the need to provide NetworkEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL SecureNetworkBuffer : public SecureBuffer {
             /// \brief
             /// Copy ctor.
@@ -809,7 +804,6 @@ namespace thekogans {
         ///
         /// \brief
         /// A convenience class to obviate the need to provide HostEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL HostBuffer : public Buffer {
             /// \brief
             /// Copy ctor.
@@ -867,7 +861,6 @@ namespace thekogans {
         ///
         /// \brief
         /// A convenience class to obviate the need to provide HostEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL SecureHostBuffer : public SecureBuffer {
             /// \brief
             /// Copy ctor.

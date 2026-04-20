@@ -34,7 +34,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::Buffer,
-            Serializer::TYPE)
+            Serializer::TYPE, RandomSeekSerializer::TYPE)
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Buffer)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (

@@ -327,7 +327,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Node::Flush () {
-            BlockBuffer buffer (btree.fileAllocator, offset);
+            BlockBuffer buffer (*file, offset);
             buffer << MAGIC32 << count;
             if (count > 0) {
                 if (leftNode != nullptr) {
@@ -374,7 +374,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Node::Load () {
-            BlockBuffer buffer (btree.fileAllocator, offset);
+            BlockBuffer buffer (*file, offset);
             buffer.BlockRead ();
             ui32 magic;
             buffer >> magic;
@@ -483,7 +483,7 @@ namespace thekogans {
 
         void FileAllocator::BTree::Flush () {
             header.rootOffset = rootNode->offset;
-            BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
+            BlockBuffer buffer (*file, fileAllocator.header.btreeOffset);
             buffer << MAGIC32 << header;
             buffer.BlockWrite ();
         }
@@ -504,7 +504,7 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Load () {
-            BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
+            BlockBuffer buffer (*file, fileAllocator.header.btreeOffset);
             buffer.BlockRead ();
             ui32 magic;
             buffer >> magic;

@@ -18,6 +18,7 @@
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/JSON.h"
     #include "thekogans/util/Allocator.h"
+    #include "thekogans/util/TransactedFile.h"
     #include "thekogans/util/Hash.h"
     #include "thekogans/util/Logger.h"
     #include "thekogans/util/Serializer.h"
@@ -38,6 +39,7 @@ namespace thekogans {
         void DynamicCreatable::StaticInit () {
             JSON::Value::StaticInit ();
             Allocator::StaticInit ();
+            TransactedFile::Allocator::StaticInit ();
             Hash::StaticInit ();
             Logger::StaticInit ();
             Serializer::StaticInit ();

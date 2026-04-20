@@ -120,6 +120,72 @@ namespace thekogans {
             };
 
         protected:
+            struct _LIB_THEKOGANS_UTIL_DECL ValueObject : public FileAllocator::Object {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ValueObject)
+
+            private:
+                const SerializableHeader &valueContext;
+                DynamicCreatable::FactoryType valueFactory;
+                Value::SharedPtr value;
+
+            public:
+                ValueObject (
+                        FileAllocator::SharedPtr fileAllocator,
+                        FileAllocator::PtrType offset,
+                        const SerializableHeader &valueContext_,
+                        DynamicCreatable::FactoryType valueFactory_,
+                        Value::SharedPtr value_ = nullptr) :
+                        FileAllocator::Object (fileAllocator, offset),
+                        valueContext (valueContext_),
+                        valueFactory (valueFactory_),
+                        value (value_) {
+                    if (value == nullptr) {
+                        FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
+                        buffer.BlockRead ();
+                        buffer.context = valueContext;
+                        buffer.factory = valueFactory;
+                        buffer >> value;
+                    }
+                    else {
+                        SetDirty (true);
+                    }
+                }
+
+                Value::SharedPtr GetValue () const {
+                    return value;
+                }
+                void SetValue (Value::SharedPtr value_) {
+                    value = value_;
+                    SetDirty (true);
+                }
+
+            protected:
+                // FileAllocator::Object
+                /// \brief
+                /// Return the serializable binary size (not including the header).
+                /// \return Serializable binary size.
+                virtual std::size_t Size () const noexcept override {
+                    return value->GetSize (valueContext);
+                }
+
+                /// \brief
+                /// Write the serializable from the given serializer.
+                /// \param[in] serializer Serializer to read the serializable from.
+                virtual void Read (Serializer &serializer) override {
+                    Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
+                    serializer >> value;
+                }
+                /// \brief
+                /// Write the serializable to the given serializer.
+                /// \param[out] serializer Serializer to write the serializable to.
+                virtual void Write (Serializer &serializer) override {
+                    Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
+                    serializer << value;
+                }
+            };
+
             /// \brief
             /// Forward declaration of \see{Node} needed by \see{Iterator}.
             struct Node;
@@ -263,6 +329,8 @@ namespace thekogans {
                 /// \brief
                 /// Value type.
                 SerializableHeader valueContext;
+                static const ui32 FLAGS_VALUE_AS_OBJECT = 1;
+                Flags32 flags;
                 /// \brief
                 /// Entries per node.
                 /// NOTE: Its type is ui32 because 1. we want something
@@ -281,11 +349,17 @@ namespace thekogans {
                 Header (
                     const SerializableHeader &keyContext_ = SerializableHeader (),
                     const SerializableHeader &valueContext_ = SerializableHeader (),
+                    ui32 flags_ = 0,
                     ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     keyContext (keyContext_),
                     valueContext (valueContext_),
+                    flags (flags_),
                     entriesPerNode (entriesPerNode_),
                     rootOffset (0) {}
+
+                inline bool IsValueAsObject () const {
+                    return flags.Test (FLAGS_VALUE_AS_OBJECT);
+                }
 
                 /// \brief
                 /// Return the serialized size of the header.
@@ -294,6 +368,7 @@ namespace thekogans {
                         UI32_SIZE + // magic
                         keyContext.Size (true) +
                         valueContext.Size (true) +
+                        Serializer::Size (flags) +
                         Serializer::Size (entriesPerNode) +
                         Serializer::Size (rootOffset);
                 }
@@ -344,8 +419,11 @@ namespace thekogans {
                     /// Entry key.
                     Key *key;
                     /// \brief
-                    /// Entry value.
-                    Value *value;
+                    /// Value block offset.
+                    FileAllocator::PtrType valueOffset;
+                    /// \brief
+                    /// \see{ValueObject} encapsulating the value.
+                    ValueObject *valueObject;
                     /// \brief
                     /// Right child node block offset.
                     FileAllocator::PtrType rightOffset;
@@ -355,23 +433,30 @@ namespace thekogans {
 
                     /// \brief
                     /// ctor.
-                    /// NOTE: Because of the way we allocate Node this ctor
-                    /// is here for show. It will never be called as we're
-                    /// treating Entry as POT. It actually gets initialized
-                    /// in the operator >>.
                     /// \param[in] key_ Entry key.
                     /// \param[in] value_ Entry value.
                     Entry (
-                        Key *key_ = nullptr,
-                        Value *value_ = nullptr) :
-                        key (key_),
-                        value (value_),
-                        rightOffset (0),
-                        right (nullptr) {}
+                            Key *key_ = nullptr,
+                            Value *value_ = nullptr) :
+                            key (key_),
+                            valueOffset (0),
+                            valueObject (nullptr),
+                            rightOffset (0),
+                            right (nullptr) {
+                        if (value_ != nullptr) {
+                            valueObject = new ValueObject
+                        }
+                    }
 
                     /// \brief
                     /// Entry size on disk.
-                    static const std::size_t SIZE =
+                    static const std::size_t SIZE_WITH_VALUE =
+                        FileAllocator::PTR_TYPE_SIZE; // valueOffset;
+                        FileAllocator::PTR_TYPE_SIZE; // rightOffset;
+
+                    /// \brief
+                    /// Entry size on disk.
+                    static const std::size_t SIZE_WITHOUT_VALUE =
                         FileAllocator::PTR_TYPE_SIZE; // rightOffset;
                 };
                 /// \brief
@@ -406,9 +491,10 @@ namespace thekogans {
                 /// \param[in] fileAllocator Btree heap.
                 /// \param[in] offset Node offset.
                 static void FreeSubtree (
-                    FileAllocator &fileAllocator,
+                    BTree &btree,
                     FileAllocator::PtrType offset);
 
+                Value::SharedPtr GetValue (ui32 index);
                 /// \brief
                 /// Set value at the given \see{Entry} index.
                 /// \param[in] index \see{Entry} index to set the new value at.
@@ -614,7 +700,10 @@ namespace thekogans {
                         UI32_SIZE + // count
                         FileAllocator::PTR_TYPE_SIZE + // leftOffset
                         FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
-                        btree.header.entriesPerNode * Entry::SIZE; // entries
+                        btree.header.entriesPerNode *
+                            (btree.header.IsValueAsObject () ?
+                                Entry::SIZE_WITH_VALUE :
+                                Entry::SIZE_WITHOUT_VALUE); // entries
                 }
                 /// \brief
                 /// Read the key from the given serializer.
@@ -666,6 +755,7 @@ namespace thekogans {
                 FileAllocator::PtrType offset,
                 const SerializableHeader &keyContext = SerializableHeader (),
                 const SerializableHeader &valueContext = SerializableHeader (),
+                bool valueAsObject = false,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
@@ -751,16 +841,6 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the key to.
             virtual void Write (Serializer &serializer) override;
 
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Node::Entry &entry);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Node::Entry &entry);
             /// \brief
             /// Needs access to private members.
             friend Serializer &operator << (

@@ -35,7 +35,7 @@ namespace thekogans {
         /// is the same size. This makes BlockAllocator::Alloc and BlockAllocator::Free
         /// run in amortized O(1). Like all other allocators BlockAllocator is thread safe.
         /// BlockAllocator was created to expose the benefits of \see{Heap} to objects
-        /// don't know their size at compile time.
+        /// that don't know their size at compile time.
 
         struct _LIB_THEKOGANS_UTIL_DECL BlockAllocator : public Allocator {
             /// \brief
