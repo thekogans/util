@@ -46,7 +46,7 @@
 /// +-------+-------+------+
 ///    *4       4       8
 ///
-/// * - Can be ommitted by undefining THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC
+/// * - Can be ommitted by undefining THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC
 ///
 /// Header/Footer::SIZE = 16/12
 ///
@@ -124,9 +124,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             /// \brief
             /// Size of header on disk.
             static const std::size_t SIZE =
-            #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+            #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 UI32_SIZE + // magic
-            #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+            #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 UI32_SIZE + // flags
                 UI64_SIZE;  // size
 
@@ -272,7 +272,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \brief
         /// Write the block.
         void Write (TransactedFile &file) const;
-    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+    #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         /// \brief
         /// If you chose to use magic (a very smart move) to protect
         /// the block data, you get an extra layer of dangling pointer
@@ -280,7 +280,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// the next time you access that block you get an exception
         /// instead of corrupted data.
         void Invalidate (TransactedFile &file) const;
-    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+    #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
         /// \brief
         /// Needs access to \see{Header}.
@@ -411,14 +411,14 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
                 flags (flags_),
                 heapStart (heapStart_),
                 rootOffset (0) {
-        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
-        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         }
 
         /// \brief
         /// Return true if this heap was created with a version of thekogans_util
-        /// that was built with THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC.
+        /// that was built with THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC.
         /// \return true == FLAGS_BLOCK_USES_MAGIC is set.
         inline bool IsBlockUsesMagic () const {
             return flags.Test (FLAGS_BLOCK_USES_MAGIC);

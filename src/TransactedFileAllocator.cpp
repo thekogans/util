@@ -26,13 +26,13 @@ namespace thekogans {
                 TransactedFile &file,
                 PtrType offset) {
             file.Seek (offset, SEEK_SET);
-        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
             file >> magic;
             if (magic == MAGIC32) {
-        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 file >> flags >> size;
-        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -40,16 +40,16 @@ namespace thekogans {
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
-        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         }
 
         void TransactedFile::Allocator::Block::Header::Write (
                 TransactedFile &file,
                 PtrType offset) const {
             file.Seek (offset, SEEK_SET);
-        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             file << MAGIC32;
-        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             file << flags << size;
         }
 
@@ -116,14 +116,14 @@ namespace thekogans {
             header.Write (file, offset + header.size);
         }
 
-    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+    #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         void TransactedFile::Allocator::Block::Invalidate (TransactedFile &file) const {
             file.Seek (offset - HEADER_SIZE, SEEK_SET);
             // Simply stepping on magic will invalidate
             // this block for all future reads.
             file << (ui32)0;
         }
-    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+    #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
         TransactedFile::Allocator::Block::Buffer::BlockBuffer (
                 TransactedFile &file,

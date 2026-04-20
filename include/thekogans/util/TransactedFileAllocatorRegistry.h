@@ -15,33 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_FileAllocatorRegistry_h)
-#define __thekogans_util_FileAllocatorRegistry_h
+#if !defined (__thekogans_util_TransactedFileAllocatorRegistry_h)
+#define __thekogans_util_TransactedFileAllocatorRegistry_h
 
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/TranactedFile.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct FileAllocatorRegistry FileAllocatorRegistry.h
-        /// thekogans/util/FileAllocatorRegistry.h
+        /// \struct TransactedFileAllocatorRegistry TransactedFileAllocatorRegistry.h
+        /// thekogans/util/TransactedFileAllocatorRegistry.h
         ///
         /// \brief
-        /// \see{FileAllocatorRegistry} is a \see{BTree}. It's also a
-        /// \see{FileAllocator::Header::rootObject} . It provides global
-        /// ordered, associative storage for \see{FileAllocator} clients.
-        /// Use it to store and retrieve practically any value derived
+        /// TransactedFileAllocatorRegistry is a \see{BTree}. It's also a
+        /// \see{TransactedFile::Allocator::Header::rootObject} . It provides
+        /// global ordered, associative storage for \see{TransactedFile::Allocator}
+        /// clients. Use it to store and retrieve practically any value derived
         /// from \see{BTree::Value}. The key type is std::string.
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileAllocatorRegistry :
                 private BTree,
-                public Subscriber<FileAllocator::ObjectEvents> {
+                public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFileAllocatorRegistry)
 
         public:
             /// \brief
@@ -57,11 +57,11 @@ namespace thekogans {
             /// \param[in] entriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] nodesPerPage Number of \see{BTree::Node}s per allocator page.
             /// \param[in] allocator Where \see{BTree::Node} pages come from.
-            FileAllocatorRegistry (
+            TransactedFileAllocatorRegistry (
                 FileAllocator::SharedPtr fileAllocator,
                 std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
@@ -85,24 +85,24 @@ namespace thekogans {
             /// \brief
             /// \see{BTree} allocated a block in the file.
             /// \param[in] object \see{BTree} whose offset has become valid.
-            virtual void OnFileAllocatorObjectAlloc (
-                    FileAllocator::Object::SharedPtr object) noexcept override {
+            virtual void OnTransactedFileObjectAlloc (
+                    TransactedFile::Object::SharedPtr object) noexcept override {
                 fileAllocator->SetRootOffset (object->GetOffset ());
             }
             /// \brief
             /// \see{BTree} freed its \see{BTree::Header} block.
             /// \param[in] object \see{BTree} whose offset has become valid.
-            virtual void OnFileAllocatorObjectFree (
-                    FileAllocator::Object::SharedPtr object) noexcept override {
+            virtual void OnTransactedFileObjectFree (
+                    TransactedFile::Object::SharedPtr object) noexcept override {
                 fileAllocator->SetRootOffset (0);
             }
 
             /// \brief
-            /// FileAllocatorRegistry is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocatorRegistry)
+            /// TransactedFileAllocatorRegistry is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFileAllocatorRegistry)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_FileAllocatorRegistry_h)
+#endif // !defined (__thekogans_util_TransactedFileAllocatorRegistry_h)

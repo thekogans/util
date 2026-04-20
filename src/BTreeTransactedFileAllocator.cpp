@@ -159,13 +159,13 @@ namespace thekogans {
                             clearOffset -= Block::HEADER_SIZE;
                             clearLength += Block::HEADER_SIZE;
                         }
-                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         else {
                             // Since block will grow to occupy prev,
                             // it's offset is no longer valid.
                             block.Invalidate (*file);
                         }
-                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Back up to cover the prev.
                         block.SetOffset (
                             block.GetOffset () - Block::SIZE - prev.GetSize ());
@@ -179,13 +179,13 @@ namespace thekogans {
                             // Assume next body is clear.
                             clearLength += Block::HEADER_SIZE;
                         }
-                    #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         else {
                             // Since block will grow to occupy next,
                             // next offset is no longer valid.
                             next.Invalidate ();
                         }
-                    #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Expand to swallow the next.
                         block.SetSize (
                             block.GetSize () + Block::SIZE + next.GetSize ());
@@ -314,11 +314,11 @@ namespace thekogans {
                     file->GetPath ().c_str ());
             }
             *file >> header;
-        #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             if (!header.IsBlockUsesMagic ()) {
-        #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             if (header.IsBlockUsesMagic ()) {
-        #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "This BTreeTransactedFileAllocator file (%s) cannot be opened by this version of %s.",
                     file->GetPath ().c_str (),
