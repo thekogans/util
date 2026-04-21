@@ -220,14 +220,14 @@ namespace thekogans {
             };
             /// \brief
             /// Lock a range of bytes in the file.
-            /// \region[in] region region to lock.
+            /// \region[in] region Region to lock.
             /// \region[in] exclusive lock for exclusive access.
             virtual void LockRegion (
                 const Region &region,
                 bool exclusive);
             /// \brief
             /// Unlock a range of bytes in the file.
-            /// \region[in] region region to unlock.
+            /// \region[in] region Region to unlock.
             virtual void UnlockRegion (const Region &region);
 
             /// \brief

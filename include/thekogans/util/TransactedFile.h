@@ -442,6 +442,50 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
             };
 
+            /// \struct TransactedFile::Range TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            struct _LIB_THEKOGANS_UTIL_DECL Range : public Serializer {
+            private:
+                TransactedFile &file;
+                PtrType offset;
+                std::size_t length;
+                util::Allocator::SharedPtr allocator;
+                ui8 *data;
+                std::size_t position;
+                bool owner;
+                bool dirty;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} to buffer.
+                /// \param[in] offset_ File offset.
+                /// \param[in] length_ How much of the file we want access too.
+                /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
+                Range (
+                    TransactedFile &file_,
+                    PtrType offset_,
+                    std::size_t length_,
+                    util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                virtual ~Range ();
+
+                inline ui8 *GetDataPtr () const {
+                    return data + position;
+                }
+                inline std::size_t GetDataAvailable () const {
+                    return length - position;
+                }
+                std::size_t AdvanceOffset (std::size_t advance);
+
+                virtual std::size_t Read (
+                    void *buffer,
+                    std::size_t count) override;
+                virtual std::size_t Write (
+                    const void *buffer,
+                    std::size_t count) override;
+            };
+
         private:
             /// \brief
             /// Current read/write position.
@@ -903,7 +947,7 @@ namespace thekogans {
             /// Lock a range of bytes in the file.
             /// Since there's no direct access to the file,
             /// TransactedFile does not support region locking.
-            /// \region[in] region region to lock.
+            /// \region[in] region Region to lock.
             /// \region[in] exclusive lock for exclusive access.
             virtual void LockRegion (
                 const Region & /*region*/,
@@ -911,7 +955,7 @@ namespace thekogans {
             /// \brief
             /// Unlock a range of bytes in the file.
             /// See comment above LockRegion.
-            /// \region[in] region region to unlock.
+            /// \region[in] region Region to unlock.
             virtual void UnlockRegion (const Region & /*region*/) override {}
 
             /// \brief

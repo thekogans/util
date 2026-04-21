@@ -327,7 +327,9 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Node::Flush () {
-            BlockBuffer buffer (*file, offset);
+            Block block (offset);
+            block.Read (*file);
+            TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
             buffer << MAGIC32 << count;
             if (count > 0) {
                 if (leftNode != nullptr) {
@@ -342,12 +344,11 @@ namespace thekogans {
                 }
             }
             if (btree.fileAllocator.IsSecure ()) {
-                buffer.AdvanceWriteOffset (
+                buffer.AdvanceOffset (
                     SecureZeroMemory (
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
+                        buffer.GetDataPtr (),
+                        buffer.GetDataAvailable ()));
             }
-            buffer.BlockWrite ();
         }
 
         void FileAllocator::BTree::Node::Reload () {
@@ -374,8 +375,10 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Node::Load () {
-            BlockBuffer buffer (*file, offset);
-            buffer.BlockRead ();
+            TransactedFile::Allocator::Block block (offset);
+            block.Read (*file);
+            TransactedFile::Range buffer (
+                *file, block.GetOffset (), block.GetSize ());
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {
@@ -483,9 +486,10 @@ namespace thekogans {
 
         void FileAllocator::BTree::Flush () {
             header.rootOffset = rootNode->offset;
-            BlockBuffer buffer (*file, fileAllocator.header.btreeOffset);
+            Block block (fileAllocator.header.btreeOffset);
+            block.Read (*file);
+            TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
             buffer << MAGIC32 << header;
-            buffer.BlockWrite ();
         }
 
         void FileAllocator::BTree::Reload () {
@@ -504,8 +508,10 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Load () {
-            BlockBuffer buffer (*file, fileAllocator.header.btreeOffset);
-            buffer.BlockRead ();
+            TransactedFile::Allocator::Block block (fileAllocator.header.btreeOffset);
+            block.Read (*file);
+            TransactedFile::Range buffer (
+                *file, block.GetOffset (), block.GetSize ());
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {

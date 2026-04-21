@@ -116,7 +116,7 @@ namespace thekogans {
                 }
                 if (count != 0) {
                     memcpy (buffer, GetReadPtr (), count);
-                    AdvanceReadOffset (count);
+                    readOffset += count;
                 }
                 return count;
             }
@@ -136,7 +136,7 @@ namespace thekogans {
                 }
                 if (count != 0) {
                     memcpy (GetWritePtr (), buffer, count);
-                    AdvanceWriteOffset (count);
+                    writeOffset += count;
                 }
                 return count;
             }

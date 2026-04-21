@@ -125,46 +125,5 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
-        TransactedFile::Allocator::Block::Buffer::BlockBuffer (
-                TransactedFile &file,
-                PtrType offset,
-                std::size_t bufferLength,
-                util::Allocator::SharedPtr allocator) :
-                Buffer (file.endianness),
-                block (offset) {
-            block.Read (file);
-            if (bufferLength == 0) {
-                bufferLength = block.GetSize ();
-            }
-            Resize (bufferLength, allocator);
-        }
-
-        std::size_t TransactedFile::Allocator::Block::Buffer::BlockIO (
-                TransactedFile &file,
-                std::size_t blockOffset,
-                std::size_t blockLength,
-                bool read) {
-            std::size_t count = 0;
-            if (blockOffset < block.GetSize ()) {
-                std::size_t availableLength = read ?
-                    GetDataAvailableForWriting () :
-                    GetDataAvailableForReading ();
-                if (blockLength == 0 || blockLength > availableLength) {
-                    blockLength = availableLength;
-                }
-                if (blockLength > 0) {
-                    ui64 available = block.GetSize () - blockOffset;
-                    if (available > blockLength) {
-                        available = blockLength;
-                    }
-                    file.Seek (block.GetOffset () + blockOffset, SEEK_SET);
-                    count = read ?
-                        AdvanceWriteOffset (file.Read (GetWritePtr (), available)) :
-                        AdvanceReadOffset (file.Write (GetReadPtr (), available));
-                }
-            }
-            return count;
-        }
-
     } // namespace util
 } // namespace thekogans

@@ -55,19 +55,10 @@
 /// | ... |
 /// +-----+
 ///   var
-struct _LIB_THEKOGANS_UTIL_DECL Allocator :
-        public DynamicCreatable,
-        public TransactionParticipant {
+struct _LIB_THEKOGANS_UTIL_DECL Allocator : public TransactionParticipant {
     /// \brief
     /// Declare \see{RefCounted} pointers.
-    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Allocator)
-
-#if defined (THEKOGANS_UTIL_TYPE_Static)
-    /// \brief
-    /// Register all known bases. This method is meant to be added
-    /// to as new Serializable derivatives are added to the system.
-    static void StaticInit ();
-#endif // defined (THEKOGANS_UTIL_TYPE_Static)
+    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Allocator)
 
     /// \brief
     /// PtrType is \see{ui64}.
@@ -115,7 +106,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// an exception is thrown indicating heap corruption.
         struct _LIB_THEKOGANS_UTIL_DECL Header {
             /// \brief
-            /// A combination of FLAGS_FREE and FLAGS_BTREE_NODE.
+            /// A combination of FLAGS_FREE and allocator specific flags.
             Flags32 flags;
             /// \brief
             /// Block size (not including header and footer).
@@ -132,10 +123,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
 
             /// \brief
             /// ctor.
-            /// \param[in] flags_ Combination of FLAGS_FREE and FLAGS_BTREE_NODE.
+            /// \param[in] flags_ Combination of FLAGS_FREE and allocator specific flags.
             /// \param[in] size_ Block user data size.
-            /// \param[in] nextBTreeNodeOffset_ If FLAGS_FREE and FLAGS_BTREE_NODE are set,
-            /// this field contains the next free \see{BTree::Node} offset.
             Header (
                 Flags32 flags_ = 0,
                 ui64 size_ = 0) :
@@ -171,6 +160,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
                 PtrType offset) const;
         } header;
 
+    public:
         /// \brief
         /// If this flag is set, the block is free. Otherwise it's allocated.
         static const ui32 FLAGS_FREE = 1;
@@ -181,15 +171,12 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// Block size on disk.
         static const std::size_t SIZE = HEADER_SIZE + HEADER_SIZE;
 
-    public:
         /// \brief
         /// ctor.
         /// \param[in] offset_ Offset in the file where the Block resides.
-        /// \param[in] flags Combination of FLAGS_BTREE_NODE and FLAGS_FREE.
+        /// \param[in] flags Combination of FLAGS_FREE and allocator specific flags.
         /// \param[in] size Size of the block (not including the size
         /// of the Block itself).
-        /// \param[in] nextBTreeNodeOffset If FLAGS_FREE and FLAGS_BTREE_NODE are
-        /// set, this field contains the next free \see{BTree::Node} offset.
         Block (
             PtrType offset_ = 0,
             Flags32 flags = 0,
@@ -287,77 +274,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         friend bool operator != (
             const Header &header,
             const Header &footer);
-
-        /// \struct TransactedFile::Allocator::Block::Buffer TransactedFileAllocator.h
-        /// thekogans/util/TransactedFileAllocator.h
-        ///
-        /// \brief
-        /// Buffer provides access to the user data stored in heap blocks.
-        /// Because it derives from \see{util::Buffer} it inherits all the
-        /// underlying/ serialization machinery defined in \see{Serializer}.
-        /// Buffer is also flexible enough to provide/ access to sub ranges.
-        /// Making it efficient to update only the parts of the data that
-        /// have changed.
-        struct _LIB_THEKOGANS_UTIL_DECL Buffer : public util::Buffer {
-        private:
-            /// \brief
-            /// Block.
-            Block block;
-
-        public:
-            /// \brief
-            /// ctor.
-            /// \param[in] file \see{TransactedFile} containing the block.
-            /// \param[in] offset Block offset.
-            /// \param[in] bufferLength How much of the block we want to buffer
-            /// (0 == buffer the whole block).
-            /// \param[in] allocator \see{uil::Allocator} for \see{util::Buffer}.
-            Buffer (
-                TransactedFile &file,
-                PtrType offset,
-                std::size_t bufferLength = 0,
-                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-
-            /// \brief
-            /// Read a block range in to the buffer.
-            /// \param[in] blockOffset Logical offset within block.
-            /// \param[in] blockLength How much of the block we want to read.
-            /// (0 == read the whole block).
-            inline std::size_t BlockRead (
-                    TransactedFile &file,
-                    std::size_t blockOffset = 0,
-                    std::size_t blockLength = 0) {
-                return BlockIO (file, blockOffset, blockLength, true);
-            }
-            /// \brief
-            /// Write a block range from the buffer.
-            /// \param[in] blockOffset Logical offset within block.
-            /// \param[in] blockLength How much of the block we want to write.
-            /// (0 == write the whole block).
-            inline std::size_t BlockWrite (
-                    TransactedFile &file,
-                    std::size_t blockOffset = 0,
-                    std::size_t blockLength = 0) {
-                return BlockIO (file, blockOffset, blockLength, false);
-            }
-
-        private:
-            /// \brief
-            /// Read or write a block. Since most of the body of
-            /// BlockRead and BlockWrite is the same, I saved a
-            /// bit by combining the two.
-            /// \param[in] blockOffset Logical offset within block.
-            /// \param[in] blockLength How much of the block we want to read or write.
-            /// (0 == read or write the whole block).
-            std::size_t BlockIO (
-                TransactedFile &file,
-                std::size_t blockOffset,
-                std::size_t blockLength,
-                bool read);
-        };
     };
 
-    TransactedFile::SharedPtr file;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -435,14 +353,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     /// ctor.
     /// \param[in] file The file where the heap resides.
     /// \param[in] secure true == zero out free blocks.
-    /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
-    /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to
-    /// a \see{BlockAllocator} page.
-    /// \param[in] allocator \see{Allocator} for \see{BTree}.
     Allocator (
-        TransactedFile::SharedPtr file_ = 0,
+        TransactedFile::SharedPtr file,
         bool secure = false) :
-        file (file_),
+        TransactionParticipant (file),
         header (secure ? Header::FLAGS_SECURE : 0) {}
 
     /// \brief
@@ -454,10 +368,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     /// MIN_USER_DATA_SIZE above means that the smallest block we can
     /// allocate is 64 bytes.
     static const std::size_t MIN_BLOCK_SIZE = Block::SIZE + MIN_USER_DATA_SIZE;
-
-    inline TransactedFile::SharedPtr GetFile () const {
-        return file;
-    }
 
     /// \brief
     /// Return true if secure.

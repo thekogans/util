@@ -150,8 +150,8 @@ namespace thekogans {
 
         BTree::Node::Node (
                 BTree &btree_,
-                FileAllocator::PtrType offset) :
-                FileAllocator::Object (btree_.GetFileAllocator (), offset),
+                TransactedFile::Allocator::PtrType offset) :
+                TransactedFile::Allocator::Object (btree_.GetFileAllocator (), offset),
                 btree (btree_),
                 count (0),
                 leftOffset (0),
@@ -174,7 +174,7 @@ namespace thekogans {
 
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
-                FileAllocator::PtrType offset) {
+                TransactedFile::Allocator::PtrType offset) {
             Node *node = new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
@@ -184,18 +184,20 @@ namespace thekogans {
 
         void BTree::Node::FreeSubtree (
                 BTree &btree,
-                FileAllocator::PtrType offset) {
+                TransactedFile::Allocator::PtrType offset) {
             if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (*btree.GetFile (), offset);
-                buffer.BlockRead ();
+                TransactedFile::Allocator::Block block (offset);
+                block.Read (*btree.GetFile ());
+                TransactedFile::Range buffer (
+                    *btree.GetFile (), block.GetOffset (), block.GetSize ());
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
                     ui32 count;
                     buffer >> count;
                     if (count > 0) {
-                        FileAllocator::PtrType leftOffset;
-                        FileAllocator::PtrType keyValueOffset;
+                        TransactedFile::Allocator::PtrType leftOffset;
+                        TransactedFile::Allocator::PtrType keyValueOffset;
                         buffer >> leftOffset >> keyValueOffset;
                         btree.fileAllocator->Free (keyValueOffset);
                         FreeSubtree (btree, leftOffset);
@@ -616,8 +618,10 @@ namespace thekogans {
                 serializer >> count;
                 if (count > 0) {
                     serializer >> leftOffset >> keyValueOffset;
-                    FileAllocator::BlockBuffer keyValueBuffer (*file, keyValueOffset);
-                    keyValueBuffer.BlockRead ();
+                    TransactedFile::Allocator::Block block (keyValueOffset);
+                    block.Read (*file);
+                    TransactedFile::Range keyValueBuffer (
+                        *file, block.GetOffset (), block.GetSize ());
                     keyValueBuffer.context = btree.header.keyContext;
                     keyValueBuffer.factory = btree.header.keyFactory;
                     for (ui32 i = 0; i < count; ++i) {
@@ -690,7 +694,7 @@ namespace thekogans {
                 // Get existing block size.
                 ui64 blockSize = 0;
                 if (keyValueOffset != 0) {
-                    FileAllocator::Block block (*file, keyValueOffset);
+                    TransactedFile::Allocator::Block block (*file, keyValueOffset);
                     block.Read ();
                     blockSize = block.GetSize ();
                 }
@@ -710,7 +714,7 @@ namespace thekogans {
                     leftOffset = left->GetOffset ();
                 }
                 serializer << leftOffset << keyValueOffset;
-                FileAllocator::BlockBuffer keyValueBuffer (*file, keyValueOffset);
+                TransactedFile::Allocator::Block::Buffer keyValueBuffer (*file, keyValueOffset);
                 for (ui32 i = 0; i < count; ++i) {
                     if (entries[i].right != nullptr) {
                         entries[i].rightOffset = entries[i].right->GetOffset ();
@@ -752,15 +756,15 @@ namespace thekogans {
         }
 
         BTree::BTree (
-                FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset,
+                TransactedFile::Allocator::SharedPtr fileAllocator,
+                TransactedFile::Allocator::PtrType offset,
                 const SerializableHeader &keyContext,
                 const SerializableHeader &valueContext,
                 bool valueAsObject,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                FileAllocator::Object (fileAllocator, offset),
+                TransacteFile::Object (fileAllocator, offset),
                 header (
                     keyContext,
                     valueContext,

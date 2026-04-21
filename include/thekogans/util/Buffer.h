@@ -689,6 +689,33 @@ namespace thekogans {
                     NullAllocator::Instance ()) {}
         };
 
+        /// \struct TenantBuffer Buffer.h thekogans/util/Buffer.h
+        ///
+        /// \brief
+        /// TenantWriteBuffer is used to wrap a raw byte stream for writing.
+        struct TenantBuffer : public Buffer {
+            /// \brief
+            /// ctor for wrapping a raw data pointer.
+            /// \param[in] endianness How multi-byte values are stored.
+            /// \param[in] data Pointer to wrap.
+            /// \param[in] length Length of data.
+            /// \param[in] readOffset Offset at which to read.
+            /// \param[in] writeOffset Offset at which to write.
+            TenantBuffer (
+                Endianness endianness,
+                void *data,
+                std::size_t length,
+                std::size_t readOffset = 0,
+                std::size_t writeOffset = 0) :
+                Buffer (
+                    endianness,
+                    data,
+                    length,
+                    readOffset,
+                    writeOffset,
+                    NullAllocator::Instance ()) {}
+        };
+
         /// \struct NetworkBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief

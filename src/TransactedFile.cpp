@@ -147,15 +147,16 @@ namespace thekogans {
         void TransactedFile::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            Allocator::Block::Buffer buffer (*file, GetOffset ());
+            Allocator::Block block (GetOffset ());
+            block.Read (*file);
+            Range buffer (*file, block.GetOffset (), block.GetSize ());
             Write (buffer);
             if (fileAllocator->IsSecure ()) {
-                buffer.AdvanceWriteOffset (
+                buffer.AdvanceOffset (
                     SecureZeroMemory (
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
+                        buffer.GetDataPtr (),
+                        buffer.GetDataAvailable ()));
             }
-            buffer.BlockWrite (*file);
         }
 
         void TransactedFile::Object::Reload () {
@@ -165,6 +166,99 @@ namespace thekogans {
                 buffer.BlockRead (*file);
                 Read (buffer);
             }
+        }
+
+        TransactedFile::Range::Range (
+                TransactedFile &file_,
+                PtrType offset_,
+                std::size_t length_,
+                util::Allocator::SharedPtr allocator_) :
+                file (file_),
+                offset (offset_),
+                length (length_),
+                allocator (allocator_),
+                data (nullptr),
+                position (0),
+                owner (false),
+                dirty (false) {
+            file.Seek (offset, SEEK_SET);
+            TransactedFile::Buffer *buffer = file.GetBuffer ();
+            std::size_t bufferOffset = position - buffer->offset;
+            std::size_t countAvailable = MIN (buffer->length - bufferOffset, length);
+            if (length > countAvailable) {
+                data = (ui8 *)allocator->Alloc (length);
+                file.Read (data, length);
+                owner = true;
+            }
+            else {
+                data = buffer->data + bufferOffset;
+            }
+        }
+
+        TransactedFile::Range::~Range () {
+            if (owner) {
+                if (dirty) {
+                    file.Seek (offset, SEEK_SET);
+                    file.Write (data, position);
+                }
+                allocator->Free (data, length);
+            }
+        }
+
+        inline std::size_t AdvanceOffset (std::size_t advance) {
+            if (advance > 0) {
+                std::size_t available = GetDataAvailable ();
+                if (advance > available) {
+                    advance = available;
+                }
+                position += advance;
+            }
+            return advance;
+        }
+
+        std::size_t TransactedFile::Range::Read (
+                void *buffer,
+                std::size_t count) {
+            if (count > 0) {
+                if (buffer != nullptr) {
+                    std::size_t available = GetDataAvailable ();
+                    if (count > available) {
+                        count = available;
+                    }
+                    if (count > 0) {
+                        memcpy (buffer, data + position, count);
+                        position += count;
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+            return count;
+        }
+
+        std::size_t TransactedFile::Range::Write (
+                const void *buffer,
+                std::size_t count) {
+            if (count > 0) {
+                if (buffer != nullptr) {
+                    std::size_t available = GetDataAvailable ();
+                    if (count > available) {
+                        count = available;
+                    }
+                    if (count > 0) {
+                        memcpy (data + position, buffer, count);
+                        position += count;
+                        dirty = true;
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
+            return count;
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Buffer)

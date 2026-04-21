@@ -197,12 +197,11 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write (*file);
                         if (IsSecure ()) {
-                            Block::Buffer buffer (*file, block.GetOffset (), clearLength);
-                            buffer.AdvanceWriteOffset (
+                            TransactedFile::Range buffer (*file, clearOffset, clearLength);
+                            buffer.AdvanceOffset (
                                 SecureZeroMemory (
-                                    buffer.GetWritePtr (),
-                                    buffer.GetDataAvailableForWriting ()));
-                            buffer.BlockWrite (*file, clearOffset - block.GetOffset (), clearLength);
+                                    buffer.GetDataPtr (),
+                                    buffer.GetDataAvailable ()));
                         }
                     }
                     else {
@@ -230,26 +229,23 @@ namespace thekogans {
                 Block block (offset);
                 block.Read (*file);
                 if (block.GetSize () < size) {
-                    BTreeTransactedFileAllocator::PtrType oldOffset = offset;
                     offset = Alloc (size);
                     if (moveData) {
-                        Block::Buffer oldBuffer (*file, oldOffset);
-                        oldBuffer.BlockRead (*file);
-                        Block::Buffer buffer (*file, offset);
-                        buffer.AdvanceWriteOffset (
+                        TransactedFile::Range oldBuffer (
+                            *file, block.GetOffset (), block.GetSize ());
+                        TransactedFile::Range buffer (*file, offset, size);
+                        buffer.AdvanceOffset (
                             oldBuffer.Read (
-                                *file,
-                                buffer.GetWritePtr (),
-                                buffer.GetDataAvailableForWriting ()));
+                                buffer.GetDataPtr (),
+                                buffer.GetDataAvailable ()));
                         if (IsSecure ()) {
-                            buffer.AdvanceWriteOffset (
+                            buffer.AdvanceOffset (
                                 SecureZeroMemory (
-                                    buffer.GetWritePtr (),
-                                    buffer.GetDataAvailableForWriting ()));
+                                    buffer.GetDataPtr (),
+                                    buffer.GetDataAvailable ()));
                         }
-                        buffer.BlockWrite (*file);
                     }
-                    Free (oldOffset);
+                    Free (block.GetOffset ());
                 }
                 // If the new size leaves room for another block, split existing block.
                 else if (block.GetSize () - size >= MIN_BLOCK_SIZE) {
@@ -337,7 +333,7 @@ namespace thekogans {
             PtrType offset = 0;
             if (header.freeBTreeNodeOffset != 0) {
                 offset = header.freeBTreeNodeOffset;
-                Block block ( offset);
+                Block block (offset);
                 block.Read (*file);
                 if (block.IsFree () && block.IsBTreeNode ()) {
                     header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
