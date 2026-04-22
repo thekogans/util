@@ -357,21 +357,21 @@ namespace thekogans {
             protected:
                 /// \brief
                 /// \see{File::Allocator} where this object resides.
-                File::Allocator::SharedPtr fileAllocator;
+                Allocator::SharedPtr allocator;
                 /// \brief
                 /// Our address inside the \see{TransactedFile}.
-                File::Allocator::PtrType offset;
+                Allocator::PtrType offset;
 
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] fileAllocator \see{File::Allocator} where this object resides.
-                /// \param[in] offset Offset of the \see{File::Allocator::Block}.
+                /// \param[in] allocator_ \see{File::Allocator} where this object resides.
+                /// \param[in] offset_ Offset of the \see{File::Allocator::Block}.
                 Object (
-                    File::Allocator::SharedPtr fileAllocator_,
-                    File::Allocator::PtrType offset_) :
-                    TransactionParticipant (fileAllocator_->GetFile ()),
-                    fileAllocator (fileAllocator_),
+                    Allocator::SharedPtr allocator_,
+                    Allocator::PtrType offset_) :
+                    TransactionParticipant (allocator_->GetFile ()),
+                    allocator (allocator_),
                     offset (offset_) {}
                 /// \brief
                 /// dtor.
@@ -380,13 +380,13 @@ namespace thekogans {
                 /// \brief
                 /// Return the fileAllocator.
                 /// \return fileAllocator.
-                inline File::Allocator::SharedPtr GetFile::Allocator () const {
-                    return fileAllocator;
+                inline Allocator::SharedPtr GetAllocator () const {
+                    return allocator;
                 }
                 /// \brief
                 /// Return the offset.
                 /// \return offset.
-                inline File::Allocator::PtrType GetOffset () const {
+                inline Allocator::PtrType GetOffset () const {
                     return offset;
                 }
 
@@ -394,7 +394,7 @@ namespace thekogans {
                 /// A convenience method used to synchronize the
                 /// in memory cache with on disk image.
                 /// \return Offset of the on disk image.
-                File::Allocator::PtrType ForceFlush ();
+                Allocator::PtrType ForceFlush ();
 
             protected:
                 /// \brief
@@ -445,11 +445,25 @@ namespace thekogans {
             /// \struct TransactedFile::Range TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
+            /// Range provides direct access to TransactedFile's underlying buffers.
+            /// By pairing it with \see{Serializer}, Range provides serialization/
+            /// deserialization capabilities without the need to copy chunks of data
+            /// in to and out of the buffers resulting in better performance. Because
+            /// the file's 64 bit address space is chunked in to hierarchical pages,
+            /// if the requested range straddles the page boundary, a range buffer is
+            /// allocated to gurantee sequential access.
             struct _LIB_THEKOGANS_UTIL_DECL Range : public Serializer {
             private:
                 TransactedFile &file;
+                /// \brief
+                /// Begining of range.
                 PtrType offset;
+                /// \brief
+                /// Length of range.
                 std::size_t length;
+                /// \brief
+                /// If the provided range straddles a page boundary
+                /// use this allocaor to allocate a range buffer.
                 util::Allocator::SharedPtr allocator;
                 ui8 *data;
                 std::size_t position;

@@ -230,6 +230,9 @@ namespace thekogans {
                 ui32 index,
                 Value::SharedPtr value) {
             entries[index].valueObject->SetValue (value);
+            if (btree.header.IsValueAsObject ()) {
+                entries[index].valueObject->SetDirty (true);
+            }
             SetDirty (true);
         }
 
@@ -594,14 +597,21 @@ namespace thekogans {
                         else {
                             entries[i].valueOffset = 0;
                         }
-                        entries[i].valueObject = nullptr;
+                        entries[i].valueObject = new ValueObject (
+                            allocator,
+                            entries[i].valueOffset,
+                            btree.header.valueContext,
+                            btree.header.valueFactory);
+                        entries[i].valueObject->AddRef ();
                         serializer >> entries[i].rightOffset;
                     }
                     if (!btree.header.IsValueAsObject ()) {
                         keyValueBuffer.context = btree.header.valueContext;
                         keyValueBuffer.factory = btree.header.valueFactory;
                         for (ui32 i = 0; i < count; ++i) {
-                            keyValueBuffer >> entries[i].valueObject->value;
+                            Value::SharedPr value;
+                            keyValueBuffer >> value;
+                            entries[i].valueObject->SetValue (value);
                         }
                     }
                 }
@@ -778,7 +788,10 @@ namespace thekogans {
                     (header.valueContext.NeedType () ||
                         value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
-                Node::Entry entry (key.Get (), value.Get ());
+                Node::ValueObject::SharedPtr valueObject (
+                    new Node::ValueObject (
+                        allocator, 0, header.valueContext, header.valueFactory, value));
+                Node::Entry entry (key.Get (), valueObject.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
                     // The path to the leaf node is full.
@@ -802,7 +815,10 @@ namespace thekogans {
                         SetDirty (true);
                     }
                     key.Release ();
-                    value.Release ();
+                    if (header.IsValueAsObject ()) {
+                        valueObject->SetDirty (true);
+                    }
+                    valueObject.Release ();
                 }
                 return result == Node::Inserted;
             }

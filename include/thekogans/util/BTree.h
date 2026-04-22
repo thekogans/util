@@ -25,7 +25,7 @@
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/BlockAllocator.h"
-#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
     namespace util {
@@ -33,7 +33,7 @@ namespace thekogans {
         /// \struct BTree BTree.h thekogans/util/BTree.h
         ///
         /// \brief
-        /// A BTree is a \see{FileAllocator::Object}. It's attributes are that
+        /// A BTree is a \see{TransactedFile::Object}. It's attributes are that
         /// all searches, insertions and deletions take O(H) where H is the
         /// height of the tree. These are BTree's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
@@ -43,7 +43,7 @@ namespace thekogans {
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
         /// That means that key and values can be practically any random size object
         /// (as long as it derives from BTree::Key and implements the interface).
-        struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocator::Object {
+        struct _LIB_THEKOGANS_UTIL_DECL BTree : public TransactedFile::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -120,10 +120,14 @@ namespace thekogans {
             };
 
         protected:
-            struct _LIB_THEKOGANS_UTIL_DECL ValueObject : public FileAllocator::Object {
+            struct _LIB_THEKOGANS_UTIL_DECL ValueObject : public TransactedFile::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ValueObject)
+
+                /// \brief
+                /// ValueObject has a private heap.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:
                 const SerializableHeader &valueContext;
@@ -132,37 +136,34 @@ namespace thekogans {
 
             public:
                 ValueObject (
-                        FileAllocator::SharedPtr fileAllocator,
-                        FileAllocator::PtrType offset,
-                        const SerializableHeader &valueContext_,
-                        DynamicCreatable::FactoryType valueFactory_,
-                        Value::SharedPtr value_ = nullptr) :
-                        FileAllocator::Object (fileAllocator, offset),
-                        valueContext (valueContext_),
-                        valueFactory (valueFactory_),
-                        value (value_) {
+                    TransactedFile::Allocator::SharedPtr allocator,
+                    TransactedFile::Allocator::PtrType offset,
+                    const SerializableHeader &valueContext_,
+                    DynamicCreatable::FactoryType valueFactory_,
+                    Value::SharedPtr value_ = nullptr) :
+                    TransactedFile::Object (allocator, offset),
+                    valueContext (valueContext_),
+                    valueFactory (valueFactory_),
+                    value (value_) {}
+
+                Value::SharedPtr GetValue () const {
                     if (value == nullptr) {
-                        FileAllocator::BlockBuffer buffer (*fileAllocator, offset);
-                        buffer.BlockRead ();
+                        assert (offset != 0);
+                        TransactedFile::Allocator::Block block (offset);
+                        block.Read (*file);
+                        TransactedFile::Range buffer (*allocator, offset, block.GeSize ());
                         buffer.context = valueContext;
                         buffer.factory = valueFactory;
                         buffer >> value;
                     }
-                    else {
-                        SetDirty (true);
-                    }
-                }
-
-                Value::SharedPtr GetValue () const {
                     return value;
                 }
                 void SetValue (Value::SharedPtr value_) {
                     value = value_;
-                    SetDirty (true);
                 }
 
             protected:
-                // FileAllocator::Object
+                // TransactedFile::Object
                 /// \brief
                 /// Return the serializable binary size (not including the header).
                 /// \return Serializable binary size.
@@ -339,7 +340,7 @@ namespace thekogans {
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
-                FileAllocator::PtrType rootOffset;
+                TransactedFile::Allocator::PtrType rootOffset;
 
                 /// \brief
                 /// ctor.
@@ -390,7 +391,7 @@ namespace thekogans {
             ///
             /// \brief
             /// BTree nodes store sorted key/value pairs and pointers to children nodes.
-            struct Node : public FileAllocator::Object {
+            struct Node : public TransactedFile::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
@@ -403,13 +404,13 @@ namespace thekogans {
                 ui32 count;
                 /// \brief
                 /// Left most child node block offset.
-                FileAllocator::PtrType leftOffset;
+                TransactedFile::Allocator::PtrType leftOffset;
                 /// \brief
                 /// Left most child node.
                 Node *left;
                 /// \brief
                 /// Key/value array offset.
-                FileAllocator::PtrType keyValueOffset;
+                TransactedFile::Allocator::PtrType keyValueOffset;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -420,13 +421,13 @@ namespace thekogans {
                     Key *key;
                     /// \brief
                     /// Value block offset.
-                    FileAllocator::PtrType valueOffset;
+                    TransactedFile::Allocator::PtrType valueOffset;
                     /// \brief
                     /// \see{ValueObject} encapsulating the value.
                     ValueObject *valueObject;
                     /// \brief
                     /// Right child node block offset.
-                    FileAllocator::PtrType rightOffset;
+                    TransactedFile::Allocator::PtrType rightOffset;
                     /// \brief
                     /// Right child node.
                     Node *right;
@@ -436,28 +437,24 @@ namespace thekogans {
                     /// \param[in] key_ Entry key.
                     /// \param[in] value_ Entry value.
                     Entry (
-                            Key *key_ = nullptr,
-                            Value *value_ = nullptr) :
-                            key (key_),
-                            valueOffset (0),
-                            valueObject (nullptr),
-                            rightOffset (0),
-                            right (nullptr) {
-                        if (value_ != nullptr) {
-                            valueObject = new ValueObject
-                        }
-                    }
+                        Key *key_ = nullptr,
+                        ValueObject *valueObject_ = nullptr) :
+                        key (key_),
+                        valueOffset (0),
+                        valueObject (valueObject_),
+                        rightOffset (0),
+                        right (nullptr) {}
 
                     /// \brief
                     /// Entry size on disk.
                     static const std::size_t SIZE_WITH_VALUE =
-                        FileAllocator::PTR_TYPE_SIZE; // valueOffset;
-                        FileAllocator::PTR_TYPE_SIZE; // rightOffset;
+                        TransactedFile::Allocator::PTR_TYPE_SIZE; // valueOffset;
+                        TransactedFile::Allocator::PTR_TYPE_SIZE; // rightOffset;
 
                     /// \brief
                     /// Entry size on disk.
                     static const std::size_t SIZE_WITHOUT_VALUE =
-                        FileAllocator::PTR_TYPE_SIZE; // rightOffset;
+                        TransactedFile::Allocator::PTR_TYPE_SIZE; // rightOffset;
                 };
                 /// \brief
                 /// Entry array. Allocated when the node is allocated.
@@ -469,7 +466,7 @@ namespace thekogans {
                 /// \param[in] offset Node offset on disk.
                 Node (
                     BTree &btree_,
-                    FileAllocator::PtrType offset = 0);
+                    TransactedFile::Allocator::PtrType offset = 0);
                 /// \brief
                 /// dtor.
                 virtual ~Node ();
@@ -485,14 +482,14 @@ namespace thekogans {
                 /// \param[in] offset Node offset on disk.
                 static Node *Alloc (
                     BTree &btree,
-                    FileAllocator::PtrType offset = 0);
+                    TransactedFile::Allocator::PtrType offset = 0);
                 /// \brief
                 /// Delete the node and it's sub-tree.
-                /// \param[in] fileAllocator Btree heap.
+                /// \param[in] btree BTree heap.
                 /// \param[in] offset Node offset.
                 static void FreeSubtree (
                     BTree &btree,
-                    FileAllocator::PtrType offset);
+                    TransactedFile::Allocator::PtrType offset);
 
                 Value::SharedPtr GetValue (ui32 index);
                 /// \brief
@@ -684,7 +681,7 @@ namespace thekogans {
                 /// Every leaf class must have one.
                 virtual void Reset () override;
 
-                // FileAllocator::Object
+                // TransactedFile::Object
                 /// \brief
                 /// Node is fixed size.
                 /// \return true.
@@ -698,8 +695,8 @@ namespace thekogans {
                     return
                         UI32_SIZE + // magic
                         UI32_SIZE + // count
-                        FileAllocator::PTR_TYPE_SIZE + // leftOffset
-                        FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
+                        TransactedFile::Allocator::PTR_TYPE_SIZE + // leftOffset
+                        TransactedFile::Allocator::PTR_TYPE_SIZE + // keyValueOffset
                         btree.header.entriesPerNode *
                             (btree.header.IsValueAsObject () ?
                                 Entry::SIZE_WITH_VALUE :
@@ -727,7 +724,7 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator BTree heap (see \see{FileAllocator}).
+            /// \param[in] fileAllocator BTree heap (see \see{TransactedFile::Allocator}).
             /// \param[in] offset Heap offset of the \see{Header} block.
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
@@ -751,8 +748,8 @@ namespace thekogans {
             /// might be just the ticket. You will probably need to call;
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             BTree (
-                FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset,
+                TransactedFile::Allocator::SharedPtr fileAllocator,
+                TransactedFile::Allocator::PtrType offset,
                 const SerializableHeader &keyContext = SerializableHeader (),
                 const SerializableHeader &valueContext = SerializableHeader (),
                 bool valueAsObject = false,
@@ -819,7 +816,7 @@ namespace thekogans {
             /// Reset needs to be implemented by all concrete classes.
             virtual void Reset () override;
 
-            // FileAllocator::Object
+            // TransactedFile::Object
             /// \brief
             /// \see{Header} is fixed size.
             /// \return true.
