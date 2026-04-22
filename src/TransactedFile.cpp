@@ -205,7 +205,7 @@ namespace thekogans {
             }
         }
 
-        inline std::size_t AdvanceOffset (std::size_t advance) {
+        std::size_t TransactedFile::Range::AdvanceOffset (std::size_t advance) {
             if (advance > 0) {
                 std::size_t available = GetDataAvailable ();
                 if (advance > available) {

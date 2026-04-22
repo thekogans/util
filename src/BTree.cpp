@@ -223,43 +223,13 @@ namespace thekogans {
         }
 
         Value::SharedPtr BTree::Node::GetValue (ui32 index) {
-            if (entries[index].value != nullptr) {
-                return entries[index].value;
-            }
-            if (entries[index].valueObject == nullptr) {
-                ValueObject::SharedPtr valueObject (
-                    new ValueObject (
-                        fileAllocator,
-                        entries[index].valueOffset,
-                        btree.header.valueContext,
-                        btree.header.valueFactory));
-                entries[index].valueObject = valueObject.Release ();
-            }
-            return entries[index].valueObject->value;
+            return entries[index].valueObject->GetValue ();
         }
 
         void BTree::Node::SetValue (
                 ui32 index,
                 Value::SharedPtr value) {
-            if (entries[index].value != nullptr) {
-                entries[index].value->Release ();
-                entries[index].value = value.Release ();
-            }
-            else {
-                if (entries[index].valueObject != nullptr) {
-                    entries[index].valueObject->SetValue (value);
-                }
-                else {
-                    ValueObject::SharedPtr valueObject (
-                        new ValueObject (
-                            fileAllocator,
-                            entries[index].valueObject,
-                            btree.header.valueContext,
-                            btree.header.valueFactory,
-                            value));
-                    entries[index].valueObject = valueObject.Release ();
-                }
-            }
+            entries[index].valueObject->SetValue (value);
             SetDirty (true);
         }
 
@@ -406,12 +376,7 @@ namespace thekogans {
                 // Release the key and value. They will
                 // either be overwritten or removed below.
                 entries[index].key->Release ();
-                if (entries[index].value != nullptr) {
-                    entries[index].value->Release ();
-                }
-                if (entries[index].valueObject != nullptr) {
-                    entries[index].valueObject->Release ();
-                }
+                entries[index].valueObject->Release ();
                 if (child != nullptr) {
                     Node *leaf = child;
                     while (leaf->leftOffset != 0) {
@@ -419,7 +384,6 @@ namespace thekogans {
                     }
                     entries[index].key = leaf->entries[0].key;
                     entries[index].valueOffset = leaf->entries[0].valueOffset;
-                    entries[index].value = leaf->entries[0].value;
                     entries[index].valueObject = leaf->entries[0].valueObject;
                     SetDirty (true);
                     child->Remove (*leaf->entries[0].key);
@@ -594,10 +558,6 @@ namespace thekogans {
                         entries[i].key->Release ();
                         entries[i].key = nullptr;
                     }
-                    if (entries[i].value != nullptr) {
-                        entries[i].value->Release ();
-                        entries[i].value = nullptr;
-                    }
                     if (entries[i].valueObject != nullptr) {
                         entries[i].valueObject->Release ();
                         entries[i].valueObject = nullptr;
@@ -630,7 +590,6 @@ namespace thekogans {
                         entries[i].key = key.Release ();
                         if (btree.header.IsValueAsObject ()) {
                             serializer >> entries[i].valueOffset;
-                            entries[i].value = nullptr;
                         }
                         else {
                             entries[i].valueOffset = 0;
@@ -642,9 +601,7 @@ namespace thekogans {
                         keyValueBuffer.context = btree.header.valueContext;
                         keyValueBuffer.factory = btree.header.valueFactory;
                         for (ui32 i = 0; i < count; ++i) {
-                            Value::SharedPtr value;
-                            keyValueBuffer >> value;
-                            entries[i].value = value.Release ();
+                            keyValueBuffer >> entries[i].valueObject->value;
                         }
                     }
                 }
@@ -694,8 +651,8 @@ namespace thekogans {
                 // Get existing block size.
                 ui64 blockSize = 0;
                 if (keyValueOffset != 0) {
-                    TransactedFile::Allocator::Block block (*file, keyValueOffset);
-                    block.Read ();
+                    TransactedFile::Allocator::Block block (keyValueOffset);
+                    block.Read (*file);
                     blockSize = block.GetSize ();
                 }
                 // If existing block size is less than what we need,
@@ -714,7 +671,7 @@ namespace thekogans {
                     leftOffset = left->GetOffset ();
                 }
                 serializer << leftOffset << keyValueOffset;
-                TransactedFile::Allocator::Block::Buffer keyValueBuffer (*file, keyValueOffset);
+                TransactedFile::Range keyValueBuffer (*file, keyValueOffset, );
                 for (ui32 i = 0; i < count; ++i) {
                     if (entries[i].right != nullptr) {
                         entries[i].rightOffset = entries[i].right->GetOffset ();
@@ -747,7 +704,6 @@ namespace thekogans {
                             keyValueBuffer.GetWritePtr (),
                             keyValueBuffer.GetDataAvailableForWriting ()));
                 }
-                keyValueBuffer.BlockWrite ();
             }
             else if (keyValueOffset != 0) {
                 fileAllocator->Free (keyValueOffset);
