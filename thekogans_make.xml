@@ -86,7 +86,6 @@
     <cpp_header>$(organization)/$(project_directory)/AlignedAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Allocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Array.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/BTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BTreeKeys.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BTreeTransactedFileAllocatorBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BTreeValues.h</cpp_header>
@@ -188,6 +187,7 @@
     <cpp_header>$(organization)/$(project_directory)/TransactedFile.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocatorRegistry.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Types.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ValueParser.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
@@ -655,7 +655,6 @@
   <cpp_sources prefix = "src">
     <cpp_source>AlignedAllocator.cpp</cpp_source>
     <cpp_source>Allocator.cpp</cpp_source>
-    <cpp_source>BTree.cpp</cpp_source>
     <cpp_source>BTreeKeys.cpp</cpp_source>
     <cpp_source>BTreeTransactedFileAllocatorBTree.cpp</cpp_source>
     <cpp_source>BTreeValues.cpp</cpp_source>
@@ -736,6 +735,7 @@
     <cpp_source>TransactedFile.cpp</cpp_source>
     <cpp_source>TransactedFileAllocator.cpp</cpp_source>
     <cpp_source>TransactedFileAllocatorRegistry.cpp</cpp_source>
+    <cpp_source>TransactedFileBTree.cpp</cpp_source>
     <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>

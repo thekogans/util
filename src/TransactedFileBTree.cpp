@@ -20,14 +20,14 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
-#include "thekogans/util/BTree.h"
+#include "thekogans/util/TransactedFileBTree.h"
 
 namespace thekogans {
     namespace util {
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                const BTree::Header &header) {
+                const TransactedFileBTree::Header &header) {
             header.keyContext.Write (serializer);
             header.valueContext.Write (serializer);
             serializer << header.flags << header.entriesPerNode << header.rootOffset;
@@ -36,23 +36,23 @@ namespace thekogans {
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                BTree::Header &header) {
+                TransactedFileBTree::Header &header) {
             header.keyContext.Read (serializer);
             header.valueContext.Read (serializer);
             serializer >> header.flags >> header.entriesPerNode >> header.rootOffset;
             return serializer;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::BTree::Key)
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::BTree::Value)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::TransactedFileBTree::Key)
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::TransactedFileBTree::Value)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void BTree::Key::StaticInit () {
+        void TransactedFileBTree::Key::StaticInit () {
             StringKey::StaticInit ();
             GUIDKey::StaticInit ();
         }
 
-        void BTree::Value::StaticInit () {
+        void TransactedFileBTree::Value::StaticInit () {
             StringValue::StaticInit ();
             PtrValue::StaticInit ();
             StringArrayValue::StaticInit ();
@@ -60,14 +60,14 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        void BTree::Iterator::Clear () {
+        void TransactedFileBTree::Iterator::Clear () {
             // Leave the prefix in case they want to reuse the iterator.
             parents.clear ();
             node = NodeIndex (nullptr, 0);
             finished = true;
         }
 
-        bool BTree::Iterator::Next () {
+        bool TransactedFileBTree::Iterator::Next () {
             if (!finished) {
                 finished = true;
                 while (node.second < node.first->count || !parents.empty ()) {
@@ -101,7 +101,7 @@ namespace thekogans {
             return !finished;
         }
 
-        BTree::Key::SharedPtr BTree::Iterator::GetKey () const {
+        TransactedFileBTree::Key::SharedPtr TransactedFileBTree::Iterator::GetKey () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
                 return node.first->entries[node.second].key;
@@ -112,7 +112,7 @@ namespace thekogans {
             }
         }
 
-        BTree::Value::SharedPtr BTree::Iterator::GetValue () const {
+        TransactedFileBTree::Value::SharedPtr TransactedFileBTree::Iterator::GetValue () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
                 return node.first->GetValue (node.second);
@@ -123,7 +123,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Iterator::SetValue (Value::SharedPtr value) {
+        void TransactedFileBTree::Iterator::SetValue (Value::SharedPtr value) {
             if (value != nullptr) {
                 if (!finished) {
                     assert (node.first != nullptr && node.second < node.first->count);
@@ -140,7 +140,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Iterator::Reset (
+        void TransactedFileBTree::Iterator::Reset (
                 Node *node_,
                 ui32 index) {
             prefix = node_->entries[index].key;
@@ -148,8 +148,8 @@ namespace thekogans {
             finished = false;
         }
 
-        BTree::Node::Node (
-                BTree &btree_,
+        TransactedFileBTree::Node::Node (
+                TransactedFileBTree &btree_,
                 TransactedFile::Allocator::PtrType offset) :
                 TransactedFile::Allocator::Object (btree_.GetFileAllocator (), offset),
                 btree (btree_),
@@ -168,12 +168,12 @@ namespace thekogans {
             Reset ();
         }
 
-        std::size_t BTree::Node::Size (std::size_t entriesPerNode) {
+        std::size_t TransactedFileBTree::Node::Size (std::size_t entriesPerNode) {
             return sizeof (Node) + entriesPerNode * sizeof (Entry);
         }
 
-        BTree::Node *BTree::Node::Alloc (
-                BTree &btree,
+        TransactedFileBTree::Node *TransactedFileBTree::Node::Alloc (
+                TransactedFileBTree &btree,
                 TransactedFile::Allocator::PtrType offset) {
             Node *node = new (
                 btree.nodeAllocator->Alloc (
@@ -182,8 +182,8 @@ namespace thekogans {
             return node;
         }
 
-        void BTree::Node::FreeSubtree (
-                BTree &btree,
+        void TransactedFileBTree::Node::FreeSubtree (
+                TransactedFileBTree &btree,
                 TransactedFile::Allocator::PtrType offset) {
             if (offset != 0) {
                 TransactedFile::Allocator::Block block (offset);
@@ -216,17 +216,17 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
         }
 
-        Value::SharedPtr BTree::Node::GetValue (ui32 index) {
+        Value::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
             return entries[index].valueObject->GetValue ();
         }
 
-        void BTree::Node::SetValue (
+        void TransactedFileBTree::Node::SetValue (
                 ui32 index,
                 Value::SharedPtr value) {
             entries[index].valueObject->SetValue (value);
@@ -236,7 +236,7 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        BTree::Node *BTree::Node::GetChild (ui32 index) {
+        TransactedFileBTree::Node *TransactedFileBTree::Node::GetChild (ui32 index) {
             if (index == 0) {
                 if (left == nullptr && leftOffset != 0) {
                     left = Alloc (btree, leftOffset);
@@ -254,7 +254,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Node::PrefixFind (
+        bool TransactedFileBTree::Node::PrefixFind (
                 const Key &prefix,
                 ui32 &index) const {
             ui32 last = index;
@@ -276,7 +276,7 @@ namespace thekogans {
             return false;
         }
 
-        bool BTree::Node::FindFirstPrefix (
+        bool TransactedFileBTree::Node::FindFirstPrefix (
                 const Key &prefix,
                 ui32 &index) const {
             index = count;
@@ -290,7 +290,7 @@ namespace thekogans {
             return false;
         }
 
-        bool BTree::Node::Find (
+        bool TransactedFileBTree::Node::Find (
                 const Key &key,
                 ui32 &index) const {
             ui32 last = count;
@@ -312,7 +312,7 @@ namespace thekogans {
             return false;
         }
 
-        BTree::Node::InsertResult BTree::Node::Insert (
+        TransactedFileBTree::Node::InsertResult TransactedFileBTree::Node::Insert (
                 Entry &entry,
                 Iterator &it) {
             ui32 index = 0;
@@ -371,7 +371,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Node::Remove (const Key &key) {
+        bool TransactedFileBTree::Node::Remove (const Key &key) {
             ui32 index = 0;
             bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
@@ -408,7 +408,7 @@ namespace thekogans {
             return false;
         }
 
-        void BTree::Node::RestoreBalance (ui32 index) {
+        void TransactedFileBTree::Node::RestoreBalance (ui32 index) {
             if (index == count) {
                 Node *left = GetChild (index - 1);
                 Node *right = GetChild (index);
@@ -438,7 +438,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::RotateRight (
+        void TransactedFileBTree::Node::RotateRight (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -455,7 +455,7 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void BTree::Node::RotateLeft (
+        void TransactedFileBTree::Node::RotateLeft (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -471,7 +471,7 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void BTree::Node::Merge (
+        void TransactedFileBTree::Node::Merge (
                 ui32 index,
                 Node *left,
                 Node *right) {
@@ -485,7 +485,7 @@ namespace thekogans {
             right->Release ();
         }
 
-        void BTree::Node::Split (Node *node) {
+        void TransactedFileBTree::Node::Split (Node *node) {
             assert (IsFull ());
             ui32 splitIndex = count / 2;
             node->count = count - splitIndex;
@@ -498,7 +498,7 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void BTree::Node::Concatenate (Node *node) {
+        void TransactedFileBTree::Node::Concatenate (Node *node) {
             std::memcpy (
                 entries + count,
                 node->entries,
@@ -509,7 +509,7 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void BTree::Node::InsertEntry (
+        void TransactedFileBTree::Node::InsertEntry (
                 const Entry &entry,
                 ui32 index) {
             std::memmove (
@@ -520,7 +520,7 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void BTree::Node::RemoveEntry (ui32 index) {
+        void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
             std::memcpy (
                 entries + index,
                 entries + index + 1,
@@ -528,7 +528,7 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void BTree::Node::Dump () {
+        void TransactedFileBTree::Node::Dump () {
             if (count > 0) {
                 std::cout << offset << ": " << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
@@ -545,12 +545,12 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Harakiri () {
+        void TransactedFileBTree::Node::Harakiri () {
             this->~Node ();
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
         }
 
-        void BTree::Node::Reset () {
+        void TransactedFileBTree::Node::Reset () {
             if (count > 0) {
                 if (left != nullptr) {
                     left->Release ();
@@ -574,7 +574,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Node::Read (Serializer &serializer) {
+        void TransactedFileBTree::Node::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -618,12 +618,12 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                    "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
         }
 
-        void BTree::Node::Write (Serializer &serializer) {
+        void TransactedFileBTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
             if (count > 0) {
                 // Calculate key/value sizes.
@@ -721,7 +721,7 @@ namespace thekogans {
             }
         }
 
-        BTree::BTree (
+        TransactedFileBTree::TransactedFileBTree (
                 TransactedFile::Allocator::SharedPtr fileAllocator,
                 TransactedFile::Allocator::PtrType offset,
                 const SerializableHeader &keyContext,
@@ -754,11 +754,11 @@ namespace thekogans {
             Reload ();
         }
 
-        BTree::~BTree () {
+        TransactedFileBTree::~TransactedFileBTree () {
             root->Release ();
         }
 
-        bool BTree::Find (
+        bool TransactedFileBTree::Find (
                 const Key &key,
                 Iterator &it) {
             if (key.IsKindOf (header.keyContext.type.c_str ())) {
@@ -779,7 +779,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Insert (
+        bool TransactedFileBTree::Insert (
                 Key::SharedPtr key,
                 Value::SharedPtr value,
                 Iterator &it) {
@@ -828,7 +828,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::Remove (const Key &key) {
+        bool TransactedFileBTree::Remove (const Key &key) {
             if (key.IsKindOf (header.keyContext.type.c_str ())) {
                 bool removed = root->Remove (key);
                 if (removed) {
@@ -852,7 +852,7 @@ namespace thekogans {
             }
         }
 
-        bool BTree::FindFirst (Iterator &it) {
+        bool TransactedFileBTree::FindFirst (Iterator &it) {
             if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyContext.type.c_str ())) {
                 it.Clear ();
                 Node *node = root;
@@ -890,7 +890,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Free () {
+        void TransactedFileBTree::Free () {
             if (GetOffset () != 0) {
                 Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
@@ -898,13 +898,13 @@ namespace thekogans {
             }
         }
 
-        void BTree::Reset () {
+        void TransactedFileBTree::Reset () {
             header.rootOffset = 0;
             root->Release ();
             root = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Read (Serializer &serializer) {
+        void TransactedFileBTree::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -927,7 +927,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt BTree @" THEKOGANS_UTIL_UI64_FORMAT,
+                    "Corrupt TransactedFileBTree @" THEKOGANS_UTIL_UI64_FORMAT,
                     GetOffset ());
             }
             root->Release ();
@@ -939,7 +939,7 @@ namespace thekogans {
             root = Node::Alloc (*this, header.rootOffset);
         }
 
-        void BTree::Write (Serializer &serializer) {
+        void TransactedFileBTree::Write (Serializer &serializer) {
             header.rootOffset = root->GetOffset ();
             serializer << MAGIC32 << header;
         }
