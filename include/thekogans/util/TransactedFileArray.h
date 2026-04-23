@@ -15,33 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_FileAllocatorArray_h)
-#define __thekogans_util_FileAllocatorArray_h
+#if !defined (__thekogans_util_TransactedFileArray_h)
+#define __thekogans_util_TransactedFileArray_h
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Allocator.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/SerializableArray.h"
-#include "thekogans/util/FileAllocatorHeader.h"
-#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/SerializableHeader.h"
+#include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct FileAllocatorArray FileAllocatorArray.h thekogans/util/FileAllocatorArray.h
+        /// \struct TransactedFileArray TransactedFileArray.h thekogans/util/TransactedFileArray.h
         ///
         /// \brief
-        /// FileAllocatorArray aggregates \see{Serializable} derived types in to an array
-        /// container. FileAllocatorArray uses the type \see{Serializable} information to
+        /// TransactedFileArray aggregates \see{Serializable} derived types in to an array
+        /// container. TransactedFileArray uses the type \see{Serializable} information to
         /// create a \see{SerializableHeader} context so that the array elements are packed
         /// without wasting space writting the same header information.
         template<typename T>
-        struct FileAllocatorArray : public FileAllocator::Object {
+        struct TransactedFileArray : public TransactedFile::Object {
             /// \brief
-            /// FileAllocatorArray<T> is a \see{FileAllocator::Object}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (FileAllocatorArray<T>)
+            /// TransactedFileArray<T> is a \see{TransactedFile::Object}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileArray<T>)
 
             /// \brief
             /// \see{SerializerArray} of T elements.
@@ -57,14 +57,14 @@ namespace thekogans {
             /// \param[in] length Number of elements in the array.
             /// \param[in] array_ Optional array pointer to wrap.
             /// \param[in] allocator \see{Allocator} used for memory management.
-            FileAllocatorArray (
-                    FileAllocator::SharedPtr fileAllocator,
-                    FileAllocator::PtrType offset,
+            TransactedFileArray (
+                    TransactedFile::Allocator::SharedPtr allocator,
+                    TransactedFile::Allocator::PtrType offset,
                     std::size_t length = 0,
                     T *array = nullptr,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    FileAllocator::Object (fileAllocator, offset),
-                    array (length, array_, allocator) {
+                    util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
+                    TransactedFile::Object (allocator, offset),
+                    array (length, array_, allocator_) {
                 if (GetOffset () != 0 && GetLength () == 0) {
                     Reload ();
                 }
@@ -78,7 +78,7 @@ namespace thekogans {
                 array.swap (temp);
             }
 
-            // FileAllocator::Object
+            // TransactedFile::Object
             /// \brief
             /// Return the serialized array size.
             /// \return Serialized array size.
@@ -100,20 +100,20 @@ namespace thekogans {
             }
         };
 
-        /// \struct FileAllocatorSharedPtrArray FileAllocatorArray.h thekogans/util/FileAllocatorArray.h
+        /// \struct TransactedFileSharedPtrArray TransactedFileArray.h thekogans/util/TransactedFileArray.h
         ///
         /// \brief
-        /// FileAllocatorSharedPtrArray aggregates \see{Serializable}::SharedPtr types
-        /// in to an array container. Unlike FileAllocatorArray, FileAllocatorSharedPtrArray
+        /// TransactedFileSharedPtrArray aggregates \see{Serializable}::SharedPtr types
+        /// in to an array container. Unlike TransactedFileArray, TransactedFileSharedPtrArray
         /// cannot deduce the context based on template type as it itself can be an abstract
         /// base (see \see{BTree::Key}). You must therefore pass in a ctor context so that
         /// the array elements are packed without wasting space writting the same header
         /// information.
         template<typename T>
-        struct FileAllocatorSharedPtrArray : public FileAllocator::Object {
+        struct TransactedFileSharedPtrArray : public TransactedFile::Object {
             /// \brief
-            /// FileAllocatorSharedPtrArray<typename T::SharedPtr> is a \see{FileAllocator::Object}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (FileAllocatorSharedPtrArray<typename T::SharedPtr>)
+            /// TransactedFileSharedPtrArray<typename T::SharedPtr> is a \see{TransactedFile::Object}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileSharedPtrArray<typename T::SharedPtr>)
 
             /// \brief
             /// \see{SerializableSharedPtrArray} of T::SharedPtr elements.
@@ -121,21 +121,21 @@ namespace thekogans {
 
             /// \brief
             /// ctor. Create (or wrap) an array of length elements.
-            /// \param[in] fileAllocator
+            /// \param[in] allocator
             /// \param[in] offset
             /// \param[in] context
             /// \param[in] length Number of elements in the array.
             /// \param[in] array_ Optional array pointer to wrap.
-            /// \param[in] allocator \see{Allocator} used for memory management.
-            FileAllocatorSharedPtrArray (
-                    FileAllocator::SharedPtr fileAllocator,
-                    FileAllocator::PtrType offset,
-                    const FileAllocatorHeader &context = FileAllocatorHeader (),
+            /// \param[in] allocator_ \see{Allocator} used for memory management.
+            TransactedFileSharedPtrArray (
+                    TransactedFile::Allocator::SharedPtr allocator,
+                    TransactedFile::Allocator::PtrType offset,
+                    const TransactedFileHeader &context = TransactedFileHeader (),
                     std::size_t length = 0,
                     typename T::SharedPtr *array_ = nullptr,
-                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    FileAllocator::Object (fileAllocator, offset),
-                    array (context, length, array_, allocator) {
+                    util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
+                    TransactedFile::Object (allocator, offset),
+                    array (context, length, array_, allocator_) {
                 if (GetOffset () != 0 && GetLength () == 0) {
                     Reload ();
                 }
@@ -149,7 +149,7 @@ namespace thekogans {
                 array.swap (temp);
             }
 
-            // FileAllocator::Object
+            // TransactedFile::Object
             /// \brief
             /// Return the serialized array size.
             /// \return Serialized array size.
@@ -174,4 +174,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_FileAllocatorArray_h)
+#endif // !defined (__thekogans_util_TransactedFileArray_h)

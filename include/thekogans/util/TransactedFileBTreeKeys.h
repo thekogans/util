@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_BTreeKeys_h)
-#define __thekogans_util_BTreeKeys_h
+#if !defined (__thekogans_util_TransactedFileBTreeKeys_h)
+#define __thekogans_util_TransactedFileBTreeKeys_h
 
 #include <string>
 #include "thekogans/util/Config.h"
@@ -30,11 +30,11 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct StringKey BTreeKeys.h thekogans/util/BTreeKeys.h
+        /// \struct StringKey TransactedFileBTreeKeys.h thekogans/util/TransactedFileBTreeKeys.h
         ///
         /// \brief
         /// Variable size string key.
-        struct _LIB_THEKOGANS_UTIL_DECL StringKey : public BTree::Key {
+        struct _LIB_THEKOGANS_UTIL_DECL StringKey : public TransactedFileBTree::Key {
             /// \brief
             /// StringKey is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringKey)
@@ -103,11 +103,11 @@ namespace thekogans {
             }
         };
 
-        /// \struct GUIDKey BTree.h thekogans/util/BTreeKeys.h
+        /// \struct GUIDKey BTree.h thekogans/util/TransactedFileBTreeKeys.h
         ///
         /// \brief
         /// GUID key.
-        struct _LIB_THEKOGANS_UTIL_DECL GUIDKey : public BTree::Key {
+        struct _LIB_THEKOGANS_UTIL_DECL GUIDKey : public TransactedFileBTree::Key {
             /// \brief
             /// GUIDKey is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDKey)
@@ -178,4 +178,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTreeKeys_h)
+#endif // !defined (__thekogans_util_TransactedFileBTreeKeys_h)

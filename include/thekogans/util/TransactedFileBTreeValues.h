@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_BTreeValues_h)
-#define __thekogans_util_BTreeValues_h
+#if !defined (__thekogans_util_TransactedFileBTreeValues_h)
+#define __thekogans_util_TransactedFileBTreeValues_h
 
 #include <string>
 #include <vector>
@@ -28,11 +28,11 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct StringValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct StringValue TransactedFileBTreeValues.h thekogans/util/TransactedFileBTreeValues.h
         ///
         /// \brief
         /// Variable size string value.
-        struct _LIB_THEKOGANS_UTIL_DECL StringValue : public BTree::Value {
+        struct _LIB_THEKOGANS_UTIL_DECL StringValue : public TransactedFileBTree::Value {
             /// \brief
             /// StringValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringValue)
@@ -79,11 +79,11 @@ namespace thekogans {
             }
         };
 
-        /// \struct PtrValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct PtrValue TransactedFileBTreeValues.h thekogans/util/TransactedFileBTreeValues.h
         ///
         /// \brief
         /// \see{FileAllocator::PtrType} value.
-        struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public BTree::Value {
+        struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public TransactedFileBTree::Value {
             /// \brief
             /// PtrValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (PtrValue)
@@ -124,12 +124,12 @@ namespace thekogans {
             }
         };
 
-        /// \struct ArrayValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct ArrayValue TransactedFileBTreeValues.h thekogans/util/TransactedFileBTreeValues.h
         ///
         /// \brief
         /// ArrayValue is a template for storing arrays of types.
         template<typename T>
-        struct ArrayValue : public BTree::Value {
+        struct ArrayValue : public TransactedFileBTree::Value {
             /// \brief
             /// The actual array.
             std::vector<T> value;
@@ -241,4 +241,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTreeValues_h)
+#endif // !defined (__thekogans_util_TransactedFileBTreeValues_h)
