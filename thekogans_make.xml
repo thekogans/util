@@ -109,7 +109,6 @@
     <cpp_header>$(organization)/$(project_directory)/Event.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/FileAllocatorArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
@@ -185,6 +184,7 @@
     <cpp_header>$(organization)/$(project_directory)/TransactedFile.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocatorRegistry.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeKeys.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeValues.h</cpp_header>

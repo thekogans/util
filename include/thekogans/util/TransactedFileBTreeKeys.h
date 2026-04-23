@@ -21,8 +21,8 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/BTree.h"
 #include "thekogans/util/GUID.h"
+#include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/StringUtils.h"

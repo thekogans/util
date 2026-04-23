@@ -18,9 +18,9 @@
 #include <cstring>
 #include "thekogans/util/Array.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/TransactedFileBTree.h"
+#include "thekogans/util/TransactedFileBTreeKeys.h"
+#include "thekogans/util/TransactedFileBTreeValues.h"
 
 namespace thekogans {
     namespace util {

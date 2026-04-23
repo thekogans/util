@@ -22,8 +22,7 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/GUID.h"
-#include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/BTree.h"
+#include "thekogans/util/TransactedFileBTree.h"
 
 namespace thekogans {
     namespace util {

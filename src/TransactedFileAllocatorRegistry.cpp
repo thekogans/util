@@ -16,8 +16,8 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
-#include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/FileAllocatorRegistry.h"
+#include "thekogans/util/TransactedFileBTreeKeys.h"
+#include "thekogans/util/TransactedFileAllocatorRegistry.h"
 
 namespace thekogans {
     namespace util {

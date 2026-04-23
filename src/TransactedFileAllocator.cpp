@@ -17,7 +17,7 @@
 
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/TransactedFileAllocator.h"
+#include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
     namespace util {
