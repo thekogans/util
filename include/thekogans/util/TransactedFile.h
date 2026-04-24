@@ -467,6 +467,7 @@ namespace thekogans {
                 util::Allocator::SharedPtr allocator;
                 ui8 *data;
                 std::size_t position;
+                TransactedFile::Buffer *buffer;
                 bool owner;
                 bool dirty;
 
@@ -488,7 +489,7 @@ namespace thekogans {
                     return data + position;
                 }
                 inline std::size_t GetDataAvailable () const {
-                    return length - position;
+                    return length;
                 }
                 std::size_t AdvanceOffset (std::size_t advance);
 
