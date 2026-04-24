@@ -66,22 +66,22 @@ namespace thekogans {
         void FileAllocator::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
+            FileAllocator::Block block (*fileAllocator, GetOffset ());
+            block.Read ();
+            TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
             Write (buffer);
             if (fileAllocator->IsSecure ()) {
-                buffer.AdvanceWriteOffset (
-                    SecureZeroMemory (
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
+                buffer.AdvanceOffset (
+                    SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
             }
-            buffer.BlockWrite ();
         }
 
         void FileAllocator::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                FileAllocator::BlockBuffer buffer (*fileAllocator, GetOffset ());
-                buffer.BlockRead ();
+                FileAllocator::Block block (*fileAllocator, GetOffset ());
+                block.Read ();
+                TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
                 Read (buffer);
             }
         }
@@ -420,12 +420,9 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write ();
                         if (IsSecure ()) {
-                            BlockBuffer buffer (*this, block.GetOffset (), clearLength);
-                            buffer.AdvanceWriteOffset (
-                                SecureZeroMemory (
-                                    buffer.GetWritePtr (),
-                                    buffer.GetDataAvailableForWriting ()));
-                            buffer.BlockWrite (clearOffset - block.GetOffset (), clearLength);
+                            TransactedFile::Range buffer (*file, clearOffset, clearLength);
+                            buffer.AdvanceOffset (
+                                SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
                         }
                     }
                     else {
@@ -453,25 +450,23 @@ namespace thekogans {
                 Block block (*this, offset);
                 block.Read ();
                 if (block.GetSize () < size) {
-                    FileAllocator::PtrType oldOffset = offset;
                     offset = Alloc (size);
                     if (moveData) {
-                        BlockBuffer oldBuffer (*this, oldOffset);
-                        oldBuffer.BlockRead ();
-                        BlockBuffer buffer (*this, offset);
-                        buffer.AdvanceWriteOffset (
+                        TransactedFile::Range oldBuffer (
+                            *file, block.GetOffset (), block.GetSize ());
+                        TransactedFile::Range buffer (*file, offset, size);
+                        buffer.AdvanceOffset (
                             oldBuffer.Read (
-                                buffer.GetWritePtr (),
-                                buffer.GetDataAvailableForWriting ()));
+                                buffer.GetDataPtr (),
+                                buffer.GetDataAvailable ()));
                         if (IsSecure ()) {
-                            buffer.AdvanceWriteOffset (
+                            buffer.AdvanceOffset (
                                 SecureZeroMemory (
-                                    buffer.GetWritePtr (),
-                                    buffer.GetDataAvailableForWriting ()));
+                                    buffer.GetDataPtr (),
+                                    buffer.GetDataAvailable ()));
                         }
-                        buffer.BlockWrite ();
                     }
-                    Free (oldOffset);
+                    Free (block.GetOffset ());
                 }
                 // If the new size leaves room for another block, split existing block.
                 else if (block.GetSize () - size >= MIN_BLOCK_SIZE) {

@@ -22,6 +22,39 @@
 namespace thekogans {
     namespace util {
 
+        inline Serializer &operator << (
+               Serializer &serializer,
+               const FileAllocator::BTree::KeyType &key) {
+            serializer << key.first << key.second;
+            return serializer;
+        }
+
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                FileAllocator::BTree::KeyType &key) {
+            serializer >> key.first >> key.second;
+            return serializer;
+        }
+
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const FileAllocator::BTree::Node::Entry &entry) {
+            serializer << entry.key << entry.rightOffset;
+            return serializer;
+        }
+
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                FileAllocator::BTree::Node::Entry &entry) {
+            serializer >> entry.key >> entry.rightOffset;
+            // Because of the way we allocate the BTree::Node the
+            // Entry cror is never called. In a way this extraction
+            // operator is our ctor. Make sure all members are
+            // properly initialized.
+            entry.rightNode = nullptr;
+            return serializer;
+        }
+
         FileAllocator::BTree::Node::Node (
                 BTree &btree_,
                 PtrType offset_) :
@@ -327,7 +360,9 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Node::Flush () {
-            BlockBuffer buffer (btree.fileAllocator, offset);
+            Block block (btree.fileAllocator, offset);
+            block.Read ();
+            TransactedFile::Range buffer (*file, offset, block.GetSize ());
             buffer << MAGIC32 << count;
             if (count > 0) {
                 if (leftNode != nullptr) {
@@ -342,12 +377,9 @@ namespace thekogans {
                 }
             }
             if (btree.fileAllocator.IsSecure ()) {
-                buffer.AdvanceWriteOffset (
-                    SecureZeroMemory (
-                        buffer.GetWritePtr (),
-                        buffer.GetDataAvailableForWriting ()));
+                buffer.AdvanceOffset (
+                    SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
             }
-            buffer.BlockWrite ();
         }
 
         void FileAllocator::BTree::Node::Reload () {
@@ -374,8 +406,9 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Node::Load () {
-            BlockBuffer buffer (btree.fileAllocator, offset);
-            buffer.BlockRead ();
+            Block block (btree.fileAllocator, offset);
+            block.Read ();
+            TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {
@@ -483,9 +516,10 @@ namespace thekogans {
 
         void FileAllocator::BTree::Flush () {
             header.rootOffset = rootNode->offset;
-            BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
+            Block block (fileAllocator, fileAllocator.header.btreeOffset);
+            block.Read ();
+            TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
             buffer << MAGIC32 << header;
-            buffer.BlockWrite ();
         }
 
         void FileAllocator::BTree::Reload () {
@@ -504,8 +538,9 @@ namespace thekogans {
         }
 
         void FileAllocator::BTree::Load () {
-            BlockBuffer buffer (fileAllocator, fileAllocator.header.btreeOffset);
-            buffer.BlockRead ();
+            Block block (fileAllocator, fileAllocator.header.btreeOffset);
+            block.Read ();
+            TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {
@@ -542,39 +577,6 @@ namespace thekogans {
                 const FileAllocator::BTree::KeyType &key2) {
             return key1.first < key2.first ||
                 (key1.first == key2.first && key1.second < key2.second);
-        }
-
-        inline Serializer &operator << (
-               Serializer &serializer,
-               const FileAllocator::BTree::KeyType &key) {
-            serializer << key.first << key.second;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                FileAllocator::BTree::KeyType &key) {
-            serializer >> key.first >> key.second;
-            return serializer;
-        }
-
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const FileAllocator::BTree::Node::Entry &entry) {
-            serializer << entry.key << entry.rightOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                FileAllocator::BTree::Node::Entry &entry) {
-            serializer >> entry.key >> entry.rightOffset;
-            // Because of the way we allocate the BTree::Node the
-            // Entry cror is never called. In a way this extraction
-            // operator is our ctor. Make sure all members are
-            // properly initialized.
-            entry.rightNode = nullptr;
-            return serializer;
         }
 
         inline Serializer &operator << (

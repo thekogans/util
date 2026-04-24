@@ -103,6 +103,95 @@ namespace thekogans {
             }
         }
 
+        TransactedFile::Range::Range (
+                TransactedFile &file_,
+                ui64 offset_,
+                std::size_t length_,
+                Allocator::SharedPtr allocator_) :
+                Serializer (file_.endianness),
+                file (file_),
+                offset (offset_),
+                length (length_),
+                allocator (allocator_),
+                data (nullptr),
+                position (0),
+                buffer (nullptr),
+                owner (false),
+                dirty (false) {
+            file.Seek (offset, SEEK_SET);
+            buffer = file.GetBuffer ();
+            std::size_t bufferOffset = offset - buffer->offset;
+            std::size_t countAvailable = MIN (buffer->length - bufferOffset, length);
+            if (length > countAvailable) {
+                data = (ui8 *)allocator->Alloc (length);
+                file.Read (data, length);
+                owner = true;
+            }
+            else {
+                data = buffer->data + bufferOffset;
+            }
+        }
+
+        TransactedFile::Range::~Range () {
+            if (owner) {
+                if (dirty) {
+                    file.Seek (offset, SEEK_SET);
+                    file.Write (data, position);
+                }
+                allocator->Free (data, position + length);
+            }
+            else if (dirty) {
+                buffer->dirty = true;
+                file.SetDirty (true);
+            }
+        }
+
+        std::size_t TransactedFile::Range::AdvanceOffset (std::size_t advance) {
+            if (advance > length) {
+                advance = length;
+            }
+            length -= advance;
+            position += advance;
+            return advance;
+        }
+
+        std::size_t TransactedFile::Range::Read (
+                void *buffer,
+                std::size_t count) {
+            if (buffer != nullptr) {
+                if (count > length) {
+                    count = length;
+                }
+                memcpy (buffer, data + position, count);
+                length -= count;
+                position += count;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+            return count;
+        }
+
+        std::size_t TransactedFile::Range::Write (
+                const void *buffer,
+                std::size_t count) {
+            if (buffer != nullptr) {
+                if (count > length) {
+                    count = length;
+                }
+                memcpy (data + position, buffer, count);
+                length -= count;
+                position += count;
+                dirty = true;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+            return count;
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Buffer)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)

@@ -204,8 +204,10 @@ namespace thekogans {
                 FileAllocator &fileAllocator,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
-                FileAllocator::BlockBuffer buffer (fileAllocator, offset);
-                buffer.BlockRead ();
+                FileAllocator::Block block (fileAllocator, offset);
+                block.Read ();
+                TransactedFile::Range buffer (
+                    *fileAllocator.GetFile (), block.GetOffset (), block.GetSize ());
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -587,8 +589,9 @@ namespace thekogans {
                 serializer >> count;
                 if (count > 0) {
                     serializer >> leftOffset >> keyValueOffset;
-                    FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
-                    keyValueBuffer.BlockRead ();
+                    FileAllocator::Block block (*fileAllocator, keyValueOffset);
+                    block.Read ();
+                    TransactedFile::Range keyValueBuffer (*file, block.GetOffset (), block.GetSize ());
                     SerializableHeader keyHeader = btree.header.keyContext;
                     SerializableHeader valueHeader = btree.header.valueContext;
                     for (ui32 i = 0; i < count; ++i) {
@@ -685,7 +688,9 @@ namespace thekogans {
                     leftOffset = left->GetOffset ();
                 }
                 serializer << leftOffset << keyValueOffset;
-                FileAllocator::BlockBuffer keyValueBuffer (*fileAllocator, keyValueOffset);
+                FileAllocator::Block block (*fileAllocator, keyValueOffset);
+                block.Read ();
+                TransactedFile::Range keyValueBuffer (*file, block.GetOffset (), block.GetSize ());
                 for (ui32 i = 0; i < count; ++i) {
                     if (entries[i].right != nullptr) {
                         entries[i].rightOffset = entries[i].right->GetOffset ();
@@ -713,12 +718,11 @@ namespace thekogans {
                 if (fileAllocator->IsSecure ()) {
                     // Zero out the unused portion of the keyValueBuffer to
                     // prevent leaking sensitive data.
-                    keyValueBuffer.AdvanceWriteOffset (
+                    keyValueBuffer.AdvanceOffset (
                         SecureZeroMemory (
-                            keyValueBuffer.GetWritePtr (),
-                            keyValueBuffer.GetDataAvailableForWriting ()));
+                            keyValueBuffer.GetDataPtr (),
+                            keyValueBuffer.GetDataAvailable ()));
                 }
-                keyValueBuffer.BlockWrite ();
             }
             else if (keyValueOffset != 0) {
                 fileAllocator->Free (keyValueOffset);

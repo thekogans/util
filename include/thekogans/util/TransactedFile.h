@@ -584,6 +584,79 @@ namespace thekogans {
             Buffer *currBuffer;
 
         public:
+            /// \struct TransactedFile::Range TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// Range provides direct access to TransactedFile's underlying buffers.
+            /// By pairing it with \see{Serializer}, Range provides serialization/
+            /// deserialization capabilities without the need to copy chunks of data
+            /// in to and out of the buffers resulting in better performance. Because
+            /// the file's 64 bit address space is chunked in to hierarchical pages,
+            /// if the requested range straddles the page boundary, a range buffer is
+            /// allocated to gurantee sequential access.
+            struct _LIB_THEKOGANS_UTIL_DECL Range : public Serializer {
+            private:
+                /// \brief
+                ///
+                TransactedFile &file;
+                /// \brief
+                /// Begining of range.
+                ui64 offset;
+                /// \brief
+                /// Length of range.
+                std::size_t length;
+                /// \brief
+                /// If the provided range straddles a page boundary
+                /// use this allocaor to allocate a range buffer.
+                Allocator::SharedPtr allocator;
+                /// \brief
+                ///
+                ui8 *data;
+                /// \brief
+                ///
+                std::size_t position;
+                /// \brief
+                ///
+                TransactedFile::Buffer *buffer;
+                /// \brief
+                ///
+                bool owner;
+                /// \brief
+                ///
+                bool dirty;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} to buffer.
+                /// \param[in] offset_ File offset.
+                /// \param[in] length_ How much of the file we want access too.
+                /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
+                Range (
+                    TransactedFile &file_,
+                    ui64 offset_,
+                    std::size_t length_,
+                    Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                /// \brief
+                /// dtor.
+                virtual ~Range ();
+
+                inline ui8 *GetDataPtr () const {
+                    return data + position;
+                }
+                inline std::size_t GetDataAvailable () const {
+                    return length;
+                }
+                std::size_t AdvanceOffset (std::size_t advance);
+
+                virtual std::size_t Read (
+                    void *buffer,
+                    std::size_t count) override;
+                virtual std::size_t Write (
+                    const void *buffer,
+                    std::size_t count) override;
+            };
+
             /// \brief
             /// ctor.
             /// \param[in] endianness File endianness.
