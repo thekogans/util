@@ -43,6 +43,7 @@ namespace thekogans {
             /// \brief
             /// \see{util::FileAllocator} for managing random size blocks in the file.
             util::FileAllocator::SharedPtr fileAllocator;
+            bool registryValueAsObject;
             /// \brief
             /// Number of entries per \see{util::BTree::Node}.
             std::size_t registryEntriesPerNode;
@@ -79,6 +80,7 @@ namespace thekogans {
                     util::FileAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage =
                     util::FileAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
+                bool registryValueAsObject_ = false,
                 std::size_t registryEntriesPerNode_ =
                     util::FileAllocatorRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t registryNodesPerPage_ =

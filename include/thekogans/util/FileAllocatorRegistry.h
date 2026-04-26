@@ -59,6 +59,7 @@ namespace thekogans {
             /// \param[in] allocator Where \see{BTree::Node} pages come from.
             FileAllocatorRegistry (
                 FileAllocator::SharedPtr fileAllocator,
+                bool valueAsObject = false,
                 std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
                 Allocator::SharedPtr allocator = DefaultAllocator::Instance ());

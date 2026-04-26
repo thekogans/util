@@ -24,6 +24,7 @@ namespace thekogans {
 
         FileAllocatorRegistry::FileAllocatorRegistry (
                 FileAllocator::SharedPtr fileAllocator,
+                bool valueAsObject,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
@@ -32,6 +33,7 @@ namespace thekogans {
                 fileAllocator->GetRootOffset (),
                 StringKey::GetContext (),
                 SerializableHeader (),
+                valueAsObject,
                 entriesPerNode,
                 nodesPerPage,
                 allocator) {

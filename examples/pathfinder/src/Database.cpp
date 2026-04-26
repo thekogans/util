@@ -26,6 +26,7 @@ namespace thekogans {
                 bool secure,
                 std::size_t btreeEntriesPerNode,
                 std::size_t btreeNodesPerPage,
+                bool registryValueAsObject_,
                 std::size_t registryEntriesPerNode_,
                 std::size_t registryNodesPerPage_,
                 util::Allocator::SharedPtr allocator_) :
@@ -34,6 +35,7 @@ namespace thekogans {
                         util::HostEndian,
                         path,
                         util::SimpleFile::ReadWrite | util::SimpleFile::Create)),
+                registryValueAsObject (registryValueAsObject_),
                 registryEntriesPerNode (registryEntriesPerNode_),
                 registryNodesPerPage (registryNodesPerPage_),
                 allocator (allocator_) {
@@ -55,6 +57,7 @@ namespace thekogans {
                     registry.Reset (
                         new util::FileAllocatorRegistry (
                             fileAllocator,
+                            registryValueAsObject,
                             registryEntriesPerNode,
                             registryNodesPerPage,
                             allocator));

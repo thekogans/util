@@ -16,7 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstring>
-#include "thekogans/util/Array.h"
+#include "thekogans/util/Heap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/BTreeKeys.h"
 #include "thekogans/util/BTreeValues.h"
@@ -27,31 +27,10 @@ namespace thekogans {
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                const BTree::Node::Entry &entry) {
-            serializer << entry.rightOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                BTree::Node::Entry &entry) {
-            serializer >> entry.rightOffset;
-            // Because of the way we allocate the BTree::Node the
-            // Entry cror is never called. In a way this extraction
-            // operator is our ctor. Make sure all members are
-            // properly initialized.
-            entry.key = nullptr;
-            entry.value = nullptr;
-            entry.right = nullptr;
-            return serializer;
-        }
-
-        inline Serializer &operator << (
-                Serializer &serializer,
                 const BTree::Header &header) {
             header.keyContext.Write (serializer);
             header.valueContext.Write (serializer);
-            serializer << header.entriesPerNode << header.rootOffset;
+            serializer << header.flags << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 
@@ -60,7 +39,7 @@ namespace thekogans {
                 BTree::Header &header) {
             header.keyContext.Read (serializer);
             header.valueContext.Read (serializer);
-            serializer >> header.entriesPerNode >> header.rootOffset;
+            serializer >> header.flags >> header.entriesPerNode >> header.rootOffset;
             return serializer;
         }
 
@@ -80,6 +59,32 @@ namespace thekogans {
             GUIDArrayValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BTree::ValueObject)
+
+        BTree::Value::SharedPtr BTree::ValueObject::GetValue () {
+            if (value == nullptr) {
+                assert (offset != 0);
+                FileAllocator::Block block (*fileAllocator, offset);
+                block.Read ();
+                TransactedFile::Range buffer (
+                    *file, block.GetOffset (), block.GetSize ());
+                buffer.context = valueContext;
+                buffer.factory = valueFactory;
+                buffer >> value;
+            }
+            return value;
+        }
+
+        void BTree::ValueObject::Read (Serializer &serializer) {
+            Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
+            serializer >> value;
+        }
+
+        void BTree::ValueObject::Write (Serializer &serializer) {
+            Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
+            serializer << value;
+        }
 
         void BTree::Iterator::Clear () {
             // Leave the prefix in case they want to reuse the iterator.
@@ -136,7 +141,7 @@ namespace thekogans {
         BTree::Value::SharedPtr BTree::Iterator::GetValue () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->entries[node.second].value;
+                return node.first->GetValue (node.second);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -201,13 +206,13 @@ namespace thekogans {
         }
 
         void BTree::Node::FreeSubtree (
-                FileAllocator &fileAllocator,
+                BTree &btree,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
-                FileAllocator::Block block (fileAllocator, offset);
+                FileAllocator::Block block (*btree.fileAllocator, offset);
                 block.Read ();
                 TransactedFile::Range buffer (
-                    *fileAllocator.GetFile (), block.GetOffset (), block.GetSize ());
+                    *btree.file, block.GetOffset (), block.GetSize ());
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -217,15 +222,20 @@ namespace thekogans {
                         FileAllocator::PtrType leftOffset;
                         FileAllocator::PtrType keyValueOffset;
                         buffer >> leftOffset >> keyValueOffset;
-                        fileAllocator.Free (keyValueOffset);
-                        FreeSubtree (fileAllocator, leftOffset);
+                        btree.fileAllocator->Free (keyValueOffset);
+                        FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
-                            Entry entry;
-                            buffer >> entry;
-                            FreeSubtree (fileAllocator, entry.rightOffset);
+                            FileAllocator::PtrType valueOffset;
+                            if (btree.header.IsValueAsObject ()) {
+                                buffer >> valueOffset;
+                                btree.fileAllocator->Free (valueOffset);
+                            }
+                            FileAllocator::PtrType rightOffset;
+                            buffer >> rightOffset;
+                            FreeSubtree (btree, rightOffset);
                         }
                     }
-                    fileAllocator.Free (offset);
+                    btree.fileAllocator->Free (offset);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -235,13 +245,17 @@ namespace thekogans {
             }
         }
 
+        BTree::Value::SharedPtr BTree::Node::GetValue (ui32 index) {
+            return entries[index].value->GetValue ();
+        }
+
         void BTree::Node::SetValue (
                 ui32 index,
                 Value::SharedPtr value) {
-            if (entries[index].value != nullptr) {
-                entries[index].value->Release ();
+            entries[index].value->SetValue (value);
+            if (btree.header.IsValueAsObject ()) {
+                entries[index].value->SetDirty (true);
             }
-            entries[index].value = value.Release ();
             SetDirty (true);
         }
 
@@ -395,6 +409,7 @@ namespace thekogans {
                         leaf = leaf->GetChild (0);
                     }
                     entries[index].key = leaf->entries[0].key;
+                    entries[index].valueOffset = leaf->entries[0].valueOffset;
                     entries[index].value = leaf->entries[0].value;
                     SetDirty (true);
                     child->Remove (*leaf->entries[0].key);
@@ -541,7 +556,7 @@ namespace thekogans {
                 std::cout << offset << ": " << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
                     std::cout << " ; [" << entries[i].key->ToString () << ", " <<
-                        entries[i].value->ToString () << "] ; " << entries[i].rightOffset;
+                        entries[i].value->GetValue ()->ToString () << "] ; " << entries[i].rightOffset;
                 }
                 std::cout << "\n";
                 for (ui32 i = 0; i < count; ++i) {
@@ -591,34 +606,35 @@ namespace thekogans {
                     serializer >> leftOffset >> keyValueOffset;
                     FileAllocator::Block block (*fileAllocator, keyValueOffset);
                     block.Read ();
-                    TransactedFile::Range keyValueBuffer (*file, block.GetOffset (), block.GetSize ());
-                    SerializableHeader keyHeader = btree.header.keyContext;
-                    SerializableHeader valueHeader = btree.header.valueContext;
+                    TransactedFile::Range keyValueBuffer (
+                        *file, block.GetOffset (), block.GetSize ());
+                    keyValueBuffer.context = btree.header.keyContext;
+                    keyValueBuffer.factory = btree.keyFactory;
                     for (ui32 i = 0; i < count; ++i) {
-                        serializer >> entries[i];
-                        {
-                            keyValueBuffer >> keyHeader.version >> keyHeader.size;
-                            entries[i].key = (Key *)btree.keyFactory (nullptr).Release ();
-                            entries[i].key->Read (keyHeader, keyValueBuffer);
-                        }
-                        if (!valueHeader.NeedType ()) {
-                            keyValueBuffer >> valueHeader.version >> valueHeader.size;
-                            entries[i].value = (Value *)btree.valueFactory (nullptr).Release ();
-                            entries[i].value->Read (valueHeader, keyValueBuffer);
+                        Key::SharedPtr key;
+                        keyValueBuffer >> key;
+                        entries[i].key = key.Release ();
+                        if (btree.header.IsValueAsObject ()) {
+                            serializer >> entries[i].valueOffset;
                         }
                         else {
+                            entries[i].valueOffset = 0;
+                        }
+                        entries[i].value = new ValueObject (
+                            fileAllocator,
+                            entries[i].valueOffset,
+                            btree.header.valueContext,
+                            btree.valueFactory);
+                        entries[i].value->AddRef ();
+                        serializer >> entries[i].rightOffset;
+                    }
+                    if (!btree.header.IsValueAsObject ()) {
+                        keyValueBuffer.context = btree.header.valueContext;
+                        keyValueBuffer.factory = btree.valueFactory;
+                        for (ui32 i = 0; i < count; ++i) {
                             Value::SharedPtr value;
                             keyValueBuffer >> value;
-                            if (value != nullptr) {
-                                entries[i].value = value.Release ();
-                            }
-                            else {
-                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                    "Unable to read value from BTree::Node @"
-                                    THEKOGANS_UTIL_UI64_FORMAT " @ entry %u",
-                                    offset,
-                                    i);
-                            }
+                            entries[i].value->SetValue (value);
                         }
                     }
                 }
@@ -634,53 +650,14 @@ namespace thekogans {
             serializer << MAGIC32 << count;
             if (count > 0) {
                 // Calculate key/value sizes.
-                Array<std::pair<SizeT, SizeT>> keyValueSizes (count);
-                std::size_t totalKeyValueSize = 0;
+                std::size_t keyValueSize = 0;
                 for (ui32 i = 0; i < count; ++i) {
-                    std::pair<SizeT, SizeT> keyValueSize (
-                        entries[i].key->Size (), entries[i].value->Size ());
-                    keyValueSizes[i] = keyValueSize;
-                    totalKeyValueSize +=
-                        // key version + key size + key bytes
-                        UI16_SIZE + keyValueSize.first.Size () + keyValueSize.first;
-                    if (!btree.header.valueContext.NeedType ()) {
-                        totalKeyValueSize +=
-                            // value version + value size + value bytes
-                            UI16_SIZE + keyValueSize.second.Size () + keyValueSize.second;
-                    }
-                    else {
-                        // It would be nice to just write:
-                        // totalKeyValueSize += entries[i].value->GetSize ();
-                        // and be done with it. But that would incure a penalty
-                        // of yet another call to Serializable::Size (). So we
-                        // simmulate what Serializable::GetSize would do and
-                        // construct a SerializableHeader from the pieces we
-                        // already have to take it's size. A bit of insider
-                        // trading and potentially dangerous if the SerializableHeader
-                        // would ever to change.
-                        totalKeyValueSize +=
-                            SerializableHeader (
-                                entries[i].value->Type (),
-                                entries[i].value->Version (),
-                                keyValueSize.second).Size () + keyValueSize.second;
+                    keyValueSize += entries[i].key->GetSize (btree.header.keyContext);
+                    if (!btree.header.IsValueAsObject ()) {
+                        keyValueSize += entries[i].value->GetValue ()->GetSize (btree.header.valueContext);
                     }
                 }
-                // Get existing block size.
-                ui64 blockSize = 0;
-                if (keyValueOffset != 0) {
-                    FileAllocator::Block block (*fileAllocator, keyValueOffset);
-                    block.Read ();
-                    blockSize = block.GetSize ();
-                }
-                // If existing block size is less than what we need,
-                // resize it.
-                if (blockSize < totalKeyValueSize) {
-                    // First, free the old block.
-                    if (keyValueOffset != 0) {
-                        fileAllocator->Free (keyValueOffset);
-                    }
-                    keyValueOffset = fileAllocator->Alloc (totalKeyValueSize);
-                }
+                keyValueOffset = fileAllocator->Realloc (keyValueOffset, keyValueSize, false);
                 // This is a very important if statement for it
                 // stamps the in memory cache on to onfile
                 // store. In effect marking the new checkpoint.
@@ -691,29 +668,27 @@ namespace thekogans {
                 FileAllocator::Block block (*fileAllocator, keyValueOffset);
                 block.Read ();
                 TransactedFile::Range keyValueBuffer (*file, block.GetOffset (), block.GetSize ());
+                keyValueBuffer.context = btree.header.keyContext;
+                keyValueBuffer.factory = btree.keyFactory;
                 for (ui32 i = 0; i < count; ++i) {
+                    keyValueBuffer << entries[i].key;
+                    if (btree.header.IsValueAsObject ()) {
+                        if (entries[i].value != nullptr) {
+                            entries[i].valueOffset = entries[i].value->GetOffset ();
+                        }
+                        serializer << entries[i].valueOffset;
+                    }
                     if (entries[i].right != nullptr) {
                         entries[i].rightOffset = entries[i].right->GetOffset ();
                     }
-                    serializer << entries[i];
-                    keyValueBuffer <<
-                        entries[i].key->Version () <<
-                        SizeT (keyValueSizes[i].first);
-                    entries[i].key->Write (keyValueBuffer);
-                    if (!btree.header.valueContext.NeedType ()) {
-                        keyValueBuffer <<
-                            entries[i].value->Version () <<
-                            SizeT (keyValueSizes[i].second);
+                    serializer << entries[i].rightOffset;
+                }
+                if (!btree.header.IsValueAsObject ()) {
+                    keyValueBuffer.context = btree.header.valueContext;
+                    keyValueBuffer.factory = btree.valueFactory;
+                    for (ui32 i = 0; i < count; ++i) {
+                        keyValueBuffer << entries[i].value->GetValue ();
                     }
-                    else {
-                        // See comment above totalKeyValueSize +=
-                        keyValueBuffer <<
-                            SerializableHeader (
-                                entries[i].value->Type (),
-                                entries[i].value->Version (),
-                                keyValueSizes[i].second);
-                    }
-                    entries[i].value->Write (keyValueBuffer);
                 }
                 if (fileAllocator->IsSecure ()) {
                     // Zero out the unused portion of the keyValueBuffer to
@@ -735,11 +710,16 @@ namespace thekogans {
                 FileAllocator::PtrType offset,
                 const SerializableHeader &keyContext,
                 const SerializableHeader &valueContext,
+                bool valueAsObject,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
                 FileAllocator::Object (fileAllocator, offset),
-                header (keyContext, valueContext, (ui32)entriesPerNode),
+                header (
+                    keyContext,
+                    valueContext,
+                    valueAsObject ? Header::FLAGS_VALUE_AS_OBJECT : 0,
+                    (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyContext.type.c_str ())),
                 valueFactory (Value::GetTypeFactory (valueContext.type.c_str ())),
                 nodeAllocator (
@@ -792,7 +772,14 @@ namespace thekogans {
                     (header.valueContext.NeedType () ||
                         value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
-                Node::Entry entry (key.Get (), value.Get ());
+                ValueObject::SharedPtr valueObject (
+                    new ValueObject (
+                        fileAllocator,
+                        0,
+                        header.valueContext,
+                        valueFactory,
+                        value));
+                Node::Entry entry (key.Get (), valueObject.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
                     // The path to the leaf node is full.
@@ -816,7 +803,10 @@ namespace thekogans {
                         SetDirty (true);
                     }
                     key.Release ();
-                    value.Release ();
+                    if (header.IsValueAsObject ()) {
+                        valueObject->SetDirty (true);
+                    }
+                    valueObject.Release ();
                 }
                 return result == Node::Inserted;
             }
@@ -890,7 +880,7 @@ namespace thekogans {
 
         void BTree::Free () {
             if (GetOffset () != 0) {
-                Node::FreeSubtree (*fileAllocator, header.rootOffset);
+                Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
                 Object::Free ();
             }
