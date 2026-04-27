@@ -87,17 +87,17 @@ namespace thekogans {
         }
 
         void FileAllocator::Block::Header::Read (
-                File &file,
+                TransactedFile &file,
                 PtrType offset) {
-            file.Seek (offset, SEEK_SET);
+            TransactedFile::Range buffer (file, offset, SIZE + PTR_TYPE_SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
-            file >> magic;
+            buffer >> magic;
             if (magic == MAGIC32) {
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-                file >> flags >> size;
+                buffer >> flags >> size;
                 if (IsFree () && IsBTreeNode ()) {
-                    file >> nextBTreeNodeOffset;
+                    buffer >> nextBTreeNodeOffset;
                 }
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             }
@@ -111,28 +111,28 @@ namespace thekogans {
         }
 
         void FileAllocator::Block::Header::Write (
-                File &file,
+                TransactedFile &file,
                 PtrType offset) const {
-            file.Seek (offset, SEEK_SET);
+            TransactedFile::Range buffer (file, offset, SIZE + PTR_TYPE_SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            file << MAGIC32;
+            buffer << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            file << flags << size;
+            buffer << flags << size;
             if (IsFree () && IsBTreeNode ()) {
-                file << nextBTreeNodeOffset;
+                buffer << nextBTreeNodeOffset;
             }
         }
 
         void FileAllocator::Block::Footer::Read (
-                File &file,
+                TransactedFile &file,
                 PtrType offset) {
-            file.Seek (offset, SEEK_SET);
+            TransactedFile::Range buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
-            file >> magic;
+            buffer >> magic;
             if (magic == MAGIC32) {
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-                file >> flags >> size;
+                buffer >> flags >> size;
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             }
             else {
@@ -145,13 +145,13 @@ namespace thekogans {
         }
 
         void FileAllocator::Block::Footer::Write (
-                File &file,
+                TransactedFile &file,
                 PtrType offset) const {
-            file.Seek (offset, SEEK_SET);
+            TransactedFile::Range buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            file << MAGIC32;
+            buffer << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            file << flags << size;
+            buffer << flags << size;
         }
 
         inline bool operator != (
@@ -485,8 +485,8 @@ namespace thekogans {
         }
 
         void FileAllocator::Flush () {
-            file->Seek (0, SEEK_SET);
-            *file << MAGIC32 << header;
+            TransactedFile::Range buffer (*file, 0, Header::SIZE);
+            buffer << MAGIC32 << header;
         }
 
         void FileAllocator::Reload () {

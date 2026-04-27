@@ -158,7 +158,6 @@ namespace thekogans {
                 /// Every leaf class must have one.
                 virtual void Reset () override {
                     value.Reset ();
-                    SetDirty (false);
                 }
 
                 // FileAllocator::Object

@@ -331,14 +331,14 @@ namespace thekogans {
                     /// \param[in] file File to read from.
                     /// \param[in] offset Offset where the header begins.
                     void Read (
-                        File &file,
+                        TransactedFile &file,
                         PtrType offset);
                     /// \brief
                     /// Write the header to the disk.
                     /// \param[in] file File to write to.
                     /// \param[in] offset Offset where the header begins.
                     void Write (
-                        File &file,
+                        TransactedFile &file,
                         PtrType offset) const;
                 } header;
                 /// \struct FileAllocator::Block::Footer FileAllocator.h
@@ -404,14 +404,14 @@ namespace thekogans {
                     /// \param[in] file File to read from.
                     /// \param[in] offset Offset where the footer begins.
                     void Read (
-                        File &file,
+                        TransactedFile &file,
                         PtrType offset);
                     /// \brief
                     /// Write the footer to the disk.
                     /// \param[in] file File to write to.
                     /// \param[in] offset Offset where the footer begins.
                     void Write (
-                        File &file,
+                        TransactedFile &file,
                         PtrType offset) const;
                 } footer;
 
