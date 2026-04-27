@@ -502,10 +502,12 @@ namespace thekogans {
             header.btreeOffset = 0;
             header.freeBTreeNodeOffset = 0;
             header.rootOffset = 0;
-            file->Seek (0, SEEK_SET);
-            *file << MAGIC32 << header;
             // Shrink the file.
-            file->SetSize (file->Tell ());
+            file->SetSize (0);
+            {
+                TransactedFile::Range buffer (*file, 0, Header::SIZE);
+                buffer << MAGIC32 << header;
+            }
             btree.Reset (
                 new BTree (
                     *this,
@@ -516,9 +518,9 @@ namespace thekogans {
         }
 
         void FileAllocator::Load () {
-            file->Seek (0, SEEK_SET);
+            TransactedFile::Range buffer (*file, 0, Header::SIZE);
             ui32 magic;
-            *file >> magic;
+            buffer >> magic;
             if (magic == MAGIC32) {
                 // File is host endian.
             }
@@ -531,7 +533,7 @@ namespace thekogans {
                     "Corrupt FileAllocator file (%s)",
                     file->GetPath ().c_str ());
             }
-            *file >> header;
+            buffer >> header;
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             if (!header.IsBlockUsesMagic ()) {
         #else // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
