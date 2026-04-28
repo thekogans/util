@@ -120,6 +120,11 @@ namespace thekogans {
                 dirty (false) {
             file.Seek (offset, SEEK_SET);
             buffer = file.GetBuffer ();
+            if (length == 0) {
+                Allocator::Block block (offset);
+                block.Read (file);
+                length = block.GetSize ();
+            }
             std::size_t bufferOffset = offset - buffer->offset;
             std::size_t countAvailable = MIN (buffer->length - bufferOffset, length);
             if (length > countAvailable) {

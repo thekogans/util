@@ -66,9 +66,7 @@ namespace thekogans {
         void FileAllocator::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            FileAllocator::Block block (*fileAllocator, GetOffset ());
-            block.Read ();
-            TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
+            TransactedFile::Range buffer (*file, GetOffset ());
             Write (buffer);
             if (fileAllocator->IsSecure ()) {
                 buffer.AdvanceOffset (
@@ -79,9 +77,7 @@ namespace thekogans {
         void FileAllocator::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                FileAllocator::Block block (*fileAllocator, GetOffset ());
-                block.Read ();
-                TransactedFile::Range buffer (*file, block.GetOffset (), block.GetSize ());
+                TransactedFile::Range buffer (*file, GetOffset ());
                 Read (buffer);
             }
         }

@@ -65,10 +65,7 @@ namespace thekogans {
         BTree::Value::SharedPtr BTree::ValueObject::GetValue () {
             if (value == nullptr) {
                 assert (offset != 0);
-                FileAllocator::Block block (*fileAllocator, offset);
-                block.Read ();
-                TransactedFile::Range buffer (
-                    *file, block.GetOffset (), block.GetSize ());
+                TransactedFile::Range buffer (*file, offset);
                 buffer.context = valueContext;
                 buffer.factory = valueFactory;
                 buffer >> value;
@@ -209,10 +206,7 @@ namespace thekogans {
                 BTree &btree,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
-                FileAllocator::Block block (*btree.fileAllocator, offset);
-                block.Read ();
-                TransactedFile::Range buffer (
-                    *btree.file, block.GetOffset (), block.GetSize ());
+                TransactedFile::Range buffer (*btree.file, offset);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -604,10 +598,7 @@ namespace thekogans {
                 serializer >> count;
                 if (count > 0) {
                     serializer >> leftOffset >> keyValueOffset;
-                    FileAllocator::Block block (*fileAllocator, keyValueOffset);
-                    block.Read ();
-                    TransactedFile::Range keyValueBuffer (
-                        *file, block.GetOffset (), block.GetSize ());
+                    TransactedFile::Range keyValueBuffer (*file, keyValueOffset);
                     keyValueBuffer.context = btree.header.keyContext;
                     keyValueBuffer.factory = btree.keyFactory;
                     for (ui32 i = 0; i < count; ++i) {
@@ -665,9 +656,7 @@ namespace thekogans {
                     leftOffset = left->GetOffset ();
                 }
                 serializer << leftOffset << keyValueOffset;
-                FileAllocator::Block block (*fileAllocator, keyValueOffset);
-                block.Read ();
-                TransactedFile::Range keyValueBuffer (*file, block.GetOffset (), block.GetSize ());
+                TransactedFile::Range keyValueBuffer (*file, keyValueOffset);
                 keyValueBuffer.context = btree.header.keyContext;
                 keyValueBuffer.factory = btree.keyFactory;
                 for (ui32 i = 0; i < count; ++i) {

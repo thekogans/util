@@ -636,7 +636,7 @@ namespace thekogans {
                 Range (
                     TransactedFile &file_,
                     ui64 offset_,
-                    std::size_t length_,
+                    std::size_t length_ = 0,
                     util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
                 /// \brief
                 /// dtor.
