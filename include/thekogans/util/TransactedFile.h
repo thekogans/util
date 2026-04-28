@@ -321,6 +321,7 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
+            Allocator::SharedPtr allocator;
             /// \brief
             /// For use by \see{Guard} and \see{Transaction}
             Mutex mutex;
@@ -608,7 +609,7 @@ namespace thekogans {
                 /// \brief
                 /// If the provided range straddles a page boundary
                 /// use this allocaor to allocate a range buffer.
-                Allocator::SharedPtr allocator;
+                util::Allocator::SharedPtr allocator;
                 /// \brief
                 ///
                 ui8 *data;
@@ -636,7 +637,7 @@ namespace thekogans {
                     TransactedFile &file_,
                     ui64 offset_,
                     std::size_t length_,
-                    Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                    util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
                 /// \brief
                 /// dtor.
                 virtual ~Range ();
@@ -655,6 +656,131 @@ namespace thekogans {
                 virtual std::size_t Write (
                     const void *buffer,
                     std::size_t count) override;
+            };
+
+            #include "thekogans/util/TransactedFileAllocator.h"
+
+            /// \brief
+            /// Forward declaration of \see{Object} needed by \see{ObjectEvents}.
+            struct Object;
+
+            /// \struct TransactedFile::ObjectEvents TransactedFile.h
+            /// thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// Subscribe to ObjectEvents to receive notifications about file
+            /// store lifetime. This is useful when you have containing objects
+            /// (objects that contain other objects). They can register for their
+            /// 'children' events and be notified when containing child offset changed.
+            struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
+                /// \brief
+                /// dtor.
+                virtual ~ObjectEvents () {}
+
+                /// \brief
+                /// \see{Object} allocated a block in the file.
+                /// \param[in] object \see{Object} whose offset has become valid.
+                /// VERY IMPORTANT SEMANTICS: When you get this notification,
+                /// object->GetOffset () will tell you which block has been freed.
+                virtual void OnTranactedFileObjectAlloc (
+                    RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+                /// \brief
+                /// \see{Object} freed its file block.
+                /// \param[in] object \see{Object} whose offset has become invalid.
+                /// VERY IMPORTANT SEMANTICS: When you get this notification,
+                /// object->GetOffset () will tell you which block has been allocated.
+                virtual void OnTransacedFileObjectFree (
+                    RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+            };
+
+            /// \struct TransactedFile::Object TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// A TransactedFile Object is an object that has allocated at least one block
+            /// from \see{File::Allocator} and participates in \see{TransactedFileEvents}.
+            struct _LIB_THEKOGANS_UTIL_DECL Object :
+                    public TransactionParticipant,
+                    public Producer<ObjectEvents> {
+                /// \brief
+                /// Object is a \see{util::DynamicCreatable} abstract base.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
+
+            protected:
+                /// \brief
+                /// Our address inside the \see{TransactedFile}.
+                Allocator::PtrType offset;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] allocator_ \see{File::Allocator} where this object resides.
+                /// \param[in] offset_ Offset of the \see{File::Allocator::Block}.
+                Object (
+                    TransactedFile::SharedPtr file,
+                    Allocator::PtrType offset_) :
+                    TransactionParticipant (file),
+                    offset (offset_) {}
+                /// \brief
+                /// dtor.
+                virtual ~Object () {}
+
+                /// \brief
+                /// Return the offset.
+                /// \return offset.
+                inline Allocator::PtrType GetOffset () const {
+                    return offset;
+                }
+
+                /// \brief
+                /// A convenience method used to synchronize the
+                /// in memory cache with on disk image.
+                /// \return Offset of the on disk image.
+                Allocator::PtrType ForceFlush ();
+
+            protected:
+                /// \brief
+                /// Optimization for Alloc below. If an object declares
+                /// itself as fixed size, Alloc will not check the object
+                /// block size, only offset. And if offset == 0, it will allocate
+                /// a block once and that's it.
+                /// \return true == object is fixed size.
+                virtual bool IsFixedSize () const {
+                    return false;
+                }
+                /// \brief
+                /// Return the serializable binary size (not including the header).
+                /// \return Serializable binary size.
+                virtual std::size_t Size () const noexcept = 0;
+
+                /// \brief
+                /// Write the serializable from the given serializer.
+                /// \param[in] serializer Serializer to read the serializable from.
+                virtual void Read (Serializer & /*serializer*/) = 0;
+                /// \brief
+                /// Write the serializable to the given serializer.
+                /// \param[out] serializer Serializer to write the serializable to.
+                virtual void Write (Serializer & /*serializer*/) = 0;
+
+                // TransactedFile::TransactionParticipant
+                /// \brief
+                /// If needed allocate space from \see{File::Allocator}.
+                virtual void Alloc () override;
+                /// \brief
+                /// Default free implementation for single block objects.
+                /// If your objects contain internal pointers to other
+                /// blocks you will need to implement this method and
+                /// properly free the containing blocks.
+                virtual void Free () override;
+                /// \brief
+                /// Flush the internal cache to file.
+                virtual void Flush () override;
+                /// \brief
+                /// Reload the internal cache from file.
+                virtual void Reload () override;
+
+                /// \brief
+                /// Object is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
             };
 
             /// \brief
@@ -725,6 +851,13 @@ namespace thekogans {
             /// \brief
             /// dtor.
             virtual ~TransactedFile ();
+
+            inline Allocator::SharedPtr GetAllocator () const {
+                return allocator;
+            }
+            inline void SetAllocator (Allocator::SharedPtr allocator_) {
+                allocator = allocator_;
+            }
 
             /// \brief
             /// Use the lock to gain exclusive access to the file.

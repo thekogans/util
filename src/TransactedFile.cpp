@@ -107,7 +107,7 @@ namespace thekogans {
                 TransactedFile &file_,
                 ui64 offset_,
                 std::size_t length_,
-                Allocator::SharedPtr allocator_) :
+                util::Allocator::SharedPtr allocator_) :
                 Serializer (file_.endianness),
                 file (file_),
                 offset (offset_),

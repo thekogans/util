@@ -94,7 +94,6 @@
     <cpp_header>$(organization)/$(project_directory)/BitSet.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BlockAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Buffer.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/TransactedFile.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ByteSwap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ChildProcess.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CommandLineOptions.h</cpp_header>
@@ -188,6 +187,8 @@
     <cpp_header>$(organization)/$(project_directory)/ThreadRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TimeSpec.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFile.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Types.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ValueParser.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
@@ -663,7 +664,6 @@
     <cpp_source>BitSet.cpp</cpp_source>
     <cpp_source>BlockAllocator.cpp</cpp_source>
     <cpp_source>Buffer.cpp</cpp_source>
-    <cpp_source>TransactedFile.cpp</cpp_source>
     <cpp_source>ChildProcess.cpp</cpp_source>
     <cpp_source>CommandLineOptions.cpp</cpp_source>
     <cpp_source>Condition.cpp</cpp_source>
@@ -736,6 +736,8 @@
     <cpp_source>ThreadRunLoop.cpp</cpp_source>
     <cpp_source>Timer.cpp</cpp_source>
     <cpp_source>TimeSpec.cpp</cpp_source>
+    <cpp_source>TransactedFile.cpp</cpp_source>
+    <cpp_source>TransactedFileAllocator.cpp</cpp_source>
     <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>
