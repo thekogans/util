@@ -584,7 +584,6 @@ namespace thekogans {
             /// and \see{FileAllocator::BlockBuffer}.
             Buffer *currBuffer;
 
-        public:
             /// \struct TransactedFile::Range TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
@@ -593,10 +592,10 @@ namespace thekogans {
             /// deserialization capabilities without the need to copy chunks of data
             /// in to and out of the buffers resulting in better performance. Because
             /// the file's 64 bit address space is chunked in to hierarchical pages,
-            /// if the requested range straddles the page boundary, a range buffer is
+            /// if the requested range straddles a page boundary, a range buffer is
             /// allocated to gurantee sequential access.
             struct _LIB_THEKOGANS_UTIL_DECL Range : public Serializer {
-            private:
+            protected:
                 /// \brief
                 ///
                 TransactedFile &file;
@@ -622,9 +621,6 @@ namespace thekogans {
                 /// \brief
                 ///
                 bool owner;
-                /// \brief
-                ///
-                bool dirty;
 
             public:
                 /// \brief
@@ -653,6 +649,45 @@ namespace thekogans {
                 virtual std::size_t Read (
                     void *buffer,
                     std::size_t count) override;
+                virtual std::size_t Write (
+                    const void *buffer,
+                    std::size_t count) override;
+            };
+
+        public:
+            struct _LIB_THEKOGANS_UTIL_DECL ReadOnlyRange : public Range {
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} to buffer.
+                /// \param[in] offset_ File offset.
+                /// \param[in] length_ How much of the file we want access too.
+                /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
+                ReadOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    std::size_t length = 0,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+
+                virtual std::size_t Read (
+                    void *buffer,
+                    std::size_t count) override;
+            };
+
+            struct _LIB_THEKOGANS_UTIL_DECL WriteOnlyRange : public Range {
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} to buffer.
+                /// \param[in] offset_ File offset.
+                /// \param[in] length_ How much of the file we want access too.
+                /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
+                WriteOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    std::size_t length = 0,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    Range (file, offset, length, allocator) {}
+                virtual ~WriteOnlyRange ();
+
                 virtual std::size_t Write (
                     const void *buffer,
                     std::size_t count) override;

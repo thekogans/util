@@ -116,8 +116,7 @@ namespace thekogans {
                 data (nullptr),
                 position (0),
                 buffer (nullptr),
-                owner (false),
-                dirty (false) {
+                owner (false) {
             file.Seek (offset, SEEK_SET);
             buffer = file.GetBuffer ();
             if (length == 0) {
@@ -129,7 +128,6 @@ namespace thekogans {
             std::size_t countAvailable = MIN (buffer->length - bufferOffset, length);
             if (length > countAvailable) {
                 data = (ui8 *)allocator->Alloc (length);
-                file.Read (data, length);
                 owner = true;
             }
             else {
@@ -139,15 +137,7 @@ namespace thekogans {
 
         TransactedFile::Range::~Range () {
             if (owner) {
-                if (dirty) {
-                    file.Seek (offset, SEEK_SET);
-                    file.Write (data, position);
-                }
                 allocator->Free (data, position + length);
-            }
-            else if (dirty) {
-                buffer->dirty = true;
-                file.SetDirty (true);
             }
         }
 
@@ -161,6 +151,29 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::Range::Read (
+               void *buffer,
+               std::size_t count) {
+            return 0;
+        }
+
+        std::size_t TransactedFile::Range::Write (
+                const void *buffer,
+                std::size_t count) {
+            return 0;
+        }
+
+        TransactedFile::ReadOnlyRange::ReadOnlyRange (
+                TransactedFile &file,
+                ui64 offset,
+                std::size_t length,
+                util::Allocator::SharedPtr allocator) :
+                Range (file, offset, length, allocator) {
+            if (owner) {
+                file.Read (data, length);
+            }
+        }
+
+        std::size_t TransactedFile::ReadOnlyRange::Read (
                 void *buffer,
                 std::size_t count) {
             if (buffer != nullptr) {
@@ -178,7 +191,20 @@ namespace thekogans {
             return count;
         }
 
-        std::size_t TransactedFile::Range::Write (
+        TransactedFile::WriteOnlyRange::~WriteOnlyRange () {
+            if (position > 0) {
+                if (owner) {
+                    file.Seek (offset, SEEK_SET);
+                    file.Write (data, position);
+                }
+                else {
+                    buffer->dirty = true;
+                    file.SetDirty (true);
+                }
+            }
+        }
+
+        std::size_t TransactedFile::WriteOnlyRange::Write (
                 const void *buffer,
                 std::size_t count) {
             if (buffer != nullptr) {
@@ -188,7 +214,6 @@ namespace thekogans {
                 memcpy (data + position, buffer, count);
                 length -= count;
                 position += count;
-                dirty = true;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

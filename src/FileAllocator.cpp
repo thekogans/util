@@ -66,7 +66,7 @@ namespace thekogans {
         void FileAllocator::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            TransactedFile::Range buffer (*file, GetOffset ());
+            TransactedFile::WriteOnlyRange buffer (*file, GetOffset ());
             Write (buffer);
             if (fileAllocator->IsSecure ()) {
                 buffer.AdvanceOffset (
@@ -77,7 +77,7 @@ namespace thekogans {
         void FileAllocator::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                TransactedFile::Range buffer (*file, GetOffset ());
+                TransactedFile::ReadOnlyRange buffer (*file, GetOffset ());
                 Read (buffer);
             }
         }
@@ -85,7 +85,7 @@ namespace thekogans {
         void FileAllocator::Block::Header::Read (
                 TransactedFile &file,
                 PtrType offset) {
-            TransactedFile::Range buffer (file, offset, SIZE + PTR_TYPE_SIZE);
+            TransactedFile::ReadOnlyRange buffer (file, offset, SIZE + PTR_TYPE_SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
             buffer >> magic;
@@ -109,7 +109,7 @@ namespace thekogans {
         void FileAllocator::Block::Header::Write (
                 TransactedFile &file,
                 PtrType offset) const {
-            TransactedFile::Range buffer (file, offset, SIZE + PTR_TYPE_SIZE);
+            TransactedFile::WriteOnlyRange buffer (file, offset, SIZE + PTR_TYPE_SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             buffer << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -122,7 +122,7 @@ namespace thekogans {
         void FileAllocator::Block::Footer::Read (
                 TransactedFile &file,
                 PtrType offset) {
-            TransactedFile::Range buffer (file, offset, SIZE);
+            TransactedFile::ReadOnlyRange buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
             buffer >> magic;
@@ -143,7 +143,7 @@ namespace thekogans {
         void FileAllocator::Block::Footer::Write (
                 TransactedFile &file,
                 PtrType offset) const {
-            TransactedFile::Range buffer (file, offset, SIZE);
+            TransactedFile::WriteOnlyRange buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             buffer << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -416,7 +416,7 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write ();
                         if (IsSecure ()) {
-                            TransactedFile::Range buffer (*file, clearOffset, clearLength);
+                            TransactedFile::WriteOnlyRange buffer (*file, clearOffset, clearLength);
                             buffer.AdvanceOffset (
                                 SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
                         }
@@ -448,9 +448,9 @@ namespace thekogans {
                 if (block.GetSize () < size) {
                     offset = Alloc (size);
                     if (moveData) {
-                        TransactedFile::Range oldBuffer (
+                        TransactedFile::ReadOnlyRange oldBuffer (
                             *file, block.GetOffset (), block.GetSize ());
-                        TransactedFile::Range buffer (*file, offset, size);
+                        TransactedFile::WriteOnlyRange buffer (*file, offset, size);
                         buffer.AdvanceOffset (
                             oldBuffer.Read (
                                 buffer.GetDataPtr (),
@@ -481,7 +481,7 @@ namespace thekogans {
         }
 
         void FileAllocator::Flush () {
-            TransactedFile::Range buffer (*file, 0, Header::SIZE);
+            TransactedFile::WriteOnlyRange buffer (*file, 0, Header::SIZE);
             buffer << MAGIC32 << header;
         }
 
@@ -501,7 +501,7 @@ namespace thekogans {
             // Shrink the file.
             file->SetSize (0);
             {
-                TransactedFile::Range buffer (*file, 0, Header::SIZE);
+                TransactedFile::WriteOnlyRange buffer (*file, 0, Header::SIZE);
                 buffer << MAGIC32 << header;
             }
             btree.Reset (
@@ -514,7 +514,7 @@ namespace thekogans {
         }
 
         void FileAllocator::Load () {
-            TransactedFile::Range buffer (*file, 0, Header::SIZE);
+            TransactedFile::ReadOnlyRange buffer (*file, 0, Header::SIZE);
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {

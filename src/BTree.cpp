@@ -65,7 +65,7 @@ namespace thekogans {
         BTree::Value::SharedPtr BTree::ValueObject::GetValue () {
             if (value == nullptr) {
                 assert (offset != 0);
-                TransactedFile::Range buffer (*file, offset);
+                TransactedFile::ReadOnlyRange buffer (*file, offset);
                 buffer.context = valueContext;
                 buffer.factory = valueFactory;
                 buffer >> value;
@@ -206,7 +206,7 @@ namespace thekogans {
                 BTree &btree,
                 FileAllocator::PtrType offset) {
             if (offset != 0) {
-                TransactedFile::Range buffer (*btree.file, offset);
+                TransactedFile::ReadOnlyRange buffer (*btree.file, offset);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -598,7 +598,7 @@ namespace thekogans {
                 serializer >> count;
                 if (count > 0) {
                     serializer >> leftOffset >> keyValueOffset;
-                    TransactedFile::Range keyValueBuffer (*file, keyValueOffset);
+                    TransactedFile::ReadOnlyRange keyValueBuffer (*file, keyValueOffset);
                     keyValueBuffer.context = btree.header.keyContext;
                     keyValueBuffer.factory = btree.keyFactory;
                     for (ui32 i = 0; i < count; ++i) {
@@ -649,14 +649,11 @@ namespace thekogans {
                     }
                 }
                 keyValueOffset = fileAllocator->Realloc (keyValueOffset, keyValueSize, false);
-                // This is a very important if statement for it
-                // stamps the in memory cache on to onfile
-                // store. In effect marking the new checkpoint.
                 if (left != nullptr) {
                     leftOffset = left->GetOffset ();
                 }
                 serializer << leftOffset << keyValueOffset;
-                TransactedFile::Range keyValueBuffer (*file, keyValueOffset);
+                TransactedFile::WriteOnlyRange keyValueBuffer (*file, keyValueOffset);
                 keyValueBuffer.context = btree.header.keyContext;
                 keyValueBuffer.factory = btree.keyFactory;
                 for (ui32 i = 0; i < count; ++i) {
