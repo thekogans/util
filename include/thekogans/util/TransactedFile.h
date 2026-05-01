@@ -180,128 +180,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
             };
 
-            /// \struct TransactedFile::TransactionParticipant TransactedFile.h
-            /// thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// TransactionParticipants are objects that listen to
-            /// \see{TransactedFileEvents} and are able to flush and reload
-            /// themselves to and from a \see{TransactedFile}.
-            struct _LIB_THEKOGANS_UTIL_DECL TransactionParticipant :
-                    public Subscriber<TransactedFileEvents> {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactionParticipant)
-
-            protected:
-                /// \brief
-                /// \see{TransactedFile} whose \see{TransactedFileEvents}
-                /// we're participants of.
-                TransactedFile::SharedPtr file;
-                /// \brief
-                /// Set if the internal cache is dirty.
-                static const ui32 FLAGS_DIRTY = 1;
-                /// \brief
-                /// Set if we've been deleted.
-                static const ui32 FLAGS_DELETED = 2;
-                /// \brief
-                /// Combination of the above flags.
-                Flags32 flags;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
-                TransactionParticipant (TransactedFile::SharedPtr file_) :
-                    file (file_),
-                    flags (0) {}
-                /// \brief
-                /// dtor.
-                virtual ~TransactionParticipant () {}
-
-                /// \brief
-                /// Return the file.
-                /// \return file.
-                inline TransactedFile::SharedPtr GetFile () const {
-                    return file;
-                }
-
-                /// \brief
-                /// Return dirty.
-                /// \return dirty.
-                inline bool IsDirty () const {
-                    return flags.Test (FLAGS_DIRTY);
-                }
-                /// \brief
-                /// Set the dirty flag, preserving the state of the deleted flag.
-                /// \param[in] dirty true == dirty, false == clean.
-                inline void SetDirty (bool dirty) {
-                    SetFlags ((dirty ? FLAGS_DIRTY : 0) | (IsDeleted () ? FLAGS_DELETED : 0));
-                }
-
-                /// \brief
-                /// Return deleted.
-                /// \return deleted.
-                inline bool IsDeleted () const {
-                    return flags.Test (FLAGS_DELETED);
-                }
-
-                /// \brief
-                /// Delete the disk image and reset the internal state.
-                void Delete ();
-
-            protected:
-                // NOTE: The following API abstracts out the protocol called for in
-                // OnTransactedFileTransactionCommit, OnTransactedFileTransactionAbort
-                // and Delete.
-
-                /// \brief
-                /// Allocate space from file.
-                virtual void Alloc () = 0;
-                /// \brief
-                /// Free the on disk image.
-                virtual void Free () = 0;
-                /// \brief
-                /// Flush the internal cache to file.
-                virtual void Flush () = 0;
-                /// \brief
-                /// Reload the internal cache from file.
-                virtual void Reload () = 0;
-                /// \brief
-                /// Reset internal state.
-                virtual void Reset () = 0;
-
-                // TransactedFileEvents
-                /// \brief
-                /// Transaction is commiting. Flush the internal cache to file.
-                /// \param[in] file \see{TransactedFile} commiting the transaction.
-                /// \param[in] phase \see{TransactedFile} implements two phase commit.
-                virtual void OnTransactedFileTransactionCommit (
-                    TransactedFile::SharedPtr /*file*/,
-                    int phase) noexcept override;
-                /// \brief
-                /// Transaction is aborting. Reload the internal cache from file.
-                /// \param[in] file \see{TransactedFile} aborting the transaction.
-                virtual void OnTransactedFileTransactionAbort (
-                    TransactedFile::SharedPtr /*file*/) noexcept override;
-
-            private:
-                /// \brief
-                /// Set the deleted flag, preserving the state of the dirty flag.
-                /// \param[in] deleted true == deleted, false == alive.
-                inline void SetDeleted (bool deleted) {
-                    SetFlags ((IsDirty () ? FLAGS_DIRTY : 0) | (deleted ? FLAGS_DELETED : 0));
-                }
-                /// \brief
-                /// Set the flags.
-                /// \param[in] flags_ New flags value.
-                void SetFlags (ui32 flags_);
-
-                /// \brief
-                /// TransactionParticipant is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
-            };
-
         private:
             /// \brief
             /// Current read/write position.
@@ -321,6 +199,8 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
+            /// \brief
+            /// \see{Allocator} associated with this file.
             Allocator::SharedPtr allocator;
             /// \brief
             /// For use by \see{Guard} and \see{Transaction}
@@ -695,6 +575,135 @@ namespace thekogans {
 
             #include "thekogans/util/TransactedFileAllocator.h"
 
+            /// \struct TransactedFile::TransactionParticipant TransactedFile.h
+            /// thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// TransactionParticipants are objects that listen to
+            /// \see{TransactedFileEvents} and are able to flush and reload
+            /// themselves to and from a \see{TransactedFile}.
+            struct _LIB_THEKOGANS_UTIL_DECL TransactionParticipant :
+                    public Subscriber<TransactedFileEvents> {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactionParticipant)
+
+            protected:
+                /// \brief
+                /// \see{TransactedFile} whose \see{TransactedFileEvents}
+                /// we're participants of.
+                TransactedFile::SharedPtr file;
+                /// \brief
+                /// Set if the internal cache is dirty.
+                static const ui32 FLAGS_DIRTY = 1;
+                /// \brief
+                /// Set if we've been deleted.
+                static const ui32 FLAGS_DELETED = 2;
+                /// \brief
+                /// Combination of the above flags.
+                Flags32 flags;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
+                TransactionParticipant (TransactedFile::SharedPtr file_) :
+                    file (file_),
+                    flags (0) {}
+                /// \brief
+                /// dtor.
+                virtual ~TransactionParticipant () {}
+
+                /// \brief
+                /// Return the file.
+                /// \return file.
+                inline TransactedFile::SharedPtr GetFile () const {
+                    return file;
+                }
+
+                /// \brief
+                /// Return the file.
+                /// \return file.
+                inline Allocator::SharedPtr GetAllocator () const {
+                    return file->allocator;
+                }
+
+                /// \brief
+                /// Return dirty.
+                /// \return dirty.
+                inline bool IsDirty () const {
+                    return flags.Test (FLAGS_DIRTY);
+                }
+                /// \brief
+                /// Set the dirty flag, preserving the state of the deleted flag.
+                /// \param[in] dirty true == dirty, false == clean.
+                inline void SetDirty (bool dirty) {
+                    SetFlags ((dirty ? FLAGS_DIRTY : 0) | (IsDeleted () ? FLAGS_DELETED : 0));
+                }
+
+                /// \brief
+                /// Return deleted.
+                /// \return deleted.
+                inline bool IsDeleted () const {
+                    return flags.Test (FLAGS_DELETED);
+                }
+
+                /// \brief
+                /// Delete the disk image and reset the internal state.
+                void Delete ();
+
+            protected:
+                // NOTE: The following API abstracts out the protocol called for in
+                // OnTransactedFileTransactionCommit, OnTransactedFileTransactionAbort
+                // and Delete.
+
+                /// \brief
+                /// Allocate space from file.
+                virtual void Alloc () = 0;
+                /// \brief
+                /// Free the on disk image.
+                virtual void Free () = 0;
+                /// \brief
+                /// Flush the internal cache to file.
+                virtual void Flush () = 0;
+                /// \brief
+                /// Reload the internal cache from file.
+                virtual void Reload () = 0;
+                /// \brief
+                /// Reset internal state.
+                virtual void Reset () = 0;
+
+                // TransactedFileEvents
+                /// \brief
+                /// Transaction is commiting. Flush the internal cache to file.
+                /// \param[in] file \see{TransactedFile} commiting the transaction.
+                /// \param[in] phase \see{TransactedFile} implements two phase commit.
+                virtual void OnTransactedFileTransactionCommit (
+                    TransactedFile::SharedPtr /*file*/,
+                    int phase) noexcept override;
+                /// \brief
+                /// Transaction is aborting. Reload the internal cache from file.
+                /// \param[in] file \see{TransactedFile} aborting the transaction.
+                virtual void OnTransactedFileTransactionAbort (
+                    TransactedFile::SharedPtr /*file*/) noexcept override;
+
+            private:
+                /// \brief
+                /// Set the deleted flag, preserving the state of the dirty flag.
+                /// \param[in] deleted true == deleted, false == alive.
+                inline void SetDeleted (bool deleted) {
+                    SetFlags ((IsDirty () ? FLAGS_DIRTY : 0) | (deleted ? FLAGS_DELETED : 0));
+                }
+                /// \brief
+                /// Set the flags.
+                /// \param[in] flags_ New flags value.
+                void SetFlags (ui32 flags_);
+
+                /// \brief
+                /// TransactionParticipant is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
+            };
+
             /// \brief
             /// Forward declaration of \see{Object} needed by \see{ObjectEvents}.
             struct Object;
@@ -717,14 +726,14 @@ namespace thekogans {
                 /// \param[in] object \see{Object} whose offset has become valid.
                 /// VERY IMPORTANT SEMANTICS: When you get this notification,
                 /// object->GetOffset () will tell you which block has been freed.
-                virtual void OnTranactedFileObjectAlloc (
+                virtual void OnTransactedFileObjectAlloc (
                     RefCounted::SharedPtr<Object> /*object*/) noexcept {}
                 /// \brief
                 /// \see{Object} freed its file block.
                 /// \param[in] object \see{Object} whose offset has become invalid.
                 /// VERY IMPORTANT SEMANTICS: When you get this notification,
                 /// object->GetOffset () will tell you which block has been allocated.
-                virtual void OnTransacedFileObjectFree (
+                virtual void OnTransactedFileObjectFree (
                     RefCounted::SharedPtr<Object> /*object*/) noexcept {}
             };
 
@@ -887,7 +896,7 @@ namespace thekogans {
             /// dtor.
             virtual ~TransactedFile ();
 
-            inline Allocator::SharedPtr GetAllocator () const {
+            inline TransactedFile::Allocator::SharedPtr GetAllocator () const {
                 return allocator;
             }
             inline void SetAllocator (Allocator::SharedPtr allocator_) {

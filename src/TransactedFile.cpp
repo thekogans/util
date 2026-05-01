@@ -46,182 +46,6 @@ namespace thekogans {
             file->CommitTransaction ();
         }
 
-        void TransactedFile::TransactionParticipant::Delete () {
-            Reset ();
-            if (!IsDeleted ()) {
-                SetDeleted (true);
-                AddRef ();
-            }
-        }
-
-        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr /*file*/,
-                int phase) noexcept {
-            THEKOGANS_UTIL_TRY {
-                if (phase == COMMIT_PHASE_1) {
-                    assert (IsDeleted () || IsDirty ());
-                    if (IsDeleted ()) {
-                        Free ();
-                    }
-                    if (IsDirty ()) {
-                        Alloc ();
-                    }
-                    if (IsDeleted ()) {
-                        SetDeleted (false);
-                        Release ();
-                    }
-                }
-                else if (phase == COMMIT_PHASE_2) {
-                    assert (!IsDeleted () && IsDirty ());
-                    Flush ();
-                    SetDirty (false);
-                }
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr /*file*/) noexcept {
-            THEKOGANS_UTIL_TRY {
-                assert (flags);
-                Reload ();
-                SetFlags (0);
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        void TransactedFile::TransactionParticipant::SetFlags (ui32 flags_) {
-            if (flags != flags_) {
-                ui32 oldFlags = flags;
-                flags = flags_;
-                if (!oldFlags && flags) {
-                    Subscriber<TransactedFileEvents>::Subscribe (*file);
-                }
-                else if (oldFlags && !flags) {
-                    Subscriber<TransactedFileEvents>::Unsubscribe (*file);
-                }
-            }
-        }
-
-        TransactedFile::Range::Range (
-                TransactedFile &file_,
-                ui64 offset_,
-                std::size_t length_,
-                util::Allocator::SharedPtr allocator_) :
-                Serializer (file_.endianness),
-                file (file_),
-                offset (offset_),
-                length (length_),
-                allocator (allocator_),
-                data (nullptr),
-                position (0),
-                buffer (nullptr),
-                owner (false) {
-            file.Seek (offset, SEEK_SET);
-            buffer = file.GetBuffer ();
-            if (length == 0) {
-                Allocator::Block block (offset);
-                block.Read (file);
-                length = block.GetSize ();
-            }
-            std::size_t bufferOffset = offset - buffer->offset;
-            std::size_t countAvailable = MIN (buffer->length - bufferOffset, length);
-            if (length > countAvailable) {
-                data = (ui8 *)allocator->Alloc (length);
-                owner = true;
-            }
-            else {
-                data = buffer->data + bufferOffset;
-            }
-        }
-
-        TransactedFile::Range::~Range () {
-            if (owner) {
-                allocator->Free (data, position + length);
-            }
-        }
-
-        std::size_t TransactedFile::Range::AdvanceOffset (std::size_t advance) {
-            if (advance > length) {
-                advance = length;
-            }
-            length -= advance;
-            position += advance;
-            return advance;
-        }
-
-        std::size_t TransactedFile::Range::Read (
-               void *buffer,
-               std::size_t count) {
-            return 0;
-        }
-
-        std::size_t TransactedFile::Range::Write (
-                const void *buffer,
-                std::size_t count) {
-            return 0;
-        }
-
-        TransactedFile::ReadOnlyRange::ReadOnlyRange (
-                TransactedFile &file,
-                ui64 offset,
-                std::size_t length,
-                util::Allocator::SharedPtr allocator) :
-                Range (file, offset, length, allocator) {
-            if (owner) {
-                file.Read (data, length);
-            }
-        }
-
-        std::size_t TransactedFile::ReadOnlyRange::Read (
-                void *buffer,
-                std::size_t count) {
-            if (buffer != nullptr) {
-                if (count > length) {
-                    count = length;
-                }
-                memcpy (buffer, data + position, count);
-                length -= count;
-                position += count;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            return count;
-        }
-
-        TransactedFile::WriteOnlyRange::~WriteOnlyRange () {
-            if (position > 0) {
-                if (owner) {
-                    file.Seek (offset, SEEK_SET);
-                    file.Write (data, position);
-                }
-                else {
-                    buffer->dirty = true;
-                    file.SetDirty (true);
-                }
-            }
-        }
-
-        std::size_t TransactedFile::WriteOnlyRange::Write (
-                const void *buffer,
-                std::size_t count) {
-            if (buffer != nullptr) {
-                if (count > length) {
-                    count = length;
-                }
-                memcpy (data + position, buffer, count);
-                length -= count;
-                position += count;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            return count;
-        }
-
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Buffer)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
@@ -355,6 +179,242 @@ namespace thekogans {
                 }
             }
             return nodes[index];
+        }
+
+        TransactedFile::Range::Range (
+                TransactedFile &file_,
+                ui64 offset_,
+                std::size_t length_,
+                util::Allocator::SharedPtr allocator_) :
+                Serializer (file_.endianness),
+                file (file_),
+                offset (offset_),
+                length (length_),
+                allocator (allocator_),
+                data (nullptr),
+                position (0),
+                buffer (nullptr),
+                owner (false) {
+            file.Seek (offset, SEEK_SET);
+            buffer = file.GetBuffer ();
+            if (length == 0) {
+                Allocator::Block block (offset);
+                block.Read (file);
+                length = block.GetSize ();
+            }
+            std::size_t bufferOffset = offset - buffer->offset;
+            std::size_t countAvailable = MIN (buffer->length - bufferOffset, length);
+            if (length > countAvailable) {
+                data = (ui8 *)allocator->Alloc (length);
+                owner = true;
+            }
+            else {
+                data = buffer->data + bufferOffset;
+            }
+        }
+
+        TransactedFile::Range::~Range () {
+            if (owner) {
+                allocator->Free (data, position + length);
+            }
+        }
+
+        std::size_t TransactedFile::Range::AdvanceOffset (std::size_t advance) {
+            if (advance > length) {
+                advance = length;
+            }
+            length -= advance;
+            position += advance;
+            return advance;
+        }
+
+        std::size_t TransactedFile::Range::Read (
+               void *buffer,
+               std::size_t count) {
+            return 0;
+        }
+
+        std::size_t TransactedFile::Range::Write (
+                const void *buffer,
+                std::size_t count) {
+            return 0;
+        }
+
+        TransactedFile::ReadOnlyRange::ReadOnlyRange (
+                TransactedFile &file,
+                ui64 offset,
+                std::size_t length,
+                util::Allocator::SharedPtr allocator) :
+                Range (file, offset, length, allocator) {
+            if (owner) {
+                file.Read (data, length);
+            }
+        }
+
+        std::size_t TransactedFile::ReadOnlyRange::Read (
+                void *buffer,
+                std::size_t count) {
+            if (buffer != nullptr) {
+                if (count > length) {
+                    count = length;
+                }
+                memcpy (buffer, data + position, count);
+                length -= count;
+                position += count;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+            return count;
+        }
+
+        TransactedFile::WriteOnlyRange::~WriteOnlyRange () {
+            if (position > 0) {
+                if (owner) {
+                    file.Seek (offset, SEEK_SET);
+                    file.Write (data, position);
+                }
+                else {
+                    buffer->dirty = true;
+                    file.SetDirty (true);
+                }
+            }
+        }
+
+        std::size_t TransactedFile::WriteOnlyRange::Write (
+                const void *buffer,
+                std::size_t count) {
+            if (buffer != nullptr) {
+                if (count > length) {
+                    count = length;
+                }
+                memcpy (data + position, buffer, count);
+                length -= count;
+                position += count;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+            return count;
+        }
+
+        void TransactedFile::TransactionParticipant::Delete () {
+            Reset ();
+            if (!IsDeleted ()) {
+                SetDeleted (true);
+                AddRef ();
+            }
+        }
+
+        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr /*file*/,
+                int phase) noexcept {
+            THEKOGANS_UTIL_TRY {
+                if (phase == COMMIT_PHASE_1) {
+                    assert (IsDeleted () || IsDirty ());
+                    if (IsDeleted ()) {
+                        Free ();
+                    }
+                    if (IsDirty ()) {
+                        Alloc ();
+                    }
+                    if (IsDeleted ()) {
+                        SetDeleted (false);
+                        Release ();
+                    }
+                }
+                else if (phase == COMMIT_PHASE_2) {
+                    assert (!IsDeleted () && IsDirty ());
+                    Flush ();
+                    SetDirty (false);
+                }
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr /*file*/) noexcept {
+            THEKOGANS_UTIL_TRY {
+                assert (flags);
+                Reload ();
+                SetFlags (0);
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void TransactedFile::TransactionParticipant::SetFlags (ui32 flags_) {
+            if (flags != flags_) {
+                ui32 oldFlags = flags;
+                flags = flags_;
+                if (!oldFlags && flags) {
+                    Subscriber<TransactedFileEvents>::Subscribe (*file);
+                }
+                else if (oldFlags && !flags) {
+                    Subscriber<TransactedFileEvents>::Unsubscribe (*file);
+                }
+            }
+        }
+
+        TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
+            SetDirty (true);
+            Alloc ();
+            Flush ();
+            return GetOffset ();
+        }
+
+        void TransactedFile::Object::Alloc () {
+            if (!IsFixedSize () || offset == 0) {
+                Allocator::PtrType newOffset =
+                    GetAllocator ()->Realloc (offset, Size (), false);
+                if (offset != newOffset) {
+                    if (offset != 0) {
+                        Produce (
+                            std::bind (
+                                &ObjectEvents::OnTransactedFileObjectFree,
+                                std::placeholders::_1,
+                                this));
+                    }
+                    offset = newOffset;
+                    Produce (
+                        std::bind (
+                            &ObjectEvents::OnTransactedFileObjectAlloc,
+                            std::placeholders::_1,
+                            this));
+                }
+            }
+        }
+
+        void TransactedFile::Object::Free () {
+            if (offset != 0) {
+                GetAllocator ()->Free (offset);
+                Produce (
+                    std::bind (
+                        &ObjectEvents::OnTransactedFileObjectFree,
+                        std::placeholders::_1,
+                        this));
+                offset = 0;
+            }
+        }
+
+        void TransactedFile::Object::Flush () {
+            assert (IsDirty ());
+            assert (GetOffset () != 0);
+            TransactedFile::WriteOnlyRange buffer (*file, GetOffset ());
+            Write (buffer);
+            if (GetAllocator ()->IsSecure ()) {
+                buffer.AdvanceOffset (
+                    SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
+            }
+        }
+
+        void TransactedFile::Object::Reload () {
+            Reset ();
+            if (GetOffset () != 0) {
+                TransactedFile::ReadOnlyRange buffer (*file, GetOffset ());
+                Read (buffer);
+            }
         }
 
         TransactedFile::~TransactedFile () {

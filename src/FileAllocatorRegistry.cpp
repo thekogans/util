@@ -23,21 +23,21 @@ namespace thekogans {
     namespace util {
 
         FileAllocatorRegistry::FileAllocatorRegistry (
-                FileAllocator::SharedPtr fileAllocator,
+                TransactedFile::SharedPtr file,
                 bool valueAsObject,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
                 BTree (
-                    fileAllocator,
-                    fileAllocator->GetRootOffset (),
+                    file,
+                    file->GetAllocator ()->GetRootOffset (),
                     StringKey::GetContext (),
                     SerializableHeader (),
                     valueAsObject,
                     entriesPerNode,
                     nodesPerPage,
                     allocator) {
-            Subscriber<FileAllocator::ObjectEvents>::Subscribe (*this);
+            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*this);
         }
 
         BTree::Value::SharedPtr FileAllocatorRegistry::GetValue (const std::string &key) {

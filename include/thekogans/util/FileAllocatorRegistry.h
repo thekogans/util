@@ -38,7 +38,7 @@ namespace thekogans {
         /// from \see{BTree::Value}. The key type is std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
                 private BTree,
-                public Subscriber<FileAllocator::ObjectEvents> {
+                public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
@@ -58,7 +58,7 @@ namespace thekogans {
             /// \param[in] nodesPerPage Number of \see{BTree::Node}s per allocator page.
             /// \param[in] allocator Where \see{BTree::Node} pages come from.
             FileAllocatorRegistry (
-                FileAllocator::SharedPtr fileAllocator,
+                TransactedFile::SharedPtr file,
                 bool valueAsObject = false,
                 std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
@@ -86,16 +86,16 @@ namespace thekogans {
             /// \brief
             /// \see{BTree} allocated a block in the file.
             /// \param[in] object \see{BTree} whose offset has become valid.
-            virtual void OnFileAllocatorObjectAlloc (
-                    FileAllocator::Object::SharedPtr object) noexcept override {
-                fileAllocator->SetRootOffset (object->GetOffset ());
+            virtual void OnTransactedFileObjectAlloc (
+                    TransactedFile::Object::SharedPtr object) noexcept override {
+                file->GetAllocator ()->SetRootOffset (object->GetOffset ());
             }
             /// \brief
             /// \see{BTree} freed its \see{BTree::Header} block.
             /// \param[in] object \see{BTree} whose offset has become valid.
-            virtual void OnFileAllocatorObjectFree (
-                    FileAllocator::Object::SharedPtr object) noexcept override {
-                fileAllocator->SetRootOffset (0);
+            virtual void OnTransactedFileObjectFree (
+                    TransactedFile::Object::SharedPtr object) noexcept override {
+                file->GetAllocator ()->SetRootOffset (0);
             }
 
             /// \brief

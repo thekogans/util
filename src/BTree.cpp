@@ -174,7 +174,7 @@ namespace thekogans {
         BTree::Node::Node (
                 BTree &btree_,
                 FileAllocator::PtrType offset) :
-                FileAllocator::Object (btree_.GetFileAllocator (), offset),
+                TransactedFile::Object (btree_.GetFile (), offset),
                 btree (btree_),
                 count (0),
                 leftOffset (0),
@@ -216,20 +216,20 @@ namespace thekogans {
                         FileAllocator::PtrType leftOffset;
                         FileAllocator::PtrType keyValueOffset;
                         buffer >> leftOffset >> keyValueOffset;
-                        btree.fileAllocator->Free (keyValueOffset);
+                        btree.GetAllocator ()->Free (keyValueOffset);
                         FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
                             FileAllocator::PtrType valueOffset;
                             if (btree.header.IsValueAsObject ()) {
                                 buffer >> valueOffset;
-                                btree.fileAllocator->Free (valueOffset);
+                                btree.GetAllocator ()->Free (valueOffset);
                             }
                             FileAllocator::PtrType rightOffset;
                             buffer >> rightOffset;
                             FreeSubtree (btree, rightOffset);
                         }
                     }
-                    btree.fileAllocator->Free (offset);
+                    btree.GetAllocator ()->Free (offset);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -612,7 +612,7 @@ namespace thekogans {
                             entries[i].valueOffset = 0;
                         }
                         entries[i].value = new ValueObject (
-                            fileAllocator,
+                            file,
                             entries[i].valueOffset,
                             btree.header.valueContext,
                             btree.valueFactory);
@@ -648,7 +648,7 @@ namespace thekogans {
                         keyValueSize += entries[i].value->GetValue ()->GetSize (btree.header.valueContext);
                     }
                 }
-                keyValueOffset = fileAllocator->Realloc (keyValueOffset, keyValueSize, false);
+                keyValueOffset = GetAllocator ()->Realloc (keyValueOffset, keyValueSize, false);
                 if (left != nullptr) {
                     leftOffset = left->GetOffset ();
                 }
@@ -676,7 +676,7 @@ namespace thekogans {
                         keyValueBuffer << entries[i].value->GetValue ();
                     }
                 }
-                if (fileAllocator->IsSecure ()) {
+                if (GetAllocator ()->IsSecure ()) {
                     // Zero out the unused portion of the keyValueBuffer to
                     // prevent leaking sensitive data.
                     keyValueBuffer.AdvanceOffset (
@@ -686,21 +686,21 @@ namespace thekogans {
                 }
             }
             else if (keyValueOffset != 0) {
-                fileAllocator->Free (keyValueOffset);
+                GetAllocator ()->Free (keyValueOffset);
                 keyValueOffset = 0;
             }
         }
 
         BTree::BTree (
-                FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset,
+                TransactedFile::SharedPtr file,
+                TransactedFile::Allocator::PtrType offset,
                 const SerializableHeader &keyContext,
                 const SerializableHeader &valueContext,
                 bool valueAsObject,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                FileAllocator::Object (fileAllocator, offset),
+                TransactedFile::Object (file, offset),
                 header (
                     keyContext,
                     valueContext,
@@ -760,7 +760,7 @@ namespace thekogans {
                 it.Clear ();
                 ValueObject::SharedPtr valueObject (
                     new ValueObject (
-                        fileAllocator,
+                        file,
                         0,
                         header.valueContext,
                         valueFactory,

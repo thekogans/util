@@ -120,12 +120,86 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
-        void TransactedFile::Allocator::Header::Read (Serializer &serializer) {
-            serializer >> version >> flags >> heapStart >> rootOffset;
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const TransactedFile::Allocator::Header &header) {
+            serializer <<
+                header.version <<
+                header.flags <<
+                header.heapStart <<
+                header.rootOffset;
+            return serializer;
         }
 
-        void TransactedFile::Allocator::Header::Write (Serializer &serializer) {
-            serializer << version << flags << heapStart << rootOffset;
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                TransactedFile::Allocator::Header &header) {
+            serializer >>
+                header.version >>
+                header.flags >>
+                header.heapStart >>
+                header.rootOffset;
+            return serializer;
+        }
+
+        void TransactedFile::Allocator::SetFlags (ui32 flags_) {
+            if (flags != flags_) {
+                ui32 oldFlags = flags;
+                flags = flags_;
+                if (!oldFlags && flags) {
+                    Subscriber<TransactedFileEvents>::Subscribe (file);
+                }
+                else if (oldFlags && !flags) {
+                    Subscriber<TransactedFileEvents>::Unsubscribe (file);
+                }
+            }
+        }
+
+        void TransactedFile::Allocator::Read () {
+            TransactedFile::WriteOnlyRange buffer (file, 0, Header::SIZE);
+            ui32 magic;
+            buffer >> magic;
+            if (magic == MAGIC32) {
+                // File is host endian.
+            }
+            else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                // File is guest endian.
+                file.endianness = GuestEndian;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt TransactedFile::Allocator file (%s)",
+                    file.GetPath ().c_str ());
+            }
+            buffer >> header;
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+            if (!header.IsBlockUsesMagic ()) {
+        #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+            if (header.IsBlockUsesMagic ()) {
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "This TransactedFile::Allocator file (%s) cannot be opened by this version of %s.",
+                    file.GetPath ().c_str (),
+                    THEKOGANS_UTIL);
+            }
+        }
+
+        void TransactedFile::Allocator::Write () {
+            TransactedFile::WriteOnlyRange buffer (file, 0, Header::SIZE);
+            buffer << MAGIC32 << header;
+        }
+
+        void TransactedFile::Allocator::OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr /*file*/,
+                int phase) noexcept {
+            if (phase == TransactedFile::COMMIT_PHASE_2) {
+                Write ();
+            }
+        }
+
+        void TransactedFile::Allocator::OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr /*file*/) noexcept {
+            Read ();
         }
 
     } // namespace util

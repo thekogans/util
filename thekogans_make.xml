@@ -19,7 +19,7 @@
     </if>
     <!-- If you don't know what this is, it's safer to leave it on.
          See FileAllocator::Block for explanation. -->
-    <feature>THEKOGANS_UTIL_FILE_ALLOCATOR_BLOCK_USE_MAGIC</feature>
+    <feature>THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC</feature>
   </features>
   <dependencies>
     <choose>

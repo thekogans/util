@@ -58,7 +58,7 @@ namespace thekogans {
         FileAllocator::BTree::Node::Node (
                 BTree &btree_,
                 PtrType offset_) :
-                TransactedFile::TransactionParticipant (btree_.fileAllocator.GetFile ()),
+                TransactedFile::TransactionParticipant (btree_.GetFile ()),
                 btree (btree_),
                 offset (offset_),
                 count (0),

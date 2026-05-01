@@ -55,7 +55,7 @@
 /// | ... |
 /// +-----+
 ///   var
-struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
+struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEvents> {
     /// \brief
     /// Declare \see{RefCounted} pointers.
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Allocator)
@@ -91,7 +91,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
     /// 32 bytes of overhead. Keep that in mind when designing
     /// your objects.
     struct _LIB_THEKOGANS_UTIL_DECL Block {
-    private:
+    protected:
         /// \brief
         /// Block offset.
         PtrType offset;
@@ -351,10 +351,13 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
         inline bool IsSecure () const {
             return flags.Test (FLAGS_SECURE);
         }
-
-        void Read (Serializer &serializer);
-        void Write (Serializer &serializer);
     } header;
+    /// \brief
+    /// Set if the internal cache is dirty.
+    static const ui32 FLAGS_DIRTY = 1;
+    /// \brief
+    /// Combination of the above flags.
+    Flags32 flags;
 
     /// \brief
     /// ctor.
@@ -362,9 +365,11 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
     /// \param[in] secure true == zero out free blocks.
     Allocator (
         TransactedFile &file_,
-        bool secure = false) :
+        ui16 flags = 0,
+        PtrType heapStart = Header::SIZE) :
         file (file_),
-        header (secure ? Header::FLAGS_SECURE : 0) {}
+        header (flags, heapStart),
+        flags (0) {}
 
     /// \brief
     /// Minimum user data size.
@@ -413,6 +418,14 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
     /// \param[in] rootOffset New rootOffset to set.
     inline void SetRootOffset (PtrType rootOffset) {
         header.rootOffset = rootOffset;
+        SetDirty (true);
+    }
+
+    /// \brief
+    /// Set the dirty flag.
+    /// \param[in] dirty true == dirty, false == clean.
+    inline void SetDirty (bool dirty) {
+        SetFlags (dirty ? FLAGS_DIRTY : 0);
     }
 
     /// \brief
@@ -436,4 +449,24 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
         PtrType offset,
         std::size_t newSize,
         bool moveData = true) = 0;
+
+protected:
+    void SetFlags (ui32 flags_);
+
+    virtual void Read ();
+    virtual void Write ();
+
+    // TransactedFileEvents
+    /// \brief
+    /// Transaction is commiting. Flush the internal cache to file.
+    /// \param[in] file \see{TransactedFile} commiting the transaction.
+    /// \param[in] phase \see{TransactedFile} implements two phase commit.
+    virtual void OnTransactedFileTransactionCommit (
+        TransactedFile::SharedPtr /*file*/,
+        int phase) noexcept override;
+    /// \brief
+    /// Transaction is aborting. Reload the internal cache from file.
+    /// \param[in] file \see{TransactedFile} aborting the transaction.
+    virtual void OnTransactedFileTransactionAbort (
+        TransactedFile::SharedPtr /*file*/) noexcept override;
 };

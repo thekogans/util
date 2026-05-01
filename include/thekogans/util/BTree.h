@@ -43,7 +43,7 @@ namespace thekogans {
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
         /// That means that key and values can be practically any random size object
         /// (as long as it derives from BTree::Key and implements the interface).
-        struct _LIB_THEKOGANS_UTIL_DECL BTree : public FileAllocator::Object {
+        struct _LIB_THEKOGANS_UTIL_DECL BTree : public TransactedFile::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -120,7 +120,7 @@ namespace thekogans {
             };
 
         protected:
-            struct _LIB_THEKOGANS_UTIL_DECL ValueObject : public FileAllocator::Object {
+            struct _LIB_THEKOGANS_UTIL_DECL ValueObject : public TransactedFile::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ValueObject)
@@ -136,12 +136,12 @@ namespace thekogans {
 
             public:
                 ValueObject (
-                    FileAllocator::SharedPtr fileAllocator,
+                    TransactedFile::SharedPtr file,
                     FileAllocator::PtrType offset,
                     const SerializableHeader &valueContext_,
                     DynamicCreatable::FactoryType valueFactory_,
                     Value::SharedPtr value_ = nullptr) :
-                    FileAllocator::Object (fileAllocator, offset),
+                    TransactedFile::Object (file, offset),
                     valueContext (valueContext_),
                     valueFactory (valueFactory_),
                     value (value_) {}
@@ -382,7 +382,7 @@ namespace thekogans {
             ///
             /// \brief
             /// BTree nodes store sorted key/value pairs and pointers to children nodes.
-            struct Node : public FileAllocator::Object {
+            struct Node : public TransactedFile::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
@@ -743,14 +743,14 @@ namespace thekogans {
             /// might be just the ticket. You will probably need to call;
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             BTree (
-                FileAllocator::SharedPtr fileAllocator,
-                FileAllocator::PtrType offset,
+                TransactedFile::SharedPtr file,
+                TransactedFile::Allocator::PtrType offset,
                 const SerializableHeader &keyContext = SerializableHeader (),
                 const SerializableHeader &valueContext = SerializableHeader (),
                 bool valueAsObject = false,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
             virtual ~BTree ();
