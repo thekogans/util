@@ -15,33 +15,33 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_FileAllocatorRegistry_h)
-#define __thekogans_util_FileAllocatorRegistry_h
+#if !defined (__thekogans_util_TransactedFileBTreeRegistry_h)
+#define __thekogans_util_TransactedFileBTreeRegistry_h
 
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/BTree.h"
 #include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
     namespace util {
 
-        /// \struct FileAllocatorRegistry FileAllocatorRegistry.h
-        /// thekogans/util/FileAllocatorRegistry.h
+        /// \struct TransactedFileBTreeRegistry TransactedFileBTreeRegistry.h
+        /// thekogans/util/TransactedFileBTreeRegistry.h
         ///
         /// \brief
-        /// \see{FileAllocatorRegistry} is a \see{BTree}. It's also a
-        /// \see{FileAllocator::Header::rootObject}. It provides global
-        /// ordered, associative storage for \see{FileAllocator} clients.
+        /// \see{TransactedFileBTreeRegistry} is a \see{BTree}. It's also a
+        /// \see{TransactedFile::Allocator::Header::rootObject}. It provides
+        /// global ordered, associative storage for \see{TransactedFile} clients.
         /// Use it to store and retrieve practically any value derived
         /// from \see{Serializable}. The key type is std::string.
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
-                private BTree,
-                public Subscriber<TransactedFile::ObjectEvents> {
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
+                public TransactedFile::Registry,
+                private BTree {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocatorRegistry)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFileBTreeRegistry)
 
         public:
             /// \brief
@@ -53,11 +53,11 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator \see{FileAllocator} where the registry lives.
+            /// \param[in] fileAllocator \see{TransactedFileBTree} where the registry lives.
             /// \param[in] entriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] nodesPerPage Number of \see{BTree::Node}s per allocator page.
             /// \param[in] allocator Where \see{BTree::Node} pages come from.
-            FileAllocatorRegistry (
+            TransactedFileBTreeRegistry (
                 TransactedFile::SharedPtr file,
                 bool valueAsObject = false,
                 std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
@@ -69,7 +69,7 @@ namespace thekogans {
             /// return nullptr.
             /// \param[in] key Key whose value to retrieve.
             /// \return Value @ key, nullptr if key is not found.
-            Serializable::SharedPtr GetValue (const std::string &key);
+            virtual Serializable::SharedPtr GetValue (const std::string &key) override;
             /// \brief
             /// Given a key, do one of the following three;
             /// 1. If value != nullptr and key is not found, insert new key/value.
@@ -77,33 +77,16 @@ namespace thekogans {
             /// 3. if value == nullptr, and key if found, delete the key from the registry.
             /// \param[in] key Key to search/delete.
             /// \param[in] value Value to set/replace/delete.
-            void SetValue (
+            virtual void SetValue (
                 const std::string &key,
-                Serializable::SharedPtr value);
-
-        protected:
-            // FileAllocator::ObjectEvents
-            /// \brief
-            /// \see{BTree} allocated a block in the file.
-            /// \param[in] object \see{BTree} whose offset has become valid.
-            virtual void OnTransactedFileObjectAlloc (
-                    TransactedFile::Object::SharedPtr object) noexcept override {
-                file->GetAllocator ()->SetRootOffset (object->GetOffset ());
-            }
-            /// \brief
-            /// \see{BTree} freed its \see{BTree::Header} block.
-            /// \param[in] object \see{BTree} whose offset has become valid.
-            virtual void OnTransactedFileObjectFree (
-                    TransactedFile::Object::SharedPtr object) noexcept override {
-                file->GetAllocator ()->SetRootOffset (0);
-            }
+                Serializable::SharedPtr value) override;
 
             /// \brief
-            /// FileAllocatorRegistry is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocatorRegistry)
+            /// TransactedFileBTreeRegistry is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFileBTreeRegistry)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_FileAllocatorRegistry_h)
+#endif // !defined (__thekogans_util_TransactedFileBTreeRegistry_h)

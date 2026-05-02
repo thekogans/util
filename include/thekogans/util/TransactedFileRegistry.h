@@ -31,6 +31,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry : public Subscriber<ObjectEvents> {
 
 public:
     /// \brief
+    /// ctor.
+    Registry () {}
+
+    /// \brief
     /// Given a key, retrieve the associated value. If key is not found,
     /// return nullptr.
     /// \param[in] key Key whose value to retrieve.

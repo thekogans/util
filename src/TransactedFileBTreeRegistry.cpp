@@ -17,12 +17,12 @@
 
 #include <string>
 #include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/FileAllocatorRegistry.h"
+#include "thekogans/util/TransactedFileBTreeRegistry.h"
 
 namespace thekogans {
     namespace util {
 
-        FileAllocatorRegistry::FileAllocatorRegistry (
+        TransactedFileBTreeRegistry::TransactedFileBTreeRegistry (
                 TransactedFile::SharedPtr file,
                 bool valueAsObject,
                 std::size_t entriesPerNode,
@@ -40,12 +40,12 @@ namespace thekogans {
             Subscriber<TransactedFile::ObjectEvents>::Subscribe (*this);
         }
 
-        Serializable::SharedPtr FileAllocatorRegistry::GetValue (const std::string &key) {
+        Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             BTree::Iterator it;
             return Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
 
-        void FileAllocatorRegistry::SetValue (
+        void TransactedFileBTreeRegistry::SetValue (
                 const std::string &key,
                 Serializable::SharedPtr value) {
             if (value == nullptr) {
