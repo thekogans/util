@@ -40,14 +40,14 @@ namespace thekogans {
             Subscriber<TransactedFile::ObjectEvents>::Subscribe (*this);
         }
 
-        BTree::Value::SharedPtr FileAllocatorRegistry::GetValue (const std::string &key) {
+        Serializable::SharedPtr FileAllocatorRegistry::GetValue (const std::string &key) {
             BTree::Iterator it;
             return Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
 
         void FileAllocatorRegistry::SetValue (
                 const std::string &key,
-                BTree::Value::SharedPtr value) {
+                Serializable::SharedPtr value) {
             if (value == nullptr) {
                 Remove (StringKey (key));
             }

@@ -35,7 +35,7 @@ namespace thekogans {
         /// \see{FileAllocator::Header::rootObject}. It provides global
         /// ordered, associative storage for \see{FileAllocator} clients.
         /// Use it to store and retrieve practically any value derived
-        /// from \see{BTree::Value}. The key type is std::string.
+        /// from \see{Serializable}. The key type is std::string.
         struct _LIB_THEKOGANS_UTIL_DECL FileAllocatorRegistry :
                 private BTree,
                 public Subscriber<TransactedFile::ObjectEvents> {
@@ -62,14 +62,14 @@ namespace thekogans {
                 bool valueAsObject = false,
                 std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
             /// return nullptr.
             /// \param[in] key Key whose value to retrieve.
             /// \return Value @ key, nullptr if key is not found.
-            BTree::Value::SharedPtr GetValue (const std::string &key);
+            Serializable::SharedPtr GetValue (const std::string &key);
             /// \brief
             /// Given a key, do one of the following three;
             /// 1. If value != nullptr and key is not found, insert new key/value.
@@ -79,7 +79,7 @@ namespace thekogans {
             /// \param[in] value Value to set/replace/delete.
             void SetValue (
                 const std::string &key,
-                BTree::Value::SharedPtr value);
+                Serializable::SharedPtr value);
 
         protected:
             // FileAllocator::ObjectEvents

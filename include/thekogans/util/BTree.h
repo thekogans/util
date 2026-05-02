@@ -33,7 +33,7 @@ namespace thekogans {
         /// \struct BTree BTree.h thekogans/util/BTree.h
         ///
         /// \brief
-        /// A BTree is a \see{FileAllocator::Object}. It's attributes are that
+        /// A BTree is a \see{TransactedFile::Object}. It's attributes are that
         /// all searches, insertions and deletions take O(H) where H is the
         /// height of the tree. These are BTree's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
@@ -41,8 +41,9 @@ namespace thekogans {
         /// Use it to step through a range of nodes collecting their data. See an example
         /// provided with \see{BTree::Iterator}. BTree uses the full power of
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
-        /// That means that key and values can be practically any random size object
-        /// (as long as it derives from BTree::Key and implements the interface).
+        /// That means that key can be practically any random size object (as long
+        /// as it derives from BTree::Key and implements the interface). And value
+        /// can be any \see{Serializable} derived type.
         struct _LIB_THEKOGANS_UTIL_DECL BTree : public TransactedFile::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -92,92 +93,7 @@ namespace thekogans {
                 virtual const std::string &ToString () const = 0;
             };
 
-            /// \struct Value BTree.h thekogans/util/BTree.h
-            ///
-            /// \brief
-            /// Value part of the [Key, Value] pair. Since values
-            /// derive from \see{Serializable}, they can be practicaly
-            /// anything as long they imlement the interface.
-            struct _LIB_THEKOGANS_UTIL_DECL Value : public Serializable {
-                /// \brief
-                /// Value is a \see{util::DynamicCreatable} abstract base.
-                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Value)
-
-            #if defined (THEKOGANS_UTIL_TYPE_Static)
-                /// \brief
-                /// Because Value uses dynamic initialization, when using
-                /// it in static builds call this method to have the Value
-                /// explicitly include all internal value types. Without
-                /// calling this api, the only values that will be available
-                /// to your application are the ones you explicitly link to.
-                static void StaticInit ();
-            #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
-                /// \brief
-                /// This method is only used in Dump for debugging purposes.
-                /// \return String representation of the value.
-                virtual std::string ToString () const = 0;
-            };
-
         protected:
-            struct _LIB_THEKOGANS_UTIL_DECL ValueObject : public TransactedFile::Object {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (ValueObject)
-
-                /// \brief
-                /// ValueObject has a private heap.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-            private:
-                const SerializableHeader &valueContext;
-                DynamicCreatable::FactoryType valueFactory;
-                Value::SharedPtr value;
-
-            public:
-                ValueObject (
-                    TransactedFile::SharedPtr file,
-                    FileAllocator::PtrType offset,
-                    const SerializableHeader &valueContext_,
-                    DynamicCreatable::FactoryType valueFactory_,
-                    Value::SharedPtr value_ = nullptr) :
-                    TransactedFile::Object (file, offset),
-                    valueContext (valueContext_),
-                    valueFactory (valueFactory_),
-                    value (value_) {}
-
-                Value::SharedPtr GetValue ();
-                inline void SetValue (Value::SharedPtr value_) {
-                    value = value_;
-                }
-
-            protected:
-                // TransactedFile::TransactionParticipant
-                /// \brief
-                /// Compulsory implementation of \see{TransactedFile::TransactionParticipant::Reset}.
-                /// Every leaf class must have one.
-                virtual void Reset () override {
-                    value.Reset ();
-                }
-
-                // FileAllocator::Object
-                /// \brief
-                /// Return value binary size (including the header).
-                /// \return Value binary size.
-                virtual std::size_t Size () const noexcept override {
-                    return value->GetSize (valueContext);
-                }
-
-                /// \brief
-                /// Read the value from the given serializer.
-                /// \param[in] serializer Serializer to read the value from.
-                virtual void Read (Serializer &serializer) override;
-                /// \brief
-                /// Write the value to the given serializer.
-                /// \param[out] serializer Serializer to write the value to.
-                virtual void Write (Serializer &serializer) override;
-            };
-
             /// \brief
             /// Forward declaration of \see{Node} needed by \see{Iterator}.
             struct Node;
@@ -284,11 +200,11 @@ namespace thekogans {
                 /// \brief
                 /// If we're not finished, return the value associated with the current entry.
                 /// \return Value associated with the current entry.
-                Value::SharedPtr GetValue () const;
+                Serializable::SharedPtr GetValue () const;
                 /// \brief
                 /// If we're not finished, set the value associated with the current entry.
                 /// \param[in] value New \see{Value} to associate with the current entry.
-                void SetValue (Value::SharedPtr value);
+                void SetValue (Serializable::SharedPtr value);
 
             private:
                 /// \brief
@@ -331,7 +247,7 @@ namespace thekogans {
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
-                FileAllocator::PtrType rootOffset;
+                TransactedFile::Allocator::PtrType rootOffset;
 
                 /// \brief
                 /// ctor.
@@ -395,13 +311,13 @@ namespace thekogans {
                 ui32 count;
                 /// \brief
                 /// Left most child node block offset.
-                FileAllocator::PtrType leftOffset;
+                TransactedFile::Allocator::PtrType leftOffset;
                 /// \brief
                 /// Left most child node.
                 Node *left;
                 /// \brief
                 /// Key/value array offset.
-                FileAllocator::PtrType keyValueOffset;
+                TransactedFile::Allocator::PtrType keyValueOffset;
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -412,13 +328,13 @@ namespace thekogans {
                     Key *key;
                     /// \brief
                     /// Value block offset.
-                    FileAllocator::PtrType valueOffset;
+                    TransactedFile::Allocator::PtrType valueOffset;
                     /// \brief
                     /// \see{ValueObject} encapsulating the value.
-                    ValueObject *value;
+                    TransactedFile::SerializableObject *value;
                     /// \brief
                     /// Right child node block offset.
-                    FileAllocator::PtrType rightOffset;
+                    TransactedFile::Allocator::PtrType rightOffset;
                     /// \brief
                     /// Right child node.
                     Node *right;
@@ -433,7 +349,7 @@ namespace thekogans {
                     /// \param[in] value_ Entry value.
                     Entry (
                         Key *key_ = nullptr,
-                        ValueObject *value_ = nullptr) :
+                        TransactedFile::SerializableObject *value_ = nullptr) :
                         key (key_),
                         valueOffset (0),
                         value (value_),
@@ -443,13 +359,13 @@ namespace thekogans {
                     /// \brief
                     /// Entry size on disk.
                     static const std::size_t SIZE_WITH_VALUE =
-                        FileAllocator::PTR_TYPE_SIZE + // valueOffset;
-                        FileAllocator::PTR_TYPE_SIZE;  // rightOffset;
+                        TransactedFile::Allocator::PTR_TYPE_SIZE + // valueOffset;
+                        TransactedFile::Allocator::PTR_TYPE_SIZE;  // rightOffset;
 
                     /// \brief
                     /// Entry size on disk.
                     static const std::size_t SIZE_WITHOUT_VALUE =
-                        FileAllocator::PTR_TYPE_SIZE; // rightOffset;
+                        TransactedFile::Allocator::PTR_TYPE_SIZE; // rightOffset;
                 };
                 /// \brief
                 /// Entry array. Allocated when the node is allocated.
@@ -461,7 +377,7 @@ namespace thekogans {
                 /// \param[in] offset Node offset on disk.
                 Node (
                     BTree &btree_,
-                    FileAllocator::PtrType offset = 0);
+                    TransactedFile::Allocator::PtrType offset = 0);
                 /// \brief
                 /// dtor.
                 virtual ~Node ();
@@ -477,23 +393,23 @@ namespace thekogans {
                 /// \param[in] offset Node offset on disk.
                 static Node *Alloc (
                     BTree &btree,
-                    FileAllocator::PtrType offset = 0);
+                    TransactedFile::Allocator::PtrType offset = 0);
                 /// \brief
                 /// Delete the node and it's sub-tree.
                 /// \param[in] fileAllocator Btree heap.
                 /// \param[in] offset Node offset.
                 static void FreeSubtree (
                     BTree &btree,
-                    FileAllocator::PtrType offset);
+                    TransactedFile::Allocator::PtrType offset);
 
-                Value::SharedPtr GetValue (ui32 index);
+                Serializable::SharedPtr GetValue (ui32 index);
                 /// \brief
                 /// Set value at the given \see{Entry} index.
                 /// \param[in] index \see{Entry} index to set the new value at.
                 /// \param[in] value New \see{Value} to set.
                 void SetValue (
                     ui32 index,
-                    Value::SharedPtr value);
+                    Serializable::SharedPtr value);
                 /// \brief
                 /// Return the left child of an entry at the given index.
                 /// NOTE: If you need the very last (right) child, call
@@ -676,7 +592,7 @@ namespace thekogans {
                 /// Every leaf class must have one.
                 virtual void Reset () override;
 
-                // FileAllocator::Object
+                // TransactedFile::Object
                 /// \brief
                 /// Node is fixed size.
                 /// \return true.
@@ -690,8 +606,8 @@ namespace thekogans {
                     return
                         UI32_SIZE + // magic
                         UI32_SIZE + // count
-                        FileAllocator::PTR_TYPE_SIZE + // leftOffset
-                        FileAllocator::PTR_TYPE_SIZE + // keyValueOffset
+                        TransactedFile::Allocator::PTR_TYPE_SIZE + // leftOffset
+                        TransactedFile::Allocator::PTR_TYPE_SIZE + // keyValueOffset
                         btree.header.entriesPerNode *
                             (btree.header.IsValueAsObject () ?
                                 Entry::SIZE_WITH_VALUE :
@@ -719,11 +635,11 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator BTree heap (see \see{FileAllocator}).
+            /// \param[in] fileAllocator BTree heap (see \see{TransactedFile::Allocator}).
             /// \param[in] offset Heap offset of the \see{Header} block.
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
-            /// will store any type derived from \see{Value}.
+            /// will store any type derived from \see{Serializable}.
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
             /// \see{Node}. If we're reading an existing btree, this value will come from the
             /// \see{Header}.
@@ -772,7 +688,7 @@ namespace thekogans {
             /// the current entry in it.
             bool Insert (
                 Key::SharedPtr key,
-                Value::SharedPtr value,
+                Serializable::SharedPtr value,
                 Iterator &it);
             /// \brief
             /// Delete the given key from the btree.
@@ -811,7 +727,7 @@ namespace thekogans {
             /// Reset needs to be implemented by all concrete classes.
             virtual void Reset () override;
 
-            // FileAllocator::Object
+            // TransactedFile::Object
             /// \brief
             /// \see{Header} is fixed size.
             /// \return true.
@@ -852,10 +768,6 @@ namespace thekogans {
         /// \brief
         /// Implement BTree::Key extraction operators.
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (BTree::Key)
-
-        /// \brief
-        /// Implement BTree::Value extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (BTree::Value)
 
     } // namespace util
 } // namespace thekogans

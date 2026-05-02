@@ -76,19 +76,19 @@ namespace thekogans {
         public:
             Root (
                 std::string path_ = std::string (),
-                util::FileAllocator::PtrType pathBTreeOffset = 0,
-                util::FileAllocator::PtrType componentBTreeOffset = 0,
+                util::TransactedFile::Allocator::PtrType pathBTreeOffset = 0,
+                util::TransactedFile::Allocator::PtrType componentBTreeOffset = 0,
                 bool active_ = true) :
                 path (path_),
                 pathBTree (
                     new util::BTree (
-                        Database::Instance ()->GetFileAllocator (),
+                        Database::Instance ()->GetAllocator (),
                         pathBTreeOffset,
                         util::GUIDKey::GetContext (),
                         util::StringValue::GetContext ())),
                 componentBTree (
                     new util::BTree (
-                        Database::Instance ()->GetFileAllocator (),
+                        Database::Instance ()->GetAllocator (),
                         componentBTreeOffset,
                         util::StringKey::GetContext (),
                         util::GUIDArrayValue::GetContext ())),
@@ -108,8 +108,8 @@ namespace thekogans {
             inline std::size_t Size () const {
                 return
                     util::Serializer::Size (path) +
-                    util::FileAllocator::PTR_TYPE_SIZE +
-                    util::FileAllocator::PTR_TYPE_SIZE +
+                    util::TransactedFile::Allocator::PTR_TYPE_SIZE +
+                    util::TransactedFile::Allocator::PTR_TYPE_SIZE +
                     util::Serializer::Size (active);
             }
 

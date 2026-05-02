@@ -19,7 +19,6 @@
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/BTreeKeys.h"
-#include "thekogans/util/BTreeValues.h"
 #include "thekogans/util/BTree.h"
 
 namespace thekogans {
@@ -44,44 +43,13 @@ namespace thekogans {
         }
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::BTree::Key)
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::BTree::Value)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void BTree::Key::StaticInit () {
             StringKey::StaticInit ();
             GUIDKey::StaticInit ();
         }
-
-        void BTree::Value::StaticInit () {
-            StringValue::StaticInit ();
-            PtrValue::StaticInit ();
-            StringArrayValue::StaticInit ();
-            GUIDArrayValue::StaticInit ();
-        }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (BTree::ValueObject)
-
-        BTree::Value::SharedPtr BTree::ValueObject::GetValue () {
-            if (value == nullptr) {
-                assert (offset != 0);
-                TransactedFile::ReadOnlyRange buffer (*file, offset);
-                buffer.context = valueContext;
-                buffer.factory = valueFactory;
-                buffer >> value;
-            }
-            return value;
-        }
-
-        void BTree::ValueObject::Read (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
-            serializer >> value;
-        }
-
-        void BTree::ValueObject::Write (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
-            serializer << value;
-        }
 
         void BTree::Iterator::Clear () {
             // Leave the prefix in case they want to reuse the iterator.
@@ -135,7 +103,7 @@ namespace thekogans {
             }
         }
 
-        BTree::Value::SharedPtr BTree::Iterator::GetValue () const {
+        Serializable::SharedPtr BTree::Iterator::GetValue () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
                 return node.first->GetValue (node.second);
@@ -146,7 +114,7 @@ namespace thekogans {
             }
         }
 
-        void BTree::Iterator::SetValue (Value::SharedPtr value) {
+        void BTree::Iterator::SetValue (Serializable::SharedPtr value) {
             if (value != nullptr) {
                 if (!finished) {
                     assert (node.first != nullptr && node.second < node.first->count);
@@ -173,7 +141,7 @@ namespace thekogans {
 
         BTree::Node::Node (
                 BTree &btree_,
-                FileAllocator::PtrType offset) :
+                TransactedFile::Allocator::PtrType offset) :
                 TransactedFile::Object (btree_.GetFile (), offset),
                 btree (btree_),
                 count (0),
@@ -194,7 +162,7 @@ namespace thekogans {
 
         BTree::Node *BTree::Node::Alloc (
                 BTree &btree,
-                FileAllocator::PtrType offset) {
+                TransactedFile::Allocator::PtrType offset) {
             Node *node = new (
                 btree.nodeAllocator->Alloc (
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
@@ -204,7 +172,7 @@ namespace thekogans {
 
         void BTree::Node::FreeSubtree (
                 BTree &btree,
-                FileAllocator::PtrType offset) {
+                TransactedFile::Allocator::PtrType offset) {
             if (offset != 0) {
                 TransactedFile::ReadOnlyRange buffer (*btree.file, offset);
                 ui32 magic;
@@ -213,18 +181,18 @@ namespace thekogans {
                     ui32 count;
                     buffer >> count;
                     if (count > 0) {
-                        FileAllocator::PtrType leftOffset;
-                        FileAllocator::PtrType keyValueOffset;
+                        TransactedFile::Allocator::PtrType leftOffset;
+                        TransactedFile::Allocator::PtrType keyValueOffset;
                         buffer >> leftOffset >> keyValueOffset;
                         btree.GetAllocator ()->Free (keyValueOffset);
                         FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
-                            FileAllocator::PtrType valueOffset;
+                            TransactedFile::Allocator::PtrType valueOffset;
                             if (btree.header.IsValueAsObject ()) {
                                 buffer >> valueOffset;
                                 btree.GetAllocator ()->Free (valueOffset);
                             }
-                            FileAllocator::PtrType rightOffset;
+                            TransactedFile::Allocator::PtrType rightOffset;
                             buffer >> rightOffset;
                             FreeSubtree (btree, rightOffset);
                         }
@@ -239,13 +207,13 @@ namespace thekogans {
             }
         }
 
-        BTree::Value::SharedPtr BTree::Node::GetValue (ui32 index) {
+        Serializable::SharedPtr BTree::Node::GetValue (ui32 index) {
             return entries[index].value->GetValue ();
         }
 
         void BTree::Node::SetValue (
                 ui32 index,
-                Value::SharedPtr value) {
+                Serializable::SharedPtr value) {
             entries[index].value->SetValue (value);
             if (btree.header.IsValueAsObject ()) {
                 entries[index].value->SetDirty (true);
@@ -611,7 +579,7 @@ namespace thekogans {
                         else {
                             entries[i].valueOffset = 0;
                         }
-                        entries[i].value = new ValueObject (
+                        entries[i].value = new TransactedFile::SerializableObject (
                             file,
                             entries[i].valueOffset,
                             btree.header.valueContext,
@@ -623,7 +591,7 @@ namespace thekogans {
                         keyValueBuffer.context = btree.header.valueContext;
                         keyValueBuffer.factory = btree.valueFactory;
                         for (ui32 i = 0; i < count; ++i) {
-                            Value::SharedPtr value;
+                            Serializable::SharedPtr value;
                             keyValueBuffer >> value;
                             entries[i].value->SetValue (value);
                         }
@@ -707,7 +675,7 @@ namespace thekogans {
                     valueAsObject ? Header::FLAGS_VALUE_AS_OBJECT : 0,
                     (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyContext.type.c_str ())),
-                valueFactory (Value::GetTypeFactory (valueContext.type.c_str ())),
+                valueFactory (Serializable::GetTypeFactory (valueContext.type.c_str ())),
                 nodeAllocator (
                     new BlockAllocator (
                         Node::Size (entriesPerNode),
@@ -716,7 +684,7 @@ namespace thekogans {
                 root (Node::Alloc (*this, header.rootOffset)) {
             if (!Key::IsType (keyContext.type.c_str ()) ||
                     (!valueContext.NeedType () &&
-                        !Value::IsType (valueContext.type.c_str ()))) {
+                        !Serializable::IsType (valueContext.type.c_str ()))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyContext.type.c_str (), valueContext.type.c_str ());
@@ -751,15 +719,15 @@ namespace thekogans {
 
         bool BTree::Insert (
                 Key::SharedPtr key,
-                Value::SharedPtr value,
+                Serializable::SharedPtr value,
                 Iterator &it) {
             if (key != nullptr && value != nullptr &&
                     key->IsKindOf (header.keyContext.type.c_str ()) &&
                     (header.valueContext.NeedType () ||
                         value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
-                ValueObject::SharedPtr valueObject (
-                    new ValueObject (
+                TransactedFile::SerializableObject::SharedPtr valueObject (
+                    new TransactedFile::SerializableObject (
                         file,
                         0,
                         header.valueContext,

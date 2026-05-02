@@ -39,15 +39,18 @@ namespace thekogans {
                 registryEntriesPerNode (registryEntriesPerNode_),
                 registryNodesPerPage (registryNodesPerPage_),
                 allocator (allocator_) {
-            util::TransactedFile::Transaction transaction (file);
-            fileAllocator.Reset (
-                new util::FileAllocator (
-                    file,
-                    secure,
-                    btreeEntriesPerNode,
-                    btreeNodesPerPage,
-                    allocator));
-            transaction.Commit ();
+            {
+                util::TransactedFile::Transaction transaction (file);
+                allocator.Reset (
+                    new util::FileAllocator (
+                        file,
+                        secure,
+                        btreeEntriesPerNode,
+                        btreeNodesPerPage,
+                        allocator));
+                transaction.Commit ();
+            }
+            file->SetAllocator (allocator);
         }
 
         util::FileAllocatorRegistry::SharedPtr Database::GetRegistry () {
@@ -56,7 +59,7 @@ namespace thekogans {
                 if (registry == nullptr) {
                     registry.Reset (
                         new util::FileAllocatorRegistry (
-                            fileAllocator,
+                            allocator,
                             registryValueAsObject,
                             registryEntriesPerNode,
                             registryNodesPerPage,

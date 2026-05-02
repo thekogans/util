@@ -200,9 +200,6 @@ namespace thekogans {
             /// Combination of the above flags.
             Flags32 flags;
             /// \brief
-            /// \see{Allocator} associated with this file.
-            Allocator::SharedPtr allocator;
-            /// \brief
             /// For use by \see{Guard} and \see{Transaction}
             Mutex mutex;
 
@@ -761,7 +758,7 @@ namespace thekogans {
                 /// \param[in] offset_ Offset of the \see{File::Allocator::Block}.
                 Object (
                     TransactedFile::SharedPtr file,
-                    Allocator::PtrType offset_) :
+                    Allocator::PtrType offset_ = 0) :
                     TransactionParticipant (file),
                     offset (offset_) {}
                 /// \brief
@@ -827,6 +824,75 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
             };
 
+            #include "thekogans/util/TransactedFileRegistry.h"
+
+            struct _LIB_THEKOGANS_UTIL_DECL SerializableObject : public Object {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (SerializableObject)
+
+                /// \brief
+                /// ValueObject has a private heap.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
+            private:
+                SerializableHeader valueContext;
+                DynamicCreatable::FactoryType valueFactory;
+                Serializable::SharedPtr value;
+
+            public:
+                SerializableObject (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::Allocator::PtrType offset = 0,
+                    const SerializableHeader &valueContext_ = SerializableHeader (),
+                    DynamicCreatable::FactoryType valueFactory_ = nullptr,
+                    Serializable::SharedPtr value_ = nullptr) :
+                    TransactedFile::Object (file, offset),
+                    valueContext (valueContext_),
+                    valueFactory (valueFactory_),
+                    value (value_) {}
+
+                Serializable::SharedPtr GetValue ();
+                inline void SetValue (Serializable::SharedPtr value_) {
+                    value = value_;
+                }
+
+            protected:
+                // TransactedFile::TransactionParticipant
+                /// \brief
+                /// Compulsory implementation of \see{TransactedFile::TransactionParticipant::Reset}.
+                /// Every leaf class must have one.
+                virtual void Reset () override {
+                    value.Reset ();
+                }
+
+                // TransactedFile::Object
+                /// \brief
+                /// Return value binary size (including the header).
+                /// \return Value binary size.
+                virtual std::size_t Size () const noexcept override {
+                    return value->GetSize (valueContext);
+                }
+
+                /// \brief
+                /// Read the value from the given serializer.
+                /// \param[in] serializer Serializer to read the value from.
+                virtual void Read (Serializer &serializer) override;
+                /// \brief
+                /// Write the value to the given serializer.
+                /// \param[out] serializer Serializer to write the value to.
+                virtual void Write (Serializer &serializer) override;
+            };
+
+        private:
+            /// \brief
+            /// \see{Allocator} associated with this file.
+            Allocator::SharedPtr allocator;
+            /// \brief
+            /// \see{Allocator} associated with this file.
+            Registry::SharedPtr registry;
+
+        public:
             /// \brief
             /// ctor.
             /// \param[in] endianness File endianness.
@@ -896,11 +962,18 @@ namespace thekogans {
             /// dtor.
             virtual ~TransactedFile ();
 
-            inline TransactedFile::Allocator::SharedPtr GetAllocator () const {
+            inline Allocator::SharedPtr GetAllocator () const {
                 return allocator;
             }
             inline void SetAllocator (Allocator::SharedPtr allocator_) {
                 allocator = allocator_;
+            }
+
+            inline Registry::SharedPtr GetRegistry () const {
+                return registry;
+            }
+            inline void SetRegistry (Registry::SharedPtr registry_) {
+                registry = registry_;
             }
 
             /// \brief

@@ -24,6 +24,7 @@
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
     #include "thekogans/util/BTree.h"
+    #include "thekogans/util/BTreeValues.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
@@ -42,7 +43,10 @@ namespace thekogans {
             TimeSpec::StaticInit ();
             TimeSpecArray::StaticInit ();
             BTree::Key::StaticInit ();
-            BTree::Value::StaticInit ();
+            StringValue::StaticInit ();
+            PtrValue::StaticInit ();
+            StringArrayValue::StaticInit ();
+            GUIDArrayValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

@@ -42,7 +42,7 @@ namespace thekogans {
             util::TransactedFile::SharedPtr file;
             /// \brief
             /// \see{util::FileAllocator} for managing random size blocks in the file.
-            util::FileAllocator::SharedPtr fileAllocator;
+            util::FileAllocator::SharedPtr allocator;
             bool registryValueAsObject;
             /// \brief
             /// Number of entries per \see{util::BTree::Node}.
@@ -95,10 +95,10 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the fileAllocator.
-            /// \return fileAllocator.
-            inline util::FileAllocator::SharedPtr GetFileAllocator () const {
-                return fileAllocator;
+            /// Return the allocator.
+            /// \return allocator.
+            inline util::TransactedFile::Allocator::SharedPtr GetAllocator () const {
+                return allocator;
             }
 
             /// \brief
