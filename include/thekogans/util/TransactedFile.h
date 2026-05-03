@@ -37,6 +37,9 @@ namespace thekogans {
         /// \brief
         /// Forward declaration of \see{TransactedFile} needed by \see{TransactedFileEvents}.
         struct TransactedFile;
+        /// \brief
+        /// Forward declaration of \see{SimpleTransactedFile} needed by \see{TransactedFile}.
+        struct SimpleTransactedFile;
 
         /// \struct TransactedFileEvents TransactedFile.h thekogans/util/TransactedFile.h
         ///
@@ -891,7 +894,7 @@ namespace thekogans {
             /// \see{Allocator} associated with this file.
             Allocator::SharedPtr allocator;
             /// \brief
-            /// \see{Allocator} associated with this file.
+            /// \see{Registry} associated with this file.
             Registry::SharedPtr registry;
 
         public:
@@ -1039,9 +1042,9 @@ namespace thekogans {
                 i32 fromWhere) override;
 
             // File
-        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Open the file.
+        #if defined (TOOLCHAIN_OS_Windows)
             /// \param[in] path Windows CreateFile parameter.
             /// \param[in] dwDesiredAccess Windows CreateFile parameter.
             /// \param[in] dwShareMode Windows CreateFile parameter.
@@ -1054,8 +1057,6 @@ namespace thekogans {
                 DWORD dwCreationDisposition = OPEN_EXISTING,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL) override;
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Open the file.
             /// \param[in] path POSIX open parameter.
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
@@ -1065,7 +1066,7 @@ namespace thekogans {
                 i32 mode = S_IRUSR | S_IWUSR) override;
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Close file.
+            /// Close the file.
             virtual void Close () override;
             /// \brief
             /// Flush pending writes to disk.
@@ -1167,6 +1168,10 @@ namespace thekogans {
             static std::string GetLogPath (const std::string &path);
 
             /// \brief
+            /// Needs access to allocator and regitry.
+            friend struct SimpleTransactedFile;
+
+            /// \brief
             /// TransactedFile is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFile)
         };
@@ -1180,7 +1185,6 @@ namespace thekogans {
         /// mode will be 0644. This is fine for most cases but might not
         /// be appropriate for some. If you need to control the mode of
         /// the created file use TransactedFile instead.
-
         struct _LIB_THEKOGANS_UTIL_DECL SimpleTransactedFile : public TransactedFile {
             /// \brief
             /// Default ctor.
@@ -1190,8 +1194,10 @@ namespace thekogans {
             SimpleTransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                const std::string &path = std::string ()) :
-                TransactedFile (endianness, handle, path) {}
+                const std::string &path = std::string (),
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr regitry = nullptr) :
+                TransactedFile (endianness, handle, path, allocator, regitry) {}
             /// \brief
             /// ctor. Abstracts most useful functionality from POSIX open.
             /// \param[in] endianness File endianness.
@@ -1200,7 +1206,9 @@ namespace thekogans {
             SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
-                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr regitry = nullptr);
 
             /// \brief
             /// Open the file.
@@ -1208,7 +1216,9 @@ namespace thekogans {
             /// \param[in] flags File open flags.
             void SimpleOpen (
                 const std::string &path,
-                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr regitry = nullptr);
 
             /// \brief
             /// SimpleTransactedFile is neither copy constructable, nor assignable.

@@ -569,9 +569,7 @@ namespace thekogans {
                 DWORD dwDesiredAccess,
                 DWORD dwShareMode,
                 DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes,
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr registry_ = nullptr) {
+                DWORD dwFlagsAndAttributes) {
     #else // defined (TOOLCHAIN_OS_Windows)
         void TransactedFile::Open (
                 const std::string &path,
@@ -735,6 +733,7 @@ namespace thekogans {
                         registry->Init (this);
                     }
                 }
+                Seek (0, SEEK_SET);
             }
             else if (GetSize () == 0 && allocator != nullptr) {
                 *this << MAGIC32 << std::string (allocator->Type ());
@@ -748,6 +747,7 @@ namespace thekogans {
                 if (registry != nullptr) {
                     registry->Init (this);
                 }
+                Seek (0, SEEK_SET);
             }
             else {
                 allocator.Reset ();
@@ -986,14 +986,20 @@ namespace thekogans {
         SimpleTransactedFile::SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
-                Flags32 flags) :
+                Flags32 flags,
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr regitry) :
                 TransactedFile (endianness) {
-            SimpleOpen (path, flags);
+            SimpleOpen (path, flags, allocator, regitry);
         }
 
         void SimpleTransactedFile::SimpleOpen (
                 const std::string &path,
-                Flags32 flags) {
+                Flags32 flags,
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_) {
+            allocator = allocator_;
+            registry = registry_;
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD dwDesiredAccess = 0;
             DWORD dwShareMode = 0;
