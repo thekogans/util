@@ -622,13 +622,6 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return the file.
-                /// \return file.
-                inline Allocator::SharedPtr GetAllocator () const {
-                    return file->allocator;
-                }
-
-                /// \brief
                 /// Return dirty.
                 /// \return dirty.
                 inline bool IsDirty () const {
@@ -759,8 +752,8 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
-                /// \param[in] allocator_ \see{File::Allocator} where this object resides.
-                /// \param[in] offset_ Offset of the \see{File::Allocator::Block}.
+                /// \param[in] file \see{TransactedFile} where this object resides.
+                /// \param[in] offset_ Offset of the \see{Allocator::Block}.
                 Object (
                     TransactedFile::SharedPtr file,
                     Allocator::PtrType offset_ = 0) :
@@ -769,6 +762,13 @@ namespace thekogans {
                 /// \brief
                 /// dtor.
                 virtual ~Object () {}
+
+                /// \brief
+                /// Return the file.
+                /// \return file.
+                inline Allocator::SharedPtr GetAllocator () const {
+                    return file->allocator;
+                }
 
                 /// \brief
                 /// Return the offset.
@@ -837,7 +837,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (SerializableObject)
 
                 /// \brief
-                /// ValueObject has a private heap.
+                /// SerializableObject has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:

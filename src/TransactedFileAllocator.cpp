@@ -36,7 +36,7 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Read (
                 TransactedFile &file,
                 PtrType offset) {
-            Range buffer (file, offset, SIZE);
+            ReadOnlyRange buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
             buffer >> magic;
@@ -57,7 +57,7 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Write (
                 TransactedFile &file,
                 PtrType offset) const {
-            Range buffer (file, offset, SIZE);
+            WriteOnlyRange buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             buffer << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -169,21 +169,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Allocator::Read () {
-            TransactedFile::WriteOnlyRange buffer (*file, 0, Header::SIZE);
-            ui32 magic;
-            buffer >> magic;
-            if (magic == MAGIC32) {
-                // File is host endian.
-            }
-            else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                // File is guest endian.
-                file->endianness = GuestEndian;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFile::Allocator file (%s)",
-                    file->GetPath ().c_str ());
-            }
+            WriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
             buffer >> header;
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             if (!header.IsBlockUsesMagic ()) {
@@ -198,8 +184,8 @@ namespace thekogans {
         }
 
         void TransactedFile::Allocator::Write () {
-            TransactedFile::WriteOnlyRange buffer (*file, 0, Header::SIZE);
-            buffer << MAGIC32 << header;
+            WriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
+            buffer << header;
         }
 
         void TransactedFile::Allocator::OnTransactedFileTransactionCommit (

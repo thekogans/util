@@ -64,8 +64,6 @@ namespace thekogans {
                 Read ();
             }
             else {
-                // Write an empty header to make sure that when Alloc
-                // calls file->GetSize it will get a correct value.
                 Write ();
             }
         }

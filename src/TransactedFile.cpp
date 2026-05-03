@@ -728,8 +728,8 @@ namespace thekogans {
                 allocator = Allocator::CreateType (allocatorType.c_str ());
                 if (allocator != nullptr) {
                     allocator->Init (this, Tell ());
+                    registry = Registry::CreateType (registryType.c_str ());
                     if (registry != nullptr) {
-                        registry = Registry::CreateType (registryType.c_str ());
                         registry->Init (this);
                     }
                 }
