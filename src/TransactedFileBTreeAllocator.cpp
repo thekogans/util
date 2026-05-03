@@ -56,7 +56,7 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::Init (TransactedFile::SharedPtr file_) (
+        void TransactedFileBTreeAllocator::Init (TransactedFile::SharedPtr file_) {
             file = file_;
             if (file->GetSize () > 0) {
                 Read ();
