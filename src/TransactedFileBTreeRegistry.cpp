@@ -22,13 +22,13 @@
 namespace thekogans {
     namespace util {
 
-        TransactedFileBTreeRegistry::TransactedFileBTreeRegistry (
-                TransactedFile::SharedPtr file,
-                bool valueAsObject,
-                std::size_t entriesPerNode,
-                std::size_t nodesPerPage,
-                Allocator::SharedPtr allocator) :
-                TransactedFileBTree (
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+            thekogans::util::TransactedFileBTreeRegistry,
+            TransactedFile::Registry::TYPE)
+
+        void TransactedFileBTreeRegistry::Init (TransactedFile::SharedPtr file) {
+            btree.Reset (
+                new TransactedFileBTree (
                     file,
                     file->GetAllocator ()->GetRootOffset (),
                     StringKey::GetContext (),
@@ -36,24 +36,24 @@ namespace thekogans {
                     valueAsObject,
                     entriesPerNode,
                     nodesPerPage,
-                    allocator) {
-            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*this);
+                    allocator));
+            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
         }
 
         Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             TransactedFileBTree::Iterator it;
-            return Find (StringKey (key), it) ? it.GetValue () : nullptr;
+            return btree->Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
 
         void TransactedFileBTreeRegistry::SetValue (
                 const std::string &key,
                 Serializable::SharedPtr value) {
             if (value == nullptr) {
-                Remove (StringKey (key));
+                btree->Remove (StringKey (key));
             }
             else {
                 TransactedFileBTree::Iterator it;
-                if (!Insert (new StringKey (key), value, it)) {
+                if (!btree->Insert (new StringKey (key), value, it)) {
                     it.SetValue (value);
                 }
             }

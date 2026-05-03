@@ -36,12 +36,17 @@ namespace thekogans {
         /// It provides global ordered, associative storage for \see{TransactedFile}
         /// clients. Use it to store and retrieve practically any value derived
         /// from \see{Serializable}. The key type is std::string.
-        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
-                public TransactedFile::Registry,
-                private TransactedFileBTree {
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry : public TransactedFile::Registry {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFileBTreeRegistry)
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (TransactedFileBTreeRegistry)
+
+        private:
+            bool valueAsObject;
+            std::size_t entriesPerNode;
+            std::size_t nodesPerPage;
+            Allocator::SharedPtr allocator;
+            TransactedFileBTree::SharedPtr btree;
 
         public:
             /// \brief
@@ -58,11 +63,16 @@ namespace thekogans {
             /// \param[in] nodesPerPage Number of \see{TransactedFileBTree::Node}s per allocator page.
             /// \param[in] allocator Where \see{TransactedFileBTree::Node} pages come from.
             TransactedFileBTreeRegistry (
-                TransactedFile::SharedPtr file,
-                bool valueAsObject = false,
-                std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                bool valueAsObject_ = false,
+                std::size_t entriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
+                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
+                valueAsObject (valueAsObject_),
+                entriesPerNode (entriesPerNode_),
+                nodesPerPage (nodesPerPage_),
+                allocator (allocator_) {}
+
+            virtual void Init (TransactedFile::SharedPtr file) override;
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
