@@ -631,11 +631,12 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator TransactedFileBTree heap (see \see{TransactedFile::Allocator}).
+            /// \param[in] file \see{TransactedFile} where the btree resides.
             /// \param[in] offset Heap offset of the \see{Header} block.
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
             /// will store any type derived from \see{Serializable}.
+            /// \param[in] valueAsObject
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
             /// \see{Node}. If we're reading an existing btree, this value will come from the
             /// \see{Header}.

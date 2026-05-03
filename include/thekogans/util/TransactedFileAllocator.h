@@ -323,7 +323,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \brief
         /// The size of the header on disk.
         static const std::size_t SIZE =
-            UI32_SIZE +     // magic
             UI16_SIZE +     // version
             UI16_SIZE +     // flags
             PTR_TYPE_SIZE + // heapStart
