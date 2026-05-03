@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_FileAllocator_h)
-#define __thekogans_util_FileAllocator_h
+#if !defined (__thekogans_util_TransactedFileBTreeAllocator_h)
+#define __thekogans_util_TransactedFileBTreeAllocator_h
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
@@ -28,18 +28,17 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct FileAllocator FileAllocator.h thekogans/util/FileAllocator.h
+        /// \struct TransactedFileBTreeAllocator TransactedFileBTreeAllocator.h
+        /// thekogans/util/TransactedFileBTreeAllocator.h
         ///
         /// \brief
-        /// FileAllocator manages a heap on permanent storage. The heap physical
-        /// layout looks like this:
-        struct _LIB_THEKOGANS_UTIL_DECL FileAllocator : public TransactedFile::Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator : public TransactedFile::Allocator {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (FileAllocator)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFileBTreeAllocator)
 
-            /// \struct BTreeTransactedFileAllocator::Block BTreeTransactedFileAllocator.h
-            /// thekogans/util/BTreeTransactedFileAllocator.h
+            /// \struct TransactedFileBTreeAllocator::Block TransactedFileBTreeAllocator.h
+            /// thekogans/util/TransactedFileBTreeAllocator.h
             ///
             /// \brief
             struct _LIB_THEKOGANS_UTIL_DECL Block : public Allocator::Block {
@@ -86,16 +85,16 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return the next free \see{FileAllocator::BTree::Node} offset.
-                /// \return Next free \see{FileAllocator::BTree::Node} offset.
+                /// Return the next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
+                /// \return Next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
                 inline PtrType GetNextBTreeNodeOffset () const {
                     return nextBTreeNodeOffset;
                 }
                 /// \brief
-                /// Set the next free \see{FileAllocator::BTree::Node} offset.
-                /// This will chain the free \see{FileAllocator::BTree::Node}
+                /// Set the next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
+                /// This will chain the free \see{TransactedFileBTreeAllocator::BTree::Node}
                 /// blocks in to a singly linked list.
-                /// \param[in] nextBTreeNodeOffset Next free \see{FileAllocator::BTree::Node} offset.
+                /// \param[in] nextBTreeNodeOffset Next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
                 inline void SetNextBTreeNodeOffset (PtrType nextBTreeNodeOffset_) {
                     nextBTreeNodeOffset = nextBTreeNodeOffset_;
                 }
@@ -109,7 +108,8 @@ namespace thekogans {
             };
 
         private:
-            /// \struct FileAllocator::Header FileAllocator.h thekogans/util/FileAllocator.h
+            /// \struct TransactedFileBTreeAllocator::Header TransactedFileBTreeAllocator.h
+            /// thekogans/util/TransactedFileBTreeAllocator.h
             ///
             /// \brief
             /// Header contains the global heap vailues.
@@ -137,7 +137,7 @@ namespace thekogans {
             /// \brief
             /// Include the \see{BTree} header.
             /// I split it out because this file was getting too big to maintain.
-            #include "thekogans/util/FileAllocatorBTree.h"
+            #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
             /// \brief
             /// \see{BTree} to manage heap free space.
             BTree::SharedPtr btree;
@@ -167,7 +167,7 @@ namespace thekogans {
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to
             /// a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.
-            FileAllocator (
+            TransactedFileBTreeAllocator (
                 TransactedFile &file,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
@@ -278,11 +278,11 @@ namespace thekogans {
                 BTree::Header &header);
 
             /// \brief
-            /// FileAllocator is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (FileAllocator)
+            /// TransactedFileBTreeAllocator is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFileBTreeAllocator)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_FileAllocator_h)
+#endif // !defined (__thekogans_util_TransactedFileBTreeAllocator_h)

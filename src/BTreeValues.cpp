@@ -28,7 +28,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::PtrValue,
             1,
-            FileAllocator::PTR_TYPE_SIZE,
+            TransactedFile::Allocator::PTR_TYPE_SIZE,
             Serializable::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::StringArrayValue,

@@ -17,26 +17,26 @@
 
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/TransactedFileBTreeAllocator.h"
 
 namespace thekogans {
     namespace util {
 
         inline Serializer &operator << (
                 Serializer &serializer,
-                const FileAllocator::Header &header) {
+                const TransactedFileBTreeAllocator::Header &header) {
             serializer << header.btreeOffset << header.freeBTreeNodeOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                FileAllocator::Header &header) {
+                TransactedFileBTreeAllocator::Header &header) {
             serializer >> header.btreeOffset >> header.freeBTreeNodeOffset;
             return serializer;
         }
 
-        void FileAllocator::Block::Read (TransactedFile &file) {
+        void TransactedFileBTreeAllocator::Block::Read (TransactedFile &file) {
             Allocator::Block::Read (file);
             if (IsFree () && IsBTreeNode ()) {
                 file.Seek (offset, SEEK_SET);
@@ -44,7 +44,7 @@ namespace thekogans {
             }
         }
 
-        void FileAllocator::Block::Write (TransactedFile &file) const {
+        void TransactedFileBTreeAllocator::Block::Write (TransactedFile &file) const {
             Allocator::Block::Write (file);
             if (IsFree () && IsBTreeNode ()) {
                 file.Seek (offset, SEEK_SET);
@@ -52,7 +52,7 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::FileAllocator (
+        TransactedFileBTreeAllocator::TransactedFileBTreeAllocator (
                 TransactedFile &file,
                 bool secure,
                 std::size_t btreeEntriesPerNode,
@@ -74,7 +74,7 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::PtrType FileAllocator::Alloc (std::size_t size) {
+        TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::Alloc (std::size_t size) {
             PtrType offset = 0;
             if (size > 0) {
                 if (size < MIN_USER_DATA_SIZE) {
@@ -158,7 +158,7 @@ namespace thekogans {
             return offset;
         }
 
-        void FileAllocator::Free (PtrType offset) {
+        void TransactedFileBTreeAllocator::Free (PtrType offset) {
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
                 Block block (offset);
@@ -233,7 +233,7 @@ namespace thekogans {
             }
         }
 
-        FileAllocator::PtrType FileAllocator::Realloc (
+        TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::Realloc (
                 PtrType offset,
                 std::size_t size,
                 bool moveData) {
@@ -277,7 +277,7 @@ namespace thekogans {
             return offset;
         }
 
-        void FileAllocator::Read () {
+        void TransactedFileBTreeAllocator::Read () {
             Allocator::Read ();
             TransactedFile::ReadOnlyRange buffer (
                 file, Allocator::Header::SIZE, Header::SIZE);
@@ -291,14 +291,14 @@ namespace thekogans {
             btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
         }
 
-        void FileAllocator::Write () {
+        void TransactedFileBTreeAllocator::Write () {
             Allocator::Write ();
             TransactedFile::WriteOnlyRange buffer (
                 file, Allocator::Header::SIZE, Header::SIZE);
             buffer << header;
         }
 
-        FileAllocator::PtrType FileAllocator::AllocBTreeNode (std::size_t size) {
+        TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {
             PtrType offset = 0;
             if (header.freeBTreeNodeOffset != 0) {
                 offset = header.freeBTreeNodeOffset;
@@ -323,7 +323,7 @@ namespace thekogans {
             return offset;
         }
 
-        void FileAllocator::FreeBTreeNode (PtrType offset) {
+        void TransactedFileBTreeAllocator::FreeBTreeNode (PtrType offset) {
             if (offset >= Allocator::header.heapStart + Block::HEADER_SIZE) {
                 Block block (offset);
                 block.Read (file);

@@ -15,17 +15,17 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-/// \struct FileAllocator::BTree FileAllocatorBTree.h thekogans/util/FileAllocatorBTree.h
+/// \struct TransactedFileBTreeAllocator::BTree TransactedFileBTreeAllocatorBTree.h thekogans/util/TransactedFileBTreeAllocatorBTree.h
 ///
 /// \brief
-/// BTree for managing \see{FileAllocator} free, random size block list.
-/// This class is private to and is only included in \see{FileAllocator}.
-/// This implementation is specifically tuned to act as \see{FileAllocator}
+/// BTree for managing \see{TransactedFileBTreeAllocator} free, random size block list.
+/// This class is private to and is only included in \see{TransactedFileBTreeAllocator}.
+/// This implementation is specifically tuned to act as \see{TransactedFileBTreeAllocator}
 /// free list manager. It's logic is subtly different from the general
 /// purpose \see{BTree} implementation. It has no need for values, just
 /// properly structured keys. Its search is also different as it results
 /// in near by entries being returned if they suit the need of an allocation.
-/// It's broken out in to its own file because FileAllocator.h was getting
+/// It's broken out in to its own file because TransactedFileBTreeAllocator.h was getting
 /// too big to maintain.
 struct BTree : public TransactedFile::TransactionParticipant {
     /// \brief
@@ -41,9 +41,9 @@ struct BTree : public TransactedFile::TransactionParticipant {
 
 private:
     /// \brief
-    /// Reference back to the FileAllocator for
+    /// Reference back to the TransactedFileBTreeAllocator for
     /// \see{Header} and \see{Node} blocks.
-    FileAllocator &fileAllocator;
+    TransactedFileBTreeAllocator &fileAllocator;
     /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -283,7 +283,7 @@ private:
 public:
     /// \brief
     /// ctor.
-    /// \param[in] fileAllocator_ \see{FileAllocator} to which this btree belongs.
+    /// \param[in] fileAllocator_ \see{TransactedFileBTreeAllocator} to which this btree belongs.
     /// \param[in] entriesPerNode If we're creating the heap, contains entries per
     /// \see{Node}. If we're reading an existing heap, this value will come from the
     /// \see{Header}.
@@ -296,7 +296,7 @@ public:
     /// for the \see{BlockAllocator}. As with the previous parameter, the same
     /// advice aplies.
     BTree (
-        FileAllocator &fileAllocator_,
+        TransactedFileBTreeAllocator &fileAllocator_,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
         Allocator::SharedPtr allocator);
@@ -349,7 +349,7 @@ protected:
 
     /// \brief
     /// Needs access to private members.
-    friend struct FileAllocator;
+    friend struct TransactedFileBTreeAllocator;
 
     /// \brief
     /// Needs access to private members.

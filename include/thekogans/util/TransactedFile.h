@@ -853,9 +853,9 @@ namespace thekogans {
                     value (value_) {}
 
                 Serializable::SharedPtr GetValue ();
-                inline void SetValue (Serializable::SharedPtr value_) {
-                    value = value_;
-                }
+                void SetValue (
+                    Serializable::SharedPtr value_,
+                    bool setDirty = true);
 
             protected:
                 // TransactedFile::TransactionParticipant

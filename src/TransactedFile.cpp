@@ -430,6 +430,15 @@ namespace thekogans {
             return value;
         }
 
+        void TransactedFile::SerializableObject::SetValue (
+                Serializable::SharedPtr value_,
+                bool setDirty) {
+            value = value_;
+            if (setDirty) {
+                SetDirty (true);
+            }
+        }
+
         void TransactedFile::SerializableObject::Read (Serializer &serializer) {
             Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
             serializer >> value;

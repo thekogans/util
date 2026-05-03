@@ -513,23 +513,6 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void BTree::Node::Dump () {
-            if (count > 0) {
-                std::cout << offset << ": " << leftOffset;
-                for (ui32 i = 0; i < count; ++i) {
-                    std::cout << " ; [" << entries[i].key->ToString () << ", " <<
-                        entries[i].value->GetValue ()->ToString () << "] ; " << entries[i].rightOffset;
-                }
-                std::cout << "\n";
-                for (ui32 i = 0; i < count; ++i) {
-                    Node *child = GetChild (i);
-                    if (child != nullptr) {
-                        child->Dump ();
-                    }
-                }
-            }
-        }
-
         void BTree::Node::Harakiri () {
             this->~Node ();
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));

@@ -25,7 +25,7 @@
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/BlockAllocator.h"
-#include "thekogans/util/FileAllocator.h"
+#include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
     namespace util {
@@ -576,10 +576,6 @@ namespace thekogans {
                     return count > btree.header.entriesPerNode / 2;
                 }
 
-                /// \brief
-                /// Dump the nodes entries to stdout. Used to debug the implementation.
-                void Dump ();
-
             protected:
                 // RefCounted
                 /// \brief
@@ -711,12 +707,6 @@ namespace thekogans {
             /// it.prefix (or smallest element if it.prefix == nullptr). false == the
             /// iterator is empty.
             bool FindFirst (Iterator &it);
-
-            /// \brief
-            /// Use for debugging. Dump the btree nodes to stdout.
-            inline void Dump () {
-                root->Dump ();
-            }
 
         protected:
             // TransactedFile::TransactionParticipant
