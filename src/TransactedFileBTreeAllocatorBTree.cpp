@@ -342,7 +342,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::BTree::Node::Alloc () {
             if (offset == 0) {
                 offset = btree.fileAllocator.AllocBTreeNode (
-                    FileSize (btree.header.entriesPerNode));
+                    btree.fileAllocator.btreeNodeFileSize);
             }
         }
 

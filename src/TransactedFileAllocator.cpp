@@ -154,6 +154,14 @@ namespace thekogans {
             return serializer;
         }
 
+        void TransactedFile::Allocator::Init (
+                TransactedFile::SharedPtr file_,
+                PtrType headerOffset_) {
+            file = file_;
+            headerOffset = headerOffset_;
+            header.heapStart = headerOffset + Header::SIZE;
+        }
+
         void TransactedFile::Allocator::SetFlag (
                 ui32 flag,
                 bool on) {
@@ -170,22 +178,31 @@ namespace thekogans {
 
         void TransactedFile::Allocator::Read () {
             WriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
-            buffer >> header;
-        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            if (!header.IsBlockUsesMagic ()) {
-        #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            if (header.IsBlockUsesMagic ()) {
-        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+            ui32 magic;
+            buffer >> magic;
+            if (magic == MAGIC32) {
+                buffer >> header;
+            #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                if (!header.IsBlockUsesMagic ()) {
+            #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                if (header.IsBlockUsesMagic ()) {
+            #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "This TransactedFile::Allocator file (%s) cannot be opened by this version of %s.",
+                        file->GetPath ().c_str (),
+                        THEKOGANS_UTIL);
+                }
+            }
+            else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "This TransactedFile::Allocator file (%s) cannot be opened by this version of %s.",
-                    file->GetPath ().c_str (),
-                    THEKOGANS_UTIL);
+                    "Corrupt TransactedFile::Allocator file (%s).",
+                    file->GetPath ().c_str ());
             }
         }
 
         void TransactedFile::Allocator::Write () {
             WriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
-            buffer << header;
+            buffer << MAGIC32 << header;
         }
 
         void TransactedFile::Allocator::OnTransactedFileTransactionCommit (

@@ -323,6 +323,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \brief
         /// The size of the header on disk.
         static const std::size_t SIZE =
+            UI32_SIZE +     // magic
             UI16_SIZE +     // version
             UI16_SIZE +     // flags
             PTR_TYPE_SIZE + // heapStart
@@ -336,11 +337,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// ctor.
         /// \param[in] flags_ 0 or FLAGS_SECURE.
         /// \param[in] heapStart_ Beginning of heap.
-        Header (ui16 flags_ = 0,
-                PtrType heapStart_ = SIZE) :
+        Header (ui16 flags_ = 0) :
                 version (CURRENT_VERSION),
                 flags (flags_),
-                heapStart (heapStart_),
+                heapStart (SIZE),
                 rootOffset (0) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
@@ -371,13 +371,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
 public:
     /// \brief
     /// ctor.
-    /// \param[in] flags_
-    /// \param[in] heapStart
-    Allocator (
-        ui16 flags_ = 0,
-        PtrType heapStart = Header::SIZE) :
+    /// \param[in] secure
+    Allocator (bool secure = false) :
         headerOffset (0),
-        header (flags_, heapStart),
+        header (secure ? Header::FLAGS_SECURE : 0),
         flags (0) {}
 
     /// \brief
@@ -442,11 +439,8 @@ public:
     }
 
     virtual void Init (
-            TransactedFile::SharedPtr file_,
-            PtrType headerOffset_) {
-        file = file_;
-        headerOffset = headerOffset_;
-    }
+        TransactedFile::SharedPtr file_,
+        PtrType headerOffset_);
 
     /// \brief
     /// Alloc a block.

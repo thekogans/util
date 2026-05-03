@@ -60,6 +60,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 PtrType headerOffset) {
             Allocator::Init (file, headerOffset);
+            Allocator::header.heapStart += Header::SIZE;
             if (file->GetSize () > headerOffset) {
                 Read ();
             }
@@ -275,21 +276,30 @@ namespace thekogans {
             Allocator::Read ();
             TransactedFile::ReadOnlyRange buffer (
                 *file, headerOffset + Allocator::Header::SIZE, Header::SIZE);
-            buffer >> header;
-            btree.Reset (
-                new BTree (
-                    *this,
-                    btree->header.entriesPerNode,
-                    btree->nodeAllocator->GetBlocksPerPage (),
-                    btree->nodeAllocator->GetAllocator ()));
-            btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
+            ui32 magic;
+            buffer >> magic;
+            if (magic == MAGIC32) {
+                buffer >> header;
+                btree.Reset (
+                    new BTree (
+                        *this,
+                        btree->header.entriesPerNode,
+                        btree->nodeAllocator->GetBlocksPerPage (),
+                        btree->nodeAllocator->GetAllocator ()));
+                btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt heap header @" THEKOGANS_UTIL_UI64_FORMAT,
+                    headerOffset + Allocator::Header::SIZE);
+            }
         }
 
         void TransactedFileBTreeAllocator::Write () {
             Allocator::Write ();
             TransactedFile::WriteOnlyRange buffer (
                 *file, headerOffset + Allocator::Header::SIZE, Header::SIZE);
-            buffer << header;
+            buffer << MAGIC32 << header;
         }
 
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {
@@ -318,7 +328,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::FreeBTreeNode (PtrType offset) {
-            if (offset >= Allocator::header.heapStart + Block::HEADER_SIZE) {
+            if (offset != 0) {
                 Block block (offset);
                 block.Read (*file);
                 if (!block.IsFree () && block.IsBTreeNode ()) {

@@ -113,7 +113,7 @@ namespace thekogans {
             /// thekogans/util/TransactedFileBTreeAllocator.h
             ///
             /// \brief
-            /// Header contains the global heap vailues.
+            /// Header contains the global heap values.
             struct _LIB_THEKOGANS_UTIL_DECL Header {
                 /// \brief
                 /// Contains the offset of the \see{BTree::Header}.
@@ -125,6 +125,7 @@ namespace thekogans {
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
+                    UI32_SIZE +     // magic
                     PTR_TYPE_SIZE + // btreeOffset
                     PTR_TYPE_SIZE;  // freeBTreeNodeOffset
 
@@ -172,9 +173,7 @@ namespace thekogans {
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
                 util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                Allocator (
-                    secure ? Allocator::Header::FLAGS_SECURE : 0,
-                    Allocator::Header::SIZE + Header::SIZE),
+                Allocator (secure),
                 btree (new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator)),
                 btreeNodeFileSize (BTree::Node::FileSize (btree->header.entriesPerNode)) {}
 
