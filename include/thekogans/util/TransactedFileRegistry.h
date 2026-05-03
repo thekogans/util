@@ -29,7 +29,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry :
         public Subscriber<ObjectEvents> {
     /// \brief
     /// Registry is a \see{util::DynamicCreatable} abstract base.
-    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Allocator)
+    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Registry)
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     /// \brief
