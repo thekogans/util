@@ -20,8 +20,8 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/BTree.h"
-#include "thekogans/util/BTreeKeys.h"
+#include "thekogans/util/TransactedFileBTree.h"
+#include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -31,32 +31,32 @@ namespace thekogans {
         /// thekogans/util/TransactedFileBTreeRegistry.h
         ///
         /// \brief
-        /// \see{TransactedFileBTreeRegistry} is a \see{BTree}. It's also a
-        /// \see{TransactedFile::Allocator::Header::rootObject}. It provides
-        /// global ordered, associative storage for \see{TransactedFile} clients.
-        /// Use it to store and retrieve practically any value derived
+        /// \see{TransactedFileBTreeRegistry} is a \see{TransactedFileBTree}.
+        /// It's also a \see{TransactedFile::Allocator::Header::rootObject}.
+        /// It provides global ordered, associative storage for \see{TransactedFile}
+        /// clients. Use it to store and retrieve practically any value derived
         /// from \see{Serializable}. The key type is std::string.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
                 public TransactedFile::Registry,
-                private BTree {
+                private TransactedFileBTree {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFileBTreeRegistry)
 
         public:
             /// \brief
-            /// Default number of entries per \see{BTree::Node}.
+            /// Default number of entries per \see{TransactedFileBTree::Node}.
             static const std::size_t DEFAULT_BTREE_ENTRIES_PER_NODE = 32;
             /// \brief
-            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
+            /// Number of \see{TransactedFileBTree::Node}s that will fit in to a \see{BlockAllocator} page.
             static const std::size_t DEFAULT_BTREE_NODES_PER_PAGE = 5;
 
             /// \brief
             /// ctor.
             /// \param[in] fileAllocator \see{TransactedFileBTree} where the registry lives.
-            /// \param[in] entriesPerNode Number of entries per \see{BTree::Node}.
-            /// \param[in] nodesPerPage Number of \see{BTree::Node}s per allocator page.
-            /// \param[in] allocator Where \see{BTree::Node} pages come from.
+            /// \param[in] entriesPerNode Number of entries per \see{TransactedFileBTree::Node}.
+            /// \param[in] nodesPerPage Number of \see{TransactedFileBTree::Node}s per allocator page.
+            /// \param[in] allocator Where \see{TransactedFileBTree::Node} pages come from.
             TransactedFileBTreeRegistry (
                 TransactedFile::SharedPtr file,
                 bool valueAsObject = false,

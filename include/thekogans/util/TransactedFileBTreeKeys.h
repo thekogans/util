@@ -15,13 +15,13 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_BTreeKeys_h)
-#define __thekogans_util_BTreeKeys_h
+#if !defined (__thekogans_util_TransactedFileBTreeKeys_h)
+#define __thekogans_util_TransactedFileBTreeKeys_h
 
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/BTree.h"
+#include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Serializer.h"
@@ -30,11 +30,11 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct StringKey BTreeKeys.h thekogans/util/BTreeKeys.h
+        /// \struct StringKey TransactedFileBTreeKeys.h thekogans/util/TransactedFileBTreeKeys.h
         ///
         /// \brief
         /// Variable size string key.
-        struct _LIB_THEKOGANS_UTIL_DECL StringKey : public BTree::Key {
+        struct _LIB_THEKOGANS_UTIL_DECL StringKey : public TransactedFileBTree::Key {
             /// \brief
             /// StringKey is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringKey)
@@ -46,7 +46,7 @@ namespace thekogans {
             /// The actual key.
             std::string key;
             /// \brief
-            /// Used in searches. Not stored in \see{BTree}.
+            /// Used in searches. Not stored in \see{TransactedFileBTree}.
             bool ignoreCase;
 
             /// \brief
@@ -59,7 +59,7 @@ namespace thekogans {
                 key (key_),
                 ignoreCase (ignoreCase_) {}
 
-            // BTree::Key
+            // TransactedFileBTree::Key
             /// \brief
             /// Used to find keys with matching prefixs.
             /// \param[in] key_ Key to compare against.
@@ -103,11 +103,11 @@ namespace thekogans {
             }
         };
 
-        /// \struct GUIDKey BTree.h thekogans/util/BTreeKeys.h
+        /// \struct GUIDKey TransactedFileBTree.h thekogans/util/TransactedFileBTreeKeys.h
         ///
         /// \brief
         /// GUID key.
-        struct _LIB_THEKOGANS_UTIL_DECL GUIDKey : public BTree::Key {
+        struct _LIB_THEKOGANS_UTIL_DECL GUIDKey : public TransactedFileBTree::Key {
             /// \brief
             /// GUIDKey is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDKey)
@@ -136,7 +136,7 @@ namespace thekogans {
                 length (length_),
                 hexString (HexEncodeBuffer (key.data, length, false)) {}
 
-            // BTree::Key
+            // TransactedFileBTree::Key
             /// \brief
             /// Used to find keys with matching prefixs.
             /// \param[in] key_ Key to compare against.
@@ -178,4 +178,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTreeKeys_h)
+#endif // !defined (__thekogans_util_TransactedFileBTreeKeys_h)

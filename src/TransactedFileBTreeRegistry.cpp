@@ -16,7 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
-#include "thekogans/util/BTreeKeys.h"
+#include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFileBTreeRegistry.h"
 
 namespace thekogans {
@@ -28,7 +28,7 @@ namespace thekogans {
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 Allocator::SharedPtr allocator) :
-                BTree (
+                TransactedFileBTree (
                     file,
                     file->GetAllocator ()->GetRootOffset (),
                     StringKey::GetContext (),
@@ -41,7 +41,7 @@ namespace thekogans {
         }
 
         Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
-            BTree::Iterator it;
+            TransactedFileBTree::Iterator it;
             return Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
 
@@ -52,7 +52,7 @@ namespace thekogans {
                 Remove (StringKey (key));
             }
             else {
-                BTree::Iterator it;
+                TransactedFileBTree::Iterator it;
                 if (!Insert (new StringKey (key), value, it)) {
                     it.SetValue (value);
                 }

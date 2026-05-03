@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_BTree_h)
-#define __thekogans_util_BTree_h
+#if !defined (__thekogans_util_TransactedFileBTree_h)
+#define __thekogans_util_TransactedFileBTree_h
 
 #include <string>
 #include <vector>
@@ -30,26 +30,26 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct BTree BTree.h thekogans/util/BTree.h
+        /// \struct TransactedFileBTree TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
         ///
         /// \brief
-        /// A BTree is a \see{TransactedFile::Object}. It's attributes are that
+        /// A TransactedFileBTree is a \see{TransactedFile::Object}. It's attributes are that
         /// all searches, insertions and deletions take O(H) where H is the
-        /// height of the tree. These are BTree's bigest strengths. One of it's
+        /// height of the tree. These are TransactedFileBTree's bigest strengths. One of it's
         /// biggest weaknesses is the fact that iterators don't survive modifications
         /// (Insert/Delete). This is why I provide a forward iterator only.
         /// Use it to step through a range of nodes collecting their data. See an example
-        /// provided with \see{BTree::Iterator}. BTree uses the full power of
+        /// provided with \see{TransactedFileBTree::Iterator}. TransactedFileBTree uses the full power of
         /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
         /// That means that key can be practically any random size object (as long
-        /// as it derives from BTree::Key and implements the interface). And value
+        /// as it derives from TransactedFileBTree::Key and implements the interface). And value
         /// can be any \see{Serializable} derived type.
-        struct _LIB_THEKOGANS_UTIL_DECL BTree : public TransactedFile::Object {
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTree : public TransactedFile::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFileBTree)
 
-            /// \struct BTree::Key BTree.h thekogans/util/BTree.h
+            /// \struct TransactedFileBTree::Key TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
             ///
             /// \brief
             /// Key adds order to the \see{Serializable}.
@@ -99,7 +99,7 @@ namespace thekogans {
             struct Node;
 
         public:
-            /// \struct BTree::Iterator BTree.h thekogans/util/BTree.h
+            /// \struct TransactedFileBTree::Iterator TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
             ///
             /// \brief
             /// Iterator implements a forward cursor over a range of btree entries.
@@ -111,7 +111,7 @@ namespace thekogans {
             /// design also means that you cannot know, a priori, how many entries
             /// are in the range. You need to step through it to count them up.
             /// WARNING: \see{FindFirst} will return a live iterator pointing in to the
-            /// actual data in the btree (not a copy). The nature of BTrees is such that
+            /// actual data in the btree (not a copy). The nature of TransactedFileBTrees is such that
             /// almost any modification to its structure invalidates iterators currently
             /// in existance. This means that you CAN'T (or at least shouldn't) write
             /// code like this:
@@ -124,7 +124,7 @@ namespace thekogans {
             /// // WARNING: This is wrong! DON'T do this. It can lead
             /// // to very hard to track down crashes as the posibility
             /// // of a crash is completely dependent on the state of
-            /// // the BTree.
+            /// // the TransactedFileBTree.
             /// Iterator it (some prefix);
             /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
             ///     btree.Delete (*it.GetKey ());
@@ -164,7 +164,7 @@ namespace thekogans {
                 NodeIndex node;
                 /// \brief
                 /// Flag indicating the iterator is done and will not
-                /// return true from Next again. It is only set in \see{BTree::FindFirst}
+                /// return true from Next again. It is only set in \see{TransactedFileBTree::FindFirst}
                 /// and \see{Next} below and only after it made sure that it properly
                 /// initialized the iterator.
                 bool finished;
@@ -209,11 +209,11 @@ namespace thekogans {
             private:
                 /// \brief
                 /// Clear the internal state and reset the iterator.
-                /// Used by \see{BTree} to manage passed in iterators.
+                /// Used by \see{TransactedFileBTree} to manage passed in iterators.
                 void Clear ();
                 /// \brief
                 /// Reset the iterator to the given \see{Node::Entry}.
-                /// Used by \see{BTree} to manage passed in iterators.
+                /// Used by \see{TransactedFileBTree} to manage passed in iterators.
                 /// \param[in] node_ \see{Node}.
                 /// \param[in] index Node entry index.
                 void Reset (
@@ -221,12 +221,12 @@ namespace thekogans {
                     ui32 index);
 
                 /// \brief
-                /// BTree is the only one trusted to access sensitive protected data.
-                friend struct BTree;
+                /// TransactedFileBTree is the only one trusted to access sensitive protected data.
+                friend struct TransactedFileBTree;
             };
 
         protected:
-            /// \struct BTree::Header BTree.h thekogans/util/BTree.h
+            /// \struct TransactedFileBTree::Header TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
             ///
             /// \brief
             /// Header contains global btree info.
@@ -294,18 +294,18 @@ namespace thekogans {
             /// \brief
             /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
             BlockAllocator::SharedPtr nodeAllocator;
-            /// \struct BTree::Node BTree.h thekogans/util/BTree.h
+            /// \struct TransactedFileBTree::Node TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
             ///
             /// \brief
-            /// BTree nodes store sorted key/value pairs and pointers to children nodes.
+            /// TransactedFileBTree nodes store sorted key/value pairs and pointers to children nodes.
             struct Node : public TransactedFile::Object {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
                 /// \brief
-                /// BTree to which this node belongs.
-                BTree &btree;
+                /// TransactedFileBTree to which this node belongs.
+                TransactedFileBTree &btree;
                 /// \brief
                 /// Count of entries.
                 ui32 count;
@@ -318,7 +318,7 @@ namespace thekogans {
                 /// \brief
                 /// Key/value array offset.
                 TransactedFile::Allocator::PtrType keyValueOffset;
-                /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
+                /// \struct TransactedFileBTree::Node::Entry TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
                 ///
                 /// \brief
                 /// Node entries contain keys, values and right (grater then) children.
@@ -373,10 +373,10 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] btree_ BTree to which this node belongs.
+                /// \param[in] btree_ TransactedFileBTree to which this node belongs.
                 /// \param[in] offset Node offset on disk.
                 Node (
-                    BTree &btree_,
+                    TransactedFileBTree &btree_,
                     TransactedFile::Allocator::PtrType offset = 0);
                 /// \brief
                 /// dtor.
@@ -389,17 +389,17 @@ namespace thekogans {
                 static std::size_t Size (std::size_t entriesPerNode);
                 /// \brief
                 /// Allocate a node.
-                /// \param[in] btree BTree to which this node belongs.
+                /// \param[in] btree TransactedFileBTree to which this node belongs.
                 /// \param[in] offset Node offset on disk.
                 static Node *Alloc (
-                    BTree &btree,
+                    TransactedFileBTree &btree,
                     TransactedFile::Allocator::PtrType offset = 0);
                 /// \brief
                 /// Delete the node and it's sub-tree.
                 /// \param[in] fileAllocator Btree heap.
                 /// \param[in] offset Node offset.
                 static void FreeSubtree (
-                    BTree &btree,
+                    TransactedFileBTree &btree,
                     TransactedFile::Allocator::PtrType offset);
 
                 Serializable::SharedPtr GetValue (ui32 index);
@@ -435,7 +435,7 @@ namespace thekogans {
                     const Key &prefix,
                     ui32 &index) const;
                 /// \brief
-                /// Used by \see{BTree::FindFirst} to locate the start of the prefix.
+                /// Used by \see{TransactedFileBTree::FindFirst} to locate the start of the prefix.
                 /// Due to the nature of binary search, \see{PrefixFind} can return
                 /// true with a prefix found in the middle of the range. This method
                 /// keeps reducing the search space (using \see{PrefixFind}) to locate
@@ -486,7 +486,7 @@ namespace thekogans {
                 /// \brief
                 /// The algorithm checks the left and right children @index for
                 /// conformity and performs necessary adjustments to maintain the
-                /// BTree structure. If one of the children is poor an entry is
+                /// TransactedFileBTree structure. If one of the children is poor an entry is
                 /// rotated in to it from the other child. If they are both poor,
                 /// the algorithm merges the two children in to one.
                 /// \param[in] index Index of entry whos left and right child to check.
@@ -631,7 +631,7 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] fileAllocator BTree heap (see \see{TransactedFile::Allocator}).
+            /// \param[in] fileAllocator TransactedFileBTree heap (see \see{TransactedFile::Allocator}).
             /// \param[in] offset Heap offset of the \see{Header} block.
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
@@ -647,14 +647,14 @@ namespace thekogans {
             /// \param[in] allocator This is the \see{Allocator} used to allocate pages
             /// for the \see{BlockAllocator}. As with the previous parameter, the same
             /// advice aplies.
-            /// PRO TIP: If you're interested in creating 'secure' BTrees, pass
+            /// PRO TIP: If you're interested in creating 'secure' TransactedFileBTrees, pass
             /// \see{thekogans::util::SecureAllocator}::Instance () for allocator.
             /// Keep in mind, secure pages are a scarce resource and should NOT be
             /// used like main application memory. But for small enough trees
             /// containing sensitive data like keys or other personal info, they
             /// might be just the ticket. You will probably need to call;
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
-            BTree (
+            TransactedFileBTree (
                 TransactedFile::SharedPtr file,
                 TransactedFile::Allocator::PtrType offset,
                 const SerializableHeader &keyContext = SerializableHeader (),
@@ -665,7 +665,7 @@ namespace thekogans {
                 util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
             /// \brief
             /// dtor.
-            virtual ~BTree ();
+            virtual ~TransactedFileBTree ();
 
             /// \brief
             /// Search for the given key in the btree.
@@ -751,15 +751,15 @@ namespace thekogans {
                 Header &header);
 
             /// \brief
-            /// BTree is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
+            /// TransactedFileBTree is neither copy constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFileBTree)
         };
 
         /// \brief
-        /// Implement BTree::Key extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (BTree::Key)
+        /// Implement TransactedFileBTree::Key extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFileBTree::Key)
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTree_h)
+#endif // !defined (__thekogans_util_TransactedFileBTree_h)
