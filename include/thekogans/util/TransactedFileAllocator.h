@@ -55,10 +55,19 @@
 /// | ... |
 /// +-----+
 ///   var
-struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEvents> {
+struct _LIB_THEKOGANS_UTIL_DECL Allocator :
+        public DynamicCreatable,
+        public Subscriber<TransactedFileEvents> {
     /// \brief
-    /// Declare \see{RefCounted} pointers.
-    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Allocator)
+    /// Allocator is a \see{util::DynamicCreatable} abstract base.
+    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Allocator)
+
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    /// \brief
+    /// Register all known bases. This method is meant to be added
+    /// to as new Allocator derivatives are added to the system.
+    static void StaticInit ();
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
     /// \brief
     /// PtrType is \see{ui64}.
@@ -276,7 +285,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEven
             const Header &footer);
     };
 
-    TransactedFile &file;
+    TransactedFile::SharedPtr file;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -359,16 +368,15 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEven
     /// Combination of the above flags.
     Flags32 flags;
 
+public:
     /// \brief
     /// ctor.
-    /// \param[in] file The file where the heap resides.
-    /// \param[in] secure true == zero out free blocks.
+    /// \param[in] flags_
+    /// \param[in] heapStart
     Allocator (
-        TransactedFile &file_,
-        ui16 flags = 0,
+        ui16 flags_ = 0,
         PtrType heapStart = Header::SIZE) :
-        file (file_),
-        header (flags, heapStart),
+        header (flags_, heapStart),
         flags (0) {}
 
     /// \brief
@@ -380,6 +388,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEven
     /// MIN_USER_DATA_SIZE above means that the smallest block we can
     /// allocate is 64 bytes.
     static const std::size_t MIN_BLOCK_SIZE = Block::SIZE + MIN_USER_DATA_SIZE;
+
+    inline TransactedFile::SharedPtr GetFile () const {
+        return file;
+    }
 
     /// \brief
     /// Return true if secure.
@@ -404,7 +416,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEven
     /// Return the pointer to the end of the heap.
     /// \return Pointer to the end of the heap.
     inline PtrType GetHeapEnd () const {
-        return file.GetSize ();
+        return file->GetSize ();
     }
 
     /// \brief
@@ -425,8 +437,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEven
     /// Set the dirty flag.
     /// \param[in] dirty true == dirty, false == clean.
     inline void SetDirty (bool dirty) {
-        SetFlags (dirty ? FLAGS_DIRTY : 0);
+        SetFlag (FLAGS_DIRTY, dirty);
     }
+
+    virtual void Init (TransactedFile::SharedPtr file) = 0;
 
     /// \brief
     /// Alloc a block.
@@ -451,7 +465,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Subscriber<TransactedFileEven
         bool moveData = true) = 0;
 
 protected:
-    void SetFlags (ui32 flags_);
+    void SetFlag (
+        ui32 flag,
+        bool on);
 
     virtual void Read ();
     virtual void Write ();

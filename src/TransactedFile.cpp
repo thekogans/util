@@ -339,15 +339,16 @@ namespace thekogans {
             THEKOGANS_UTIL_TRY {
                 assert (flags);
                 Reload ();
-                SetFlags (0);
+                SetFlag (FLAGS_DIRTY | FLAGS_DELETED, false);
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void TransactedFile::TransactionParticipant::SetFlags (ui32 flags_) {
-            if (flags != flags_) {
-                ui32 oldFlags = flags;
-                flags = flags_;
+        void TransactedFile::TransactionParticipant::SetFlag (
+                ui32 flag,
+                bool on) {
+            ui32 oldFlags = flags.SetAll (flag, on);
+            if (oldFlags != flags) {
                 if (!oldFlags && flags) {
                     Subscriber<TransactedFileEvents>::Subscribe (*file);
                 }

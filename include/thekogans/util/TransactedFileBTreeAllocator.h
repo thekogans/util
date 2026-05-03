@@ -34,8 +34,9 @@ namespace thekogans {
         /// \brief
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator : public TransactedFile::Allocator {
             /// \brief
-            /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFileBTreeAllocator)
+            /// TransactedFileBTreeAllocator participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (TransactedFileBTreeAllocator)
 
             /// \struct TransactedFileBTreeAllocator::Block TransactedFileBTreeAllocator.h
             /// thekogans/util/TransactedFileBTreeAllocator.h
@@ -161,24 +162,29 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] file The file where the heap resides.
             /// \param[in] secure true == zero out free blocks.
             /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to
             /// a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.
             TransactedFileBTreeAllocator (
-                TransactedFile &file,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                Allocator (
+                    secure ? Allocator::Header::FLAGS_SECURE : 0,
+                    Allocator::Header::SIZE + Header::SIZE),
+                btree (new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator)),
+                btreeNodeFileSize (BTree::Node::FileSize (btree->header.entriesPerNode)) {}
 
             /// \brief
             /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
             inline void DumpBTree () {
                 btree->Dump ();
             }
+
+            virtual void Init (TransactedFile::SharedPtr file) override;
 
             /// \brief
             /// Alloc a block.

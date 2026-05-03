@@ -17,9 +17,21 @@
 
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/TransactedFile.h"
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/TransactedFileBTreeAllocator.h"
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
     namespace util {
+
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (
+            thekogans::util::TransactedFile::Allocator)
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void Serializable::StaticInit () {
+            TransactedFileBTreeAllocator::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         void TransactedFile::Allocator::Block::Header::Read (
                 TransactedFile &file,
@@ -63,9 +75,9 @@ namespace thekogans {
                 Block &prev) const {
             if (!IsFirst (allocator)) {
                 Header footer;
-                footer.Read (allocator.file, offset - SIZE);
+                footer.Read (*allocator.GetFile (), offset - SIZE);
                 prev.offset = offset - SIZE - footer.size;
-                prev.header.Read (allocator.file, prev.offset - HEADER_SIZE);
+                prev.header.Read (*allocator.GetFile (), prev.offset - HEADER_SIZE);
                 if (prev.header != footer) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Corrupt TransactedFileAllocator::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
@@ -85,7 +97,7 @@ namespace thekogans {
                 Block &next) const {
             if (!IsLast (allocator)) {
                 next.offset = offset + header.size + SIZE;
-                next.Read (allocator.file);
+                next.Read (*allocator.GetFile ());
                 return true;
             }
             return false;
@@ -142,21 +154,22 @@ namespace thekogans {
             return serializer;
         }
 
-        void TransactedFile::Allocator::SetFlags (ui32 flags_) {
-            if (flags != flags_) {
-                ui32 oldFlags = flags;
-                flags = flags_;
+        void TransactedFile::Allocator::SetFlag (
+                ui32 flag,
+                bool on) {
+            ui32 oldFlags = flags.SetAll (flag, on);
+            if (oldFlags != flags) {
                 if (!oldFlags && flags) {
-                    Subscriber<TransactedFileEvents>::Subscribe (file);
+                    Subscriber<TransactedFileEvents>::Subscribe (*file);
                 }
                 else if (oldFlags && !flags) {
-                    Subscriber<TransactedFileEvents>::Unsubscribe (file);
+                    Subscriber<TransactedFileEvents>::Unsubscribe (*file);
                 }
             }
         }
 
         void TransactedFile::Allocator::Read () {
-            TransactedFile::WriteOnlyRange buffer (file, 0, Header::SIZE);
+            TransactedFile::WriteOnlyRange buffer (*file, 0, Header::SIZE);
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {
@@ -164,12 +177,12 @@ namespace thekogans {
             }
             else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
                 // File is guest endian.
-                file.endianness = GuestEndian;
+                file->endianness = GuestEndian;
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt TransactedFile::Allocator file (%s)",
-                    file.GetPath ().c_str ());
+                    file->GetPath ().c_str ());
             }
             buffer >> header;
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -179,13 +192,13 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "This TransactedFile::Allocator file (%s) cannot be opened by this version of %s.",
-                    file.GetPath ().c_str (),
+                    file->GetPath ().c_str (),
                     THEKOGANS_UTIL);
             }
         }
 
         void TransactedFile::Allocator::Write () {
-            TransactedFile::WriteOnlyRange buffer (file, 0, Header::SIZE);
+            TransactedFile::WriteOnlyRange buffer (*file, 0, Header::SIZE);
             buffer << MAGIC32 << header;
         }
 

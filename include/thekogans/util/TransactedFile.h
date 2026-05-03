@@ -635,7 +635,7 @@ namespace thekogans {
                 /// Set the dirty flag, preserving the state of the deleted flag.
                 /// \param[in] dirty true == dirty, false == clean.
                 inline void SetDirty (bool dirty) {
-                    SetFlags ((dirty ? FLAGS_DIRTY : 0) | (IsDeleted () ? FLAGS_DELETED : 0));
+                    SetFlag (FLAGS_DIRTY, dirty);
                 }
 
                 /// \brief
@@ -689,12 +689,14 @@ namespace thekogans {
                 /// Set the deleted flag, preserving the state of the dirty flag.
                 /// \param[in] deleted true == deleted, false == alive.
                 inline void SetDeleted (bool deleted) {
-                    SetFlags ((IsDirty () ? FLAGS_DIRTY : 0) | (deleted ? FLAGS_DELETED : 0));
+                    SetFlag (FLAGS_DELETED, deleted);
                 }
                 /// \brief
                 /// Set the flags.
                 /// \param[in] flags_ New flags value.
-                void SetFlags (ui32 flags_);
+                void SetFlag (
+                    ui32 flag,
+                    bool on);
 
                 /// \brief
                 /// TransactionParticipant is neither copy constructable, nor assignable.
