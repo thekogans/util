@@ -903,14 +903,18 @@ namespace thekogans {
             TransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                const std::string &path = std::string ()) :
+                const std::string &path = std::string (),
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr regitry_ = nullptr) :
                 File (endianness, handle, path),
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
                 flags (0),
                 currBufferOffset (NOFFS),
-                currBuffer (nullptr) {}
+                currBuffer (nullptr),
+                allocator (allocator_),
+                registry (regitry_) {Init ();}
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -926,7 +930,9 @@ namespace thekogans {
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
-                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL) :
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr) :
                 File (
                     endianness,
                     path,
@@ -939,7 +945,9 @@ namespace thekogans {
                 size (sizeOnDisk),
                 flags (0),
                 currBufferOffset (NOFFS),
-                currBuffer (nullptr) {}
+                currBuffer (nullptr),
+                allocator (allocator_),
+                registry (registry_) {Init ();}
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor. Open the file.
@@ -951,14 +959,18 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 i32 flags = O_RDWR | O_CREAT,
-                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) :
+                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr) :
                 File (endianness, path, flags, mode),
                 position (IsOpen () ? File::Tell () : 0),
                 sizeOnDisk (IsOpen () ? File::GetSize () : 0),
                 size (sizeOnDisk),
                 flags (0),
                 currBufferOffset (NOFFS),
-                currBuffer (nullptr) {}
+                currBuffer (nullptr),
+                allocator (allocator_),
+                registry (registry_) {Init ();}
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// dtor.
@@ -967,15 +979,8 @@ namespace thekogans {
             inline Allocator::SharedPtr GetAllocator () const {
                 return allocator;
             }
-            inline void SetAllocator (Allocator::SharedPtr allocator_) {
-                allocator = allocator_;
-            }
-
             inline Registry::SharedPtr GetRegistry () const {
                 return registry;
-            }
-            inline void SetRegistry (Registry::SharedPtr registry_) {
-                registry = registry_;
             }
 
             /// \brief
@@ -1104,6 +1109,8 @@ namespace thekogans {
             void DeleteCache ();
 
         private:
+            void Init ();
+
             /// \brief
             /// Used by Open to apply the log before opening the file.
             /// \path path File path.

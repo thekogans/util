@@ -569,7 +569,9 @@ namespace thekogans {
                 DWORD dwDesiredAccess,
                 DWORD dwShareMode,
                 DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes) {
+                DWORD dwFlagsAndAttributes,
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr) {
     #else // defined (TOOLCHAIN_OS_Windows)
         void TransactedFile::Open (
                 const std::string &path,
@@ -593,6 +595,7 @@ namespace thekogans {
             flags = 0;
             currBufferOffset = NOFFS;
             currBuffer = nullptr;
+            Init ();
         }
 
         void TransactedFile::Close () {
@@ -608,6 +611,8 @@ namespace thekogans {
                 flags = 0;
                 currBufferOffset = NOFFS;
                 currBuffer = nullptr;
+                allocator.Reset ();
+                registry.Reset ();
                 File::Close ();
             }
         }
@@ -699,6 +704,54 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
+        void TransactedFile::Init () {
+            if (GetSize () > UI32_SIZE) {
+                Seek (0, SEEK_SET);
+                ui32 magic;
+                *this >> magic;
+                if (magic == MAGIC32) {
+                    // File is host endian.
+                }
+                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    // File is guest endian.
+                    endianness = GuestEndian;
+                }
+                else {
+                    allocator.Reset ();
+                    registry.Reset ();
+                    return;
+                }
+                std::string allocatorType;
+                std::string registryType;
+                *this >> allocatorType >> registryType;
+                allocator = Allocator::CreateType (allocatorType.c_str ());
+                if (allocator != nullptr) {
+                    allocator->Init (this, Tell ());
+                    if (registry != nullptr) {
+                        registry = Registry::CreateType (registryType.c_str ());
+                        registry->Init (this);
+                    }
+                }
+            }
+            else if (GetSize () == 0 && allocator != nullptr) {
+                *this << MAGIC32 << std::string (allocator->Type ());
+                if (registry != nullptr) {
+                    *this << std::string (registry->Type ());
+                }
+                else {
+                    *this << std::string ();
+                }
+                allocator->Init (this, Tell ());
+                if (registry != nullptr) {
+                    registry->Init (this);
+                }
+            }
+            else {
+                allocator.Reset ();
+                registry.Reset ();
             }
         }
 

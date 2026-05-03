@@ -64,7 +64,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     /// \brief
-    /// Register all known bases. This method is meant to be added
+    /// Register all known derivatives. This method is meant to be added
     /// to as new Allocator derivatives are added to the system.
     static void StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -286,6 +286,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     };
 
     TransactedFile::SharedPtr file;
+    PtrType headerOffset;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -376,6 +377,7 @@ public:
     Allocator (
         ui16 flags_ = 0,
         PtrType heapStart = Header::SIZE) :
+        headerOffset (0),
         header (flags_, heapStart),
         flags (0) {}
 
@@ -440,7 +442,12 @@ public:
         SetFlag (FLAGS_DIRTY, dirty);
     }
 
-    virtual void Init (TransactedFile::SharedPtr file) = 0;
+    virtual void Init (
+            TransactedFile::SharedPtr file_,
+            PtrType headerOffset_) {
+        file = file_;
+        headerOffset = headerOffset_;
+    }
 
     /// \brief
     /// Alloc a block.

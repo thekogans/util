@@ -56,9 +56,11 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::Init (TransactedFile::SharedPtr file_) {
-            file = file_;
-            if (file->GetSize () > 0) {
+        void TransactedFileBTreeAllocator::Init (
+                TransactedFile::SharedPtr file,
+                PtrType headerOffset) {
+            Allocator::Init (file, headerOffset);
+            if (file->GetSize () > headerOffset) {
                 Read ();
             }
             else {
@@ -274,7 +276,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Read () {
             Allocator::Read ();
             TransactedFile::ReadOnlyRange buffer (
-                *file, Allocator::Header::SIZE, Header::SIZE);
+                *file, headerOffset + Allocator::Header::SIZE, Header::SIZE);
             buffer >> header;
             btree.Reset (
                 new BTree (
@@ -288,7 +290,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Write () {
             Allocator::Write ();
             TransactedFile::WriteOnlyRange buffer (
-                *file, Allocator::Header::SIZE, Header::SIZE);
+                *file, headerOffset + Allocator::Header::SIZE, Header::SIZE);
             buffer << header;
         }
 

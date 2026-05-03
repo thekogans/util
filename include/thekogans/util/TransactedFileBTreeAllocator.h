@@ -184,7 +184,9 @@ namespace thekogans {
                 btree->Dump ();
             }
 
-            virtual void Init (TransactedFile::SharedPtr file) override;
+            virtual void Init (
+                TransactedFile::SharedPtr file,
+                PtrType headerOffset) override;
 
             /// \brief
             /// Alloc a block.
