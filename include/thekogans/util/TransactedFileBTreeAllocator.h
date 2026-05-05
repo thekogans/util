@@ -183,9 +183,12 @@ namespace thekogans {
                 btree->Dump ();
             }
 
-            virtual void Init (
-                TransactedFile::SharedPtr file,
-                PtrType headerOffset) override;
+            /// \brief
+            /// Return the pointer to the start of the heap.
+            /// \return Pointer to the start of the heap.
+            virtual PtrType GetHeapStart () const override {
+                return Allocator::GetHeapStart () + Header::SIZE;
+            }
 
             /// \brief
             /// Alloc a block.
@@ -210,6 +213,10 @@ namespace thekogans {
                 bool moveData = true) override;
 
         private:
+            virtual void Init (
+                TransactedFile::SharedPtr file,
+                PtrType headerOffset) override;
+
             /// \brief
             /// Common methods.
             virtual void Read () override;

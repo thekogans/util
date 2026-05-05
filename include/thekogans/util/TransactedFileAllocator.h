@@ -26,11 +26,11 @@
 /// | Header | Block 1 | ... | Block N |
 /// +--------+---------+-----+---------+
 ///
-/// Header            |<--------- version 1 ---------->|
-/// +-------+---------+-------+-----------+------------+
-/// | magic | version | flags | heapStart | rootOffset | + allocator spacific data.
-/// +-------+---------+-------+-----------+------------+
-///     4        2        2         8            8
+/// Header            |<----- version 1 ------>|
+/// +-------+---------+-------+----------------+
+/// | magic | version | flags | registryOffset | + allocator spacific data.
+/// +-------+---------+-------+----------------+
+///     4        2        2            8
 ///
 /// Header::SIZE = 24 (version 1)
 ///
@@ -309,11 +309,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// Heap flags.
         Flags16 flags;
         /// \brief
-        /// Begining of heap (start of first Block::Header).
-        PtrType heapStart;
-        /// \brief
-        /// Contains the offset of the root object.
-        PtrType rootOffset;
+        /// Contains the offset of the \see{Registry}.
+        PtrType registryOffset;
         // NOTE: If you add new fields, adjust the SIZE and increment
         // the CURRENT_VERSION below and add if statements to operator
         // << and >> to read and write them. And don't forget to rebuild
@@ -326,8 +323,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             UI32_SIZE +     // magic
             UI16_SIZE +     // version
             UI16_SIZE +     // flags
-            PTR_TYPE_SIZE + // heapStart
-            PTR_TYPE_SIZE;  // rootOffset
+            PTR_TYPE_SIZE;  // regisryOffset
 
         /// \brief
         /// Current version.
@@ -336,12 +332,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \brief
         /// ctor.
         /// \param[in] flags_ 0 or FLAGS_SECURE.
-        /// \param[in] heapStart_ Beginning of heap.
         Header (ui16 flags_ = 0) :
                 version (CURRENT_VERSION),
                 flags (flags_),
-                heapStart (SIZE),
-                rootOffset (0) {
+                registryOffset (0) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -401,14 +395,14 @@ public:
     /// \brief
     /// Return the pointer to the start of the heap.
     /// \return Pointer to the start of the heap.
-    inline PtrType GetHeapStart () const {
-        return header.heapStart;
+    virtual PtrType GetHeapStart () const {
+        return headerOffset + Header::SIZE;
     }
     /// \brief
     /// Return the offset of the first block in the heap.
     /// \return Offset of the first block in the heap.
     inline PtrType GetFirstBlockOffset () const {
-        return header.heapStart + Block::HEADER_SIZE;
+        return GetHeapStart () + Block::HEADER_SIZE;
     }
     /// \brief
     /// Return the pointer to the end of the heap.
@@ -418,16 +412,16 @@ public:
     }
 
     /// \brief
-    /// Return the header.rootOffset;
-    /// \return header.rootOffset;
-    inline PtrType GetRootOffset () const {
-        return header.rootOffset;
+    /// Return the header.registryOffset;
+    /// \return header.registryOffset;
+    inline PtrType GetRegistryOffset () const {
+        return header.registryOffset;
     }
     /// \brief
-    /// Set the header.rootOffset.
-    /// \param[in] rootOffset New rootOffset to set.
-    inline void SetRootOffset (PtrType rootOffset) {
-        header.rootOffset = rootOffset;
+    /// Set the header.registryOffset.
+    /// \param[in] registryOffset New registryOffset to set.
+    inline void SetRegistryOffset (PtrType registryOffset) {
+        header.registryOffset = registryOffset;
         SetDirty (true);
     }
 
@@ -437,10 +431,6 @@ public:
     inline void SetDirty (bool dirty) {
         SetFlag (FLAGS_DIRTY, dirty);
     }
-
-    virtual void Init (
-        TransactedFile::SharedPtr file_,
-        PtrType headerOffset_);
 
     /// \brief
     /// Alloc a block.
@@ -469,6 +459,10 @@ protected:
         ui32 flag,
         bool on);
 
+    virtual void Init (
+        TransactedFile::SharedPtr file_,
+        PtrType headerOffset_);
+
     virtual void Read ();
     virtual void Write ();
 
@@ -485,4 +479,6 @@ protected:
     /// \param[in] file \see{TransactedFile} aborting the transaction.
     virtual void OnTransactedFileTransactionAbort (
         TransactedFile::SharedPtr /*file*/) noexcept override;
+
+    friend struct TransactedFile;
 };

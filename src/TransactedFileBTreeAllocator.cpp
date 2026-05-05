@@ -56,19 +56,6 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::Init (
-                TransactedFile::SharedPtr file,
-                PtrType headerOffset) {
-            Allocator::Init (file, headerOffset);
-            Allocator::header.heapStart += Header::SIZE;
-            if (file->GetSize () > headerOffset) {
-                Read ();
-            }
-            else {
-                Write ();
-            }
-        }
-
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::Alloc (std::size_t size) {
             PtrType offset = 0;
             if (size > 0) {
@@ -272,10 +259,22 @@ namespace thekogans {
             return offset;
         }
 
+        void TransactedFileBTreeAllocator::Init (
+                TransactedFile::SharedPtr file,
+                PtrType headerOffset) {
+            Allocator::Init (file, headerOffset);
+            if (file->GetSize () > headerOffset) {
+                Read ();
+            }
+            else {
+                Write ();
+            }
+        }
+
         void TransactedFileBTreeAllocator::Read () {
             Allocator::Read ();
             TransactedFile::ReadOnlyRange buffer (
-                *file, headerOffset + Allocator::Header::SIZE, Header::SIZE);
+                *file, Allocator::GetHeapStart (), Header::SIZE);
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {
@@ -291,14 +290,14 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt heap header @" THEKOGANS_UTIL_UI64_FORMAT,
-                    headerOffset + Allocator::Header::SIZE);
+                    Allocator::GetHeapStart ());
             }
         }
 
         void TransactedFileBTreeAllocator::Write () {
             Allocator::Write ();
             TransactedFile::WriteOnlyRange buffer (
-                *file, headerOffset + Allocator::Header::SIZE, Header::SIZE);
+                *file, Allocator::GetHeapStart (), Header::SIZE);
             buffer << MAGIC32 << header;
         }
 

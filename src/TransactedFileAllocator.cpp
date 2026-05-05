@@ -138,8 +138,7 @@ namespace thekogans {
             serializer <<
                 header.version <<
                 header.flags <<
-                header.heapStart <<
-                header.rootOffset;
+                header.registryOffset;
             return serializer;
         }
 
@@ -149,17 +148,8 @@ namespace thekogans {
             serializer >>
                 header.version >>
                 header.flags >>
-                header.heapStart >>
-                header.rootOffset;
+                header.registryOffset;
             return serializer;
-        }
-
-        void TransactedFile::Allocator::Init (
-                TransactedFile::SharedPtr file_,
-                PtrType headerOffset_) {
-            file = file_;
-            headerOffset = headerOffset_;
-            header.heapStart = headerOffset + Header::SIZE;
         }
 
         void TransactedFile::Allocator::SetFlag (
@@ -176,8 +166,15 @@ namespace thekogans {
             }
         }
 
+        void TransactedFile::Allocator::Init (
+                TransactedFile::SharedPtr file_,
+                PtrType headerOffset_) {
+            file = file_;
+            headerOffset = headerOffset_;
+        }
+
         void TransactedFile::Allocator::Read () {
-            WriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
+            ReadOnlyRange buffer (*file, headerOffset, Header::SIZE);
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {

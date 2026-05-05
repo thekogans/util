@@ -891,6 +891,13 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_CATCH_ANY
         /// Catch any exception.
         #define THEKOGANS_UTIL_CATCH_ANY catch (...)
+        /// \def THEKOGANS_UTIL_CATCH_AND_IGNORE
+        /// Ignore all exceptions.
+        #define THEKOGANS_UTIL_CATCH_AND_IGNORE\
+            THEKOGANS_UTIL_CATCH_ANY {\
+                THEKOGANS_UTIL_DEBUG_BREAK\
+            }
+
         /// \def THEKOGANS_UTIL_CATCH_AND_RETHROW
         /// Catch and rethrow.
         #define THEKOGANS_UTIL_CATCH_AND_RETHROW\

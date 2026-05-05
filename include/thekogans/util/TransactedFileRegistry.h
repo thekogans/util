@@ -68,13 +68,13 @@ protected:
     /// \see{BTree} allocated a block in the file.
     /// \param[in] object \see{BTree} whose offset has become valid.
     virtual void OnTransactedFileObjectAlloc (Object::SharedPtr object) noexcept override {
-        object->GetFile ()->GetAllocator ()->SetRootOffset (object->GetOffset ());
+        object->GetFile ()->GetAllocator ()->SetRegistryOffset (object->GetOffset ());
     }
     /// \brief
     /// \see{BTree} freed its \see{BTree::Header} block.
     /// \param[in] object \see{BTree} whose offset has become valid.
     virtual void OnTransactedFileObjectFree (Object::SharedPtr object) noexcept override {
-        object->GetFile ()->GetAllocator ()->SetRootOffset (0);
+        object->GetFile ()->GetAllocator ()->SetRegistryOffset (0);
     }
 
     /// \brief

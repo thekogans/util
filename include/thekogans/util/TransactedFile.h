@@ -1217,8 +1217,8 @@ namespace thekogans {
             void SimpleOpen (
                 const std::string &path,
                 Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr regitry = nullptr);
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr regitry_ = nullptr);
 
             /// \brief
             /// SimpleTransactedFile is neither copy constructable, nor assignable.

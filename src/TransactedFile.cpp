@@ -706,36 +706,8 @@ namespace thekogans {
         }
 
         void TransactedFile::Init () {
-            if (GetSize () > UI32_SIZE) {
-                Seek (0, SEEK_SET);
-                ui32 magic;
-                *this >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
-                }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    endianness = GuestEndian;
-                }
-                else {
-                    allocator.Reset ();
-                    registry.Reset ();
-                    return;
-                }
-                std::string allocatorType;
-                std::string registryType;
-                *this >> allocatorType >> registryType;
-                allocator = Allocator::CreateType (allocatorType.c_str ());
-                if (allocator != nullptr) {
-                    allocator->Init (this, Tell ());
-                    registry = Registry::CreateType (registryType.c_str ());
-                    if (registry != nullptr) {
-                        registry->Init (this);
-                    }
-                }
-                Seek (0, SEEK_SET);
-            }
-            else if (GetSize () == 0 && allocator != nullptr) {
+            Seek (0, SEEK_SET);
+            if (GetSize () == 0 && allocator != nullptr) {
                 *this << MAGIC32 << std::string (allocator->Type ());
                 if (registry != nullptr) {
                     *this << std::string (registry->Type ());
@@ -743,16 +715,42 @@ namespace thekogans {
                 else {
                     *this << std::string ();
                 }
+                *this << MAGIC32;
                 allocator->Init (this, Tell ());
                 if (registry != nullptr) {
                     registry->Init (this);
                 }
-                Seek (0, SEEK_SET);
             }
             else {
-                allocator.Reset ();
-                registry.Reset ();
+                THEKOGANS_UTIL_TRY {
+                    ui32 magic;
+                    *this >> magic;
+                    if (magic == MAGIC32) {
+                        // File is host endian.
+                    }
+                    else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                        // File is guest endian.
+                        endianness = GuestEndian;
+                    }
+                    else {
+                    }
+                    std::string allocatorType;
+                    std::string registryType;
+                    *this >> allocatorType >> registryType >> magic;
+                    if (magic == MAGIC32) {
+                        allocator = Allocator::CreateType (allocatorType.c_str ());
+                        if (allocator != nullptr) {
+                            allocator->Init (this, Tell ());
+                            registry = Registry::CreateType (registryType.c_str ());
+                            if (registry != nullptr) {
+                                registry->Init (this);
+                            }
+                        }
+                    }
+                }
+                THEKOGANS_UTIL_CATCH_AND_IGNORE
             }
+            Seek (0, SEEK_SET);
         }
 
         void TransactedFile::CommitLog (const std::string &path) {

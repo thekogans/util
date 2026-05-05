@@ -22,6 +22,7 @@
     #include "thekogans/util/Logger.h"
     #include "thekogans/util/Serializer.h"
     #include "thekogans/util/Serializable.h"
+    #include "thekogans/util/TransactedFile.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/DynamicCreatable.h"
 
@@ -42,6 +43,8 @@ namespace thekogans {
             Logger::StaticInit ();
             Serializer::StaticInit ();
             Serializable::StaticInit ();
+            TransactedFile::Allocator::StaticInit ();
+            TransactedFile::Registry::StaticInit ();
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (

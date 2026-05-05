@@ -30,7 +30,7 @@ namespace thekogans {
             btree.Reset (
                 new TransactedFileBTree (
                     file,
-                    file->GetAllocator ()->GetRootOffset (),
+                    file->GetAllocator ()->GetRegistryOffset (),
                     StringKey::GetContext (),
                     SerializableHeader (),
                     valueAsObject,
