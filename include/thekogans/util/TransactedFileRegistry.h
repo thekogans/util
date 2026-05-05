@@ -19,22 +19,20 @@
 /// thekogans/util/TransactedFileRegistry.h
 ///
 /// \brief
-/// \see{TransactedFileRegistry} is a \see{BTree}. It's also a
-/// \see{TransactedFile::Header::rootObject}. It provides global
-/// ordered, associative storage for \see{TransactedFile} clients.
-/// Use it to store and retrieve practically any value derived
+/// Registry provides global associative storage for \see{TransactedFile}
+/// clients. Use it to store and retrieve practically any value derived
 /// from \see{Serializable}. The key type is std::string.
 struct _LIB_THEKOGANS_UTIL_DECL Registry :
         public DynamicCreatable,
         public Subscriber<ObjectEvents> {
     /// \brief
-    /// Registry is a \see{util::DynamicCreatable} abstract base.
+    /// Registry is a \see{DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Registry)
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     /// \brief
     /// Register all known derivatives. This method is meant to be added
-    /// to as new Allocator derivatives are added to the system.
+    /// to as new Registry derivatives are added to the system.
     static void StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -43,6 +41,11 @@ public:
     /// ctor.
     Registry () {}
 
+    /// \brief
+    /// Initialize the registry. Since registry is creaed before
+    /// the associated file, once the file is opened it calls
+    /// Init to create the link between it and the registry.
+    /// \param[in] file \see{TransactedFile} to associate the registry with.
     virtual void Init (TransactedFile::SharedPtr /*file*/) = 0;
 
     /// \brief
@@ -65,16 +68,16 @@ public:
 protected:
     // TransactedFile::ObjectEvents
     /// \brief
-    /// \see{BTree} allocated a block in the file.
-    /// \param[in] object \see{BTree} whose offset has become valid.
+    /// \see{Object} allocated a block in the file.
+    /// \param[in] object \see{Object} whose offset has become valid.
     virtual void OnTransactedFileObjectAlloc (Object::SharedPtr object) noexcept override {
-        object->GetFile ()->GetAllocator ()->SetRegistryOffset (object->GetOffset ());
+        object->GetAllocator ()->SetRegistryOffset (object->GetOffset ());
     }
     /// \brief
-    /// \see{BTree} freed its \see{BTree::Header} block.
-    /// \param[in] object \see{BTree} whose offset has become valid.
+    /// \see{Object} freed its block.
+    /// \param[in] object \see{Object} whose offset has become invalid.
     virtual void OnTransactedFileObjectFree (Object::SharedPtr object) noexcept override {
-        object->GetFile ()->GetAllocator ()->SetRegistryOffset (0);
+        object->GetAllocator ()->SetRegistryOffset (0);
     }
 
     /// \brief
