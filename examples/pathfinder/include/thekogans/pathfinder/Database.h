@@ -21,10 +21,9 @@
 #include <string>
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/TransactedFile.h"
-#include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/FileAllocatorRegistry.h"
+#include "thekogans/util/TransactedFileBTreeAllocator.h"
+#include "thekogans/util/TransactedFileBTreeRegistry.h"
 #include "thekogans/util/DefaultAllocator.h"
-#include "thekogans/util/SpinLock.h"
 #include "thekogans/pathfinder/Options.h"
 
 namespace thekogans {
@@ -40,52 +39,32 @@ namespace thekogans {
             /// \brief
             /// \see{util::TransactedFile} where the database lives.
             util::TransactedFile::SharedPtr file;
-            /// \brief
-            /// \see{util::FileAllocator} for managing random size blocks in the file.
-            util::FileAllocator::SharedPtr allocator;
-            bool registryValueAsObject;
-            /// \brief
-            /// Number of entries per \see{util::BTree::Node}.
-            std::size_t registryEntriesPerNode;
-            /// \brief
-            /// Number of \see{util::BTree::Node}s that will fit in to a \see{util::BlockAllocator} page.
-            std::size_t registryNodesPerPage;
-            /// \brief
-            /// \see{Allocator} for \see{util::FileAllocator::BTree} and \see{util::BTree}.
-            util::Allocator::SharedPtr allocator;
-            /// \brief
-            /// \see{util::FileAllocatorRegistry} for system wide name/value pairs.
-            util::FileAllocatorRegistry::SharedPtr registry;
-            /// \brief
-            /// Protect registry creation.
-            util::SpinLock spinLock;
 
         public:
             /// \brief
             /// ctor.
             /// \param[in] path Path to database file.
             /// \param[in] secure true == \see{util::FileAllocator} will zero fill freed blocks.
-            /// \param[in] btreeEntriesPerNode Number of entries per \see{util::FileAllocator::BTree::Node}.
-            /// \param[in] btreeNodesPerPage Number of \see{util::FileAllocator::BTree::Node}s that will
+            /// \param[in] allocatorEntriesPerNode Number of entries per \see{util::TransactedFileBTreeAllocator::Node}.
+            /// \param[in] allocatorNodesPerPage Number of \see{util::TransactedFileBTreeAllocator::Node}s that will
             /// fit in to a \see{util::BlockAllocator} page.
-            /// \param[in] registryEntriesPerNode Number of entries per \see{util::BTree::Node}.
-            /// \param[in] registryNodesPerPage Number of \see{util::BTree::Node}s that will
+            /// \param[in] registryEntriesPerNode Number of entries per \see{util::TransactedFileBTree::Node}.
+            /// \param[in] registryNodesPerPage Number of \see{util::TransactedFileBTree::Node}s that will
             /// fit in to a \see{util::BlockAllocator} page.
-            /// \param[in] allocator \see{util::Allocator} for
-            /// \see{util::FileAllocator::BTree} and \see{util::BTree}.
+            /// \param[in] allocator \see{util::Allocator} for \see{util::TransactedFileBTreeAllocator}
+            /// and \see{util::TransactedFileBTree}.
             Database (
                 const std::string &path = Options::Instance ()->dbPath,
                 bool secure = false,
-                std::size_t btreeEntriesPerNode =
-                    util::FileAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t btreeNodesPerPage =
-                    util::FileAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
-                bool registryValueAsObject_ = false,
+                std::size_t allocatorEntriesPerNode =
+                    util::TransactedFileBTreeAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t allocatorNodesPerPage =
+                    util::TransactedFileBTreeAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
                 std::size_t registryEntriesPerNode_ =
-                    util::FileAllocatorRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t registryNodesPerPage_ =
-                    util::FileAllocatorRegistry::DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator_ = util::DefaultAllocator::Instance ());
+                    util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t registryNodesPerPage =
+                    util::TransactedFileBTreeRegistry::DEFAULT_BTREE_NODES_PER_PAGE,
+                util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ());
 
             /// \brief
             /// Return the file.
@@ -98,7 +77,7 @@ namespace thekogans {
             /// Return the allocator.
             /// \return allocator.
             inline util::TransactedFile::Allocator::SharedPtr GetAllocator () const {
-                return allocator;
+                return file->GetAllocator ();
             }
 
             /// \brief
@@ -108,7 +87,9 @@ namespace thekogans {
             /// create it outside the ctor to prevent potential deadlock
             /// with database creation.
             /// \return registry.
-            util::FileAllocatorRegistry::SharedPtr GetRegistry ();
+            inline util::TransactedFile::Registry::SharedPtr GetRegistry () const {
+                return file->GetRegistry ();
+            }
         };
 
     } // namespace pathfinder

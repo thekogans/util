@@ -25,7 +25,7 @@ namespace thekogans {
             thekogans::pathfinder::IgnoreList,
             1,
             0,
-            util::BTree::Value::TYPE)
+            util::Serializable::TYPE)
 
         bool IgnoreList::AddIgnore (const std::string &ignore) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {

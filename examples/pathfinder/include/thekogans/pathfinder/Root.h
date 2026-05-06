@@ -25,8 +25,7 @@
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/FileAllocator.h"
-#include "thekogans/util/BTree.h"
+#include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/pathfinder/Database.h"
 #include "thekogans/pathfinder/IgnoreList.h"
 
@@ -69,8 +68,8 @@ namespace thekogans {
 
         private:
             std::string path;
-            util::BTree::SharedPtr pathBTree;
-            util::BTree::SharedPtr componentBTree;
+            util::TransactedFileBTree::SharedPtr pathBTree;
+            util::TransactedFileBTree::SharedPtr componentBTree;
             bool active;
 
         public:
@@ -81,13 +80,13 @@ namespace thekogans {
                 bool active_ = true) :
                 path (path_),
                 pathBTree (
-                    new util::BTree (
+                    new util::TransactedFileBTree (
                         Database::Instance ()->GetAllocator (),
                         pathBTreeOffset,
                         util::GUIDKey::GetContext (),
                         util::StringValue::GetContext ())),
                 componentBTree (
-                    new util::BTree (
+                    new util::TransactedFileBTree (
                         Database::Instance ()->GetAllocator (),
                         componentBTreeOffset,
                         util::StringKey::GetContext (),

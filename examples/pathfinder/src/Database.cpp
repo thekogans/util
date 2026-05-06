@@ -22,52 +22,28 @@ namespace thekogans {
     namespace pathfinder {
 
         Database::Database (
-                const std::string &path,
-                bool secure,
-                std::size_t btreeEntriesPerNode,
-                std::size_t btreeNodesPerPage,
-                bool registryValueAsObject_,
-                std::size_t registryEntriesPerNode_,
-                std::size_t registryNodesPerPage_,
-                util::Allocator::SharedPtr allocator_) :
-                file (
-                    new util::SimpleTransactedFile (
-                        util::HostEndian,
-                        path,
-                        util::SimpleFile::ReadWrite | util::SimpleFile::Create)),
-                registryValueAsObject (registryValueAsObject_),
-                registryEntriesPerNode (registryEntriesPerNode_),
-                registryNodesPerPage (registryNodesPerPage_),
-                allocator (allocator_) {
-            {
-                util::TransactedFile::Transaction transaction (file);
-                allocator.Reset (
-                    new util::FileAllocator (
-                        file,
+            const std::string &path,
+            bool secure,
+            std::size_t allocatorEntriesPerNode,
+            std::size_t allocatorNodesPerPage,
+            std::size_t registryEntriesPerNode,
+            std::size_t registryNodesPerPage,
+            util::Allocator::SharedPtr allocator) :
+            file (
+                new util::SimpleTransactedFile (
+                    util::HostEndian,
+                    path,
+                    util::SimpleFile::ReadWrite | util::SimpleFile::Create,
+                    new util::TransactedFileBTreeAllocator (
                         secure,
-                        btreeEntriesPerNode,
-                        btreeNodesPerPage,
-                        allocator));
-                transaction.Commit ();
-            }
-            file->SetAllocator (allocator);
-        }
-
-        util::FileAllocatorRegistry::SharedPtr Database::GetRegistry () {
-            if (registry == nullptr) {
-                util::LockGuard<util::SpinLock> guard (spinLock);
-                if (registry == nullptr) {
-                    registry.Reset (
-                        new util::FileAllocatorRegistry (
-                            allocator,
-                            registryValueAsObject,
-                            registryEntriesPerNode,
-                            registryNodesPerPage,
-                            allocator));
-                }
-            }
-            return registry;
-        }
+                        allocatorEntriesPerNode,
+                        allocatorNodesPerPage,
+                        allocator),
+                    new util::TransactedFileBTreeRegistry (
+                        true,
+                        registryEntriesPerNode,
+                        registryNodesPerPage,
+                        allocator))) {}
 
     } // namespace pathfinder
 } // namespace thekogans

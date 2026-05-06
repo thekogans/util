@@ -31,7 +31,7 @@ namespace thekogans {
             thekogans::pathfinder::Roots,
             1,
             0,
-            util::BTree::Value::TYPE)
+            util::Serializable::TYPE)
 
         void Roots::ScanRoot (
                 const std::string &path,
