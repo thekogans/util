@@ -195,8 +195,7 @@ namespace thekogans {
                 position (0),
                 buffer (nullptr),
                 owner (false) {
-            file.Seek (offset, SEEK_SET);
-            buffer = file.GetBuffer ();
+            buffer = file.GetBuffer (offset);
             if (length == 0) {
                 Allocator::Block block (offset);
                 block.Read (file);
@@ -472,7 +471,7 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && (ui64)position < size) {
-                        Buffer *buffer_ = GetBuffer ();
+                        Buffer *buffer_ = GetBuffer (position);
                         std::size_t bufferOffset = position - buffer_->offset;
                         std::size_t countToRead = MIN (buffer_->length - bufferOffset, count);
                         std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
@@ -502,7 +501,7 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        Buffer *buffer_ = GetBuffer ();
+                        Buffer *buffer_ = GetBuffer (position);
                         std::size_t bufferOffset = position - buffer_->offset;
                         if (buffer_->length < bufferOffset + count) {
                             buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
@@ -982,11 +981,11 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::Buffer *TransactedFile::GetBuffer () {
-            ui64 bufferOffset = position & ~(Buffer::SIZE - 1);
+        TransactedFile::Buffer *TransactedFile::GetBuffer (ui64 offset) {
+            ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
             if (currBufferOffset != bufferOffset) {
                 // --
-                ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 0);
+                ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
                 Node *internal = root.GetNode (
                     THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 0));
                 internal = internal->GetNode (
@@ -1000,7 +999,7 @@ namespace thekogans {
                 // layers of the 5 layer 64 bit index.
                 // --
                 ui32 bufferIndex =
-                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (position, 1) >> Buffer::SHIFT_COUNT;
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> Buffer::SHIFT_COUNT;
                 if (segment->buffers[bufferIndex] == nullptr) {
                     ui64 bufferLength = MIN (
                         bufferOffset < size ? size - bufferOffset : 0,

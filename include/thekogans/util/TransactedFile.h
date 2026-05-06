@@ -1044,16 +1044,16 @@ namespace thekogans {
             void OpenEx (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes,
+                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
+                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+                DWORD dwCreationDisposition = OPEN_EXISTING,
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
             #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
-                i32 mode,
+                i32 flags = O_RDWR,
+                i32 mode = S_IRUSR | S_IWUSR,
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_);
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr);
 
             // File
             /// \brief
@@ -1167,9 +1167,10 @@ namespace thekogans {
             void AbortTransaction ();
 
             /// \brief
-            /// Get the buffer that will cover the neighborhood around position.
-            /// \return Buffer that covers the neighborhood around position.
-            Buffer *GetBuffer ();
+            /// Get the buffer that will cover the neighborhood around the given offset.
+            /// \param[in] offset Offset whos buffer to return.
+            /// \return Buffer that covers the neighborhood around the given offset.
+            Buffer *GetBuffer (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create
