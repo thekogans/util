@@ -264,7 +264,7 @@ namespace thekogans {
                 if (count > length) {
                     count = length;
                 }
-                memcpy (buffer, data + position, count);
+                std::memcpy (buffer, data + position, count);
                 length -= count;
                 position += count;
             }
@@ -300,7 +300,7 @@ namespace thekogans {
                 if (count > length) {
                     count = length;
                 }
-                memcpy (data + position, buffer, count);
+                std::memcpy (data + position, buffer, count);
                 length -= count;
                 position += count;
             }
@@ -360,10 +360,10 @@ namespace thekogans {
                 bool on) {
             ui32 oldFlags = flags.SetAll (flag, on);
             if (oldFlags != flags) {
-                if (!oldFlags && flags) {
+                if (oldFlags == 0 && flags != 0) {
                     Subscriber<TransactedFileEvents>::Subscribe (*file);
                 }
-                else if (oldFlags && !flags) {
+                else if (oldFlags != 0 && flags == 0) {
                     Subscriber<TransactedFileEvents>::Unsubscribe (*file);
                 }
             }
