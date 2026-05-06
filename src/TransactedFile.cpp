@@ -202,7 +202,7 @@ namespace thekogans {
                 length = block.GetSize ();
             }
             std::size_t bufferOffset = offset - buffer->offset;
-            std::size_t countAvailable = MIN (buffer->length - bufferOffset, length);
+            std::size_t countAvailable = MIN (Buffer::SIZE - bufferOffset, length);
             if (length > countAvailable) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
@@ -283,7 +283,12 @@ namespace thekogans {
                 }
                 else {
                     buffer->dirty = true;
-                    file.SetDirty (true);
+                    if (file.GetSize () < offset + position) {
+                        file.SetSize (offset + position);
+                    }
+                    else {
+                        file.SetDirty (true);
+                    }
                 }
             }
         }

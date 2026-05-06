@@ -125,10 +125,10 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         void TransactedFile::Allocator::Block::Invalidate (TransactedFile &file) const {
-            file.Seek (offset - HEADER_SIZE, SEEK_SET);
+            TransactedFile::WriteOnlyRange buffer (file, offset - HEADER_SIZE, UI32_SIZE);
             // Simply stepping on magic will invalidate
             // this block for all future reads.
-            file << (ui32)0;
+            buffer << (ui32)0;
         }
     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 

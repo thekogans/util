@@ -43,16 +43,16 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Block::Read (TransactedFile &file) {
             Allocator::Block::Read (file);
             if (IsFree () && IsBTreeNode ()) {
-                file.Seek (offset, SEEK_SET);
-                file >> nextBTreeNodeOffset;
+                TransactedFile::ReadOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
+                buffer >> nextBTreeNodeOffset;
             }
         }
 
         void TransactedFileBTreeAllocator::Block::Write (TransactedFile &file) const {
             Allocator::Block::Write (file);
             if (IsFree () && IsBTreeNode ()) {
-                file.Seek (offset, SEEK_SET);
-                file << nextBTreeNodeOffset;
+                TransactedFile::WriteOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
+                buffer << nextBTreeNodeOffset;
             }
         }
 
@@ -132,7 +132,7 @@ namespace thekogans {
                 }
                 else {
                     // No free block large enough is found? Grow the file.
-                    offset = file->GetSize () + Block::HEADER_SIZE;
+                    offset = GetHeapEnd () + Block::HEADER_SIZE;
                 }
                 Block block (offset, 0, size);
                 block.Write (*file);
@@ -263,7 +263,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 PtrType headerOffset) {
             Allocator::Init (file, headerOffset);
-            if (file->GetSize () > headerOffset) {
+            if (GetHeapEnd () > headerOffset) {
                 Read ();
             }
             else {
@@ -319,7 +319,7 @@ namespace thekogans {
                 }
             }
             else {
-                offset = file->GetSize () + Block::HEADER_SIZE;
+                offset = GetHeapEnd () + Block::HEADER_SIZE;
             }
             Block block (offset, Block::FLAGS_BTREE_NODE, size);
             block.Write (*file);
