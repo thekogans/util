@@ -246,6 +246,13 @@ namespace thekogans {
                 std::size_t length,
                 util::Allocator::SharedPtr allocator) :
                 Range (file, offset, length, allocator) {
+            if (offset + length > file.GetSize ()) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "ReadOnlyRange (" THEKOGANS_UTIL_UI64_FORMAT ", "
+                    THEKOGANS_UTIL_UI64_FORMAT "), outside file (%s) bounds ("
+                    THEKOGANS_UTIL_UI64_FORMAT ").",
+                    offset, length, file.GetPath ().c_str (), file.GetSize ());
+            }
             if (owner) {
                 file.Read (data, length);
             }
@@ -759,8 +766,8 @@ namespace thekogans {
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt log %s",
-                            logPath.c_str ());
+                            "Corrupt TransactedFile file (%s).",
+                            GetPath ().c_str ());
                     }
                     std::string allocatorType;
                     std::string registryType;
@@ -776,21 +783,21 @@ namespace thekogans {
                                 }
                                 else {
                                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "Corrupt log %s",
-                                        logPath.c_str ());
+                                        "Unable to create registry of type (%s).",
+                                        registryType.c_str ());
                                 }
                             }
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Corrupt log %s",
-                                logPath.c_str ());
+                                "Unable to create allocator of type (%s).",
+                                allocatorType.c_str ());
                         }
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt log %s",
-                            logPath.c_str ());
+                            "Corrupt TransactedFile file (%s).",
+                            GetPath ().c_str ());
                     }
                 }
                 Seek (0, SEEK_SET);
