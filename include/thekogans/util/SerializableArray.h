@@ -35,7 +35,7 @@ namespace thekogans {
         /// \brief
         /// SerializableArray aggregates \see{Serializable} derived types in to an array
         /// container. SerializableArray uses the type \see{Serializable} information to
-        /// create a \see{SerializableHeader} context so that the array elements are packed
+        /// create a \see{SerializableHeader} context so that array elements are packed
         /// without wasting space writting the same header information.
         template<typename T>
         struct SerializableArray : public Serializable {

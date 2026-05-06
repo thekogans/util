@@ -1041,30 +1041,41 @@ namespace thekogans {
                 i64 offset,
                 i32 fromWhere) override;
 
+            void OpenEx (
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess,
+                DWORD dwShareMode,
+                DWORD dwCreationDisposition,
+                DWORD dwFlagsAndAttributes,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags,
+                i32 mode,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_);
+
             // File
             /// \brief
             /// Open the file.
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] path Windows CreateFile parameter.
-            /// \param[in] dwDesiredAccess Windows CreateFile parameter.
-            /// \param[in] dwShareMode Windows CreateFile parameter.
-            /// \param[in] dwCreationDisposition Windows CreateFile parameter.
-            /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
+            /// \param[in] path File path.
             virtual void Open (
                 const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                /// \param[in] dwDesiredAccess Windows CreateFile parameter.
+                /// \param[in] dwShareMode Windows CreateFile parameter.
+                /// \param[in] dwCreationDisposition Windows CreateFile parameter.
+                /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
                 DWORD dwCreationDisposition = OPEN_EXISTING,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL) override;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] path POSIX open parameter.
-            /// \param[in] flags POSIX open parameter.
-            /// \param[in] mode POSIX open parameter.
-            virtual void Open (
-                const std::string &path,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                /// \param[in] flags POSIX open parameter.
+                /// \param[in] mode POSIX open parameter.
                 i32 flags = O_RDWR,
                 i32 mode = S_IRUSR | S_IWUSR) override;
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Close the file.
             virtual void Close () override;
@@ -1217,8 +1228,8 @@ namespace thekogans {
             void SimpleOpen (
                 const std::string &path,
                 Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr regitry_ = nullptr);
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr regitry = nullptr);
 
             /// \brief
             /// SimpleTransactedFile is neither copy constructable, nor assignable.
