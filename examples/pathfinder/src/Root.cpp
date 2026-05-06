@@ -139,7 +139,8 @@ namespace thekogans {
                              count = componentValue->value.size (); i < count; ++i) {
                         util::TransactedFileBTree::Iterator jt;
                         if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                            std::string path = jt.GetValue ()->ToString ();
+                            util::StringValue::SharedPtr value = jt.GetValue ();
+                            std::string path = value->value;
                             std::list<std::string> pathComponents;
                             util::Path (path).GetComponents (pathComponents);
                             // Components are stored caseless but paths are stored
