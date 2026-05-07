@@ -478,8 +478,7 @@ namespace thekogans {
                 rootNode = node;
             }
             if (!IsDirty () &&
-                    (header.rootOffset == 0 ||
-                        rootNode->offset != header.rootOffset)) {
+                    (header.rootOffset == 0 || rootNode->offset != header.rootOffset)) {
                 SetDirty (true);
             }
         }

@@ -45,7 +45,8 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Block : public Allocator::Block {
                 /// \brief
                 /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
-                static const ui32 FLAGS_BTREE_NODE = 1 << 16;
+                static const ui32 FLAGS_BTREE_NODE =
+                    TransactedFile::Allocator::Block::Header::FLAGS_FIRST_ALLOCATOR_FLAG;
 
             private:
                 /// \brief

@@ -115,6 +115,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// an exception is thrown indicating heap corruption.
         struct _LIB_THEKOGANS_UTIL_DECL Header {
             /// \brief
+            /// Allocator derivatives can use this flag to start their own flag list
+            /// without fear of stepping on Allocator's toes.
+            static const ui32 FLAGS_FIRST_ALLOCATOR_FLAG = 1 << 16;
+            /// \brief
             /// A combination of FLAGS_FREE and allocator specific flags.
             Flags32 flags;
             /// \brief

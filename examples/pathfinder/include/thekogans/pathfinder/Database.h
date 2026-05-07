@@ -60,11 +60,26 @@ namespace thekogans {
                     util::TransactedFileBTreeAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t allocatorNodesPerPage =
                     util::TransactedFileBTreeAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
-                std::size_t registryEntriesPerNode_ =
+                std::size_t registryEntriesPerNode =
                     util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t registryNodesPerPage =
                     util::TransactedFileBTreeRegistry::DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ());
+                util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ()) :
+                file (
+                    new util::SimpleTransactedFile (
+                        util::HostEndian,
+                        path,
+                        util::SimpleFile::ReadWrite | util::SimpleFile::Create,
+                        new util::TransactedFileBTreeAllocator (
+                            secure,
+                            allocatorEntriesPerNode,
+                            allocatorNodesPerPage,
+                            allocator),
+                        new util::TransactedFileBTreeRegistry (
+                            true,
+                            registryEntriesPerNode,
+                            registryNodesPerPage,
+                            allocator))) {}
 
             /// \brief
             /// Return the file.
