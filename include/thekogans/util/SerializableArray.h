@@ -45,7 +45,7 @@ namespace thekogans {
 
             /// \brief
             /// Context for the elements of the array.
-            SerializableHeader context;
+            const SerializableHeader context;
             /// \brief
             /// \see{Array} of T elements.
             Array<T> array;
@@ -164,7 +164,7 @@ namespace thekogans {
             virtual std::size_t Size () const noexcept override {
                 std::size_t size = Serializer::Size (array.length);
                 for (std::size_t i = 0; i < array.length; ++i) {
-                    size += Serializer::Size (array[i], context);
+                    size += Serializer::Size (*array[i], context);
                 }
                 return size;
 

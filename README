@@ -38,9 +38,9 @@ Here is a complete feature list:
     - A collection of useful, simple, and lightweight types (Flags.h,
       Variant.h, GUID.h, Fraction.h, Array.h, FixedArray.h, BitSet.h).
 
-    - A collection of standard container wrappers (AbstractOwnerList.h,
-      AbstractOwnerVector.h, OwnerList.h, OwnerVector.h, OwnerMap.h)
-      which help with lifetime management of heap allocated objects.
+    - A collection of standard container wrappers (OwnerList.h,
+      OwnerVector.h, OwnerMap.h) which help with lifetime management
+      of heap allocated objects.
 
     - An intrusive list (IntrusiveList.h) useful in many situations
       where std::list is not appropriate.
@@ -78,11 +78,12 @@ Here is a complete feature list:
       NullAllocator.h) that plug in to Heap and Buffer and are
       usefull on their own.
 
-    - A FileAllocator (FileAllocator.h) which uses a BufferedFile
-      (BufferedFile.h) and a BTree (FileAllocatorBTree.h) to manage
-      free space.
+    - A TransactedFile.h framework which exposes Allocator and
+      Regitry (TransactedFileAllocator.h, TransactedFileRegistry.h).
+      Default implementations of allocator and registry usinga BTree
+      (TransactedFileBTreeAllocator.h, TransactedFileBTreeRegistry.h)
 
-    - A BTree (BTree.h) designed to work with FileAllocator.
+    - A BTree (TransactedFileBTree.h) designed to work with TransactedFile.
 
     - A DynamicCreatable (DynamicCreatable.h) framework allowing
       you to build systems using dynamic typing.
@@ -111,15 +112,16 @@ Here is a complete feature list:
       SHA2.h, SHA3.h, SHA2_224_256.h, SHA2_384_512.h) to aid in the
       use of third party libraries.
 
-    - A set of classes (File.h, Directory.h, Path.h, MimeTypeMapper.h)
-      designed to help when dealing with file system objects. Of
-      these, Directory is especially noteworthy. It implements such
-      advanced, and useful features as; platform independent file
+    - A set of classes (File.h, TransactedFile.h, Directory.h, Path.h,
+      MimeTypeMapper.h) designed to help when dealing with file system
+      objects. Of these, Directory is especially noteworthy. It implements
+      such advanced, and useful features as; platform independent file
       system traversal, and an asynchronous directory change
       watcher/notifier.
 
     - A binary serializer framework (Serializable.h, Serializer.h,
-      Buffer.h, FixedBuffer.h, File.h). It’s main purpose is to provide
+      RandomAccessSerializer.h, Buffer.h, FixedBuffer.h, File.h,
+      TransactedFile.h). It’s main purpose is to provide
       serialization/deserialization services for binary protocols.
 
     - A set of utilities to help with processing xml (XMLUtils.h).
