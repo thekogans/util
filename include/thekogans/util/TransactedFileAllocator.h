@@ -211,19 +211,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         }
 
         /// \brief
-        /// Return true if this is the first block in the heap.
-        /// \return true == first block in the heap.
-        inline bool IsFirst (Allocator &allocator) const {
-            return GetOffset () == allocator.GetHeapStart () + HEADER_SIZE;
-        }
-        /// \brief
-        /// Return true if this is the last block in the heap.
-        /// \return true == last block in the heap.
-        inline bool IsLast (Allocator &allocator) const {
-            return GetOffset () + GetSize () + HEADER_SIZE == allocator.GetHeapEnd ();
-        }
-
-        /// \brief
         /// Return true if FLAGS_FREE is set.
         /// \return true if FLAGS_FREE is set.
         inline bool IsFree () const {
@@ -247,6 +234,19 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \param[in] size New block size.
         inline void SetSize (ui64 size) {
             header.size = size;
+        }
+
+        /// \brief
+        /// Return true if this is the first block in the heap.
+        /// \return true == first block in the heap.
+        inline bool IsFirst (Allocator &allocator) const {
+            return GetOffset () == allocator.GetHeapStart () + HEADER_SIZE;
+        }
+        /// \brief
+        /// Return true if this is the last block in the heap.
+        /// \return true == last block in the heap.
+        inline bool IsLast (Allocator &allocator) const {
+            return GetOffset () + GetSize () + HEADER_SIZE == allocator.GetHeapEnd ();
         }
 
         /// \brief
