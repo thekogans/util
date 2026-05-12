@@ -299,7 +299,7 @@ public:
         TransactedFileBTreeAllocator &fileAllocator_,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
-        Allocator::SharedPtr allocator);
+        util::Allocator::SharedPtr allocator);
     /// \brief
     /// dtor.
     ~BTree ();

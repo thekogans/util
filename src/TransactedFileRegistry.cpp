@@ -27,7 +27,7 @@ namespace thekogans {
             thekogans::util::TransactedFile::Registry)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void Serializable::StaticInit () {
+        void TransactedFile::Registry::StaticInit () {
             TransactedFileBTreeRegistry::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)

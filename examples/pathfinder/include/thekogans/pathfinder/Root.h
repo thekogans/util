@@ -81,13 +81,13 @@ namespace thekogans {
                 path (path_),
                 pathBTree (
                     new util::TransactedFileBTree (
-                        Database::Instance ()->GetAllocator (),
+                        Database::Instance ()->GetFile (),
                         pathBTreeOffset,
                         util::GUIDKey::GetContext (),
                         util::StringValue::GetContext ())),
                 componentBTree (
                     new util::TransactedFileBTree (
-                        Database::Instance ()->GetAllocator (),
+                        Database::Instance ()->GetFile (),
                         componentBTreeOffset,
                         util::StringKey::GetContext (),
                         util::GUIDArrayValue::GetContext ())),

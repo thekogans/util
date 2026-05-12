@@ -66,7 +66,7 @@ int main (
         const char *argv[]) {
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     util::StaticInit ();
-    Roots::StaticInit ();
+        Roots::StaticInit ();
     IgnoreList::StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
     Options::Instance ()->Parse (argc, argv, "hvldarpfio");

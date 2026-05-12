@@ -1,78 +1,46 @@
 cmake_minimum_required(VERSION 3.15)
 
 set(namespace "thekogans")
-project("thekogans_util"
+project("thekogans_pathfinder"
     VERSION 0.37.1
-    DESCRIPTION "thekogans util library."
+    DESCRIPTION "thekogans util pathfinder example."
 )
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-add_library(${PROJECT_NAME} SHARED)
+add_executable(${PROJECT_NAME})
 
-if(WIN32)
-    add_definitions(
-        -DTOOLCHAIN_OS_Windows
-        -DTOOLCHAIN_COMPILER_cl19)
-    remove_definitions(
-        -DUNICODE
-        -D_UNICODE)
-elseif(APPLE)
-    add_definitions(
-        -DTOOLCHAIN_OS_OSX
-        -DTOOLCHAIN_COMPILER_clang
-        -DTHEKOGANS_UTIL_HAVE_MMAP)
-        find_library(PTHREAD_LIB pthread)
-        find_library(FOUNDATION_FRAMEWORK Foundation)
-        find_library(SECURITY_FRAMEWORK Security)
-        find_library(COCOA_FRAMEWORK Cocoa)
-        find_library(COCOA_FOUNDATION_FRAMEWORK CoreFoundation)
-        find_library(CORE_SERVICES_FRAMEWORK CoreServices)
-        find_library(CORE_GRAPHICS_FRAMEWORK CoreGraphics)
-        find_library(SYSTEM_CONFIGURATION_FRAMEWORK SystemConfiguration)
-        find_library(IOKIT_FRAMEWORK IOKit)
-elseif(LINUX)
-    add_definitions(
-        -DTOOLCHAIN_OS_Linux
-        -DTOOLCHAIN_COMPILER_gcc
-        -DTHEKOGANS_UTIL_HAVE_MMAP)
-endif()
+find_library(PTHREAD_LIB pthread)
+find_library(FOUNDATION_FRAMEWORK Foundation)
+find_library(SECURITY_FRAMEWORK Security)
+find_library(COCOA_FRAMEWORK Cocoa)
+find_library(COCOA_FOUNDATION_FRAMEWORK CoreFoundation)
+find_library(CORE_SERVICES_FRAMEWORK CoreServices)
+find_library(CORE_GRAPHICS_FRAMEWORK CoreGraphics)
+find_library(SYSTEM_CONFIGURATION_FRAMEWORK SystemConfiguration)
+find_library(IOKIT_FRAMEWORK IOKit)
+
 add_definitions(
+    -DTOOLCHAIN_OS_OSX
+    -DTOOLCHAIN_COMPILER_clang
+    -DTHEKOGANS_UTIL_HAVE_MMAP
     -DTOOLCHAIN_ARCH_x86_64
-    -DTOOLCHAIN_ENDIAN_Little)
-
-add_definitions(
+    -DTOOLCHAIN_ENDIAN_Little
+    -DTHEKOGANS_PATHFINDER_MAJOR_VERSION=0
+    -DTHEKOGANS_PATHFINDER_MINOR_VERSION=2
+    -DTHEKOGANS_PATHFINDER_PATCH_VERSION=0
+    -DTHEKOGANS_PATHFINDER_VERSION=0x00000200
     -DTHEKOGANS_UTIL_MAJOR_VERSION=0
     -DTHEKOGANS_UTIL_MINOR_VERSION=37
     -DTHEKOGANS_UTIL_PATCH_VERSION=1
     -DTHEKOGANS_UTIL_VERSION=0x00002501
-    -DTHEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-
-if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    add_definitions(-D_LIB_THEKOGANS_UTIL_BUILD)
-endif()
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    add_definitions(
-        -DTOOLCHAIN_CONFIG_Debug
-        -DTHEKOGANS_UTIL_CONFIG_Debug
-        -D_DEBUG)
-else()
-    add_definitions(
-        -DTOOLCHAIN_CONFIG_Release
-        -DTHEKOGANS_UTIL_CONFIG_Release
-        -DNDEBUG)
-endif()
-
-get_target_property(LIB_TYPE ${PROJECT_NAME} TYPE)
-if(LIB_TYPE STREQUAL "SHARED_LIBRARY")
-    add_definitions(
-        -DTHEKOGANS_UTIL_TYPE_Shared)
-elseif(LIB_TYPE STREQUAL "STATIC_LIBRARY")
-    add_definitions(
-        -DTHEKOGANS_UTIL_TYPE_Static)
-endif()
+    -DTHEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC
+    -DTOOLCHAIN_CONFIG_Debug
+    -D_DEBUG
+    -D_LIB_THEKOGANS_UTIL_BUILD
+    -DTHEKOGANS_UTIL_CONFIG_Debug
+    -DTHEKOGANS_UTIL_TYPE_Static)
 
 target_sources(${PROJECT_NAME}
     PRIVATE
@@ -184,74 +152,49 @@ target_sources(${PROJECT_NAME}
         src/os/osx/NSLogLogger.cpp
         src/3rdparty/pugixml/pugixml.cpp
         src/3rdparty/boost/atomic/lockpool.cpp
-        src/os/osx/OSXUtils.mm)
+        src/os/osx/OSXUtils.mm
+        examples/pathfinder/src/main.cpp
+        examples/pathfinder/src/IgnoreList.cpp
+        examples/pathfinder/src/Options.cpp
+        examples/pathfinder/src/Root.cpp
+        examples/pathfinder/src/Roots.cpp
+        examples/pathfinder/src/Version.cpp)
 
 target_include_directories(${PROJECT_NAME}
     PRIVATE
         # where the library itself will look for its internal headers
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty
         ${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty/private
         ${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty/private/zlib
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/pathfinder/include
     PUBLIC
         # where top-level project will look for the library's public headers
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty>
         # where external projects will look for the library's public headers
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
+        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
 
-# totally optional listing of include directories
-get_property(inclds
-    TARGET ${PROJECT_NAME}
-    PROPERTY INCLUDE_DIRECTORIES
-)
-message(STATUS "Listing include directories for ${PROJECT_NAME}...")
-# "dumb" listing with "raw" generator expressions on configuration
-foreach(pth ${inclds})
-    message(STATUS "  ${pth}")
-endforeach()
-# actually evaluated generator expressions printed to file on generation
-string(JOIN "\n" includeDirectories ${inclds})
-file(GENERATE
-    OUTPUT "${CMAKE_BINARY_DIR}/include-directories.txt"
-    CONTENT ${includeDirectories}
-)
+target_compile_options(${PROJECT_NAME} PRIVATE
+    -Werror
+    -m64
+    -Wall
+    -Wno-deprecated-declarations
+    -fPIC
+    -fno-common
+    -pipe
+    -march=native
+    -mno-avx
+    -Wno-undefined-var-template)
 
-# without it public headers won't get installed
-set(public_headers
-    include/some.h
-)
-
-# not for MSVC
-#if(CMAKE_COMPILER_IS_GNUCXX)
-    # compile options for this target only
-    # treat warnings as errors
-    target_compile_options(${PROJECT_NAME} PRIVATE
-        -Werror
-        -m64
-        -Wall
-        -Wno-deprecated-declarations
-        -fPIC
-        -fno-common
-        -pipe
-        -march=native
-        -mno-avx
-        -Wno-undefined-var-template)
-#endif()
-
-if(WIN32)
-elseif(APPLE)
-    target_link_libraries(${PROJECT_NAME} PRIVATE
-        ${FOUNDATION_FRAMEWORK}
-        ${SECURITY_FRAMEWORK}
-        ${COCOA_FRAMEWORK}
-        ${COCOA_FOUNDATION_FRAMEWORK}
-        ${CORE_SERVICES_FRAMEWORK}
-        ${CORE_GRAPHICS_FRAMEWORK}
-        ${SYSTEM_CONFIGURATION_FRAMEWORK}
-        ${IOKIT_FRAMEWORK})
-elseif(LINUX)
-endif()
+target_link_libraries(${PROJECT_NAME} PRIVATE
+    ${FOUNDATION_FRAMEWORK}
+    ${SECURITY_FRAMEWORK}
+    ${COCOA_FRAMEWORK}
+    ${COCOA_FOUNDATION_FRAMEWORK}
+    ${CORE_SERVICES_FRAMEWORK}
+    ${CORE_GRAPHICS_FRAMEWORK}
+    ${SYSTEM_CONFIGURATION_FRAMEWORK}
+    ${IOKIT_FRAMEWORK})
 
 # where to find our CMake modules
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")

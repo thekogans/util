@@ -28,7 +28,7 @@ namespace thekogans {
             thekogans::util::TransactedFile::Allocator)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
-        void Serializable::StaticInit () {
+        void TransactedFile::Allocator::StaticInit () {
             TransactedFileBTreeAllocator::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
