@@ -197,11 +197,19 @@ namespace thekogans {
                 owner (false) {
             buffer = file.GetBuffer (offset);
             if (length == 0) {
+                // NOTE: Allocator::Block::Block will create a Range,
+                // but will never pass 0 for length therefore avoiding
+                // infinite recursion.
                 Allocator::Block block (offset);
                 block.Read (file);
                 length = block.GetSize ();
             }
             std::size_t bufferOffset = offset - buffer->offset;
+            // To us it maters not how long the actual block is.
+            // All we care about is that the range fits in to it.
+            // It's up to the down stream ReadOnlyRange and WriteOnlyRange
+            // (below) to do the checking and perform appropriate
+            // actions.
             std::size_t countAvailable = MIN (Buffer::SIZE - bufferOffset, length);
             if (length > countAvailable) {
                 data = (ui8 *)allocator->Alloc (length);
@@ -1081,7 +1089,7 @@ namespace thekogans {
                 dwCreationDisposition |= OPEN_EXISTING;
             }
             DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-            TransactedFile::Open (
+            TransactedFile::OpenEx (
                 path,
                 dwDesiredAccess,
                 dwShareMode,

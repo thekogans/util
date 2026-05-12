@@ -166,10 +166,8 @@ namespace thekogans {
                         }
                     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Back up to cover the prev.
-                        block.SetOffset (
-                            block.GetOffset () - Block::SIZE - prev.GetSize ());
-                        block.SetSize (
-                            block.GetSize () + Block::SIZE + prev.GetSize ());
+                        block.SetOffset (block.GetOffset () - Block::SIZE - prev.GetSize ());
+                        block.SetSize (block.GetSize () + Block::SIZE + prev.GetSize ());
                     }
                     Block next;
                     if (block.Next (*this, next) && next.IsFree () && !next.IsBTreeNode ()) {
@@ -186,8 +184,7 @@ namespace thekogans {
                         }
                     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Expand to swallow the next.
-                        block.SetSize (
-                            block.GetSize () + Block::SIZE + next.GetSize ());
+                        block.SetSize (block.GetSize () + Block::SIZE + next.GetSize ());
                     }
                     // If we're not the last block...
                     if (!block.IsLast (*this)) {
