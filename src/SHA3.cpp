@@ -29,6 +29,11 @@ namespace thekogans {
             thekogans::util::SHA3,
             Hash::TYPE)
 
+        const std::size_t SHA3::DIGEST_SIZE_224;
+        const std::size_t SHA3::DIGEST_SIZE_256;
+        const std::size_t SHA3::DIGEST_SIZE_384;
+        const std::size_t SHA3::DIGEST_SIZE_512;
+
         void SHA3::Init (std::size_t digestSize_) {
             if (digestSize_ == DIGEST_SIZE_224 || digestSize_ == DIGEST_SIZE_256 ||
                     digestSize_ == DIGEST_SIZE_384 || digestSize_ == DIGEST_SIZE_512) {

@@ -32,6 +32,9 @@ namespace thekogans {
             thekogans::util::TransactedFile,
             Serializer::TYPE, RandomSeekSerializer::TYPE)
 
+        const int TransactedFile::COMMIT_PHASE_1 = 1;
+        const int TransactedFile::COMMIT_PHASE_2 = 2;
+
         TransactedFile::Transaction::Transaction (TransactedFile::SharedPtr file_) :
                 file (file_),
                 guard (file->GetLock ()) {

@@ -6,12 +6,6 @@ project("thekogans_util"
     DESCRIPTION "thekogans util library."
 )
 
-if (NOT CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
-    message(STATUS "This project has a top-level one called [${CMAKE_PROJECT_NAME}]")
-else()
-    message(STATUS "This project is a top-level one")
-endif()
-
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -53,17 +47,22 @@ add_definitions(
     -DTHEKOGANS_UTIL_MINOR_VERSION=37
     -DTHEKOGANS_UTIL_PATCH_VERSION=1
     -DTHEKOGANS_UTIL_VERSION=0x00002501
-    -D_LIB_THEKOGANS_UTIL_BUILD
     -DTHEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    add_definitions(-D_LIB_THEKOGANS_UTIL_BUILD)
+endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(
         -DTOOLCHAIN_CONFIG_Debug
-        -DTHEKOGANS_UTIL_CONFIG_Debug)
+        -DTHEKOGANS_UTIL_CONFIG_Debug
+        -D_DEBUG)
 else()
     add_definitions(
         -DTOOLCHAIN_CONFIG_Release
-        -DTHEKOGANS_UTIL_CONFIG_Release)
+        -DTHEKOGANS_UTIL_CONFIG_Release
+        -DNDEBUG)
 endif()
 
 get_target_property(LIB_TYPE ${PROJECT_NAME} TYPE)
@@ -224,11 +223,21 @@ set(public_headers
 )
 
 # not for MSVC
-if(CMAKE_COMPILER_IS_GNUCXX)
+#if(CMAKE_COMPILER_IS_GNUCXX)
     # compile options for this target only
     # treat warnings as errors
-    target_compile_options(${PROJECT_NAME} PRIVATE -Werror)
-endif()
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Werror
+        -m64
+        -Wall
+        -Wno-deprecated-declarations
+        -fPIC
+        -fno-common
+        -pipe
+        -march=native
+        -mno-avx
+        -Wno-undefined-var-template)
+#endif()
 
 if(WIN32)
 elseif(APPLE)

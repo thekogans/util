@@ -26,6 +26,11 @@ namespace thekogans {
             thekogans::util::SHA2,
             Hash::TYPE)
 
+        const std::size_t SHA2::DIGEST_SIZE_224;
+        const std::size_t SHA2::DIGEST_SIZE_256;
+        const std::size_t SHA2::DIGEST_SIZE_384;
+        const std::size_t SHA2::DIGEST_SIZE_512;
+
         void SHA2::GetDigestSizes (std::list<std::size_t> &digestSizes) const {
             digestSizes.push_back (DIGEST_SIZE_224);
             digestSizes.push_back (DIGEST_SIZE_256);

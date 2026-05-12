@@ -51,6 +51,8 @@ namespace thekogans {
             thekogans::util::MD5,
             Hash::TYPE)
 
+        const std::size_t MD5::DIGEST_SIZE_128;
+
         namespace {
             // Initial hash value H for MD5:
             const ui32 initialHashValue[4] = {

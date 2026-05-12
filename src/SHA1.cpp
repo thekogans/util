@@ -59,6 +59,8 @@ namespace thekogans {
             thekogans::util::SHA1,
             Hash::TYPE)
 
+        const std::size_t SHA1::DIGEST_SIZE_160;
+
         namespace {
             // Initial hash value H for SHA-256:
             const ui32 initialHashValue[5] = {

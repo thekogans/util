@@ -142,10 +142,10 @@ namespace thekogans {
 
             /// \brief
             /// Commit phase 1 (allocation).
-            static const int COMMIT_PHASE_1 = 1;
+            static const int COMMIT_PHASE_1;
             /// \brief
             /// Commit phase 2 (flush).
-            static const int COMMIT_PHASE_2 = 2;
+            static const int COMMIT_PHASE_2;
 
             /// \struct TransactedFile::Transaction TransactedFile.h thekogans/util/TransactedFile.h
             ///
