@@ -70,6 +70,14 @@ namespace thekogans {
             return header.flags != footer.flags || header.size != footer.size;
         }
 
+        ui64 TransactedFile::Allocator::Block::GetSize (
+                TransactedFile &file,
+                PtrType offset) {
+            Block block (offset);
+            block.Read (file);
+            return block.GetSize ();
+        }
+
         bool TransactedFile::Allocator::Block::Prev (
                 Allocator &allocator,
                 Block &prev) const {

@@ -197,6 +197,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             offset (offset_),
             header (flags, size) {}
 
+        static ui64 GetSize (
+            TransactedFile &file,
+            PtrType offset);
+
         /// \brief
         /// Return the offset.
         /// \return Offset to the begining of the block.

@@ -199,22 +199,13 @@ namespace thekogans {
                 buffer (nullptr),
                 owner (false) {
             buffer = file.GetBuffer (offset);
-            if (length == 0) {
-                // NOTE: Allocator::Block::Block will create a Range,
-                // but will never pass 0 for length therefore avoiding
-                // infinite recursion.
-                Allocator::Block block (offset);
-                block.Read (file);
-                length = block.GetSize ();
-            }
             std::size_t bufferOffset = offset - buffer->offset;
             // To us it maters not how long the actual block is.
             // All we care about is that the range fits in to it.
             // It's up to the down stream ReadOnlyRange and WriteOnlyRange
             // (below) to do the checking and perform appropriate
             // actions.
-            std::size_t countAvailable = MIN (Buffer::SIZE - bufferOffset, length);
-            if (length > countAvailable) {
+            if (length > Buffer::SIZE - bufferOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
             }
@@ -424,7 +415,7 @@ namespace thekogans {
         void TransactedFile::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            TransactedFile::WriteOnlyRange buffer (*file, GetOffset ());
+            TransactedFile::BlockWriteOnlyRange buffer (*file, GetOffset ());
             Write (buffer);
             if (GetAllocator ()->IsSecure ()) {
                 buffer.AdvanceOffset (
@@ -435,7 +426,7 @@ namespace thekogans {
         void TransactedFile::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                TransactedFile::ReadOnlyRange buffer (*file, GetOffset ());
+                TransactedFile::BlockReadOnlyRange buffer (*file, GetOffset ());
                 Read (buffer);
             }
         }
@@ -445,7 +436,7 @@ namespace thekogans {
         Serializable::SharedPtr TransactedFile::SerializableObject::GetValue () {
             if (value == nullptr) {
                 assert (offset != 0);
-                TransactedFile::ReadOnlyRange buffer (*file, offset);
+                TransactedFile::BlockReadOnlyRange buffer (*file, offset);
                 buffer.context = valueContext;
                 buffer.factory = valueFactory;
                 buffer >> value;

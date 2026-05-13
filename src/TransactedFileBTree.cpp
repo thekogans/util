@@ -174,7 +174,7 @@ namespace thekogans {
                 TransactedFileBTree &btree,
                 TransactedFile::Allocator::PtrType offset) {
             if (offset != 0) {
-                TransactedFile::ReadOnlyRange buffer (*btree.file, offset);
+                TransactedFile::BlockReadOnlyRange buffer (*btree.file, offset);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -549,7 +549,7 @@ namespace thekogans {
                 serializer >> count;
                 if (count > 0) {
                     serializer >> leftOffset >> keyValueOffset;
-                    TransactedFile::ReadOnlyRange keyValueBuffer (*file, keyValueOffset);
+                    TransactedFile::BlockReadOnlyRange keyValueBuffer (*file, keyValueOffset);
                     keyValueBuffer.context = btree.header.keyContext;
                     keyValueBuffer.factory = btree.keyFactory;
                     for (ui32 i = 0; i < count; ++i) {
@@ -604,7 +604,7 @@ namespace thekogans {
                     leftOffset = left->GetOffset ();
                 }
                 serializer << leftOffset << keyValueOffset;
-                TransactedFile::WriteOnlyRange keyValueBuffer (*file, keyValueOffset);
+                TransactedFile::BlockWriteOnlyRange keyValueBuffer (*file, keyValueOffset);
                 keyValueBuffer.context = btree.header.keyContext;
                 keyValueBuffer.factory = btree.keyFactory;
                 for (ui32 i = 0; i < count; ++i) {

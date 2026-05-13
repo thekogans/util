@@ -233,6 +233,10 @@ namespace thekogans {
                 /// if your files never go above 100KB then a 1MB SIZE
                 /// is overkill. But if you typically manage multi gigabyte
                 /// (terabyte?) databases you might want to bump this value up.
+                /// The way you do it is by going up or down a power of 2 on
+                /// SIZE and up or down by one on SHIFT_COUNT.
+                /// Ex: Let's sey you wanted 2MB buffers instead of 1MB.
+                /// Then SIZE = 0x00200000; and SHIFT_COUNT = 21.
                 static const std::size_t SIZE = 0x00100000;
                 /// \brief
                 /// Look at \see{SIZE} above. This number
@@ -512,7 +516,7 @@ namespace thekogans {
                 Range (
                     TransactedFile &file_,
                     ui64 offset_,
-                    std::size_t length_ = 0,
+                    std::size_t length_,
                     util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
                 /// \brief
                 /// dtor.
@@ -545,7 +549,7 @@ namespace thekogans {
                 ReadOnlyRange (
                     TransactedFile &file,
                     ui64 offset,
-                    std::size_t length = 0,
+                    std::size_t length,
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 virtual std::size_t Read (
@@ -563,7 +567,7 @@ namespace thekogans {
                 WriteOnlyRange (
                     TransactedFile &file,
                     ui64 offset,
-                    std::size_t length = 0,
+                    std::size_t length,
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                     Range (file, offset, length, allocator) {}
                 virtual ~WriteOnlyRange ();
@@ -574,6 +578,33 @@ namespace thekogans {
             };
 
             #include "thekogans/util/TransactedFileAllocator.h"
+
+            struct _LIB_THEKOGANS_UTIL_DECL BlockReadOnlyRange : public ReadOnlyRange {
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} to buffer.
+                /// \param[in] offset_ File offset.
+                /// \param[in] length_ How much of the file we want access too.
+                /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
+                BlockReadOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    ReadOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+            };
+
+            struct _LIB_THEKOGANS_UTIL_DECL BlockWriteOnlyRange : public WriteOnlyRange {
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} to buffer.
+                /// \param[in] offset File offset.
+                /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+                BlockWriteOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    WriteOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+            };
 
             /// \struct TransactedFile::TransactionParticipant TransactedFile.h
             /// thekogans/util/TransactedFile.h
@@ -904,21 +935,24 @@ namespace thekogans {
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
             TransactedFile (
-                Endianness endianness = HostEndian,
-                THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                const std::string &path = std::string (),
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr regitry_ = nullptr) :
-                File (endianness, handle, path),
-                position (IsOpen () ? File::Tell () : 0),
-                sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                size (sizeOnDisk),
-                flags (0),
-                currBufferOffset (NOFFS),
-                currBuffer (nullptr),
-                allocator (allocator_),
-                registry (regitry_) {Init ();}
-        #if defined (TOOLCHAIN_OS_Windows)
+                    Endianness endianness = HostEndian,
+                    THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
+                    const std::string &path = std::string (),
+                    Allocator::SharedPtr allocator_ = nullptr,
+                    Registry::SharedPtr regitry_ = nullptr) :
+                    File (endianness, handle, path),
+                    position (IsOpen () ? File::Tell () : 0),
+                    sizeOnDisk (IsOpen () ? File::GetSize () : 0),
+                    size (sizeOnDisk),
+                    flags (0),
+                    currBufferOffset (NOFFS),
+                    currBuffer (nullptr),
+                    allocator (allocator_),
+                    registry (regitry_) {
+                if (IsOpen ()) {
+                    Init ();
+                }
+            }
             /// \brief
             /// ctor. Open the file.
             /// \param[in] endianness File endianness.
@@ -927,54 +961,45 @@ namespace thekogans {
             /// \param[in] dwShareMode Windows CreateFile parameter.
             /// \param[in] dwCreationDisposition Windows CreateFile parameter.
             /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
-            TransactedFile (
-                Endianness endianness,
-                const std::string &path,
-                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
-                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                DWORD dwCreationDisposition = OPEN_ALWAYS,
-                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr registry_ = nullptr) :
-                File (
-                    endianness,
-                    path,
-                    dwDesiredAccess,
-                    dwShareMode,
-                    dwCreationDisposition,
-                    dwFlagsAndAttributes),
-                position (IsOpen () ? File::Tell () : 0),
-                sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                size (sizeOnDisk),
-                flags (0),
-                currBufferOffset (NOFFS),
-                currBuffer (nullptr),
-                allocator (allocator_),
-                registry (registry_) {Init ();}
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// ctor. Open the file.
-            /// \param[in] endianness File endianness.
-            /// \param[in] path Path to file to open.
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
             TransactedFile (
-                Endianness endianness,
-                const std::string &path,
-                i32 flags = O_RDWR | O_CREAT,
-                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr registry_ = nullptr) :
-                File (endianness, path, flags, mode),
-                position (IsOpen () ? File::Tell () : 0),
-                sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                size (sizeOnDisk),
-                flags (0),
-                currBufferOffset (NOFFS),
-                currBuffer (nullptr),
-                allocator (allocator_),
-                registry (registry_) {Init ();}
-        #endif // defined (TOOLCHAIN_OS_Windows)
+                    Endianness endianness,
+                    const std::string &path,
+                #if defined (TOOLCHAIN_OS_Windows)
+                    DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
+                    DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    DWORD dwCreationDisposition = OPEN_ALWAYS,
+                    DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    i32 flags = O_RDWR | O_CREAT,
+                    i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    Allocator::SharedPtr allocator = nullptr,
+                    Registry::SharedPtr registry = nullptr) :
+                    File (endianness),
+                    position (0),
+                    sizeOnDisk (0),
+                    size (0),
+                    flags (0),
+                    currBufferOffset (NOFFS),
+                    currBuffer (nullptr),
+                    allocator (nullptr),
+                    registry (nullptr) {
+                OpenEx (
+                    path,
+                #if defined (TOOLCHAIN_OS_Windows)
+                    dwDesiredAccess,
+                    dwShareMode,
+                    dwCreationDisposition,
+                    dwFlagsAndAttributes,
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    flags,
+                    mode,
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                    allocator,
+                    registry);
+            }
             /// \brief
             /// dtor.
             virtual ~TransactedFile ();
