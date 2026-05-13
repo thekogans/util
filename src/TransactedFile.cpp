@@ -433,34 +433,30 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::SerializableObject)
 
-        Serializable::SharedPtr TransactedFile::SerializableObject::GetValue () {
-            if (value == nullptr) {
+        Serializable::SharedPtr TransactedFile::SerializableObject::GetObject () {
+            if (object == nullptr) {
                 assert (offset != 0);
                 TransactedFile::BlockReadOnlyRange buffer (*file, offset);
-                buffer.context = valueContext;
-                buffer.factory = valueFactory;
+                buffer.context = context;
+                buffer.factory = factory;
                 buffer >> value;
             }
             return value;
         }
 
-        void TransactedFile::SerializableObject::SetValue (
-                Serializable::SharedPtr value_,
-                bool setDirty) {
-            value = value_;
-            if (setDirty) {
-                SetDirty (true);
-            }
+        void TransactedFile::SerializableObject::SetObject (Serializable::SharedPtr object_) {
+            object = object_;
+            SetDirty (true);
         }
 
         void TransactedFile::SerializableObject::Read (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
-            serializer >> value;
+            Serializer::ContextGuard guard (serializer, context, factory);
+            serializer >> object;
         }
 
         void TransactedFile::SerializableObject::Write (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, valueContext, valueFactory);
-            serializer << value;
+            Serializer::ContextGuard guard (serializer, context, factory);
+            serializer << object;
         }
 
         TransactedFile::~TransactedFile () {

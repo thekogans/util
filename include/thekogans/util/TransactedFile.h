@@ -767,7 +767,7 @@ namespace thekogans {
             ///
             /// \brief
             /// A TransactedFile Object is an object that has allocated at least one block
-            /// from \see{File::Allocator} and participates in \see{TransactedFileEvents}.
+            /// from \see{TransactedFile::Allocator} and participates in \see{TransactedFileEvents}.
             struct _LIB_THEKOGANS_UTIL_DECL Object :
                     public TransactionParticipant,
                     public Producer<ObjectEvents> {
@@ -872,26 +872,24 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             private:
-                SerializableHeader valueContext;
-                DynamicCreatable::FactoryType valueFactory;
-                Serializable::SharedPtr value;
+                SerializableHeader context;
+                DynamicCreatable::FactoryType factory;
+                Serializable::SharedPtr object;
 
             public:
                 SerializableObject (
                     TransactedFile::SharedPtr file,
                     TransactedFile::Allocator::PtrType offset = 0,
-                    const SerializableHeader &valueContext_ = SerializableHeader (),
-                    DynamicCreatable::FactoryType valueFactory_ = nullptr,
-                    Serializable::SharedPtr value_ = nullptr) :
+                    const SerializableHeader &context_ = SerializableHeader (),
+                    DynamicCreatable::FactoryType factory_ = nullptr,
+                    Serializable::SharedPtr object_ = nullptr) :
                     TransactedFile::Object (file, offset),
-                    valueContext (valueContext_),
-                    valueFactory (valueFactory_),
-                    value (value_) {}
+                    context (context_),
+                    factory (factory_),
+                    object (object_) {}
 
-                Serializable::SharedPtr GetValue ();
-                void SetValue (
-                    Serializable::SharedPtr value_,
-                    bool setDirty = true);
+                Serializable::SharedPtr GetObject ();
+                void SetObject (Serializable::SharedPtr object_);
 
             protected:
                 // TransactedFile::TransactionParticipant
@@ -899,7 +897,7 @@ namespace thekogans {
                 /// Compulsory implementation of \see{TransactedFile::TransactionParticipant::Reset}.
                 /// Every leaf class must have one.
                 virtual void Reset () override {
-                    value.Reset ();
+                    object.Reset ();
                 }
 
                 // TransactedFile::Object
@@ -907,7 +905,7 @@ namespace thekogans {
                 /// Return value binary size (including the header).
                 /// \return Value binary size.
                 virtual std::size_t Size () const noexcept override {
-                    return value->GetSize (valueContext);
+                    return object->GetSize (context);
                 }
 
                 /// \brief
