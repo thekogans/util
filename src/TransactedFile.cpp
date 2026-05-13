@@ -439,9 +439,9 @@ namespace thekogans {
                 TransactedFile::BlockReadOnlyRange buffer (*file, offset);
                 buffer.context = context;
                 buffer.factory = factory;
-                buffer >> value;
+                buffer >> object;
             }
-            return value;
+            return object;
         }
 
         void TransactedFile::SerializableObject::SetObject (Serializable::SharedPtr object_) {

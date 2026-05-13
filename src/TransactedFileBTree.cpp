@@ -208,13 +208,13 @@ namespace thekogans {
         }
 
         Serializable::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
-            return entries[index].value->GetValue ();
+            return entries[index].value->GetObject ();
         }
 
         void TransactedFileBTree::Node::SetValue (
                 ui32 index,
                 Serializable::SharedPtr value) {
-            entries[index].value->SetValue (value);
+            entries[index].value->SetObject (value);
             if (btree.header.IsValueAsObject ()) {
                 entries[index].value->SetDirty (true);
             }
@@ -576,7 +576,7 @@ namespace thekogans {
                         for (ui32 i = 0; i < count; ++i) {
                             Serializable::SharedPtr value;
                             keyValueBuffer >> value;
-                            entries[i].value->SetValue (value);
+                            entries[i].value->SetObject (value);
                         }
                     }
                 }
@@ -596,7 +596,7 @@ namespace thekogans {
                 for (ui32 i = 0; i < count; ++i) {
                     keyValueSize += entries[i].key->GetSize (btree.header.keyContext);
                     if (!btree.header.IsValueAsObject ()) {
-                        keyValueSize += entries[i].value->GetValue ()->GetSize (btree.header.valueContext);
+                        keyValueSize += entries[i].value->GetObject ()->GetSize (btree.header.valueContext);
                     }
                 }
                 keyValueOffset = GetAllocator ()->Realloc (keyValueOffset, keyValueSize, false);
@@ -624,7 +624,7 @@ namespace thekogans {
                     keyValueBuffer.context = btree.header.valueContext;
                     keyValueBuffer.factory = btree.valueFactory;
                     for (ui32 i = 0; i < count; ++i) {
-                        keyValueBuffer << entries[i].value->GetValue ();
+                        keyValueBuffer << entries[i].value->GetObject ();
                     }
                 }
                 if (GetAllocator ()->IsSecure ()) {
