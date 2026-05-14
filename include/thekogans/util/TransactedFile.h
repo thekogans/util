@@ -871,7 +871,7 @@ namespace thekogans {
                 /// SerializableObject has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
-            private:
+            protected:
                 SerializableHeader context;
                 DynamicCreatable::FactoryType factory;
                 Serializable::SharedPtr object;
@@ -888,8 +888,8 @@ namespace thekogans {
                     factory (factory_),
                     object (object_) {}
 
-                Serializable::SharedPtr GetObject ();
-                void SetObject (Serializable::SharedPtr object_);
+                virtual Serializable::SharedPtr GetObject ();
+                virtual void SetObject (Serializable::SharedPtr object_);
 
             protected:
                 // TransactedFile::TransactionParticipant

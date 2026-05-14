@@ -562,7 +562,7 @@ namespace thekogans {
                         else {
                             entries[i].valueOffset = 0;
                         }
-                        entries[i].value = new TransactedFile::SerializableObject (
+                        entries[i].value = new SerializableValue (
                             file,
                             entries[i].valueOffset,
                             btree.header.valueContext,
@@ -709,8 +709,8 @@ namespace thekogans {
                     (header.valueContext.NeedType () ||
                         value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
-                TransactedFile::SerializableObject::SharedPtr valueObject (
-                    new TransactedFile::SerializableObject (
+                Node::SerializableValue::SharedPtr valueObject (
+                    new Node::SerializableValue (
                         file,
                         0,
                         header.valueContext,

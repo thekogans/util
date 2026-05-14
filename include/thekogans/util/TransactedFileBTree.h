@@ -318,6 +318,23 @@ namespace thekogans {
                 /// \brief
                 /// Key/value array offset.
                 TransactedFile::Allocator::PtrType keyValueOffset;
+                struct SerializableValue : public TransactedFile::SerializableObject {
+                    /// \brief
+                    /// Declare \see{RefCounted} pointers.
+                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (SerializableValue)
+
+                    SerializableValue (
+                        TransactedFile::SharedPtr file,
+                        TransactedFile::Allocator::PtrType offset = 0,
+                        const SerializableHeader &context = SerializableHeader (),
+                        DynamicCreatable::FactoryType factory = nullptr,
+                        Serializable::SharedPtr object = nullptr) :
+                        TransactedFile::SerializableObject (file, offset, context, factory, object) {}
+
+                    virtual void SetObject (Serializable::SharedPtr object_) override {
+                        object = object_;
+                    }
+                };
                 /// \struct TransactedFileBTree::Node::Entry TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
                 ///
                 /// \brief
@@ -331,7 +348,7 @@ namespace thekogans {
                     TransactedFile::Allocator::PtrType valueOffset;
                     /// \brief
                     /// \see{ValueObject} encapsulating the value.
-                    TransactedFile::SerializableObject *value;
+                    SerializableValue *value;
                     /// \brief
                     /// Right child node block offset.
                     TransactedFile::Allocator::PtrType rightOffset;
@@ -349,7 +366,7 @@ namespace thekogans {
                     /// \param[in] value_ Entry value.
                     Entry (
                         Key *key_ = nullptr,
-                        TransactedFile::SerializableObject *value_ = nullptr) :
+                        SerializableValue *value_ = nullptr) :
                         key (key_),
                         valueOffset (0),
                         value (value_),
