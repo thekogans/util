@@ -229,18 +229,6 @@ namespace thekogans {
             return advance;
         }
 
-        std::size_t TransactedFile::Range::Read (
-               void *buffer,
-               std::size_t count) {
-            return 0;
-        }
-
-        std::size_t TransactedFile::Range::Write (
-                const void *buffer,
-                std::size_t count) {
-            return 0;
-        }
-
         TransactedFile::ReadOnlyRange::ReadOnlyRange (
                 TransactedFile &file,
                 ui64 offset,
@@ -259,14 +247,20 @@ namespace thekogans {
             }
         }
 
-        std::size_t TransactedFile::ReadOnlyRange::Read (
-                void *buffer,
+        std::size_t TransactedFile::ReadOnlyRange::Write (
+                const void *buffer_,
                 std::size_t count) {
-            if (buffer != nullptr) {
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("ReadOnlyRange can't write.");
+        }
+
+        std::size_t TransactedFile::ReadOnlyRange::Read (
+                void *buffer_,
+                std::size_t count) {
+            if (buffer_ != nullptr) {
                 if (count > length) {
                     count = length;
                 }
-                std::memcpy (buffer, data + position, count);
+                std::memcpy (buffer_, data + position, count);
                 length -= count;
                 position += count;
             }
@@ -285,8 +279,8 @@ namespace thekogans {
                 }
                 else {
                     buffer->dirty = true;
-                    if (file.GetSize () < offset + position) {
-                        file.SetSize (offset + position);
+                    if (buffer->length < offset + position) {
+                        file.SetSize (buffer->length = offset + position);
                     }
                     else {
                         file.SetDirty (true);
@@ -295,14 +289,20 @@ namespace thekogans {
             }
         }
 
+        std::size_t TransactedFile::WriteOnlyRange::Read (
+               void *buffer_,
+               std::size_t count) {
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("WriteOnlyRange can't read.");
+        }
+
         std::size_t TransactedFile::WriteOnlyRange::Write (
-                const void *buffer,
+                const void *buffer_,
                 std::size_t count) {
-            if (buffer != nullptr) {
+            if (buffer_ != nullptr) {
                 if (count > length) {
                     count = length;
                 }
-                std::memcpy (data + position, buffer, count);
+                std::memcpy (data + position, buffer_, count);
                 length -= count;
                 position += count;
             }

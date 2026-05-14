@@ -60,6 +60,7 @@ namespace thekogans {
                     util::TransactedFileBTreeAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t allocatorNodesPerPage =
                     util::TransactedFileBTreeAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
+                bool registryValueAsObject = true,
                 std::size_t registryEntriesPerNode =
                     util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t registryNodesPerPage =
@@ -76,7 +77,7 @@ namespace thekogans {
                             allocatorNodesPerPage,
                             allocator),
                         new util::TransactedFileBTreeRegistry (
-                            true,
+                            registryValueAsObject,
                             registryEntriesPerNode,
                             registryNodesPerPage,
                             allocator))) {}

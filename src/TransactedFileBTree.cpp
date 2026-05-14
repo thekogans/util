@@ -608,7 +608,7 @@ namespace thekogans {
                 keyValueBuffer.context = btree.header.keyContext;
                 keyValueBuffer.factory = btree.keyFactory;
                 for (ui32 i = 0; i < count; ++i) {
-                    keyValueBuffer << entries[i].key;
+                    keyValueBuffer << *entries[i].key;
                     if (btree.header.IsValueAsObject ()) {
                         if (entries[i].value != nullptr) {
                             entries[i].valueOffset = entries[i].value->GetOffset ();
@@ -624,7 +624,7 @@ namespace thekogans {
                     keyValueBuffer.context = btree.header.valueContext;
                     keyValueBuffer.factory = btree.valueFactory;
                     for (ui32 i = 0; i < count; ++i) {
-                        keyValueBuffer << entries[i].value->GetObject ();
+                        keyValueBuffer << *entries[i].value->GetObject ();
                     }
                 }
                 if (GetAllocator ()->IsSecure ()) {

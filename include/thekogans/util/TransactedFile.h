@@ -529,13 +529,6 @@ namespace thekogans {
                     return length;
                 }
                 std::size_t AdvanceOffset (std::size_t advance);
-
-                virtual std::size_t Read (
-                    void *buffer,
-                    std::size_t count) override;
-                virtual std::size_t Write (
-                    const void *buffer,
-                    std::size_t count) override;
             };
 
         public:
@@ -553,7 +546,10 @@ namespace thekogans {
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 
                 virtual std::size_t Read (
-                    void *buffer,
+                    void *buffer_,
+                    std::size_t count) override;
+                virtual std::size_t Write (
+                    const void *buffer_,
                     std::size_t count) override;
             };
 
@@ -572,8 +568,11 @@ namespace thekogans {
                     Range (file, offset, length, allocator) {}
                 virtual ~WriteOnlyRange ();
 
+                virtual std::size_t Read (
+                    void *buffer_,
+                    std::size_t count) override;
                 virtual std::size_t Write (
-                    const void *buffer,
+                    const void *buffer_,
                     std::size_t count) override;
             };
 
