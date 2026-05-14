@@ -456,7 +456,7 @@ namespace thekogans {
 
         void TransactedFile::SerializableObject::Write (Serializer &serializer) {
             Serializer::ContextGuard guard (serializer, context, factory);
-            serializer << object;
+            serializer << *object;
         }
 
         TransactedFile::~TransactedFile () {
