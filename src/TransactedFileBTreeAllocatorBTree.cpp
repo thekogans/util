@@ -376,8 +376,7 @@ namespace thekogans {
                 }
             }
             if (btree.fileAllocator.IsSecure ()) {
-                buffer.AdvanceOffset (
-                    SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
+                buffer.Advance (SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
             }
         }
 

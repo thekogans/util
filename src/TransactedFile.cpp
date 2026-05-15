@@ -201,10 +201,10 @@ namespace thekogans {
             buffer = file.GetBuffer (offset);
             std::size_t bufferOffset = offset - buffer->offset;
             // To us it maters not how long the actual block is.
-            // All we care about is that our range fits in to it's range.
-            // It's up to the down stream ReadOnlyRange and WriteOnlyRange
-            // (below) to do the checking and perform appropriate
-            // actions.
+            // All we care about is that our range fits in to it's
+            // range. It's up to the down stream ReadOnlyRange and
+            // WriteOnlyRange (below) to do the checking and
+            // perform appropriate actions.
             if (length > Buffer::SIZE - bufferOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
@@ -220,7 +220,7 @@ namespace thekogans {
             }
         }
 
-        std::size_t TransactedFile::Range::AdvanceOffset (std::size_t advance) {
+        std::size_t TransactedFile::Range::Advance (std::size_t advance) {
             if (advance > length) {
                 advance = length;
             }
@@ -249,19 +249,19 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::ReadOnlyRange::Write (
-                const void *buffer_,
+                const void *buffer,
                 std::size_t count) {
             THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("ReadOnlyRange can't write.");
         }
 
         std::size_t TransactedFile::ReadOnlyRange::Read (
-                void *buffer_,
+                void *buffer,
                 std::size_t count) {
-            if (buffer_ != nullptr) {
+            if (buffer != nullptr) {
                 if (count > length) {
                     count = length;
                 }
-                std::memcpy (buffer_, data + position, count);
+                std::memcpy (buffer, data + position, count);
                 length -= count;
                 position += count;
             }
@@ -293,19 +293,19 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::WriteOnlyRange::Read (
-               void *buffer_,
+               void *buffer,
                std::size_t count) {
             THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("WriteOnlyRange can't read.");
         }
 
         std::size_t TransactedFile::WriteOnlyRange::Write (
-                const void *buffer_,
+                const void *buffer,
                 std::size_t count) {
-            if (buffer_ != nullptr) {
+            if (buffer != nullptr) {
                 if (count > length) {
                     count = length;
                 }
-                std::memcpy (data + position, buffer_, count);
+                std::memcpy (data + position, buffer, count);
                 length -= count;
                 position += count;
             }
@@ -421,7 +421,7 @@ namespace thekogans {
             TransactedFile::BlockWriteOnlyRange buffer (*file, GetOffset ());
             Write (buffer);
             if (GetAllocator ()->IsSecure ()) {
-                buffer.AdvanceOffset (
+                buffer.Advance (
                     SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
             }
         }
