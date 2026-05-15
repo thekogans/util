@@ -235,8 +235,8 @@ namespace thekogans {
                 /// (terabyte?) databases you might want to bump this value up.
                 /// The way you do it is by going up or down a power of 2 on
                 /// SIZE and up or down by one on SHIFT_COUNT.
-                /// Ex: Let's sey you wanted 2MB buffers instead of 1MB.
-                /// Then SIZE = 0x00200000; and SHIFT_COUNT = 21.
+                /// Ex: Let's say you wanted 2MB buffers instead of 1MB.
+                /// Then SIZE = 0x00200000, and SHIFT_COUNT = 21.
                 static const std::size_t SIZE = 0x00100000;
                 /// \brief
                 /// Look at \see{SIZE} above. This number

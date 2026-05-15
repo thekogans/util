@@ -243,6 +243,7 @@ namespace thekogans {
                     offset, length, file.GetPath ().c_str (), file.GetSize ());
             }
             if (owner) {
+                file.Seek (offset, SEEK_SET);
                 file.Read (data, length);
             }
         }
@@ -279,8 +280,10 @@ namespace thekogans {
                 }
                 else {
                     buffer->dirty = true;
-                    if (buffer->length < offset + position) {
-                        file.SetSize (buffer->length = offset + position);
+                    std::size_t bufferOffset = offset - buffer->offset;
+                    if (buffer->length < bufferOffset + position) {
+                        buffer->length = bufferOffset + position;
+                        file.SetSize (offset + position);
                     }
                     else {
                         file.SetDirty (true);
