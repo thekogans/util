@@ -201,7 +201,7 @@ namespace thekogans {
             buffer = file.GetBuffer (offset);
             std::size_t bufferOffset = offset - buffer->offset;
             // To us it maters not how long the actual block is.
-            // All we care about is that the range fits in to it.
+            // All we care about is that our range fits in to it's range.
             // It's up to the down stream ReadOnlyRange and WriteOnlyRange
             // (below) to do the checking and perform appropriate
             // actions.
