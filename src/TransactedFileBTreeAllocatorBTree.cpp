@@ -360,7 +360,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Flush () {
-            TransactedFile::WriteOnlyRange buffer (
+            TransactedFile::UnsafeWriteOnlyRange buffer (
                 *file, offset, btree.fileAllocator.btreeNodeFileSize);
             buffer << MAGIC32 << count;
             if (count > 0) {
@@ -404,7 +404,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Load () {
-            TransactedFile::ReadOnlyRange buffer (
+            TransactedFile::UnsafeReadOnlyRange buffer (
                 *file, offset, btree.fileAllocator.btreeNodeFileSize);
             ui32 magic;
             buffer >> magic;
@@ -512,7 +512,7 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::BTree::Flush () {
             header.rootOffset = rootNode->offset;
-            TransactedFile::WriteOnlyRange buffer (
+            TransactedFile::UnsafeWriteOnlyRange buffer (
                 *file, fileAllocator.header.btreeOffset, Header::SIZE);
             buffer << MAGIC32 << header;
         }
@@ -533,7 +533,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Load () {
-            TransactedFile::ReadOnlyRange buffer (
+            TransactedFile::UnsafeReadOnlyRange buffer (
                 *file, fileAllocator.header.btreeOffset, Header::SIZE);
             ui32 magic;
             buffer >> magic;

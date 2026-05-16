@@ -229,18 +229,27 @@ namespace thekogans {
             return advance;
         }
 
-        TransactedFile::ReadOnlyRange::ReadOnlyRange (
+        std::size_t TransactedFile::Range::Read (
+               void *buffer,
+               std::size_t count) {
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("WriteOnlyRange can't read.");
+        }
+
+        std::size_t TransactedFile::Range::Write (
+                const void *buffer,
+                std::size_t count) {
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("ReadOnlyRange can't write.");
+        }
+
+        TransactedFile::UnsafeReadOnlyRange::UnsafeReadOnlyRange (
                 TransactedFile &file,
                 ui64 offset,
                 std::size_t length,
                 util::Allocator::SharedPtr allocator) :
                 Range (file, offset, length, allocator) {
-            if (offset + length > file.GetSize ()) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "ReadOnlyRange (" THEKOGANS_UTIL_UI64_FORMAT ", "
-                    THEKOGANS_UTIL_UI64_FORMAT "), outside file (%s) bounds ("
-                    THEKOGANS_UTIL_UI64_FORMAT ").",
-                    offset, length, file.GetPath ().c_str (), file.GetSize ());
+            ui64 available = file.GetSize () - offset;
+            if (length > available) {
+                length = available;
             }
             if (owner) {
                 file.Seek (offset, SEEK_SET);
@@ -248,10 +257,13 @@ namespace thekogans {
             }
         }
 
-        std::size_t TransactedFile::ReadOnlyRange::Write (
-                const void *buffer,
+        std::size_t TransactedFile::UnsafeReadOnlyRange::Read (
+                void *buffer,
                 std::size_t count) {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("ReadOnlyRange can't write.");
+            std::memcpy (buffer, data + position, count);
+            length -= count;
+            position += count;
+            return count;
         }
 
         std::size_t TransactedFile::ReadOnlyRange::Read (
@@ -261,9 +273,7 @@ namespace thekogans {
                 if (count > length) {
                     count = length;
                 }
-                std::memcpy (buffer, data + position, count);
-                length -= count;
-                position += count;
+                UnsafeReadOnlyRange::Read (buffer, count);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -272,7 +282,7 @@ namespace thekogans {
             return count;
         }
 
-        TransactedFile::WriteOnlyRange::~WriteOnlyRange () {
+        TransactedFile::UnsafeWriteOnlyRange::~UnsafeWriteOnlyRange () {
             if (position > 0) {
                 if (owner) {
                     file.Seek (offset, SEEK_SET);
@@ -281,8 +291,12 @@ namespace thekogans {
                 else {
                     buffer->dirty = true;
                     std::size_t bufferOffset = offset - buffer->offset;
-                    if (buffer->length < bufferOffset + position) {
-                        buffer->length = bufferOffset + position;
+                    std::size_t bufferLength = bufferOffset + position;
+                    if (buffer->length < bufferLength) {
+                        buffer->length = bufferLength;
+                        // Only last block can be < SIZE. Therefore, if
+                        // it's size changes, file size changed. SetSize
+                        // will call SetDirty (true).
                         file.SetSize (offset + position);
                     }
                     else {
@@ -292,10 +306,13 @@ namespace thekogans {
             }
         }
 
-        std::size_t TransactedFile::WriteOnlyRange::Read (
-               void *buffer,
-               std::size_t count) {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("WriteOnlyRange can't read.");
+        std::size_t TransactedFile::UnsafeWriteOnlyRange::Write (
+                const void *buffer,
+                std::size_t count) {
+            std::memcpy (data + position, buffer, count);
+            length -= count;
+            position += count;
+            return count;
         }
 
         std::size_t TransactedFile::WriteOnlyRange::Write (
@@ -305,9 +322,7 @@ namespace thekogans {
                 if (count > length) {
                     count = length;
                 }
-                std::memcpy (data + position, buffer, count);
-                length -= count;
-                position += count;
+                UnsafeWriteOnlyRange::Write (buffer, count);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -418,7 +433,7 @@ namespace thekogans {
         void TransactedFile::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            TransactedFile::BlockWriteOnlyRange buffer (*file, GetOffset ());
+            TransactedFile::UnsafeBlockWriteOnlyRange buffer (*file, GetOffset ());
             Write (buffer);
             if (GetAllocator ()->IsSecure ()) {
                 buffer.Advance (
@@ -429,7 +444,7 @@ namespace thekogans {
         void TransactedFile::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                TransactedFile::BlockReadOnlyRange buffer (*file, GetOffset ());
+                TransactedFile::UnsafeBlockReadOnlyRange buffer (*file, GetOffset ());
                 Read (buffer);
             }
         }
@@ -439,7 +454,7 @@ namespace thekogans {
         Serializable::SharedPtr TransactedFile::SerializableObject::GetObject () {
             if (object == nullptr) {
                 assert (offset != 0);
-                TransactedFile::BlockReadOnlyRange buffer (*file, offset);
+                TransactedFile::UnsafeBlockReadOnlyRange buffer (*file, offset);
                 buffer.context = context;
                 buffer.factory = factory;
                 buffer >> object;

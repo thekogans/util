@@ -43,7 +43,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Block::Read (TransactedFile &file) {
             Allocator::Block::Read (file);
             if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::ReadOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
+                TransactedFile::UnsafeReadOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
                 buffer >> nextBTreeNodeOffset;
             }
         }
@@ -51,7 +51,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Block::Write (TransactedFile &file) const {
             Allocator::Block::Write (file);
             if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::WriteOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
+                TransactedFile::UnsafeWriteOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
                 buffer << nextBTreeNodeOffset;
             }
         }
@@ -193,7 +193,7 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write (*file);
                         if (IsSecure ()) {
-                            TransactedFile::WriteOnlyRange buffer (*file, clearOffset, clearLength);
+                            TransactedFile::UnsafeWriteOnlyRange buffer (*file, clearOffset, clearLength);
                             buffer.Advance (
                                 SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
                         }
@@ -225,9 +225,9 @@ namespace thekogans {
                 if (block.GetSize () < size) {
                     offset = Alloc (size);
                     if (moveData) {
-                        TransactedFile::ReadOnlyRange oldBuffer (
+                        TransactedFile::UnsafeReadOnlyRange oldBuffer (
                             *file, block.GetOffset (), block.GetSize ());
-                        TransactedFile::WriteOnlyRange buffer (*file, offset, size);
+                        TransactedFile::UnsafeWriteOnlyRange buffer (*file, offset, size);
                         buffer.Advance (
                             oldBuffer.Read (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
                         if (IsSecure ()) {
@@ -266,7 +266,7 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::Read () {
             Allocator::Read ();
-            TransactedFile::ReadOnlyRange buffer (
+            TransactedFile::UnsafeReadOnlyRange buffer (
                 *file, Allocator::GetHeapStart (), Header::SIZE);
             ui32 magic;
             buffer >> magic;
@@ -289,7 +289,7 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::Write () {
             Allocator::Write ();
-            TransactedFile::WriteOnlyRange buffer (
+            TransactedFile::UnsafeWriteOnlyRange buffer (
                 *file, Allocator::GetHeapStart (), Header::SIZE);
             buffer << MAGIC32 << header;
         }

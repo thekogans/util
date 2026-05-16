@@ -467,11 +467,22 @@ protected:
         ui32 flag,
         bool on);
 
+    /// \brief
+    /// Called by \see{TransactedFile} during file open.
+    /// Since Allocator is a \see{DynamicCreatable}, it
+    /// has to have a default ctor. This method is used
+    /// to initialize the object after creation. It is
+    /// assumed that no other methods will be called
+    /// between the ctor and this Init.
     virtual void Init (
         TransactedFile::SharedPtr file_,
         PtrType headerOffset_);
 
+    /// \brief
+    /// Read the \see{Header} from the file.
     virtual void Read ();
+    /// \brief
+    /// Write the \see{Header} to the file.
     virtual void Write ();
 
     // TransactedFileEvents
@@ -488,5 +499,7 @@ protected:
     virtual void OnTransactedFileTransactionAbort (
         TransactedFile::SharedPtr /*file*/) noexcept override;
 
+    /// \brief
+    /// Needs access to \see{Init}.
     friend struct TransactedFile;
 };

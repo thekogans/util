@@ -476,6 +476,8 @@ namespace thekogans {
             ///
             /// \brief
             /// Range provides direct access to TransactedFile's underlying \see{Buffer}.
+            /// Range is an abstract base (that's why it's private). Ranges two direct
+            /// discendents are \see{ReadOnlyRange} and \see{WriteOnlyRange} (below).
             /// By pairing it with \see{Serializer}, Range provides serialization/
             /// deserialization capabilities without the need to copy chunks of data
             /// in to and out of the buffers resulting in better performance. Because
@@ -546,6 +548,13 @@ namespace thekogans {
                 /// \param[in] advance Amount to advance (no backing up).
                 /// \return New position.
                 std::size_t Advance (std::size_t advance);
+
+                virtual std::size_t Read (
+                    void * /*buffer*/,
+                    std::size_t /*count*/) override;
+                virtual std::size_t Write (
+                    const void * /*buffer*/,
+                    std::size_t /*count*/) override;
             };
 
         public:
@@ -566,11 +575,21 @@ namespace thekogans {
             /// that \ee{Buffer::SIZE} size is not properly tuned for your application. Follow
             /// the instructions in \see{Buffer::SIZE} to change the page size.
             struct Stats {
+                /// \brief
+                /// A count of \see{ReadOnlyRange} that have been created for this file.
                 ui64 readOnlyRanges;
+                /// \brief
+                /// A count of the above ranges that needed to allocate their own buffer.
                 ui64 readOnlyOwnerRanges;
+                /// \brief
+                /// A count of \see{WriteOnlyRange} that have been created for this file.
                 ui64 writeOnlyRanges;
+                /// \brief
+                /// A count of the above ranges that needed to allocate their own buffer.
                 ui64 writeOnlyOwnerRanges;
 
+                /// \brief
+                /// ctor.
                 Stats () :
                     readOnlyRanges (0),
                     readOnlyOwnerRanges (0),
@@ -578,7 +597,33 @@ namespace thekogans {
                     writeOnlyOwnerRanges (0) {}
             } stats;
 
-            struct _LIB_THEKOGANS_UTIL_DECL ReadOnlyRange : public Range {
+            /// \struct TransactedFile::ReadOnlyRange TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// ReadOnlyRange provides one directional extraction from a file.
+            struct _LIB_THEKOGANS_UTIL_DECL UnsafeReadOnlyRange : public Range {
+                /// \brief
+                /// ctor.
+                /// \param[in] file \see{TransactedFile} to buffer.
+                /// \param[in] offset File offset.
+                /// \param[in] length How much of the file we want access too.
+                /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+                UnsafeReadOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    std::size_t length,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+
+                virtual std::size_t Read (
+                    void *buffer,
+                    std::size_t count) override;
+            };
+
+            /// \struct TransactedFile::ReadOnlyRange TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// ReadOnlyRange provides one directional extraction from a file.
+            struct _LIB_THEKOGANS_UTIL_DECL ReadOnlyRange : public UnsafeReadOnlyRange {
                 /// \brief
                 /// ctor.
                 /// \param[in] file \see{TransactedFile} to buffer.
@@ -589,17 +634,45 @@ namespace thekogans {
                     TransactedFile &file,
                     ui64 offset,
                     std::size_t length,
-                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    UnsafeReadOnlyRange (file, offset, length, allocator) {}
 
                 virtual std::size_t Read (
                     void *buffer,
                     std::size_t count) override;
+            };
+
+            /// \struct TransactedFile::WriteOnlyRange TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// WriteOnlyRange provides one directional insertion in to a file.
+            struct _LIB_THEKOGANS_UTIL_DECL UnsafeWriteOnlyRange : public Range {
+                /// \brief
+                /// ctor.
+                /// \param[in] file \see{TransactedFile} to buffer.
+                /// \param[in] offset File offset.
+                /// \param[in] length How much of the file we want access too.
+                /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+                UnsafeWriteOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    std::size_t length,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    Range (file, offset, length, allocator) {}
+                /// \brief
+                /// dtor.
+                virtual ~UnsafeWriteOnlyRange ();
+
                 virtual std::size_t Write (
                     const void *buffer,
                     std::size_t count) override;
             };
 
-            struct _LIB_THEKOGANS_UTIL_DECL WriteOnlyRange : public Range {
+            /// \struct TransactedFile::WriteOnlyRange TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// WriteOnlyRange provides one directional insertion in to a file.
+            struct _LIB_THEKOGANS_UTIL_DECL WriteOnlyRange : public UnsafeWriteOnlyRange {
                 /// \brief
                 /// ctor.
                 /// \param[in] file \see{TransactedFile} to buffer.
@@ -611,12 +684,8 @@ namespace thekogans {
                     ui64 offset,
                     std::size_t length,
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    Range (file, offset, length, allocator) {}
-                virtual ~WriteOnlyRange ();
+                    UnsafeWriteOnlyRange (file, offset, length, allocator) {}
 
-                virtual std::size_t Read (
-                    void *buffer,
-                    std::size_t count) override;
                 virtual std::size_t Write (
                     const void *buffer,
                     std::size_t count) override;
@@ -624,6 +693,31 @@ namespace thekogans {
 
             #include "thekogans/util/TransactedFileAllocator.h"
 
+            /// \struct TransactedFile::BlockReadOnlyRange TransactedFile.h
+            /// thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// A convenience class which uses \see{Allocator::Block::GetSize} for
+            /// range length.
+            struct _LIB_THEKOGANS_UTIL_DECL UnsafeBlockReadOnlyRange : public UnsafeReadOnlyRange {
+                /// \brief
+                /// ctor.
+                /// \param[in] file \see{TransactedFile} to buffer.
+                /// \param[in] offset File offset.
+                /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+                UnsafeBlockReadOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    UnsafeReadOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+            };
+
+            /// \struct TransactedFile::BlockReadOnlyRange TransactedFile.h
+            /// thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// A convenience class which uses \see{Allocator::Block::GetSize} for
+            /// range length.
             struct _LIB_THEKOGANS_UTIL_DECL BlockReadOnlyRange : public ReadOnlyRange {
                 /// \brief
                 /// ctor.
@@ -637,11 +731,36 @@ namespace thekogans {
                     ReadOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
             };
 
+            /// \struct TransactedFile::UnsafeBlockWriteOnlyRange TransactedFile.h
+            /// thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// A convenience class which uses \see{Allocator::Block::GetSize} for
+            /// range length.
+            struct _LIB_THEKOGANS_UTIL_DECL UnsafeBlockWriteOnlyRange : public UnsafeWriteOnlyRange {
+                /// \brief
+                /// ctor.
+                /// \param[in] file \see{TransactedFile} to buffer.
+                /// \param[in] offset \see{Allocator::Block} offset.
+                /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+                UnsafeBlockWriteOnlyRange (
+                    TransactedFile &file,
+                    ui64 offset,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    UnsafeWriteOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+            };
+
+            /// \struct TransactedFile::BlockWriteOnlyRange TransactedFile.h
+            /// thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// A convenience class which uses \see{Allocator::Block::GetSize} for
+            /// range length.
             struct _LIB_THEKOGANS_UTIL_DECL BlockWriteOnlyRange : public WriteOnlyRange {
                 /// \brief
                 /// ctor.
                 /// \param[in] file \see{TransactedFile} to buffer.
-                /// \param[in] offset File offset.
+                /// \param[in] offset \see{Allocator::Block} offset.
                 /// \param[in] allocator \see{util::Allocator} if we need to allocate.
                 BlockWriteOnlyRange (
                     TransactedFile &file,
@@ -976,6 +1095,8 @@ namespace thekogans {
             /// \param[in] endianness File endianness.
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
+            /// \param[in] allocator_
+            /// \param[in] registry_
             TransactedFile (
                     Endianness endianness = HostEndian,
                     THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
@@ -996,15 +1117,20 @@ namespace thekogans {
                 }
             }
             /// \brief
-            /// ctor. Open the file.
+            /// ctor. Open or create the file.
             /// \param[in] endianness File endianness.
             /// \param[in] path Path to file to open.
+        #if defined (TOOLCHAIN_OS_Windows)
             /// \param[in] dwDesiredAccess Windows CreateFile parameter.
             /// \param[in] dwShareMode Windows CreateFile parameter.
             /// \param[in] dwCreationDisposition Windows CreateFile parameter.
             /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
+        #else // defined (TOOLCHAIN_OS_Windows)
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] allocator
+            /// \param[in] registry
             TransactedFile (
                     Endianness endianness,
                     const std::string &path,

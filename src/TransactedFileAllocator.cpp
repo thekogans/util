@@ -36,7 +36,7 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Read (
                 TransactedFile &file,
                 PtrType offset) {
-            ReadOnlyRange buffer (file, offset, SIZE);
+            UnsafeReadOnlyRange buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
             buffer >> magic;
@@ -57,7 +57,7 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Write (
                 TransactedFile &file,
                 PtrType offset) const {
-            WriteOnlyRange buffer (file, offset, SIZE);
+            UnsafeWriteOnlyRange buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             buffer << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -133,7 +133,7 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         void TransactedFile::Allocator::Block::Invalidate (TransactedFile &file) const {
-            TransactedFile::WriteOnlyRange buffer (file, offset - HEADER_SIZE, UI32_SIZE);
+            TransactedFile::UnsafeWriteOnlyRange buffer (file, offset - HEADER_SIZE, UI32_SIZE);
             // Simply stepping on magic will invalidate
             // this block for all future reads.
             buffer << (ui32)0;
@@ -182,7 +182,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Allocator::Read () {
-            ReadOnlyRange buffer (*file, headerOffset, Header::SIZE);
+            UnsafeReadOnlyRange buffer (*file, headerOffset, Header::SIZE);
             ui32 magic;
             buffer >> magic;
             if (magic == MAGIC32) {
@@ -206,7 +206,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Allocator::Write () {
-            WriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
+            UnsafeWriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
             buffer << MAGIC32 << header;
         }
 
