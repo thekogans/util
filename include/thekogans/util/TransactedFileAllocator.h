@@ -503,3 +503,79 @@ protected:
     /// Needs access to \see{Init}.
     friend struct TransactedFile;
 };
+
+/// \struct TransactedFile::BlockReadOnlyRange TransactedFile.h
+/// thekogans/util/TransactedFile.h
+///
+/// \brief
+/// A convenience class which uses \see{Allocator::Block::GetSize} for
+/// range length.
+struct _LIB_THEKOGANS_UTIL_DECL UnsafeBlockReadOnlyRange : public UnsafeReadOnlyRange {
+    /// \brief
+    /// ctor.
+    /// \param[in] file \see{TransactedFile} to buffer.
+    /// \param[in] offset File offset.
+    /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+    UnsafeBlockReadOnlyRange (
+        TransactedFile &file,
+        ui64 offset,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+        UnsafeReadOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+};
+
+/// \struct TransactedFile::BlockReadOnlyRange TransactedFile.h
+/// thekogans/util/TransactedFile.h
+///
+/// \brief
+/// A convenience class which uses \see{Allocator::Block::GetSize} for
+/// range length.
+struct _LIB_THEKOGANS_UTIL_DECL BlockReadOnlyRange : public ReadOnlyRange {
+    /// \brief
+    /// ctor.
+    /// \param[in] file \see{TransactedFile} to buffer.
+    /// \param[in] offset File offset.
+    /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+    BlockReadOnlyRange (
+        TransactedFile &file,
+        ui64 offset,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+        ReadOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+};
+
+/// \struct TransactedFile::UnsafeBlockWriteOnlyRange TransactedFile.h
+/// thekogans/util/TransactedFile.h
+///
+/// \brief
+/// A convenience class which uses \see{Allocator::Block::GetSize} for
+/// range length.
+struct _LIB_THEKOGANS_UTIL_DECL UnsafeBlockWriteOnlyRange : public UnsafeWriteOnlyRange {
+    /// \brief
+    /// ctor.
+    /// \param[in] file \see{TransactedFile} to buffer.
+    /// \param[in] offset \see{Allocator::Block} offset.
+    /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+    UnsafeBlockWriteOnlyRange (
+        TransactedFile &file,
+        ui64 offset,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+        UnsafeWriteOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+};
+
+/// \struct TransactedFile::BlockWriteOnlyRange TransactedFile.h
+/// thekogans/util/TransactedFile.h
+///
+/// \brief
+/// A convenience class which uses \see{Allocator::Block::GetSize} for
+/// range length.
+struct _LIB_THEKOGANS_UTIL_DECL BlockWriteOnlyRange : public WriteOnlyRange {
+    /// \brief
+    /// ctor.
+    /// \param[in] file \see{TransactedFile} to buffer.
+    /// \param[in] offset \see{Allocator::Block} offset.
+    /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+    BlockWriteOnlyRange (
+        TransactedFile &file,
+        ui64 offset,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+        WriteOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
+};
