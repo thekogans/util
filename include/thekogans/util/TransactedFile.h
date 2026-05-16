@@ -711,6 +711,15 @@ namespace thekogans {
             void DeleteCache ();
 
         private:
+            /// \brief
+            /// Called during file open. If the file is empty and an
+            /// \see{Allocator} and an optional \see{Registry} were
+            /// provided, they are used to initialize the file (make
+            /// is strucured). If the file is not empty and at least
+            /// an \see{Allocator} was provided, the file is assumed
+            /// to be structured and the \see{Allocator} and an optional
+            /// \see{Registry} will come from the file. If no \see{Allocator}
+            /// was provided the file is assumed to be unstrucured.
             void Init ();
 
             /// \brief
