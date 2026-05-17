@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
 /// \struct TransactedFile::Stats TransactedFile.h thekogans/util/TransactedFile.h
 ///
 /// \brief
@@ -31,7 +32,6 @@
 /// If a large percentage of your ranges have to allocate the buffer it means
 /// that \ee{Buffer::SIZE} size is not properly tuned for your application. Follow
 /// the instructions in \see{Buffer::SIZE} to change the page size.
-#if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
 struct Stats {
     /// \brief
     /// A count of \see{ReadOnlyRange} that have been created for this file.
