@@ -116,13 +116,12 @@ namespace thekogans {
                 if (count > available) {
                     count = available;
                 }
-                UnsafeReadOnlyRange::Read (buffer, count);
+                return UnsafeReadOnlyRange::Read (buffer, count);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return count;
         }
 
         TransactedFile::UnsafeWriteOnlyRange::UnsafeWriteOnlyRange (
@@ -179,13 +178,12 @@ namespace thekogans {
                 if (count > available) {
                     count = available;
                 }
-                UnsafeWriteOnlyRange::Write (buffer, count);
+                return UnsafeWriteOnlyRange::Write (buffer, count);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            return count;
         }
 
     } // namespace util
