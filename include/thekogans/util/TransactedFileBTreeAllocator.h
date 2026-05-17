@@ -48,7 +48,7 @@ namespace thekogans {
                 /// \brief
                 /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
                 static const ui32 FLAGS_BTREE_NODE =
-                    TransactedFile::Allocator::Block::Header::FLAGS_FIRST_ALLOCATOR_FLAG;
+                    TransactedFile::Allocator::Block::FLAGS_FIRST_ALLOCATOR_FLAG;
 
             private:
                 /// \brief
@@ -105,9 +105,11 @@ namespace thekogans {
 
                 /// \brief
                 /// Read the block.
+                /// \param[in] file \see{TransactedFile} containing the block.
                 void Read (TransactedFile &file);
                 /// \brief
                 /// Write the block.
+                /// \param[in] file \see{TransactedFile} containing the block.
                 void Write (TransactedFile &file) const;
             };
 
