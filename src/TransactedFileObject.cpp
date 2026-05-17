@@ -143,18 +143,13 @@ namespace thekogans {
 
         Serializable::SharedPtr TransactedFile::SerializableObject::GetObject () {
             if (object == nullptr) {
-                assert (offset != 0);
-                TransactedFile::UnsafeBlockReadOnlyRange buffer (*file, offset);
-                buffer.context = context;
-                buffer.factory = factory;
-                buffer >> object;
+                Reload ();
             }
             return object;
         }
 
         void TransactedFile::SerializableObject::SetObject (Serializable::SharedPtr object_) {
             object = object_;
-            SetDirty (true);
         }
 
         void TransactedFile::SerializableObject::Read (Serializer &serializer) {

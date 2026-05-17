@@ -129,13 +129,11 @@ namespace thekogans {
             /// \brief
             /// TransactedFile implements a two phase commit. The
             /// first phase (usually called the allocation phase)
-            /// will have all objects allocate the space they need
-            /// to commit themselves to disk. How the space is
-            /// allocated is outside the scope of the TransactedFile
-            /// (See \see{FileAllocator} for one such example).
-            /// This is also the time when all offset pointers
-            /// are updated (Again see \see{FileAllocator::Object}
-            /// and \see{FileAllocator::ObjectEvents}). The second
+            /// will have all \see{Object}s allocate the space they
+            /// need to commit themselves to disk. The space is
+            /// allocated using ane \see{Allocator}. This is also
+            /// the time when all offset pointers are updated (Again
+            /// see \see{Object} and \see{ObjectEvents}). The second
             /// phase (usually called the commit phase) will have
             /// all objects flush themselves to disk. This logic is
             /// enshrined in \see{TransactionParticipant} below.

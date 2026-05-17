@@ -1,3 +1,20 @@
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
+//
+// This file is part of libthekogans_util.
+//
+// libthekogans_util is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// libthekogans_util is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
+
 /// \struct TransactedFile::TransactionParticipant TransactedFile.h
 /// thekogans/util/TransactedFile.h
 ///
@@ -252,6 +269,11 @@ protected:
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
 };
 
+/// \struct TransactedFile::SerializableObject TransactedFile.h thekogans/util/TransactedFile.h
+///
+/// \brief
+/// SerializableObject combines the power of \see{Serializable} (i.e. dynamic
+/// discovery and creation) with \see{Object} (i.e. \see{TransactedFile::Allocator}).
 struct _LIB_THEKOGANS_UTIL_DECL SerializableObject : public Object {
     /// \brief
     /// Declare \see{RefCounted} pointers.
@@ -262,11 +284,25 @@ struct _LIB_THEKOGANS_UTIL_DECL SerializableObject : public Object {
     THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
 protected:
+    /// \brief
+    /// Determines how the object's \see{SerializableHeader}
+    /// is read/writen to/from the file.
     SerializableHeader context;
+    /// \brief
+    /// \see{Serializable} creation factory.
     DynamicCreatable::FactoryType factory;
+    /// \brief
+    /// The \see{Serializable} object itself.
     Serializable::SharedPtr object;
 
 public:
+    /// \brief
+    /// ctor.
+    /// \param[in] file
+    /// \param[in] offset
+    /// \param[in] cotext_
+    /// \param[in] factory_
+    /// \param[in] object_
     SerializableObject (
         TransactedFile::SharedPtr file,
         TransactedFile::Allocator::PtrType offset = 0,
@@ -278,8 +314,8 @@ public:
         factory (factory_),
         object (object_) {}
 
-    virtual Serializable::SharedPtr GetObject ();
-    virtual void SetObject (Serializable::SharedPtr object_);
+    Serializable::SharedPtr GetObject ();
+    void SetObject (Serializable::SharedPtr object_);
 
 protected:
     // TransactedFile::TransactionParticipant

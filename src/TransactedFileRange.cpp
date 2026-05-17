@@ -53,15 +53,15 @@ namespace thekogans {
 
         TransactedFile::Range::~Range () {
             if (owner) {
-                allocator->Free (data, position + length);
+                allocator->Free (data, length);
             }
         }
 
         std::size_t TransactedFile::Range::Advance (std::size_t advance) {
-            if (advance > length) {
-                advance = length;
+            std::size_t available = GetDataAvailable ();
+            if (advance > available) {
+                advance = available;
             }
-            length -= advance;
             position += advance;
             return advance;
         }
@@ -84,11 +84,17 @@ namespace thekogans {
                 std::size_t length,
                 util::Allocator::SharedPtr allocator) :
                 Range (file, offset, length, allocator) {
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+            ++file.stats.readOnlyRanges;
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             ui64 available = file.GetSize () - offset;
             if (length > available) {
                 length = available;
             }
             if (owner) {
+            #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+                ++file.stats.readOnlyOwnerRanges;
+            #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 file.Seek (offset, SEEK_SET);
                 file.Read (data, length);
             }
@@ -98,7 +104,6 @@ namespace thekogans {
                 void *buffer,
                 std::size_t count) {
             std::memcpy (buffer, data + position, count);
-            length -= count;
             position += count;
             return count;
         }
@@ -107,8 +112,9 @@ namespace thekogans {
                 void *buffer,
                 std::size_t count) {
             if (buffer != nullptr) {
-                if (count > length) {
-                    count = length;
+                std::size_t available = GetDataAvailable ();
+                if (count > available) {
+                    count = available;
                 }
                 UnsafeReadOnlyRange::Read (buffer, count);
             }
@@ -117,6 +123,20 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
             return count;
+        }
+
+        TransactedFile::UnsafeWriteOnlyRange::UnsafeWriteOnlyRange (
+                TransactedFile &file,
+                ui64 offset,
+                std::size_t length,
+                util::Allocator::SharedPtr allocator) :
+                Range (file, offset, length, allocator) {
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+            ++file.stats.writeOnlyRanges;
+            if (owner) {
+                ++file.stats.writeOnlyOwnerRanges;
+            }
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
         }
 
         TransactedFile::UnsafeWriteOnlyRange::~UnsafeWriteOnlyRange () {
@@ -132,8 +152,8 @@ namespace thekogans {
                     if (buffer->length < bufferLength) {
                         buffer->length = bufferLength;
                         // Only last block can be < SIZE. Therefore, if
-                        // it's size changes, file size changed. SetSize
-                        // will call SetDirty (true).
+                        // it's size changes, file size changed too.
+                        // SetSize will call SetDirty (true).
                         file.SetSize (offset + position);
                     }
                     else {
@@ -147,7 +167,6 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count) {
             std::memcpy (data + position, buffer, count);
-            length -= count;
             position += count;
             return count;
         }
@@ -156,8 +175,9 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count) {
             if (buffer != nullptr) {
-                if (count > length) {
-                    count = length;
+                std::size_t available = GetDataAvailable ();
+                if (count > available) {
+                    count = available;
                 }
                 UnsafeWriteOnlyRange::Write (buffer, count);
             }

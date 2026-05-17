@@ -143,6 +143,8 @@ target_sources(${PROJECT_NAME}
         src/TransactedFileBTreeAllocatorBTree.cpp
         src/TransactedFileBTreeKeys.cpp
         src/TransactedFileBTreeRegistry.cpp
+        src/TransactedFileObject.cpp
+        src/TransactedFileRange.cpp
         src/TransactedFileRegistry.cpp
         src/ValueParser.cpp
         src/Variant.cpp
