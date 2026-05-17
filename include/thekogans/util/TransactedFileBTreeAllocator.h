@@ -32,6 +32,8 @@ namespace thekogans {
         /// thekogans/util/TransactedFileBTreeAllocator.h
         ///
         /// \brief
+        /// TransactedFileBTreeAllocator is a general purpose \see{TransactedFile::Allocator}.
+        /// It uses a hand tuned \see{TransactedFileBTreeAllocator::BTree} to manage the free list.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator : public TransactedFile::Allocator {
             /// \brief
             /// TransactedFileBTreeAllocator participates in the \see{DynamicCreatable}
@@ -132,7 +134,6 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] flags 0 or FLAGS_SECURE.
                 Header () :
                     btreeOffset (0),
                     freeBTreeNodeOffset (0) {}
@@ -166,8 +167,8 @@ namespace thekogans {
             /// ctor.
             /// \param[in] secure true == zero out free blocks.
             /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
-            /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit in to
-            /// a \see{BlockAllocator} page.
+            /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit
+            /// in to a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.
             TransactedFileBTreeAllocator (
                 bool secure = false,
@@ -214,13 +215,26 @@ namespace thekogans {
                 bool moveData = true) override;
 
         private:
+            /// \brief
+            /// Called by \see{TransactedFile} during file open.
+            /// Since Allocator is a \see{DynamicCreatable}, it
+            /// has to have a default ctor. This method is used
+            /// to initialize the object after creation. It is
+            /// assumed that no other methods will be called
+            /// between the ctor and this Init.
+            /// \param[in] file_ \see{TransactedFile} this
+            /// allocator is servicing.
+            /// \param[in] headerOffset_ Offset in the file
+            /// where the \see{Header} begins.
             virtual void Init (
                 TransactedFile::SharedPtr file,
                 PtrType headerOffset) override;
 
             /// \brief
-            /// Common methods.
+            /// Read the \see{Header} from the file.
             virtual void Read () override;
+            /// \brief
+            /// Write the \see{Header} to the file.
             virtual void Write () override;
 
             /// \brief

@@ -115,10 +115,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// an exception is thrown indicating heap corruption.
         struct _LIB_THEKOGANS_UTIL_DECL Header {
             /// \brief
-            /// Allocator derivatives can use this flag to start their own flag list
-            /// without fear of stepping on Allocator's toes.
-            static const ui32 FLAGS_FIRST_ALLOCATOR_FLAG = 1 << 16;
-            /// \brief
             /// A combination of FLAGS_FREE and allocator specific flags.
             Flags32 flags;
             /// \brief
@@ -178,6 +174,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// If this flag is set, the block is free. Otherwise it's allocated.
         static const ui32 FLAGS_FREE = 1;
         /// \brief
+        /// Allocator derivatives can use this flag to start their own flag list
+        /// without fear of stepping on Allocator's toes.
+        static const ui32 FLAGS_FIRST_ALLOCATOR_FLAG = 1 << 16;
+        /// \brief
         /// Exposed because header is private.
         static const std::size_t HEADER_SIZE = Header::SIZE;
         /// \brief
@@ -197,6 +197,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             offset (offset_),
             header (flags, size) {}
 
+        /// \brief
+        /// Return the size of the block.
+        /// \return Size of the block.
         static ui64 GetSize (
             TransactedFile &file,
             PtrType offset);
@@ -293,7 +296,12 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             const Header &footer);
     };
 
+    /// \brief
+    /// \see{TransactedFile} this allocator is servicing.
     TransactedFile::SharedPtr file;
+    /// \brief
+    /// The file stores allocator ad regitry information first.
+    /// This offset tells the allocator where it's header begins.
     PtrType headerOffset;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
@@ -389,6 +397,9 @@ public:
     /// allocate is 64 bytes.
     static const std::size_t MIN_BLOCK_SIZE = Block::SIZE + MIN_USER_DATA_SIZE;
 
+    /// \brief
+    /// Return the \see{TransactedFile} this allocator is servicing.
+    /// \return \see{TransactedFile} this allocator is servicing.
     inline TransactedFile::SharedPtr GetFile () const {
         return file;
     }
@@ -463,6 +474,10 @@ public:
         bool moveData = true) = 0;
 
 protected:
+    /// \brief
+    /// Set dirty flag and (un)subscribe to \see{TransactedFileEvents}.
+    /// \param[in] flag FLAGS_DIRTY.
+    /// \param[in] on true == set, false = reset.
     void SetFlag (
         ui32 flag,
         bool on);
@@ -474,6 +489,10 @@ protected:
     /// to initialize the object after creation. It is
     /// assumed that no other methods will be called
     /// between the ctor and this Init.
+    /// \param[in] file_ \see{TransactedFile} this
+    /// allocator is servicing.
+    /// \param[in] headerOffset_ Offset in the file
+    /// where the \see{Header} begins.
     virtual void Init (
         TransactedFile::SharedPtr file_,
         PtrType headerOffset_);
