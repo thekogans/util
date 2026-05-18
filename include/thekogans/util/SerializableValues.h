@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_BTreeValues_h)
-#define __thekogans_util_BTreeValues_h
+#if !defined (__thekogans_util_SerializableValues_h)
+#define __thekogans_util_SerializableValues_h
 
 #include <string>
 #include <vector>
@@ -28,7 +28,7 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct StringValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct StringValue SerializableValues.h thekogans/util/SerializableValues.h
         ///
         /// \brief
         /// Variable size string value.
@@ -71,7 +71,7 @@ namespace thekogans {
             }
         };
 
-        /// \struct PtrValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct PtrValue SerializableValues.h thekogans/util/SerializableValues.h
         ///
         /// \brief
         /// \see{TransactedFile::Allocator::PtrType} value.
@@ -108,7 +108,7 @@ namespace thekogans {
             }
         };
 
-        /// \struct ArrayValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct ArrayValue SerializableValues.h thekogans/util/SerializableValues.h
         ///
         /// \brief
         /// ArrayValue is a template for storing arrays of types.
@@ -182,7 +182,7 @@ namespace thekogans {
             }
         };
 
-        /// \struct StringArrayValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct StringArrayValue SerializableValues.h thekogans/util/SerializableValues.h
         ///
         /// \brief
         /// Specialization of \see{ArrayValue} for std::string.
@@ -198,7 +198,7 @@ namespace thekogans {
                 ArrayValue<std::string> (value) {}
         };
 
-        /// \struct GUIDArrayValue BTreeValues.h thekogans/util/BTreeValues.h
+        /// \struct GUIDArrayValue SerializableValues.h thekogans/util/SerializableValues.h
         ///
         /// \brief
         /// Specialization of \see{ArrayValue} for \see{GUID}.
@@ -217,4 +217,4 @@ namespace thekogans {
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_BTreeValues_h)
+#endif // !defined (__thekogans_util_SerializableValues_h)

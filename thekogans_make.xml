@@ -86,7 +86,6 @@
     <cpp_header>$(organization)/$(project_directory)/AlignedAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Allocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Array.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/BTreeValues.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Barrier.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Base64.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BitSet.h</cpp_header>
@@ -160,6 +159,7 @@
     <cpp_header>$(organization)/$(project_directory)/SerializableArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableHeader.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableString.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/SerializableValues.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SHA1.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SHA2.h</cpp_header>
@@ -658,7 +658,6 @@
   <cpp_sources prefix = "src">
     <cpp_source>AlignedAllocator.cpp</cpp_source>
     <cpp_source>Allocator.cpp</cpp_source>
-    <cpp_source>BTreeValues.cpp</cpp_source>
     <cpp_source>Barrier.cpp</cpp_source>
     <cpp_source>Base64.cpp</cpp_source>
     <cpp_source>BitSet.cpp</cpp_source>
@@ -715,6 +714,7 @@
     <cpp_source>Serializable.cpp</cpp_source>
     <cpp_source>SerializableHeader.cpp</cpp_source>
     <cpp_source>SerializableString.cpp</cpp_source>
+    <cpp_source>SerializableValues.cpp</cpp_source>
     <cpp_source>Serializer.cpp</cpp_source>
     <cpp_source>SHA1.cpp</cpp_source>
     <cpp_source>SHA2.cpp</cpp_source>

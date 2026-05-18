@@ -24,7 +24,7 @@
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
     #include "thekogans/util/TransactedFileBTree.h"
-    #include "thekogans/util/BTreeValues.h"
+    #include "thekogans/util/SerializableValues.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
