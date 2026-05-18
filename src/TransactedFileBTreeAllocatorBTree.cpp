@@ -72,7 +72,9 @@ namespace thekogans {
         }
 
         std::size_t TransactedFileBTreeAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
+                                        // key             rightOffset
             const std::size_t ENTRY_SIZE = KEY_TYPE_SIZE + PTR_TYPE_SIZE;
+                // magic       count       leftOffset      entries
             return UI32_SIZE + UI32_SIZE + PTR_TYPE_SIZE + entriesPerNode * ENTRY_SIZE;
         }
 
@@ -101,11 +103,11 @@ namespace thekogans {
                     ui32 count;
                     buffer >> count;
                     if (count > 0) {
-                        TransactedFile::Allocator::PtrType leftOffset;
+                        PtrType leftOffset;
                         buffer >> leftOffset;
                         FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
-                            TransactedFile::Allocator::PtrType rightOffset;
+                            PtrType rightOffset;
                             buffer >> rightOffset;
                             FreeSubtree (btree, rightOffset);
                         }
@@ -367,15 +369,25 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Alloc () {
-            if (GetOffset () == 0) {
+            if (offset == 0) {
                 offset = btree.allocator.AllocBTreeNode (
                     btree.allocator.btreeNodeFileSize);
+                Produce (
+                    std::bind (
+                        &TransactedFile::ObjectEvents::OnTransactedFileObjectAlloc,
+                        std::placeholders::_1,
+                        this));
             }
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Free () {
-            if (GetOffset () != 0) {
-                btree.allocator.FreeBTreeNode (GetOffset ());
+            if (offset != 0) {
+                btree.allocator.FreeBTreeNode (offset);
+                Produce (
+                    std::bind (
+                        &TransactedFile::ObjectEvents::OnTransactedFileObjectFree,
+                        std::placeholders::_1,
+                        this));
                 offset = 0;
                 Release ();
             }
@@ -434,10 +446,11 @@ namespace thekogans {
 
         TransactedFileBTreeAllocator::BTree::BTree (
                 TransactedFileBTreeAllocator &allocator_,
+                PtrType offset,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
                 util::Allocator::SharedPtr allocator__) :
-                TransactedFile::Object (allocator_.GetFile (), allocator_.header.btreeOffset),
+                TransactedFile::Object (allocator_.GetFile (), offset),
                 allocator (allocator_),
                 header ((ui32)entriesPerNode),
                 nodeAllocator (
@@ -506,20 +519,27 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Alloc () {
-            if (GetOffset () == 0) {
-                offset = allocator.header.btreeOffset =
-                    allocator.AllocBTreeNode (Header::SIZE);
-                allocator.SetDirty (true);
+            if (offset == 0) {
+                offset = allocator.AllocBTreeNode (Header::SIZE);
+                Produce (
+                    std::bind (
+                        &TransactedFile::ObjectEvents::OnTransactedFileObjectAlloc,
+                        std::placeholders::_1,
+                        this));
             }
         }
 
         void TransactedFileBTreeAllocator::BTree::Free () {
-            if (GetOffset () != 0) {
+            if (offset != 0) {
                 Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
-                allocator.FreeBTreeNode (GetOffset ());
-                offset = allocator.header.btreeOffset = 0;
-                allocator.SetDirty (true);
+                allocator.FreeBTreeNode (offset);
+                Produce (
+                    std::bind (
+                        &TransactedFile::ObjectEvents::OnTransactedFileObjectFree,
+                        std::placeholders::_1,
+                        this));
+                offset = 0;
             }
         }
 
@@ -538,7 +558,7 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt TransactedFileBTreeAllocator::BTree: @" THEKOGANS_UTIL_UI64_FORMAT,
-                    allocator.header.btreeOffset);
+                    offset);
             }
             rootNode->Release ();
             nodeAllocator.Reset (

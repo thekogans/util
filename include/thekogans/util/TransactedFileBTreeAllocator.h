@@ -34,7 +34,9 @@ namespace thekogans {
         /// \brief
         /// TransactedFileBTreeAllocator is a general purpose \see{TransactedFile::Allocator}.
         /// It uses a hand tuned \see{TransactedFileBTreeAllocator::BTree} to manage the free list.
-        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator : public TransactedFile::Allocator {
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
+                public TransactedFile::Allocator,
+                public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// TransactedFileBTreeAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
@@ -173,13 +175,22 @@ namespace thekogans {
             /// in to a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.
             TransactedFileBTreeAllocator (
-                bool secure = false,
-                std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                Allocator (secure),
-                btree (new BTree (*this, btreeEntriesPerNode, btreeNodesPerPage, allocator)),
-                btreeNodeFileSize (BTree::Node::FileSize (btree->header.entriesPerNode)) {}
+                    bool secure = false,
+                    std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                    std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    Allocator (secure),
+                    btree (
+                        new BTree (
+                            *this,
+                            header.btreeOffset,
+                            btreeEntriesPerNode,
+                            btreeNodesPerPage,
+                            allocator)),
+                    btreeNodeFileSize (
+                        BTree::Node::FileSize (btree->header.entriesPerNode)) {
+                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+            }
 
             /// \brief
             /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
@@ -187,6 +198,7 @@ namespace thekogans {
                 btree->Dump ();
             }
 
+            /// TransactedFile::Allocator
             /// \brief
             /// Return the pointer to the start of the heap.
             /// \return Pointer to the start of the heap.
@@ -238,6 +250,24 @@ namespace thekogans {
             /// \brief
             /// Write the \see{Header} to the file.
             virtual void Write () override;
+
+            // TransactedFile::ObjectEvents
+            /// \brief
+            /// \see{Object} allocated a block in the file.
+            /// \param[in] object \see{Object} whose offset has become valid.
+            virtual void OnTransactedFileObjectAlloc (
+                    TransactedFile::Object::SharedPtr object) noexcept override {
+                header.btreeOffset = object->GetOffset ();
+                SetDirty (true);
+            }
+            /// \brief
+            /// \see{Object} freed its block.
+            /// \param[in] object \see{Object} whose offset has become invalid.
+            virtual void OnTransactedFileObjectFree (
+                    TransactedFile::Object::SharedPtr /*object*/) noexcept override {
+                header.btreeOffset = 0;
+                SetDirty (true);
+            }
 
             /// \brief
             /// Used to allocate \see{BTree::Node} blocks.

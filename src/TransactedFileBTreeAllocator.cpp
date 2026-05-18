@@ -275,9 +275,11 @@ namespace thekogans {
                 btree.Reset (
                     new BTree (
                         *this,
+                        header.btreeOffset,
                         btree->header.entriesPerNode,
                         btree->nodeAllocator->GetBlocksPerPage (),
                         btree->nodeAllocator->GetAllocator ()));
+                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
                 btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
             }
             else {

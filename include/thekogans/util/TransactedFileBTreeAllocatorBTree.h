@@ -271,8 +271,14 @@ private:
 
         // TransactedFile::Object
         /// \brief
+        /// Node is fixed size.
+        /// \return true.
+        virtual bool IsFixedSize () const override {
+            return true;
+        }
+        /// \brief
         virtual std::size_t Size () const noexcept override {
-            return FileSize (btree.header.entriesPerNode);
+            return btree.allocator.btreeNodeFileSize;
         }
         virtual void Read (Serializer &serializer) override;
         virtual void Write (Serializer &serializer) override;
@@ -295,6 +301,7 @@ public:
     /// advice aplies.
     BTree (
         TransactedFileBTreeAllocator &allocator_,
+        PtrType offset,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
         util::Allocator::SharedPtr allocator__);
@@ -336,6 +343,12 @@ protected:
     virtual void Reset () override;
 
     // TransactedFile::Object
+    /// \brief
+    /// Node is fixed size.
+    /// \return true.
+    virtual bool IsFixedSize () const override {
+        return true;
+    }
     /// \brief
     virtual std::size_t Size () const noexcept override {
         return Header::SIZE;

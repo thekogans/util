@@ -191,21 +191,22 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        std::size_t TransactedFile::Read (
+        std::size_t TransactedFile::ReadEx (
+                ui64 offset,
                 void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
                 if (IsOpen ()) {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && (ui64)position < size) {
-                        Buffer *buffer_ = GetBuffer (position);
-                        std::size_t bufferOffset = position - buffer_->offset;
+                    while (count > 0 && offset < size) {
+                        Buffer *buffer_ = GetBuffer (offset);
+                        std::size_t bufferOffset = offset - buffer_->offset;
                         std::size_t countToRead = MIN (buffer_->length - bufferOffset, count);
                         std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
-                        position += countToRead;
+                        offset += countToRead;
                         count -= countToRead;
                     }
                     return countRead;
@@ -221,7 +222,16 @@ namespace thekogans {
             }
         }
 
-        std::size_t TransactedFile::Write (
+        std::size_t TransactedFile::Read (
+                void *buffer,
+                std::size_t count) {
+            std::size_t countRead = ReadEx (position, buffer, count);
+            position += countRead;
+            return countRead;
+        }
+
+        std::size_t TransactedFile::WriteEx (
+                ui64 offset,
                 const void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
@@ -229,8 +239,8 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        Buffer *buffer_ = GetBuffer (position);
-                        std::size_t bufferOffset = position - buffer_->offset;
+                        Buffer *buffer_ = GetBuffer (offset);
+                        std::size_t bufferOffset = offset - buffer_->offset;
                         if (buffer_->length < bufferOffset + count) {
                             buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
                         }
@@ -239,11 +249,11 @@ namespace thekogans {
                         buffer_->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;
-                        position += countToWrite;
+                        offset += countToWrite;
                         count -= countToWrite;
                     }
-                    if (size < (ui64)position) {
-                        size = position;
+                    if (size < offset) {
+                        size = offset;
                     }
                     SetDirty (true);
                     return countWritten;
@@ -257,6 +267,14 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        std::size_t TransactedFile::Write (
+                const void *buffer,
+                std::size_t count) {
+            std::size_t countWritten = WriteEx (position, buffer, count);
+            position += countWritten;
+            return countWritten;
         }
 
         i64 TransactedFile::Seek (

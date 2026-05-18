@@ -596,6 +596,10 @@ namespace thekogans {
             }
 
             // Serializer
+            std::size_t ReadEx (
+                ui64 offset,
+                void *buffer,
+                std::size_t count);
             /// \brief
             /// Read bytes from a file.
             /// \param[out] buffer Where to place the bytes.
@@ -604,6 +608,10 @@ namespace thekogans {
             virtual std::size_t Read (
                 void *buffer,
                 std::size_t count) override;
+            std::size_t WriteEx (
+                ui64 offset,
+                const void *buffer,
+                std::size_t count);
             /// \brief
             /// Write bytes to a file.
             /// \param[in] buffer Where the bytes come from.
