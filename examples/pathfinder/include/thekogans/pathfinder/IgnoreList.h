@@ -20,7 +20,7 @@
 
 #include <string>
 #include "thekogans/util/Serializable.h"
-#include "thekogans/util/BTreeValues.h"
+#include "thekogans/util/SerializableValues.h"
 
 namespace thekogans {
     namespace pathfinder {
