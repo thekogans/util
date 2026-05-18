@@ -187,8 +187,8 @@ namespace thekogans {
                         btree.GetAllocator ()->Free (keyValueOffset);
                         FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
-                            TransactedFile::Allocator::PtrType valueOffset;
                             if (btree.header.IsValueAsObject ()) {
+                                TransactedFile::Allocator::PtrType valueOffset;
                                 buffer >> valueOffset;
                                 btree.GetAllocator ()->Free (valueOffset);
                             }

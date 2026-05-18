@@ -223,6 +223,7 @@ public:
     ///
     /// \brief
     /// WriteOnlyRange provides one directional insertion in to a file.
+    /// It layers bounds checking on top of UnsafeWriteOnlyRange::Write.
     struct _LIB_THEKOGANS_UTIL_DECL WriteOnlyRange : public UnsafeWriteOnlyRange {
         /// \brief
         /// ctor.
@@ -237,6 +238,12 @@ public:
             util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
             UnsafeWriteOnlyRange (file, offset, length, allocator) {}
 
+        /// \brief
+        /// Write a buffer to the file cache. This method
+        /// does bounds checking on the input before calling
+        /// UnsafeWriteOnlyRange::Write.
+        /// \param[in] buffer Buffer of bytes to write.
+        /// \param[in] count Buffer length.
         virtual std::size_t Write (
             const void *buffer,
             std::size_t count) override;

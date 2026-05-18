@@ -27,7 +27,7 @@
 /// in near by entries being returned if they suit the need of an allocation.
 /// It's broken out in to its own file because TransactedFileBTreeAllocator.h was getting
 /// too big to maintain.
-struct BTree : public TransactedFile::TransactionParticipant {
+struct BTree : public TransactedFile::Object {
     /// \brief
     /// Declare \see{RefCounted} pointers.
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
@@ -43,7 +43,7 @@ private:
     /// \brief
     /// Reference back to the TransactedFileBTreeAllocator for
     /// \see{Header} and \see{Node} blocks.
-    TransactedFileBTreeAllocator &fileAllocator;
+    TransactedFileBTreeAllocator &allocator;
     /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
     /// thekogans/util/FileallocatorBTree.h
     ///
@@ -79,13 +79,10 @@ private:
     ///
     /// \brief
     /// BTree nodes store sorted keys and pointers to children nodes.
-    struct Node : public TransactedFile::TransactionParticipant {
+    struct Node : public TransactedFile::Object {
         /// \brief
         /// BTree to which this node belongs.
         BTree &btree;
-        /// \brief
-        /// Node block offset.
-        PtrType offset;
         /// \brief
         /// Count of entries.
         ui32 count;
@@ -254,6 +251,12 @@ private:
         void Dump ();
 
     protected:
+        // RefCounted
+        virtual void Harakiri () override {
+            this->~Node ();
+            btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
+        }
+
         // TransactedFile::TransactionParticipant
         /// \brief
         /// Allocate space for the node.
@@ -261,29 +264,21 @@ private:
         /// \brief
         virtual void Free () override;
         /// \brief
-        /// Flush changes to file.
-        virtual void Flush () override;
-        /// \brief
-        /// Reload from file.
-        virtual void Reload () override;
-        /// \brief
         virtual void Reset () override;
 
-    private:
+        // TransactedFile::Object
         /// \brief
-        /// Common logic used by ctor and Reload.
-        void Load ();
-
-        virtual void Harakiri () override {
-            this->~Node ();
-            btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
+        virtual std::size_t Size () const noexcept override {
+            return FileSize (btree.header.entriesPerNode);
         }
+        virtual void Read (Serializer &serializer) override;
+        virtual void Write (Serializer &serializer) override;
     } *rootNode;
 
 public:
     /// \brief
     /// ctor.
-    /// \param[in] fileAllocator_ \see{TransactedFileBTreeAllocator} to which this btree belongs.
+    /// \param[in] allocator_ \see{TransactedFileBTreeAllocator} to which this btree belongs.
     /// \param[in] entriesPerNode If we're creating the heap, contains entries per
     /// \see{Node}. If we're reading an existing heap, this value will come from the
     /// \see{Header}.
@@ -292,14 +287,14 @@ public:
     /// tunning parameter that might result in slight performance gains (depending on
     /// your situation). For the most part leaving it alone is the most sensible thing
     /// to do.
-    /// \param[in] allocator This is the \see{Allocator} used to allocate pages
+    /// \param[in] allocator__ This is the \see{Allocator} used to allocate pages
     /// for the \see{BlockAllocator}. As with the previous parameter, the same
     /// advice aplies.
     BTree (
-        TransactedFileBTreeAllocator &fileAllocator_,
+        TransactedFileBTreeAllocator &allocator_,
         std::size_t entriesPerNode,
         std::size_t nodesPerPage,
-        util::Allocator::SharedPtr allocator);
+        util::Allocator::SharedPtr allocator__);
     /// \brief
     /// dtor.
     ~BTree ();
@@ -330,22 +325,19 @@ public:
 protected:
     // TransactedFile::TransactionParticipant
     /// \brief
-    /// Allocate space for the \see{Header}.
-    virtual void Alloc () override;
-    /// \brief
     /// .
     virtual void Free () override;
-    /// \brief
-    /// Flush changes to file.
-    virtual void Flush () override;
-    /// \brief
-    /// Reload from file.
-    virtual void Reload () override;
     /// \brief
     /// .
     virtual void Reset () override;
 
-    void Load ();
+    // TransactedFile::Object
+    /// \brief
+    virtual std::size_t Size () const noexcept override {
+        return Header::SIZE;
+    }
+    virtual void Read (Serializer &serializer) override;
+    virtual void Write (Serializer &serializer) override;
 
     /// \brief
     /// Needs access to private members.

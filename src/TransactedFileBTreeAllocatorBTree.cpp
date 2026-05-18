@@ -57,17 +57,14 @@ namespace thekogans {
 
         TransactedFileBTreeAllocator::BTree::Node::Node (
                 BTree &btree_,
-                PtrType offset_) :
-                TransactedFile::TransactionParticipant (btree_.GetFile ()),
+                PtrType offset) :
+                TransactedFile::Object (btree_.GetFile (), offset),
                 btree (btree_),
-                offset (offset_),
                 count (0),
                 leftOffset (0),
                 leftNode (nullptr),
                 entries ((Entry *)(this + 1)) {
-            if (offset != 0) {
-                Load ();
-            }
+            Reload ();
         }
 
         TransactedFileBTreeAllocator::BTree::Node::~Node () {
@@ -91,6 +88,36 @@ namespace thekogans {
                     Size (btree.header.entriesPerNode))) Node (btree, offset);
             node->AddRef ();
             return node;
+        }
+
+        void TransactedFileBTreeAllocator::BTree::Node::FreeSubtree (
+                BTree &btree,
+                PtrType offset) {
+            if (offset != 0) {
+                TransactedFile::UnsafeBlockReadOnlyRange buffer (*btree.file, offset);
+                ui32 magic;
+                buffer >> magic;
+                if (magic == MAGIC32) {
+                    ui32 count;
+                    buffer >> count;
+                    if (count > 0) {
+                        TransactedFile::Allocator::PtrType leftOffset;
+                        buffer >> leftOffset;
+                        FreeSubtree (btree, leftOffset);
+                        for (ui32 i = 0; i < count; ++i) {
+                            TransactedFile::Allocator::PtrType rightOffset;
+                            buffer >> rightOffset;
+                            FreeSubtree (btree, rightOffset);
+                        }
+                    }
+                    btree.GetAllocator ()->Free (offset);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+            }
         }
 
         TransactedFileBTreeAllocator::BTree::Node *TransactedFileBTreeAllocator::BTree::Node::GetChild (ui32 index) {
@@ -340,50 +367,27 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Alloc () {
-            if (offset == 0) {
-                offset = btree.fileAllocator.AllocBTreeNode (
-                    btree.fileAllocator.btreeNodeFileSize);
+            if (GetOffset () == 0) {
+                offset = btree.allocator.AllocBTreeNode (
+                    btree.allocator.btreeNodeFileSize);
+                Produce (
+                    std::bind (
+                        &TransactedFile::ObjectEvents::OnTransactedFileObjectAlloc,
+                        std::placeholders::_1,
+                        this));
             }
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Free () {
-            if (IsEmpty ()) {
-                btree.fileAllocator.FreeBTreeNode (offset);
+            if (GetOffset () != 0) {
+                btree.allocator.FreeBTreeNode (GetOffset ());
+                Produce (
+                    std::bind (
+                        &TransactedFile::ObjectEvents::OnTransactedFileObjectFree,
+                        std::placeholders::_1,
+                        this));
+                offset = 0;
                 Release ();
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Logic error: trying to delete a node with count > 0 @"
-                    THEKOGANS_UTIL_UI64_FORMAT,
-                    offset);
-            }
-        }
-
-        void TransactedFileBTreeAllocator::BTree::Node::Flush () {
-            TransactedFile::UnsafeWriteOnlyRange buffer (
-                *file, offset, btree.fileAllocator.btreeNodeFileSize);
-            buffer << MAGIC32 << count;
-            if (count > 0) {
-                if (leftNode != nullptr) {
-                    leftOffset = leftNode->offset;
-                }
-                buffer << leftOffset;
-                for (ui32 i = 0; i < count; ++i) {
-                    if (entries[i].rightNode != nullptr) {
-                        entries[i].rightOffset = entries[i].rightNode->offset;
-                    }
-                    buffer << entries[i];
-                }
-            }
-            if (btree.fileAllocator.IsSecure ()) {
-                buffer.Advance (SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
-            }
-        }
-
-        void TransactedFileBTreeAllocator::BTree::Node::Reload () {
-            Reset ();
-            if (offset != 0) {
-                Load ();
             }
         }
 
@@ -403,44 +407,56 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::BTree::Node::Load () {
-            TransactedFile::UnsafeReadOnlyRange buffer (
-                *file, offset, btree.fileAllocator.btreeNodeFileSize);
+        void TransactedFileBTreeAllocator::BTree::Node::Read (Serializer &serializer) {
             ui32 magic;
-            buffer >> magic;
+            serializer >> magic;
             if (magic == MAGIC32) {
-                buffer >> count;
+                serializer >> count;
                 if (count > 0) {
-                    buffer >> leftOffset;
+                    serializer >> leftOffset;
                     for (ui32 i = 0; i < count; ++i) {
-                        buffer >> entries[i];
+                        serializer >> entries[i];
                     }
                 }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt TransactedFileBTreeAllocator::BTree::Node: @" THEKOGANS_UTIL_UI64_FORMAT,
-                    offset);
+                    GetOffset ());
+            }
+        }
+
+        void TransactedFileBTreeAllocator::BTree::Node::Write (Serializer &serializer) {
+            serializer << MAGIC32 << count;
+            if (count > 0) {
+                if (leftNode != nullptr) {
+                    leftOffset = leftNode->offset;
+                }
+                serializer << leftOffset;
+                for (ui32 i = 0; i < count; ++i) {
+                    if (entries[i].rightNode != nullptr) {
+                        entries[i].rightOffset = entries[i].rightNode->offset;
+                    }
+                    serializer << entries[i];
+                }
             }
         }
 
         TransactedFileBTreeAllocator::BTree::BTree (
-                TransactedFileBTreeAllocator &fileAllocator_,
+                TransactedFileBTreeAllocator &allocator_,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
-                util::Allocator::SharedPtr allocator) :
-                TransactedFile::TransactionParticipant (fileAllocator_.GetFile ()),
-                fileAllocator (fileAllocator_),
+                util::Allocator::SharedPtr allocator__) :
+                TransactedFile::Object (allocator_.GetFile (), allocator_.header.btreeOffset),
+                allocator (allocator_),
                 header ((ui32)entriesPerNode),
                 nodeAllocator (
                     new BlockAllocator (
                         Node::Size (entriesPerNode),
                         nodesPerPage,
-                        allocator)),
+                        allocator__)),
                 rootNode (Node::Alloc (*this, header.rootOffset)) {
-            if (fileAllocator.header.btreeOffset != 0) {
-                Load ();
-            }
+            Reload ();
         }
 
         TransactedFileBTreeAllocator::BTree::~BTree () {
@@ -471,13 +487,13 @@ namespace thekogans {
                 // Create a new root node and make the entry
                 // its first.
                 Node *node = Node::Alloc (*this);
-                node->leftOffset = rootNode->offset;
+                node->leftOffset = rootNode->GetOffset ();
                 node->leftNode = rootNode;
                 node->InsertEntry (entry, 0);
                 rootNode = node;
             }
             if (!IsDirty () &&
-                    (header.rootOffset == 0 || rootNode->offset != header.rootOffset)) {
+                    (header.rootOffset == 0 || rootNode->GetOffset () != header.rootOffset)) {
                 SetDirty (true);
             }
         }
@@ -492,37 +508,18 @@ namespace thekogans {
                 }
                 if (!IsDirty () &&
                         (header.rootOffset == 0 ||
-                            rootNode->offset != header.rootOffset)) {
+                            rootNode->GetOffset () != header.rootOffset)) {
                     SetDirty (true);
                 }
             }
             return removed;
         }
 
-        void TransactedFileBTreeAllocator::BTree::Alloc () {
-            if (fileAllocator.header.btreeOffset == 0) {
-                fileAllocator.header.btreeOffset =
-                    fileAllocator.AllocBTreeNode (Header::SIZE);
-                fileAllocator.SetDirty (true);
-            }
-        }
-
         void TransactedFileBTreeAllocator::BTree::Free () {
-        }
-
-        void TransactedFileBTreeAllocator::BTree::Flush () {
-            header.rootOffset = rootNode->offset;
-            TransactedFile::UnsafeWriteOnlyRange buffer (
-                *file, fileAllocator.header.btreeOffset, Header::SIZE);
-            buffer << MAGIC32 << header;
-        }
-
-        void TransactedFileBTreeAllocator::BTree::Reload () {
-            if (fileAllocator.header.btreeOffset != 0) {
-                Load ();
-            }
-            else {
-                Reset ();
+            if (GetOffset () != 0) {
+                Node::FreeSubtree (*this, header.rootOffset);
+                header.rootOffset = 0;
+                Object::Free ();
             }
         }
 
@@ -532,18 +529,16 @@ namespace thekogans {
             rootNode = Node::Alloc (*this, header.rootOffset);
         }
 
-        void TransactedFileBTreeAllocator::BTree::Load () {
-            TransactedFile::UnsafeReadOnlyRange buffer (
-                *file, fileAllocator.header.btreeOffset, Header::SIZE);
+        void TransactedFileBTreeAllocator::BTree::Read (Serializer &serializer) {
             ui32 magic;
-            buffer >> magic;
+            serializer >> magic;
             if (magic == MAGIC32) {
-                buffer >> header;
+                serializer >> header;
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt TransactedFileBTreeAllocator::BTree: @" THEKOGANS_UTIL_UI64_FORMAT,
-                    fileAllocator.header.btreeOffset);
+                    allocator.header.btreeOffset);
             }
             rootNode->Release ();
             nodeAllocator.Reset (
@@ -552,6 +547,11 @@ namespace thekogans {
                     nodeAllocator->GetBlocksPerPage (),
                     nodeAllocator->GetAllocator ()));
             rootNode = Node::Alloc (*this, header.rootOffset);
+        }
+
+        void TransactedFileBTreeAllocator::BTree::Write (Serializer &serializer) {
+            header.rootOffset = rootNode->GetOffset ();
+            serializer << MAGIC32 << header;
         }
 
         inline bool operator == (
