@@ -110,7 +110,7 @@ namespace thekogans {
                             FreeSubtree (btree, rightOffset);
                         }
                     }
-                    btree.GetAllocator ()->Free (offset);
+                    btree.allocator.FreeBTreeNode (offset);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -370,22 +370,12 @@ namespace thekogans {
             if (GetOffset () == 0) {
                 offset = btree.allocator.AllocBTreeNode (
                     btree.allocator.btreeNodeFileSize);
-                Produce (
-                    std::bind (
-                        &TransactedFile::ObjectEvents::OnTransactedFileObjectAlloc,
-                        std::placeholders::_1,
-                        this));
             }
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Free () {
             if (GetOffset () != 0) {
                 btree.allocator.FreeBTreeNode (GetOffset ());
-                Produce (
-                    std::bind (
-                        &TransactedFile::ObjectEvents::OnTransactedFileObjectFree,
-                        std::placeholders::_1,
-                        this));
                 offset = 0;
                 Release ();
             }
@@ -515,11 +505,21 @@ namespace thekogans {
             return removed;
         }
 
+        void TransactedFileBTreeAllocator::BTree::Alloc () {
+            if (GetOffset () == 0) {
+                offset = allocator.header.btreeOffset =
+                    allocator.AllocBTreeNode (Header::SIZE);
+                allocator.SetDirty (true);
+            }
+        }
+
         void TransactedFileBTreeAllocator::BTree::Free () {
             if (GetOffset () != 0) {
                 Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
-                Object::Free ();
+                allocator.FreeBTreeNode (GetOffset ());
+                offset = allocator.header.btreeOffset = 0;
+                allocator.SetDirty (true);
             }
         }
 

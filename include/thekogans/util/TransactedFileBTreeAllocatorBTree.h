@@ -147,6 +147,9 @@ private:
         static Node *Alloc (
             BTree &btree,
             PtrType offset = 0);
+        static void FreeSubtree (
+            BTree &btree,
+            PtrType offset);
 
         /// \brief
         /// Return the child at the given index.
@@ -326,6 +329,7 @@ protected:
     // TransactedFile::TransactionParticipant
     /// \brief
     /// .
+    virtual void Alloc () override;
     virtual void Free () override;
     /// \brief
     /// .
