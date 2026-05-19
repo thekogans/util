@@ -505,8 +505,8 @@ namespace thekogans {
                     flags (0),
                     currBufferOffset (NOFFS),
                     currBuffer (nullptr),
-                    allocator (allocator_),
-                    registry (regitry_) {
+                    allocator (IsOpen () ? allocator_ : nullptr),
+                    registry (IsOpen () ? regitry_ : nullptr) {
                 if (IsOpen ()) {
                     Init ();
                 }

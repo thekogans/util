@@ -147,6 +147,16 @@ namespace thekogans {
             const char *str2,
             std::size_t count);
         /// \brief
+        /// Perform time insensitive compare on the given buffers.
+        /// \param[in] buffer1 First buffer to compare.
+        /// \param[in] buffer2 Second buffer to compare.
+        /// \param[in] length Length of both buffers.
+        /// \return true = identical, false = different.
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API TimeInsensitiveCompare (
+            const void *buffer1,
+            const void *buffer2,
+            std::size_t length);
+        /// \brief
         /// The IsUTF8String () function scans the '\0'-terminated string starting
         /// at utf8. It returns a pointer to the first byte of the first malformed
         /// or overlong UTF-8 sequence found, or NULL if the string contains

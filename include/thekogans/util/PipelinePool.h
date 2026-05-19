@@ -236,7 +236,7 @@ namespace thekogans {
             /// immediately available.
             /// \param[in] timeSpec How long to wait between retries.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \return A \see{Pipeline} from the pool (Pipeline::SharedPtr () if pool is exhausted).
+            /// \return A \see{Pipeline} from the pool (nullptr if pool is exhausted).
             util::Pipeline::SharedPtr GetPipeline (
                 std::size_t retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));

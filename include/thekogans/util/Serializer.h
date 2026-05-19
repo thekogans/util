@@ -99,6 +99,9 @@ namespace thekogans {
             /// \brief
             /// Default \see{Serializable} factory.
             DynamicCreatable::FactoryType factory;
+            /// \brief
+            /// Default \see{Serializable} factory parameters.
+            DynamicCreatable::ParametersType parameters;
 
             /// \struct Serializer::ContextGuard Serializer.h thekogans/util/Serializer.h
             ///
@@ -114,27 +117,35 @@ namespace thekogans {
                 /// \brief
                 /// Saved \see{Serializable} factory.
                 DynamicCreatable::FactoryType factory;
+                /// \brief
+                /// Saved \see{Serializable} factory parameters.
+                DynamicCreatable::ParametersType parameters;
 
                 /// \brief
                 /// ctor,
                 /// \param[in] serializer_ Serializer whose context to guard.
                 /// \param[in] context_ New context.
                 /// \param[in] factory_ New factory.
+                /// \param[in] parameters_ New parameters.
                 ContextGuard (
                         Serializer &serializer_,
                         const SerializableHeader &context_ = SerializableHeader (),
-                        DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType ()) :
+                        DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType (),
+                        DynamicCreatable::ParametersType parameters_ = nullptr) :
                         serializer (serializer_),
                         context (serializer.context),
-                        factory (serializer.factory) {
+                        factory (serializer.factory),
+                        parameters (serializer.parameters) {
                     serializer.context = context_;
                     serializer.factory = factory_;
+                    serializer.parameters = parameters_;
                 }
                 /// \brief
                 /// dtor,
                 ~ContextGuard () {
                     serializer.context = context;
                     serializer.factory = factory;
+                    serializer.parameters = parameters;
                 }
             };
 

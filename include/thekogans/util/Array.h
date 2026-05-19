@@ -63,20 +63,13 @@ namespace thekogans {
                     T *array_ = nullptr,
                     Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
                     length (length_),
-                    array (array_),
+                    array (length_ > 0 && array_ == nullptr ?
+                        (T *)allocator_->Alloc (length_ * sizeof (T)) :
+                        array_),
                     allocator (allocator_) {
                 if (allocator != nullptr) {
-                    if (length > 0) {
-                        if (array == nullptr) {
-                            array = (T *)allocator->Alloc (length * sizeof (T));
-                            for (std::size_t i = 0; i < length; ++i) {
-                                new (&array[i]) T ();
-                            }
-                        }
-                    }
-                    else if (array != nullptr) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    for (std::size_t i = 0; i < length; ++i) {
+                        new (&array[i]) T ();
                     }
                 }
                 else {
@@ -89,8 +82,7 @@ namespace thekogans {
             /// \param[in,out] other Array to move.
             Array (Array<T> &&other) :
                     length (0),
-                    array (nullptr),
-                    allocator (DefaultAllocator::Instance ()) {
+                    array (nullptr) {
                 swap (other);
             }
             /// \brief
@@ -288,7 +280,7 @@ namespace thekogans {
                 Array<T> &array) {
             SizeT length;
             serializer >> length;
-            Array<T> temp (length);
+            Array<T> temp (length, nullptr, array.allocator);
             for (std::size_t i = 0; i < length; ++i) {
                 serializer >> temp[i];
             }

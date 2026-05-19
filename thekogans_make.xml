@@ -666,6 +666,7 @@
     <cpp_source>ChildProcess.cpp</cpp_source>
     <cpp_source>CommandLineOptions.cpp</cpp_source>
     <cpp_source>Condition.cpp</cpp_source>
+    <cpp_source>Config.cpp</cpp_source>
     <cpp_source>Console.cpp</cpp_source>
     <cpp_source>ConsoleLogger.cpp</cpp_source>
     <cpp_source>CPU.cpp</cpp_source>

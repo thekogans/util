@@ -37,7 +37,6 @@ namespace thekogans {
         /// call an appropriate ctor inside the class function call operator. All global
         /// singletons take a template parameter like this to allow you to customize their
         /// instance creation before using them.
-
         template<typename T>
         struct DefaultInstanceCreator {
             /// \brief
@@ -58,7 +57,6 @@ namespace thekogans {
         ///
         /// \brief
         /// Implements the default singleton destruction method.
-
         template<typename T>
         struct DefaultInstanceDestroyer {
             /// \brief
@@ -117,7 +115,6 @@ namespace thekogans {
         /// parameter means that foo's creation will be thread safe (not
         /// that foo itself is thread safe). If you don't care about thread
         /// safety when creating the singleton, use thekogans::util::NullLock.
-
         template<
             typename T,
             typename Lock = SpinLock,
@@ -245,7 +242,6 @@ namespace thekogans {
         ///     ...
         /// };
         /// \endcode
-
         template<typename T>
         struct RefCountedInstanceCreator {
             /// \brief
@@ -274,7 +270,6 @@ namespace thekogans {
         ///     ...
         /// };
         /// \endcode
-
         template<typename T>
         struct RefCountedInstanceDestroyer {
             /// \brief
@@ -289,7 +284,6 @@ namespace thekogans {
         ///
         /// \brief
         /// Convenience template for \see{RefCounted} singletons.
-
         template<
             typename T,
             typename Lock = SpinLock>

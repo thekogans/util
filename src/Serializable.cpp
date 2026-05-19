@@ -240,9 +240,12 @@ namespace thekogans {
                 Serializable::SharedPtr &serializable) {
             SerializableHeader header;
             serializer >> header;
-            serializable = serializer.factory ?
-                (Serializable::SharedPtr)serializer.factory (nullptr) :
-                Serializable::CreateType (header.type.c_str ());
+            if (serializer.factory != nullptr) {
+                serializable = serializer.factory (serializer.parameters);
+            }
+            else {
+                serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
+            }
             if (serializable != nullptr) {
                 serializable->Read (header, serializer);
                 return serializer;
@@ -371,9 +374,12 @@ namespace thekogans {
                         payload.GetWritePtr (),
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
-                    value = serializer.factory ?
-                        (Serializable::SharedPtr)serializer.factory (nullptr) :
-                        Serializable::CreateType (header.type.c_str ());
+                    if (serializer.factory != nullptr) {
+                        value = serializer.factory (serializer.parameters);
+                    }
+                    else {
+                        value = Serializable::CreateType (header.type.c_str (), serializer.parameters);
+                    }
                     if (value != nullptr) {
                         value->Read (header, payload);
                         Reset (serializer);

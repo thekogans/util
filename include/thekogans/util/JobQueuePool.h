@@ -222,7 +222,7 @@ namespace thekogans {
             /// immediately available.
             /// \param[in] timeSpec How long to wait between retries.
             /// IMPORTANT: timeSpec is a relative value.
-            /// \return A \see{JobQueue} from the pool (JobQueue::SharedPtr () if pool is exhausted).
+            /// \return A \see{JobQueue} from the pool (nullptr if pool is exhausted).
             util::JobQueue::SharedPtr GetJobQueue (
                 std::size_t retries = 1,
                 const TimeSpec &timeSpec = TimeSpec::FromMilliseconds (100));

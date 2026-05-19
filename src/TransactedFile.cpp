@@ -328,8 +328,6 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_) {
-            allocator = allocator_;
-            registry = registry_;
         #if defined (TOOLCHAIN_OS_Windows)
             Open (
                 path,
@@ -340,6 +338,9 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             Open (path, flags, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
+            allocator = allocator_;
+            registry = registry_;
+            Init ();
         }
 
         void TransactedFile::Open (
@@ -370,7 +371,6 @@ namespace thekogans {
             flags = 0;
             currBufferOffset = NOFFS;
             currBuffer = nullptr;
-            Init ();
         }
 
         void TransactedFile::Close () {
@@ -513,10 +513,14 @@ namespace thekogans {
                         header.type.c_str (),
                         [this] (DynamicCreatable::SharedPtr dynamicCreatble) {
                             Allocator::SharedPtr allocator = dynamicCreatble;
-                            allocator->file = this;
+                            if (allocator != nullptr) {
+                                allocator->file = this;
+                            }
                         });
-                    UnsafeWriteOnlyRange buffer (*this, Tell (), header.size);
-                    allocator->Read (header, buffer);
+                    if (allocator != nullptr) {
+                        UnsafeWriteOnlyRange buffer (*this, Tell (), header.size);
+                        allocator->Read (header, buffer);
+                    }
                 }
             }
         }

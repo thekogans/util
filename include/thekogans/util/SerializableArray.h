@@ -35,7 +35,7 @@ namespace thekogans {
         /// \brief
         /// SerializableArray aggregates \see{Serializable} derived types in to an array
         /// container. SerializableArray uses the type \see{Serializable} information to
-        /// create a \see{SerializableHeader} context so that array elements are packed
+        /// create a \see{SerializableHeader} context so that the array elements are packed
         /// without wasting space writting the same header information.
         template<typename T>
         struct SerializableArray : public Serializable {
@@ -45,7 +45,7 @@ namespace thekogans {
 
             /// \brief
             /// Context for the elements of the array.
-            const SerializableHeader context;
+            SerializableHeader context;
             /// \brief
             /// \see{Array} of T elements.
             Array<T> array;
@@ -129,31 +129,45 @@ namespace thekogans {
             /// Context for the elements of the array.
             SerializableHeader context;
             /// \brief
-            /// Default \see{Serializable} factory.
+            /// Default T factory.
             DynamicCreatable::FactoryType factory;
+            /// \brief
+            /// Default T factory parameters.
+            DynamicCreatable::ParametersType parameters;
             /// \brief
             /// \see{Array} of T::SharedPtr elements.
             Array<typename T::SharedPtr> array;
 
             /// \brief
             /// ctor. Create (or wrap) an array of length elements.
-            /// \param[in] length_ Number of elements in the array.
+            /// \param[in] context_
+            /// \param[in] factory_
+            /// \param[in] parameters_
+            /// \param[in] length Number of elements in the array.
             /// \param[in] array_ Optional array pointer to wrap.
-            /// \param[in] allocator_ \see{Allocator} used for memory management.
+            /// \param[in] allocator \see{Allocator} used for memory management.
             SerializableSharedPtrArray (
-                const SerializableHeader &context_ = SerializableHeader (),
-                std::size_t length = 0,
-                typename T::SharedPtr *array_ = nullptr,
-                Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                context (context_),
-                factory (Serializable::GetTypeFactory (context.type.c_str ())),
-                array (length, array_, allocator) {}
+                    const SerializableHeader &context_ = SerializableHeader (),
+                    DynamicCreatable::FactoryType factory_ = DynamicCreatable::FactoryType (),
+                    DynamicCreatable::ParametersType parameters_ = nullptr,
+                    std::size_t length = 0,
+                    typename T::SharedPtr *array_ = nullptr,
+                    Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    context (context_),
+                    factory (factory_),
+                    parameters (parameters_),
+                    array (length, array_, allocator) {
+                if (factory == DynamicCreatable::FactoryType () && !context.type.empty ()) {
+                    factory = Serializable::GetTypeFactory (context.type.c_str ());
+                }
+            }
 
             /// \brief
             /// std::swap for Array.
             inline void swap (SerializableSharedPtrArray<T> &other) {
                 std::swap (context, other.context);
                 std::swap (factory, other.factory);
+                std::swap (parameters, other.parameters);
                 array.swap (other.array);
             }
 
@@ -164,7 +178,7 @@ namespace thekogans {
             virtual std::size_t Size () const noexcept override {
                 std::size_t size = Serializer::Size (array.length);
                 for (std::size_t i = 0; i < array.length; ++i) {
-                    size += Serializer::Size (*array[i], context);
+                    size += Serializer::Size (array[i], context);
                 }
                 return size;
 
@@ -176,7 +190,7 @@ namespace thekogans {
             virtual void Read (
                     const SerializableHeader & /*header*/,
                     Serializer &serializer) override {
-                Serializer::ContextGuard guard (serializer, context, factory);
+                Serializer::ContextGuard guard (serializer, context, factory, parameters);
                 serializer >> array;
             }
             /// \brief

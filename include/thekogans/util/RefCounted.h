@@ -172,7 +172,7 @@ namespace thekogans {
             /// std::shared_ptr.
             /// \return std::shared_ptr<T>.
             /// IMPORTANT WARNING: This method exists for convenience and interoperability.
-            /// It's important to understand its semantic limitations. RefCounted objects
+            /// It's important to understand its semantic differences. RefCounted objects
             /// and std::shared_ptr are fundamentally different beasts. RefCounted is an
             /// invasive mixin class that is part of the object DNA. It allows you to take
             /// a reference on an existing object regrdless of how that object was presented

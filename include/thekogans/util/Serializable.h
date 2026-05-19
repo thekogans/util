@@ -47,7 +47,7 @@ namespace thekogans {
         /// and it's derivatives.)
         struct _LIB_THEKOGANS_UTIL_DECL Serializable : public DynamicCreatable {
             /// \brief
-            /// Serializable is a \see{util::DynamicCreatable} abstract base.
+            /// Serializable is a \see{DynamicCreatable} abstract base.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Serializable)
 
         #if defined (THEKOGANS_UTIL_TYPE_Static)

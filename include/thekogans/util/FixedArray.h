@@ -18,6 +18,8 @@
 #if !defined (__thekogans_util_FixedArray_h)
 #define __thekogans_util_FixedArray_h
 
+#include <functional>
+#include <algorithm>
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/Exception.h"
@@ -179,6 +181,43 @@ namespace thekogans {
             /// \return T *.
             inline operator T * () {
                 return array;
+            }
+
+            /// \brief
+            /// Sort the array elements in assending order.
+            inline void Sort () {
+                std::sort (array, array + length);
+            }
+
+            /// \brief
+            /// Uses a binary search to locate elements in an ordered array.
+            /// WARNING: If you don't want garbage answers call this method
+            /// only after you called Sort or you know a priori the array
+            /// elements are sorted in assending order.
+            /// \param[in] t Element to find.
+            /// \param[out] index If found, return the index of the element.
+            /// If not found, return the index where the element should be
+            /// inserted to maintain assending order.
+            /// \return true == found a match. false == no matching element found.
+            bool Find (
+                    const T &t,
+                    std::size_t &index) {
+                index = 0;
+                std::size_t last = length;
+                while (index < last) {
+                    std::size_t middle = (index + last) / 2;
+                    if (t == array[middle]) {
+                        index = middle;
+                        return true;
+                    }
+                    if (t < array[middle]) {
+                        last = middle;
+                    }
+                    else {
+                        index = middle + 1;
+                    }
+                }
+                return false;
             }
         };
 
