@@ -23,6 +23,7 @@
     #include "thekogans/util/HRTimerMgr.h"
     #include "thekogans/util/RunLoop.h"
     #include "thekogans/util/TimeSpec.h"
+    #include "thekogans/util/TransactedFile.h"
     #include "thekogans/util/TransactedFileBTree.h"
     #include "thekogans/util/SerializableValues.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -42,6 +43,7 @@ namespace thekogans {
             RunLoop::Stats::StaticInit ();
             TimeSpec::StaticInit ();
             TimeSpecArray::StaticInit ();
+            TransactedFile::Allocator::StaticInit ();
             TransactedFileBTree::Key::StaticInit ();
             StringValue::StaticInit ();
             PtrValue::StaticInit ();

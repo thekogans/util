@@ -145,7 +145,6 @@ namespace thekogans {
                 Serializer &serializer,
                 const TransactedFile::Allocator::Header &header) {
             serializer <<
-                header.version <<
                 header.flags <<
                 header.registryOffset;
             return serializer;
@@ -155,7 +154,6 @@ namespace thekogans {
                 Serializer &serializer,
                 TransactedFile::Allocator::Header &header) {
             serializer >>
-                header.version >>
                 header.flags >>
                 header.registryOffset;
             return serializer;
@@ -175,19 +173,13 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Allocator::Init (
-                TransactedFile::SharedPtr file_,
-                PtrType headerOffset_) {
-            file = file_;
-            headerOffset = headerOffset_;
-        }
-
-        void TransactedFile::Allocator::Read () {
-            UnsafeReadOnlyRange buffer (*file, headerOffset, Header::SIZE);
+        void TransactedFile::Allocator::Read (
+            const SerializableHeader & /*header*/,
+                Serializer &serializer) {
             ui32 magic;
-            buffer >> magic;
+            serializer >> magic;
             if (magic == MAGIC32) {
-                buffer >> header;
+                serializer >> header;
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 if (!header.IsBlockUsesMagic ()) {
             #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -206,22 +198,28 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Allocator::Write () {
-            UnsafeWriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
-            buffer << MAGIC32 << header;
+        void TransactedFile::Allocator::Write (Serializer &serializer) const {
+            serializer << MAGIC32 << header;
         }
 
         void TransactedFile::Allocator::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
             if (phase == TransactedFile::COMMIT_PHASE_2) {
-                Write ();
+                UnsafeWriteOnlyRange buffer (*file, UI32_SIZE, GetSize ());
+                buffer << GetHeader ();
+                Write (buffer);
             }
         }
 
         void TransactedFile::Allocator::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
-            Read ();
+            UnsafeReadOnlyRange buffer (*file, UI32_SIZE, GetSize ());
+            SerializableHeader header;
+            buffer >> header;
+            if (header == GetHeader ()) {
+                Read (header, buffer);
+            }
         }
 
     } // namespace util

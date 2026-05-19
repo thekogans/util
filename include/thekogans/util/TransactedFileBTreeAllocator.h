@@ -40,7 +40,7 @@ namespace thekogans {
             /// \brief
             /// TransactedFileBTreeAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (TransactedFileBTreeAllocator)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeAllocator)
 
             /// \struct TransactedFileBTreeAllocator::Block TransactedFileBTreeAllocator.h
             /// thekogans/util/TransactedFileBTreeAllocator.h
@@ -200,13 +200,6 @@ namespace thekogans {
 
             /// TransactedFile::Allocator
             /// \brief
-            /// Return the pointer to the start of the heap.
-            /// \return Pointer to the start of the heap.
-            virtual PtrType GetHeapStart () const override {
-                return Allocator::GetHeapStart () + Header::SIZE;
-            }
-
-            /// \brief
             /// Alloc a block.
             /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
@@ -229,27 +222,18 @@ namespace thekogans {
                 bool moveData = true) override;
 
         private:
-            /// \brief
-            /// Called by \see{TransactedFile} during file open.
-            /// Since Allocator is a \see{DynamicCreatable}, it
-            /// has to have a default ctor. This method is used
-            /// to initialize the object after creation. It is
-            /// assumed that no other methods will be called
-            /// between the ctor and this Init.
-            /// \param[in] file_ \see{TransactedFile} this
-            /// allocator is servicing.
-            /// \param[in] headerOffset_ Offset in the file
-            /// where the \see{Header} begins.
-            virtual void Init (
-                TransactedFile::SharedPtr file,
-                PtrType headerOffset) override;
-
+            // Serializable
+            virtual std::size_t Size () const noexcept override {
+                return Allocator::Size () + Header::SIZE;
+            }
             /// \brief
             /// Read the \see{Header} from the file.
-            virtual void Read () override;
+            virtual void Read (
+                const SerializableHeader &header,
+                Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the file.
-            virtual void Write () override;
+            virtual void Write (Serializer &serializer) const override;
 
             // TransactedFile::ObjectEvents
             /// \brief

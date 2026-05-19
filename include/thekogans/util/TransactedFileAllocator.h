@@ -56,7 +56,7 @@
 /// +-----+
 ///   var
 struct _LIB_THEKOGANS_UTIL_DECL Allocator :
-        public DynamicCreatable,
+        public Serializable,
         public Subscriber<TransactedFileEvents> {
     /// \brief
     /// Allocator is a \see{util::DynamicCreatable} abstract base.
@@ -299,10 +299,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     /// \brief
     /// \see{TransactedFile} this allocator is servicing.
     TransactedFile::SharedPtr file;
-    /// \brief
-    /// The file stores allocator ad regitry information first.
-    /// This offset tells the allocator where it's header begins.
-    PtrType headerOffset;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -319,37 +315,23 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// If set, zero out freed blocks.
         static const ui16 FLAGS_SECURE = 2;
         /// \brief
-        /// Heap version.
-        ui16 version;
-        /// \brief
         /// Heap flags.
-        Flags16 flags;
+        Flags32 flags;
         /// \brief
         /// Contains the offset of the \see{Registry}.
         PtrType registryOffset;
-        // NOTE: If you add new fields, adjust the SIZE and increment
-        // the CURRENT_VERSION below and add if statements to operator
-        // << and >> to read and write them. And don't forget to rebuild
-        // all dependent allocators as it's likely they will have based
-        // their header extensions by deriving from this one.
 
         /// \brief
         /// The size of the header on disk.
         static const std::size_t SIZE =
             UI32_SIZE +     // magic
-            UI16_SIZE +     // version
-            UI16_SIZE +     // flags
+            UI32_SIZE +     // flags
             PTR_TYPE_SIZE;  // regisryOffset
-
-        /// \brief
-        /// Current version.
-        static const ui16 CURRENT_VERSION = 1;
 
         /// \brief
         /// ctor.
         /// \param[in] flags_ 0 or FLAGS_SECURE.
-        Header (ui16 flags_ = 0) :
-                version (CURRENT_VERSION),
+        Header (ui32 flags_ = 0) :
                 flags (flags_),
                 registryOffset (0) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -383,7 +365,6 @@ public:
     /// ctor.
     /// \param[in] secure
     Allocator (bool secure = false) :
-        headerOffset (0),
         header (secure ? Header::FLAGS_SECURE : 0),
         flags (0) {}
 
@@ -414,8 +395,8 @@ public:
     /// \brief
     /// Return the pointer to the start of the heap.
     /// \return Pointer to the start of the heap.
-    virtual PtrType GetHeapStart () const {
-        return headerOffset + Header::SIZE;
+    inline PtrType GetHeapStart () const {
+        return UI32_SIZE + GetSize ();
     }
     /// \brief
     /// Return the offset of the first block in the heap.
@@ -482,27 +463,18 @@ protected:
         ui32 flag,
         bool on);
 
-    /// \brief
-    /// Called by \see{TransactedFile} during file open.
-    /// Since Allocator is a \see{DynamicCreatable}, it
-    /// has to have a default ctor. This method is used
-    /// to initialize the object after creation. It is
-    /// assumed that no other methods will be called
-    /// between the ctor and this Init.
-    /// \param[in] file_ \see{TransactedFile} this
-    /// allocator is servicing.
-    /// \param[in] headerOffset_ Offset in the file
-    /// where the \see{Header} begins.
-    virtual void Init (
-        TransactedFile::SharedPtr file_,
-        PtrType headerOffset_);
-
+    // Serializable
+    virtual std::size_t Size () const noexcept override {
+        return Header::SIZE;
+    }
     /// \brief
     /// Read the \see{Header} from the file.
-    virtual void Read ();
+    virtual void Read (
+        const SerializableHeader &header,
+        Serializer &serializer) override;
     /// \brief
     /// Write the \see{Header} to the file.
-    virtual void Write ();
+    virtual void Write (Serializer &serializer) const override;
 
     // TransactedFileEvents
     /// \brief

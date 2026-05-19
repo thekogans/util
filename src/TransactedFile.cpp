@@ -484,17 +484,10 @@ namespace thekogans {
 
         void TransactedFile::Init () {
             if (allocator != nullptr) {
-                Seek (0, SEEK_SET);
                 if (GetSize () == 0) {
-                    *this << MAGIC32 << std::string (allocator->Type ());
-                    if (registry != nullptr) {
-                        *this << std::string (registry->Type ());
-                    }
-                    else {
-                        *this << std::string ();
-                    }
-                    *this << MAGIC32;
-                    allocator->Init (this, Tell ());
+                    allocator->file = this;
+                    UnsafeWriteOnlyRange buffer (*this, 0, UI32_SIZE + allocator->GetSize ());
+                    buffer << MAGIC32 << *allocator;
                     if (registry != nullptr) {
                         registry->Init (this);
                     }
@@ -514,38 +507,17 @@ namespace thekogans {
                             "Corrupt TransactedFile file (%s).",
                             GetPath ().c_str ());
                     }
-                    std::string allocatorType;
-                    std::string registryType;
-                    *this >> allocatorType >> registryType >> magic;
-                    if (magic == MAGIC32) {
-                        allocator = Allocator::CreateType (allocatorType.c_str ());
-                        if (allocator != nullptr) {
-                            allocator->Init (this, Tell ());
-                            if (!registryType.empty ()) {
-                                registry = Registry::CreateType (registryType.c_str ());
-                                if (registry != nullptr) {
-                                    registry->Init (this);
-                                }
-                                else {
-                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "Unable to create registry of type (%s).",
-                                        registryType.c_str ());
-                                }
-                            }
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Unable to create allocator of type (%s).",
-                                allocatorType.c_str ());
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt TransactedFile file (%s).",
-                            GetPath ().c_str ());
-                    }
+                    SerializableHeader header;
+                    *this >> header;
+                    allocator = Allocator::CreateType (
+                        header.type.c_str (),
+                        [this] (DynamicCreatable::SharedPtr dynamicCreatble) {
+                            Allocator::SharedPtr allocator = dynamicCreatble;
+                            allocator->file = this;
+                        });
+                    UnsafeWriteOnlyRange buffer (*this, Tell (), header.size);
+                    allocator->Read (header, buffer);
                 }
-                Seek (0, SEEK_SET);
             }
         }
 
