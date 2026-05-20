@@ -315,6 +315,33 @@ namespace thekogans {
             }
         }
 
+        void TransactedFile::OpenEx (
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess,
+                DWORD dwShareMode,
+                DWORD dwCreationDisposition,
+                DWORD dwFlagsAndAttributes,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags,
+                i32 mode,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_) {
+            allocator = allocator_;
+            registry = registry_;
+        #if defined (TOOLCHAIN_OS_Windows)
+            Open (
+                path,
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            Open (path, flags, mode);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
         void TransactedFile::Open (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -343,6 +370,7 @@ namespace thekogans {
             flags = 0;
             currBufferOffset = NOFFS;
             currBuffer = nullptr;
+            Init ();
         }
 
         void TransactedFile::Close () {
@@ -456,10 +484,17 @@ namespace thekogans {
 
         void TransactedFile::Init () {
             if (allocator != nullptr) {
+                Seek (0, SEEK_SET);
                 if (GetSize () == 0) {
-                    allocator->file = this;
-                    UnsafeWriteOnlyRange buffer (*this, 0, UI32_SIZE + allocator->GetSize ());
-                    buffer << MAGIC32 << *allocator;
+                    *this << MAGIC32 << std::string (allocator->Type ());
+                    if (registry != nullptr) {
+                        *this << std::string (registry->Type ());
+                    }
+                    else {
+                        *this << std::string ();
+                    }
+                    *this << MAGIC32;
+                    allocator->Init (this, Tell ());
                     if (registry != nullptr) {
                         registry->Init (this);
                     }
@@ -479,22 +514,38 @@ namespace thekogans {
                             "Corrupt TransactedFile file (%s).",
                             GetPath ().c_str ());
                     }
-                    SerializableHeader header;
-                    *this >> header;
-                    allocator = Allocator::CreateType (
-                        header.type.c_str (),
-                        [this] (DynamicCreatable::SharedPtr dynamicCreatble) {
-                            Allocator::SharedPtr allocator = dynamicCreatble;
-                            if (allocator != nullptr) {
-                                allocator->file = this;
+                    std::string allocatorType;
+                    std::string registryType;
+                    *this >> allocatorType >> registryType >> magic;
+                    if (magic == MAGIC32) {
+                        allocator = Allocator::CreateType (allocatorType.c_str ());
+                        if (allocator != nullptr) {
+                            allocator->Init (this, Tell ());
+                            if (!registryType.empty ()) {
+                                registry = Registry::CreateType (registryType.c_str ());
+                                if (registry != nullptr) {
+                                    registry->Init (this);
+                                }
+                                else {
+                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                        "Unable to create registry of type (%s).",
+                                        registryType.c_str ());
+                                }
                             }
                         }
-                    );
-                    if (allocator != nullptr) {
-                        UnsafeReadOnlyRange buffer (*this, Tell (), header.size);
-                        allocator->Read (header, buffer);
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Unable to create allocator of type (%s).",
+                                allocatorType.c_str ());
+                        }
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt TransactedFile file (%s).",
+                            GetPath ().c_str ());
                     }
                 }
+                Seek (0, SEEK_SET);
             }
         }
 
@@ -729,14 +780,18 @@ namespace thekogans {
         SimpleTransactedFile::SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
-                Flags32 flags) :
+                Flags32 flags,
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr regitry) :
                 TransactedFile (endianness) {
-            SimpleOpen (path, flags);
+            SimpleOpen (path, flags, allocator, regitry);
         }
 
         void SimpleTransactedFile::SimpleOpen (
                 const std::string &path,
-                Flags32 flags) {
+                Flags32 flags,
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD dwDesiredAccess = 0;
             DWORD dwShareMode = 0;
@@ -767,12 +822,14 @@ namespace thekogans {
                 dwCreationDisposition |= OPEN_EXISTING;
             }
             DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-            TransactedFile::Open (
+            TransactedFile::OpenEx (
                 path,
                 dwDesiredAccess,
                 dwShareMode,
                 dwCreationDisposition,
-                dwFlagsAndAttributes);
+                dwFlagsAndAttributes,
+                allocator,
+                registry);
         #else // defined (TOOLCHAIN_OS_Windows)
             i32 flags_ = 0;
             if (flags.Test (SimpleFile::ReadOnly)) {
@@ -796,7 +853,7 @@ namespace thekogans {
                 flags_ |= O_APPEND;
             }
             i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            TransactedFile::Open (path, flags_, mode);
+            TransactedFile::OpenEx (path, flags_, mode, allocator, registry);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

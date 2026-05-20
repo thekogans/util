@@ -56,7 +56,7 @@
 /// +-----+
 ///   var
 struct _LIB_THEKOGANS_UTIL_DECL Allocator :
-        public Serializable,
+        public DynamicCreatable,
         public Subscriber<TransactedFileEvents> {
     /// \brief
     /// Allocator is a \see{util::DynamicCreatable} abstract base.
@@ -114,6 +114,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// two match, the block is considered intact. If they don't
         /// an exception is thrown indicating heap corruption.
         struct _LIB_THEKOGANS_UTIL_DECL Header {
+            /// \brief
+            /// Allocator derivatives can use this flag to start their own flag list
+            /// without fear of stepping on Allocator's toes.
+            static const ui32 FLAGS_FIRST_ALLOCATOR_FLAG = 1 << 16;
             /// \brief
             /// A combination of FLAGS_FREE and allocator specific flags.
             Flags32 flags;
@@ -174,10 +178,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// If this flag is set, the block is free. Otherwise it's allocated.
         static const ui32 FLAGS_FREE = 1;
         /// \brief
-        /// Allocator derivatives can use this flag to start their own flag list
-        /// without fear of stepping on Allocator's toes.
-        static const ui32 FLAGS_FIRST_ALLOCATOR_FLAG = 1 << 16;
-        /// \brief
         /// Exposed because header is private.
         static const std::size_t HEADER_SIZE = Header::SIZE;
         /// \brief
@@ -197,9 +197,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             offset (offset_),
             header (flags, size) {}
 
-        /// \brief
-        /// Return the size of the block.
-        /// \return Size of the block.
         static ui64 GetSize (
             TransactedFile &file,
             PtrType offset);
@@ -296,9 +293,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             const Header &footer);
     };
 
-    /// \brief
-    /// \see{TransactedFile} this allocator is servicing.
     TransactedFile::SharedPtr file;
+    PtrType headerOffset;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -315,23 +311,37 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// If set, zero out freed blocks.
         static const ui16 FLAGS_SECURE = 2;
         /// \brief
+        /// Heap version.
+        ui16 version;
+        /// \brief
         /// Heap flags.
-        Flags32 flags;
+        Flags16 flags;
         /// \brief
         /// Contains the offset of the \see{Registry}.
         PtrType registryOffset;
+        // NOTE: If you add new fields, adjust the SIZE and increment
+        // the CURRENT_VERSION below and add if statements to operator
+        // << and >> to read and write them. And don't forget to rebuild
+        // all dependent allocators as it's likely they will have based
+        // their header extensions by deriving from this one.
 
         /// \brief
         /// The size of the header on disk.
         static const std::size_t SIZE =
             UI32_SIZE +     // magic
-            UI32_SIZE +     // flags
+            UI16_SIZE +     // version
+            UI16_SIZE +     // flags
             PTR_TYPE_SIZE;  // regisryOffset
+
+        /// \brief
+        /// Current version.
+        static const ui16 CURRENT_VERSION = 1;
 
         /// \brief
         /// ctor.
         /// \param[in] flags_ 0 or FLAGS_SECURE.
-        Header (ui32 flags_ = 0) :
+        Header (ui16 flags_ = 0) :
+                version (CURRENT_VERSION),
                 flags (flags_),
                 registryOffset (0) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -365,6 +375,7 @@ public:
     /// ctor.
     /// \param[in] secure
     Allocator (bool secure = false) :
+        headerOffset (0),
         header (secure ? Header::FLAGS_SECURE : 0),
         flags (0) {}
 
@@ -378,9 +389,6 @@ public:
     /// allocate is 64 bytes.
     static const std::size_t MIN_BLOCK_SIZE = Block::SIZE + MIN_USER_DATA_SIZE;
 
-    /// \brief
-    /// Return the \see{TransactedFile} this allocator is servicing.
-    /// \return \see{TransactedFile} this allocator is servicing.
     inline TransactedFile::SharedPtr GetFile () const {
         return file;
     }
@@ -395,8 +403,8 @@ public:
     /// \brief
     /// Return the pointer to the start of the heap.
     /// \return Pointer to the start of the heap.
-    inline PtrType GetHeapStart () const {
-        return UI32_SIZE + GetSize ();
+    virtual PtrType GetHeapStart () const {
+        return headerOffset + Header::SIZE;
     }
     /// \brief
     /// Return the offset of the first block in the heap.
@@ -455,26 +463,27 @@ public:
         bool moveData = true) = 0;
 
 protected:
-    /// \brief
-    /// Set dirty flag and (un)subscribe to \see{TransactedFileEvents}.
-    /// \param[in] flag FLAGS_DIRTY.
-    /// \param[in] on true == set, false = reset.
     void SetFlag (
         ui32 flag,
         bool on);
 
-    // Serializable
-    virtual std::size_t Size () const noexcept override {
-        return Header::SIZE;
-    }
+    /// \brief
+    /// Called by \see{TransactedFile} during file open.
+    /// Since Allocator is a \see{DynamicCreatable}, it
+    /// has to have a default ctor. This method is used
+    /// to initialize the object after creation. It is
+    /// assumed that no other methods will be called
+    /// between the ctor and this Init.
+    virtual void Init (
+        TransactedFile::SharedPtr file_,
+        PtrType headerOffset_);
+
     /// \brief
     /// Read the \see{Header} from the file.
-    virtual void Read (
-        const SerializableHeader &header,
-        Serializer &serializer) override;
+    virtual void Read ();
     /// \brief
     /// Write the \see{Header} to the file.
-    virtual void Write (Serializer &serializer) const override;
+    virtual void Write ();
 
     // TransactedFileEvents
     /// \brief

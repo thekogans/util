@@ -22,10 +22,8 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
             thekogans::util::TransactedFileBTreeAllocator,
-            1,
-            TransactedFile::Allocator::Header::SIZE + TransactedFileBTreeAllocator::Header::SIZE,
             TransactedFile::Allocator::TYPE)
 
         inline Serializer &operator << (
@@ -254,14 +252,26 @@ namespace thekogans {
             return offset;
         }
 
-        void TransactedFileBTreeAllocator::Read (
-                const SerializableHeader &header_,
-                Serializer &serializer) {
-            Allocator::Read (header_, serializer);
+        void TransactedFileBTreeAllocator::Init (
+                TransactedFile::SharedPtr file,
+                PtrType headerOffset) {
+            Allocator::Init (file, headerOffset);
+            if (GetHeapEnd () > headerOffset) {
+                Read ();
+            }
+            else {
+                Write ();
+            }
+        }
+
+        void TransactedFileBTreeAllocator::Read () {
+            Allocator::Read ();
+            TransactedFile::UnsafeReadOnlyRange buffer (
+                *file, Allocator::GetHeapStart (), Header::SIZE);
             ui32 magic;
-            serializer >> magic;
+            buffer >> magic;
             if (magic == MAGIC32) {
-                serializer >> header;
+                buffer >> header;
                 btree.Reset (
                     new BTree (
                         *this,
@@ -279,9 +289,11 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::Write (Serializer &serializer) const {
-            Allocator::Write (serializer);
-            serializer << MAGIC32 << header;
+        void TransactedFileBTreeAllocator::Write () {
+            Allocator::Write ();
+            TransactedFile::UnsafeWriteOnlyRange buffer (
+                *file, Allocator::GetHeapStart (), Header::SIZE);
+            buffer << MAGIC32 << header;
         }
 
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {

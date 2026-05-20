@@ -493,16 +493,24 @@ namespace thekogans {
             /// \param[in] allocator_
             /// \param[in] registry_
             TransactedFile (
-                Endianness endianness = HostEndian,
-                THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                const std::string &path = std::string ()) :
-                File (endianness, handle, path),
-                position (IsOpen () ? File::Tell () : 0),
-                sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                size (sizeOnDisk),
-                flags (0),
-                currBufferOffset (NOFFS),
-                currBuffer (nullptr) {}
+                    Endianness endianness = HostEndian,
+                    THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
+                    const std::string &path = std::string (),
+                    Allocator::SharedPtr allocator_ = nullptr,
+                    Registry::SharedPtr regitry_ = nullptr) :
+                    File (endianness, handle, path),
+                    position (IsOpen () ? File::Tell () : 0),
+                    sizeOnDisk (IsOpen () ? File::GetSize () : 0),
+                    size (sizeOnDisk),
+                    flags (0),
+                    currBufferOffset (NOFFS),
+                    currBuffer (nullptr),
+                    allocator (IsOpen () ? allocator_ : nullptr),
+                    registry (IsOpen () ? regitry_ : nullptr) {
+                if (IsOpen ()) {
+                    Init ();
+                }
+            }
             /// \brief
             /// ctor. Open or create the file.
             /// \param[in] endianness File endianness.
@@ -516,6 +524,8 @@ namespace thekogans {
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
         #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] allocator
+            /// \param[in] registry
             TransactedFile (
                     Endianness endianness,
                     const std::string &path,
@@ -523,29 +533,35 @@ namespace thekogans {
                     DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                     DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                     DWORD dwCreationDisposition = OPEN_ALWAYS,
-                    DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL) :
+                    DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
                 #else // defined (TOOLCHAIN_OS_Windows)
                     i32 flags = O_RDWR | O_CREAT,
-                    i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH) :
+                    i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    Allocator::SharedPtr allocator = nullptr,
+                    Registry::SharedPtr registry = nullptr) :
                     File (endianness),
                     position (0),
                     sizeOnDisk (0),
                     size (0),
                     flags (0),
                     currBufferOffset (NOFFS),
-                    currBuffer (nullptr) {
-                Open (
+                    currBuffer (nullptr),
+                    allocator (nullptr),
+                    registry (nullptr) {
+                OpenEx (
                     path,
                 #if defined (TOOLCHAIN_OS_Windows)
                     dwDesiredAccess,
                     dwShareMode,
                     dwCreationDisposition,
-                    dwFlagsAndAttributes);
+                    dwFlagsAndAttributes,
                 #else // defined (TOOLCHAIN_OS_Windows)
                     flags,
-                    mode);
+                    mode,
                 #endif // defined (TOOLCHAIN_OS_Windows)
+                    allocator,
+                    registry);
             }
             /// \brief
             /// dtor.
@@ -620,6 +636,20 @@ namespace thekogans {
             virtual i64 Seek (
                 i64 offset,
                 i32 fromWhere) override;
+
+            void OpenEx (
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
+                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+                DWORD dwCreationDisposition = OPEN_EXISTING,
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags = O_RDWR,
+                i32 mode = S_IRUSR | S_IWUSR,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr);
 
             // File
             /// \brief
@@ -781,8 +811,10 @@ namespace thekogans {
             SimpleTransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                const std::string &path = std::string ()) :
-                TransactedFile (endianness, handle, path) {}
+                const std::string &path = std::string (),
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr regitry = nullptr) :
+                TransactedFile (endianness, handle, path, allocator, regitry) {}
             /// \brief
             /// ctor. Abstracts most useful functionality from POSIX open.
             /// \param[in] endianness File endianness.
@@ -791,7 +823,9 @@ namespace thekogans {
             SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
-                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr regitry = nullptr);
 
             /// \brief
             /// Open the file.
@@ -799,7 +833,9 @@ namespace thekogans {
             /// \param[in] flags File open flags.
             void SimpleOpen (
                 const std::string &path,
-                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr regitry = nullptr);
 
             /// \brief
             /// SimpleTransactedFile is neither copy constructable, nor assignable.
