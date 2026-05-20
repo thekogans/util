@@ -315,34 +315,6 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::OpenEx (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
-                i32 mode,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            Open (
-                path,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            Open (path, flags, mode);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            allocator = allocator_;
-            registry = registry_;
-            Init ();
-        }
-
         void TransactedFile::Open (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -516,9 +488,10 @@ namespace thekogans {
                             if (allocator != nullptr) {
                                 allocator->file = this;
                             }
-                        });
+                        }
+                    );
                     if (allocator != nullptr) {
-                        UnsafeWriteOnlyRange buffer (*this, Tell (), header.size);
+                        UnsafeReadOnlyRange buffer (*this, Tell (), header.size);
                         allocator->Read (header, buffer);
                     }
                 }
@@ -756,18 +729,14 @@ namespace thekogans {
         SimpleTransactedFile::SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
-                Flags32 flags,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr regitry) :
+                Flags32 flags) :
                 TransactedFile (endianness) {
-            SimpleOpen (path, flags, allocator, regitry);
+            SimpleOpen (path, flags);
         }
 
         void SimpleTransactedFile::SimpleOpen (
                 const std::string &path,
-                Flags32 flags,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) {
+                Flags32 flags) {
         #if defined (TOOLCHAIN_OS_Windows)
             DWORD dwDesiredAccess = 0;
             DWORD dwShareMode = 0;
@@ -798,14 +767,12 @@ namespace thekogans {
                 dwCreationDisposition |= OPEN_EXISTING;
             }
             DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-            TransactedFile::OpenEx (
+            TransactedFile::Open (
                 path,
                 dwDesiredAccess,
                 dwShareMode,
                 dwCreationDisposition,
-                dwFlagsAndAttributes,
-                allocator,
-                registry);
+                dwFlagsAndAttributes);
         #else // defined (TOOLCHAIN_OS_Windows)
             i32 flags_ = 0;
             if (flags.Test (SimpleFile::ReadOnly)) {
@@ -829,7 +796,7 @@ namespace thekogans {
                 flags_ |= O_APPEND;
             }
             i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            TransactedFile::OpenEx (path, flags_, mode, allocator, registry);
+            TransactedFile::Open (path, flags_, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 

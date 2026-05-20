@@ -79,35 +79,32 @@ namespace thekogans {
                 RandomSeekSerializer (endianness),
                 handle (handle_),
                 path (path_) {}
-        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief ctor
             /// Open the file.
             /// \param[in] endianness File endianness.
+        #if defined (TOOLCHAIN_OS_Windows)
             /// \param[in] path Path to file to open.
             /// \param[in] dwDesiredAccess Windows CreateFile parameter.
             /// \param[in] dwShareMode Windows CreateFile parameter.
             /// \param[in] dwCreationDisposition Windows CreateFile parameter.
             /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] path Path to file to open.
+            /// \param[in] flags POSIX open parameter.
+            /// \param[in] mode POSIX open parameter.
+        #endif // defined (TOOLCHAIN_OS_Windows)
             File (
                 Endianness endianness,
                 const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief ctor
-            /// Open the file.
-            /// \param[in] endianness File endianness.
-            /// \param[in] path Path to file to open.
-            /// \param[in] flags POSIX open parameter.
-            /// \param[in] mode POSIX open parameter.
-            File (
-                Endianness endianness,
-                const std::string &path,
+            #else // defined (TOOLCHAIN_OS_Windows)
                 i32 flags = O_RDWR | O_CREAT,
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief dtor
             /// Close the file.
             virtual ~File ();
@@ -151,31 +148,30 @@ namespace thekogans {
                 return handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             }
 
-        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Open the file.
+        #if defined (TOOLCHAIN_OS_Windows)
             /// \param[in] path_ Windows CreateFile parameter.
             /// \param[in] dwDesiredAccess Windows CreateFile parameter.
             /// \param[in] dwShareMode Windows CreateFile parameter.
             /// \param[in] dwCreationDisposition Windows CreateFile parameter.
             /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] path_ POSIX open parameter.
+            /// \param[in] flags POSIX open parameter.
+            /// \param[in] mode POSIX open parameter.
+        #endif // defined (TOOLCHAIN_OS_Windows)
             virtual void Open (
                 const std::string &path_,
+            #if defined (TOOLCHAIN_OS_Windows)
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Open the file.
-            /// \param[in] path_ POSIX open parameter.
-            /// \param[in] flags POSIX open parameter.
-            /// \param[in] mode POSIX open parameter.
-            virtual void Open (
-                const std::string &path_,
+            #else // defined (TOOLCHAIN_OS_Windows)
                 i32 flags = O_RDWR | O_CREAT,
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Close the file.
             virtual void Close ();

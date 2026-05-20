@@ -90,7 +90,7 @@ namespace thekogans {
                 return ClassSize ();
             }
             /// \brief
-            /// Write the serializable from the given serializer.
+            /// Read the serializable from the given serializer.
             /// \param[in] header
             /// \param[in] serializer Serializer to read the serializable from.
             virtual void Read (
@@ -105,6 +105,7 @@ namespace thekogans {
             /// Return the serializable XML size.
             /// \return Serializable XML size.
             virtual std::size_t SizeXML () const noexcept {
+                assert (0);
                 return 0;
             }
             /// \brief
@@ -130,6 +131,7 @@ namespace thekogans {
             /// Return the serializable JSON size.
             /// \return Serializable JSON size.
             virtual std::size_t SizeJSON () const noexcept {
+                assert (0);
                 return 0;
             }
             /// \brief
@@ -362,7 +364,7 @@ namespace thekogans {
             virtual std::size_t ClassSize () const noexcept override;
 
             /// \brief
-            /// Write the serializable from the given serializer.
+            /// Read the serializable from the given serializer.
             /// \param[in] header_ SerializableHeader to deserialize.
             /// \param[in] serializer Serializer to read the serializable from.
             virtual void Read (
