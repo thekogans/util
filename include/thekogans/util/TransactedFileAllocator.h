@@ -425,6 +425,9 @@ public:
         SetDirty (true);
     }
 
+    inline bool IsDirty () const {
+        return flags.Test (FLAGS_DIRTY);
+    }
     /// \brief
     /// Set the dirty flag.
     /// \param[in] dirty true == dirty, false == clean.

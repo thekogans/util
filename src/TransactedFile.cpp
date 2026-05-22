@@ -395,7 +395,16 @@ namespace thekogans {
         void TransactedFile::Flush () {
             if (IsOpen ()) {
                 if (allocator != nullptr && allocator->IsDirty ()) {
-
+                    Seek (UI32_SIZE, SEEK_SET);
+                    SerializableHeader allocatorHeader;
+                    {
+                        ContextGuard guard (*this);
+                        *this >> allocatorHeader;
+                    }
+                    {
+                        ContextGuard guard (*this, allocatorHeader);
+                        *this << *allocator;
+                    }
                     allocator->SetDirty (false);
                 }
                 if (IsDirty ()) {
@@ -685,6 +694,9 @@ namespace thekogans {
                         File::Delete (logPath);
                     }
                     SetTransactionPending (false);
+                    if (allocator != nullptr && allocator->IsDirty ()) {
+                        Init ();
+                    }
                     Produce (
                         std::bind (
                             &TransactedFileEvents::OnTransactedFileTransactionAbort,
