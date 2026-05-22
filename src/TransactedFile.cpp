@@ -394,6 +394,10 @@ namespace thekogans {
 
         void TransactedFile::Flush () {
             if (IsOpen ()) {
+                if (allocator != nullptr && allocator->IsDirty ()) {
+
+                    allocator->SetDirty (false);
+                }
                 if (IsDirty ()) {
                     if (IsTransactionPending ()) {
                         std::string logPath = GetLogPath (path);
@@ -484,66 +488,33 @@ namespace thekogans {
 
         void TransactedFile::Init () {
             if (allocator != nullptr) {
-                Seek (0, SEEK_SET);
                 if (GetSize () == 0) {
-                    *this << MAGIC32 << std::string (allocator->Type ());
-                    if (registry != nullptr) {
-                        *this << std::string (registry->Type ());
-                    }
-                    else {
-                        *this << std::string ();
-                    }
-                    *this << MAGIC32;
-                    allocator->Init (this, Tell ());
-                    if (registry != nullptr) {
-                        registry->Init (this);
-                    }
+                    allocator->header.heapStart = UI32_SIZE + allocator->GetSize ();
+                    *this << MAGIC32 << *allocator;
+                }
+                Seek (0, SEEK_SET);
+                ui32 magic;
+                *this >> magic;
+                if (magic == MAGIC32) {
+                    // File is host endian.
+                }
+                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    // File is guest endian.
+                    endianness = GuestEndian;
                 }
                 else {
-                    ui32 magic;
-                    *this >> magic;
-                    if (magic == MAGIC32) {
-                        // File is host endian.
-                    }
-                    else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                        // File is guest endian.
-                        endianness = GuestEndian;
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt TransactedFile file (%s).",
-                            GetPath ().c_str ());
-                    }
-                    std::string allocatorType;
-                    std::string registryType;
-                    *this >> allocatorType >> registryType >> magic;
-                    if (magic == MAGIC32) {
-                        allocator = Allocator::CreateType (allocatorType.c_str ());
-                        if (allocator != nullptr) {
-                            allocator->Init (this, Tell ());
-                            if (!registryType.empty ()) {
-                                registry = Registry::CreateType (registryType.c_str ());
-                                if (registry != nullptr) {
-                                    registry->Init (this);
-                                }
-                                else {
-                                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                        "Unable to create registry of type (%s).",
-                                        registryType.c_str ());
-                                }
-                            }
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt TransactedFile file (%s).",
+                        GetPath ().c_str ());
+                }
+                {
+                    ContextGuard guard (*this, SerializableHeader (), nullptr,
+                        [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                            Allocator::SharedPtr allocator = dynamicCreatable;
+                            allocator->file = this;
                         }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Unable to create allocator of type (%s).",
-                                allocatorType.c_str ());
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt TransactedFile file (%s).",
-                            GetPath ().c_str ());
-                    }
+                    );
+                    *this >> allocator;
                 }
                 Seek (0, SEEK_SET);
             }

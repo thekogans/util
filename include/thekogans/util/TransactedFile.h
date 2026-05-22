@@ -793,6 +793,10 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFile)
         };
 
+        /// \brief
+        /// Implement \see{TransactedFile::Allocator} extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::Allocator)
+
         /// \struct SimpleTransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief

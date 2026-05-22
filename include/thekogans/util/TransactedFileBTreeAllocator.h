@@ -40,7 +40,7 @@ namespace thekogans {
             /// \brief
             /// TransactedFileBTreeAllocator participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (TransactedFileBTreeAllocator)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeAllocator)
 
             /// \struct TransactedFileBTreeAllocator::Block TransactedFileBTreeAllocator.h
             /// thekogans/util/TransactedFileBTreeAllocator.h
@@ -146,6 +146,9 @@ namespace thekogans {
             /// Include the \see{BTree} header.
             /// I split it out because this file was getting too big to maintain.
             #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
+            std::size_t btreeEntriesPerNode;
+            std::size_t btreeNodesPerPage;
+            util::Allocator::SharedPtr allocator;
             /// \brief
             /// \see{BTree} to manage heap free space.
             BTree::SharedPtr btree;
@@ -175,35 +178,20 @@ namespace thekogans {
             /// in to a \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} for \see{BTree}.
             TransactedFileBTreeAllocator (
-                    bool secure = false,
-                    std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
-                    std::size_t btreeNodesPerPage = DEFAULT_BTREE_NODES_PER_PAGE,
-                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    Allocator (secure),
-                    btree (
-                        new BTree (
-                            *this,
-                            header.btreeOffset,
-                            btreeEntriesPerNode,
-                            btreeNodesPerPage,
-                            allocator)),
-                    btreeNodeFileSize (
-                        BTree::Node::FileSize (btree->header.entriesPerNode)) {
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
-            }
+                bool secure = false,
+                std::size_t btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
+                std::size_t btreeNodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
+                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
+                Allocator (secure),
+                btreeEntriesPerNode (btreeEntriesPerNode_),
+                btreeNodesPerPage (btreeNodesPerPage_),
+                allocator (allocator_),
+                btreeNodeFileSize (BTree::Node::FileSize (btreeNodesPerPage)) {}
 
             /// \brief
             /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
             inline void DumpBTree () {
                 btree->Dump ();
-            }
-
-            /// TransactedFile::Allocator
-            /// \brief
-            /// Return the pointer to the start of the heap.
-            /// \return Pointer to the start of the heap.
-            virtual PtrType GetHeapStart () const override {
-                return Allocator::GetHeapStart () + Header::SIZE;
             }
 
             /// \brief
@@ -230,26 +218,13 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Called by \see{TransactedFile} during file open.
-            /// Since Allocator is a \see{DynamicCreatable}, it
-            /// has to have a default ctor. This method is used
-            /// to initialize the object after creation. It is
-            /// assumed that no other methods will be called
-            /// between the ctor and this Init.
-            /// \param[in] file_ \see{TransactedFile} this
-            /// allocator is servicing.
-            /// \param[in] headerOffset_ Offset in the file
-            /// where the \see{Header} begins.
-            virtual void Init (
-                TransactedFile::SharedPtr file,
-                PtrType headerOffset) override;
-
-            /// \brief
             /// Read the \see{Header} from the file.
-            virtual void Read () override;
+            virtual void Read (
+                const SerializableHeader & /*header*/,
+                Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the file.
-            virtual void Write () override;
+            virtual void Write (Serializer &serializer) const override;
 
             // TransactedFile::ObjectEvents
             /// \brief

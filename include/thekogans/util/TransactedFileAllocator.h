@@ -55,9 +55,7 @@
 /// | ... |
 /// +-----+
 ///   var
-struct _LIB_THEKOGANS_UTIL_DECL Allocator :
-        public DynamicCreatable,
-        public Subscriber<TransactedFileEvents> {
+struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
     /// \brief
     /// Allocator is a \see{util::DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Allocator)
@@ -294,7 +292,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     };
 
     TransactedFile::SharedPtr file;
-    PtrType headerOffset;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -306,16 +303,16 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// of \see{Block} so that if you ever try to open it with a
         /// wrongly compiled version of thekogans_util it will complain
         /// instead of corrupting your data.
-        static const ui16 FLAGS_BLOCK_USES_MAGIC = 1;
+        static const ui32 FLAGS_BLOCK_USES_MAGIC = 1;
         /// \brief
         /// If set, zero out freed blocks.
-        static const ui16 FLAGS_SECURE = 2;
-        /// \brief
-        /// Heap version.
-        ui16 version;
+        static const ui32 FLAGS_SECURE = 2;
         /// \brief
         /// Heap flags.
-        Flags16 flags;
+        Flags32 flags;
+        /// \brief
+        /// Points to the start of the heap past all the file bookkeeping.
+        PtrType heapStart;
         /// \brief
         /// Contains the offset of the \see{Registry}.
         PtrType registryOffset;
@@ -329,20 +326,16 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// The size of the header on disk.
         static const std::size_t SIZE =
             UI32_SIZE +     // magic
-            UI16_SIZE +     // version
-            UI16_SIZE +     // flags
+            UI32_SIZE +     // flags
+            PTR_TYPE_SIZE + // heapStart
             PTR_TYPE_SIZE;  // regisryOffset
-
-        /// \brief
-        /// Current version.
-        static const ui16 CURRENT_VERSION = 1;
 
         /// \brief
         /// ctor.
         /// \param[in] flags_ 0 or FLAGS_SECURE.
         Header (ui16 flags_ = 0) :
-                version (CURRENT_VERSION),
                 flags (flags_),
+                heapStart (0),
                 registryOffset (0) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
@@ -375,7 +368,6 @@ public:
     /// ctor.
     /// \param[in] secure
     Allocator (bool secure = false) :
-        headerOffset (0),
         header (secure ? Header::FLAGS_SECURE : 0),
         flags (0) {}
 
@@ -403,8 +395,8 @@ public:
     /// \brief
     /// Return the pointer to the start of the heap.
     /// \return Pointer to the start of the heap.
-    virtual PtrType GetHeapStart () const {
-        return headerOffset + Header::SIZE;
+    inline PtrType GetHeapStart () const {
+        return header.heapStart;
     }
     /// \brief
     /// Return the offset of the first block in the heap.
@@ -437,7 +429,7 @@ public:
     /// Set the dirty flag.
     /// \param[in] dirty true == dirty, false == clean.
     inline void SetDirty (bool dirty) {
-        SetFlag (FLAGS_DIRTY, dirty);
+        flags.Set (FLAGS_DIRTY, dirty);
     }
 
     /// \brief
@@ -463,41 +455,15 @@ public:
         bool moveData = true) = 0;
 
 protected:
-    void SetFlag (
-        ui32 flag,
-        bool on);
-
-    /// \brief
-    /// Called by \see{TransactedFile} during file open.
-    /// Since Allocator is a \see{DynamicCreatable}, it
-    /// has to have a default ctor. This method is used
-    /// to initialize the object after creation. It is
-    /// assumed that no other methods will be called
-    /// between the ctor and this Init.
-    virtual void Init (
-        TransactedFile::SharedPtr file_,
-        PtrType headerOffset_);
-
+    // Serializable
     /// \brief
     /// Read the \see{Header} from the file.
-    virtual void Read ();
+    virtual void Read (
+        const SerializableHeader & /*header*/,
+        Serializer &serializer) override;
     /// \brief
     /// Write the \see{Header} to the file.
-    virtual void Write ();
-
-    // TransactedFileEvents
-    /// \brief
-    /// Transaction is commiting. Flush the internal cache to file.
-    /// \param[in] file \see{TransactedFile} commiting the transaction.
-    /// \param[in] phase \see{TransactedFile} implements two phase commit.
-    virtual void OnTransactedFileTransactionCommit (
-        TransactedFile::SharedPtr /*file*/,
-        int phase) noexcept override;
-    /// \brief
-    /// Transaction is aborting. Reload the internal cache from file.
-    /// \param[in] file \see{TransactedFile} aborting the transaction.
-    virtual void OnTransactedFileTransactionAbort (
-        TransactedFile::SharedPtr /*file*/) noexcept override;
+    virtual void Write (Serializer &serializer) const override;
 
     /// \brief
     /// Needs access to \see{Init}.

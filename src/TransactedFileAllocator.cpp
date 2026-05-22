@@ -133,61 +133,30 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         void TransactedFile::Allocator::Block::Invalidate (TransactedFile &file) const {
-            TransactedFile::UnsafeWriteOnlyRange buffer (
-                file, offset - HEADER_SIZE, UI32_SIZE);
+            UnsafeWriteOnlyRange buffer (file, offset - HEADER_SIZE, UI32_SIZE);
             // Simply stepping on magic will invalidate
             // this block for all future reads.
             buffer << (ui32)0;
         }
     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const TransactedFile::Allocator::Header &header) {
-            serializer <<
-                header.version <<
-                header.flags <<
-                header.registryOffset;
-            return serializer;
-        }
-
         inline Serializer &operator >> (
                 Serializer &serializer,
                 TransactedFile::Allocator::Header &header) {
             serializer >>
-                header.version >>
                 header.flags >>
+                header.heapStart >>
                 header.registryOffset;
             return serializer;
         }
 
-        void TransactedFile::Allocator::SetFlag (
-                ui32 flag,
-                bool on) {
-            ui32 oldFlags = flags.SetAll (flag, on);
-            if (oldFlags != flags) {
-                if (!oldFlags && flags) {
-                    Subscriber<TransactedFileEvents>::Subscribe (*file);
-                }
-                else if (oldFlags && !flags) {
-                    Subscriber<TransactedFileEvents>::Unsubscribe (*file);
-                }
-            }
-        }
-
-        void TransactedFile::Allocator::Init (
-                TransactedFile::SharedPtr file_,
-                PtrType headerOffset_) {
-            file = file_;
-            headerOffset = headerOffset_;
-        }
-
-        void TransactedFile::Allocator::Read () {
-            UnsafeReadOnlyRange buffer (*file, headerOffset, Header::SIZE);
+        void TransactedFile::Allocator::Read (
+                const SerializableHeader & /*header*/,
+                Serializer &serializer) {
             ui32 magic;
-            buffer >> magic;
+            serializer >> magic;
             if (magic == MAGIC32) {
-                buffer >> header;
+                serializer >> header;
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 if (!header.IsBlockUsesMagic ()) {
             #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -206,22 +175,18 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Allocator::Write () {
-            UnsafeWriteOnlyRange buffer (*file, headerOffset, Header::SIZE);
-            buffer << MAGIC32 << header;
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const TransactedFile::Allocator::Header &header) {
+            serializer <<
+                header.flags <<
+                header.heapStart <<
+                header.registryOffset;
+            return serializer;
         }
 
-        void TransactedFile::Allocator::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr /*file*/,
-                int phase) noexcept {
-            if (phase == TransactedFile::COMMIT_PHASE_2) {
-                Write ();
-            }
-        }
-
-        void TransactedFile::Allocator::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr /*file*/) noexcept {
-            Read ();
+        void TransactedFile::Allocator::Write (Serializer &serializer) const {
+            serializer << MAGIC32 << header;
         }
 
     } // namespace util

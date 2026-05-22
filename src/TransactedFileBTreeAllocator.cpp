@@ -22,8 +22,10 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::TransactedFileBTreeAllocator,
+            1,
+            TransactedFile::Allocator::Header::SIZE + TransactedFileBTreeAllocator::Header::SIZE,
             TransactedFile::Allocator::TYPE)
 
         inline Serializer &operator << (
@@ -252,48 +254,34 @@ namespace thekogans {
             return offset;
         }
 
-        void TransactedFileBTreeAllocator::Init (
-                TransactedFile::SharedPtr file,
-                PtrType headerOffset) {
-            Allocator::Init (file, headerOffset);
-            if (GetHeapEnd () > headerOffset) {
-                Read ();
-            }
-            else {
-                Write ();
-            }
-        }
-
-        void TransactedFileBTreeAllocator::Read () {
-            Allocator::Read ();
-            TransactedFile::UnsafeReadOnlyRange buffer (
-                *file, Allocator::GetHeapStart (), Header::SIZE);
+        void TransactedFileBTreeAllocator::Read (
+                const SerializableHeader &header_,
+                Serializer &serializer) {
+            Allocator::Read (header_, serializer);
             ui32 magic;
-            buffer >> magic;
+            serializer >> magic;
             if (magic == MAGIC32) {
-                buffer >> header;
+                serializer >> header;
                 btree.Reset (
                     new BTree (
                         *this,
                         header.btreeOffset,
-                        btree->header.entriesPerNode,
-                        btree->nodeAllocator->GetBlocksPerPage (),
-                        btree->nodeAllocator->GetAllocator ()));
+                        btreeEntriesPerNode,
+                        btreeNodesPerPage,
+                        allocator));
                 Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
                 btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt heap header @" THEKOGANS_UTIL_UI64_FORMAT,
-                    Allocator::GetHeapStart ());
+                    "Corrupt TransactedFileBTreeAllocator file (%s).",
+                    file->GetPath ().c_str ());
             }
         }
 
-        void TransactedFileBTreeAllocator::Write () {
-            Allocator::Write ();
-            TransactedFile::UnsafeWriteOnlyRange buffer (
-                *file, Allocator::GetHeapStart (), Header::SIZE);
-            buffer << MAGIC32 << header;
+        void TransactedFileBTreeAllocator::Write (Serializer &serializer) const {
+            Allocator::Write (serializer);
+            serializer << MAGIC32 << header;
         }
 
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {
