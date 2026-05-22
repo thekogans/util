@@ -520,6 +520,7 @@ namespace thekogans {
                     ContextGuard guard (*this, SerializableHeader (), nullptr,
                         [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
                             Allocator::SharedPtr allocator = dynamicCreatable;
+                            if (allocator != nullptr) {
                             allocator->file = this;
                         }
                     );
