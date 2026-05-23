@@ -499,6 +499,7 @@ namespace thekogans {
             if (allocator != nullptr) {
                 if (GetSize () == 0) {
                     allocator->header.heapStart = UI32_SIZE + allocator->GetSize ();
+                    Seek (0, SEEK_SET);
                     *this << MAGIC32 << *allocator;
                 }
                 Seek (0, SEEK_SET);
@@ -521,7 +522,8 @@ namespace thekogans {
                         [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
                             Allocator::SharedPtr allocator = dynamicCreatable;
                             if (allocator != nullptr) {
-                            allocator->file = this;
+                                allocator->file = this;
+                            }
                         }
                     );
                     *this >> allocator;
