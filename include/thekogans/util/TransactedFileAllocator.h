@@ -435,22 +435,26 @@ protected:
     /// Set the header.heapStart.
     /// \param[in] heapStart New heapStart to set.
     inline void SetHeapStart (PtrType heapStart) {
-        header.heapStart = heapStart;
-        SetDirty (true);
+        if (header.heapStart != heapStart) {
+            header.heapStart = heapStart;
+            SetDirty (true);
+        }
     }
     /// \brief
     /// Set the header.registryOffset.
     /// \param[in] registryOffset New registryOffset to set.
     inline void SetRegistryOffset (PtrType registryOffset) {
-        header.registryOffset = registryOffset;
-        SetDirty (true);
+        if (header.registryOffset != registryOffset) {
+            header.registryOffset = registryOffset;
+            SetDirty (true);
+        }
     }
 
     // Serializable
     /// \brief
     /// Read the \see{Header} from the file.
     virtual void Read (
-        const SerializableHeader & /*header*/,
+        const SerializableHeader &header_,
         Serializer &serializer) override;
     /// \brief
     /// Write the \see{Header} to the file.

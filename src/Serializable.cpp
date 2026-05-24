@@ -190,8 +190,16 @@ namespace thekogans {
             SerializableHeader header;
             serializer >> header;
             if (header.type == serializable.Type ()) {
-                serializable.Read (header, serializer);
-                return serializer;
+                if (header.version <= serializable.Version ()) {
+                    serializable.Read (header, serializer);
+                    return serializer;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Header version (%s) is greater then the Serializable version (%u).",
+                        header.version,
+                        serializable.Version ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -207,8 +215,16 @@ namespace thekogans {
             SerializableHeader header;
             node >> header;
             if (header.type == serializable.Type ()) {
-                serializable.ReadXML (header, node);
-                return node;
+                if (header.version <= serializable.Version ()) {
+                    serializable.ReadXML (header, node);
+                    return node;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Header version (%s) is greater then the Serializable version (%u).",
+                        header.version,
+                        serializable.Version ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -224,8 +240,16 @@ namespace thekogans {
             SerializableHeader header;
             object >> header;
             if (header.type == serializable.Type ()) {
-                serializable.ReadJSON (header, object);
-                return object;
+                if (header.version <= serializable.Version ()) {
+                    serializable.ReadJSON (header, object);
+                    return object;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Header version (%s) is greater then the Serializable version (%u).",
+                        header.version,
+                        serializable.Version ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -247,8 +271,16 @@ namespace thekogans {
                 serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
             }
             if (serializable != nullptr) {
-                serializable->Read (header, serializer);
-                return serializer;
+                if (header.version <= serializable->Version ()) {
+                    serializable->Read (header, serializer);
+                    return serializer;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Header version (%s) is greater then the Serializable version (%u).",
+                        header.version,
+                        serializable->Version ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -264,8 +296,16 @@ namespace thekogans {
             node >> header;
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable != nullptr) {
-                serializable->ReadXML (header, node);
-                return node;
+                if (header.version <= serializable->Version ()) {
+                    serializable->ReadXML (header, node);
+                    return node;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Header version (%s) is greater then the Serializable version (%u).",
+                        header.version,
+                        serializable->Version ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -281,8 +321,16 @@ namespace thekogans {
             object >> header;
             serializable = Serializable::CreateType (header.type.c_str ());
             if (serializable == nullptr) {
-                serializable->ReadJSON (header, object);
-                return object;
+                if (header.version <= serializable->Version ()) {
+                    serializable->ReadJSON (header, object);
+                    return object;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Header version (%s) is greater then the Serializable version (%u).",
+                        header.version,
+                        serializable->Version ());
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

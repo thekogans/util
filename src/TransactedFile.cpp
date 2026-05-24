@@ -396,15 +396,12 @@ namespace thekogans {
             if (IsOpen ()) {
                 if (registry != nullptr && registry->IsDirty ()) {
                     assert (allocator != nullptr);
-                    Allocator::PtrType registryOffset =
-                        allocator->Realloc (
-                            allocator->GetRegistryOffset (),
-                            UI32_SIZE + registry->GetSize ());
-                    if (allocator->GetRegistryOffset () != registryOffset) {
-                        allocator->SetRegistryOffset (registryOffset);
-                    }
-                    Seek (registryOffset, SEEK_SET);
-                    *this << MAGIC32 << *registry;
+                    std::size_t registrySize = UI32_SIZE + registry->GetSize ();
+                    allocator->SetRegistryOffset (
+                        allocator->Realloc (allocator->GetRegistryOffset (), registrySize));
+                    UnsafeWriteOnlyRange buffer (
+                        *this, allocator->GetRegistryOffset (), registrySize);
+                    buffer << MAGIC32 << *registry;
                     registry->SetDirty (false);
                 }
                 if (allocator != nullptr && allocator->IsDirty ()) {
@@ -511,13 +508,14 @@ namespace thekogans {
         void TransactedFile::Init () {
             if (allocator != nullptr) {
                 if (GetSize () == 0) {
-                    allocator->SetHeapStart (UI32_SIZE + allocator->GetSize ());
-                    Seek (0, SEEK_SET);
-                    *this << MAGIC32 << *allocator;
+                    std::size_t allocatorSize = UI32_SIZE + allocator->GetSize ();
+                    allocator->SetHeapStart (allocatorSize);
+                    UnsafeWriteOnlyRange buffer (*this, 0, allocatorSize);
+                    buffer << MAGIC32 << *allocator;
                 }
-                Seek (0, SEEK_SET);
+                UnsafeReadOnlyRange buffer (*this, 0, allocator->GetHeapStart ());
                 ui32 magic;
-                *this >> magic;
+                buffer >> magic;
                 if (magic == MAGIC32) {
                     // File is host endian.
                 }
@@ -531,7 +529,7 @@ namespace thekogans {
                         GetPath ().c_str ());
                 }
                 {
-                    ContextGuard guard (*this, SerializableHeader (), nullptr,
+                    ContextGuard guard (buffer, SerializableHeader (), nullptr,
                         [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
                             Allocator::SharedPtr allocator = dynamicCreatable;
                             if (allocator != nullptr) {
@@ -539,19 +537,20 @@ namespace thekogans {
                             }
                         }
                     );
-                    *this >> allocator;
+                    buffer >> allocator;
                 }
                 if (allocator->GetRegistryOffset () == 0 && registry != nullptr) {
-                    allocator->SetRegistryOffset (
-                        allocator->Alloc (UI32_SIZE + registry->GetSize ()));
-                    Seek (allocator->GetRegistryOffset (), SEEK_SET);
-                    *this << MAGIC32 << *registry;
+                    std::size_t registrySize = UI32_SIZE + registry->GetSize ();
+                    Allocator::PtrType registryOffset = allocator->Alloc (registrySize);
+                    allocator->SetRegistryOffset (registryOffset);
+                    UnsafeWriteOnlyRange (*this, registryOffset, registrySize);
+                    buffer << MAGIC32 << *registry;
                 }
                 if (allocator->GetRegistryOffset () != 0) {
-                    Seek (allocator->GetRegistryOffset (), SEEK_SET);
-                    *this >> magic;
+                    UnsafeBlockWriteOnlyRange (*this, allocator->GetRegistryOffset ());
+                    buffer >> magic;
                     if (magic == MAGIC32) {
-                        ContextGuard guard (*this, SerializableHeader (), nullptr,
+                        ContextGuard guard (buffer, SerializableHeader (), nullptr,
                             [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
                                 Registry::SharedPtr registry = dynamicCreatable;
                                 if (registry != nullptr) {
@@ -559,7 +558,7 @@ namespace thekogans {
                                 }
                             }
                         );
-                        *this >> registry;
+                        buffer >> registry;
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -568,7 +567,6 @@ namespace thekogans {
                     }
                 }
                 Flush ();
-                Seek (0, SEEK_SET);
             }
         }
 
