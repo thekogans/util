@@ -159,6 +159,8 @@ namespace thekogans {
             std::size_t btreeNodeFileSize;
 
         public:
+            static const std::size_t SIZE = Allocator::Header::SIZE + Header::SIZE;
+
             // NOTE: The following constants are meant to be tuned during
             // system integration to provide the best performance for your
             // needs.

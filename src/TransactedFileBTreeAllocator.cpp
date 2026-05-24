@@ -25,22 +25,8 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::TransactedFileBTreeAllocator,
             1,
-            TransactedFile::Allocator::Header::SIZE + TransactedFileBTreeAllocator::Header::SIZE,
+            TransactedFileBTreeAllocator::SIZE,
             TransactedFile::Allocator::TYPE)
-
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const TransactedFileBTreeAllocator::Header &header) {
-            serializer << header.btreeOffset << header.freeBTreeNodeOffset;
-            return serializer;
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                TransactedFileBTreeAllocator::Header &header) {
-            serializer >> header.btreeOffset >> header.freeBTreeNodeOffset;
-            return serializer;
-        }
 
         void TransactedFileBTreeAllocator::Block::Read (TransactedFile &file) {
             Allocator::Block::Read (file);
@@ -254,6 +240,13 @@ namespace thekogans {
             return offset;
         }
 
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                TransactedFileBTreeAllocator::Header &header) {
+            serializer >> header.btreeOffset >> header.freeBTreeNodeOffset;
+            return serializer;
+        }
+
         void TransactedFileBTreeAllocator::Read (
                 const SerializableHeader &header_,
                 Serializer &serializer) {
@@ -277,6 +270,13 @@ namespace thekogans {
                     "Corrupt TransactedFileBTreeAllocator file (%s).",
                     file->GetPath ().c_str ());
             }
+        }
+
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const TransactedFileBTreeAllocator::Header &header) {
+            serializer << header.btreeOffset << header.freeBTreeNodeOffset;
+            return serializer;
         }
 
         void TransactedFileBTreeAllocator::Write (Serializer &serializer) const {

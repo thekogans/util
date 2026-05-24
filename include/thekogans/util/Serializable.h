@@ -24,6 +24,7 @@
 #include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Flags.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/SerializableHeader.h"
@@ -56,6 +57,26 @@ namespace thekogans {
             /// to as new Serializable derivatives are added to the system.
             static void StaticInit ();
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+            /// \brief
+            /// Set if the internal cache is dirty.
+            static const ui32 FLAGS_DIRTY = 1;
+            /// \brief
+            /// Combination of the above flags.
+            Flags32 flags;
+
+            Serializable () :
+                flags (0) {}
+
+            inline bool IsDirty () const {
+                return flags.Test (FLAGS_DIRTY);
+            }
+            /// \brief
+            /// Set the dirty flag.
+            /// \param[in] dirty true == dirty, false == clean.
+            inline void SetDirty (bool dirty) {
+                flags.Set (FLAGS_DIRTY, dirty);
+            }
 
             /// \brief
             /// Given a context, return the header needed to insert this

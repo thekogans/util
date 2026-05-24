@@ -153,12 +153,12 @@ namespace thekogans {
         }
 
         void TransactedFile::SerializableObject::Read (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, context, factory);
+            Serializer::ContextGuard guard (serializer, context, factory, parameters);
             serializer >> object;
         }
 
         void TransactedFile::SerializableObject::Write (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, context, factory);
+            Serializer::ContextGuard guard (serializer, context, factory, parameters);
             serializer << *object;
         }
 

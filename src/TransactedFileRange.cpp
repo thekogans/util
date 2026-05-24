@@ -95,8 +95,7 @@ namespace thekogans {
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 ++file.stats.readOnlyOwnerRanges;
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-                file.Seek (offset, SEEK_SET);
-                file.Read (data, length);
+                file.ReadEx (offset, data, length);
             }
         }
 
@@ -141,8 +140,7 @@ namespace thekogans {
         TransactedFile::UnsafeWriteOnlyRange::~UnsafeWriteOnlyRange () {
             if (position > 0) {
                 if (owner) {
-                    file.Seek (offset, SEEK_SET);
-                    file.Write (data, position);
+                    file.WriteEx (offset, data, position);
                 }
                 else {
                     buffer->dirty = true;

@@ -22,23 +22,11 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::TransactedFileBTreeRegistry,
+            1,
+            TransactedFileBTreeRegistry::Header::SIZE,
             TransactedFile::Registry::TYPE)
-
-        void TransactedFileBTreeRegistry::Init (TransactedFile::SharedPtr file) {
-            btree.Reset (
-                new TransactedFileBTree (
-                    file,
-                    file->GetAllocator ()->GetRegistryOffset (),
-                    StringKey::GetContext (),
-                    SerializableHeader (),
-                    valueAsObject,
-                    entriesPerNode,
-                    nodesPerPage,
-                    allocator));
-            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
-        }
 
         Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             TransactedFileBTree::Iterator it;
@@ -57,6 +45,50 @@ namespace thekogans {
                     it.SetValue (value);
                 }
             }
+        }
+
+        inline Serializer &operator >> (
+                Serializer &serializer,
+                TransactedFileBTreeRegistry::Header &header) {
+            serializer >> header.btreeOffset;
+            return serializer;
+        }
+
+        void TransactedFileBTreeRegistry::Read (
+                const SerializableHeader & /*header*/,
+                Serializer &serializer) {
+            ui32 magic;
+            serializer >> magic;
+            if (magic == MAGIC32) {
+                serializer >> header;
+                btree.Reset (
+                    new TransactedFileBTree (
+                        file,
+                        header.btreeOffset,
+                        StringKey::GetContext (),
+                        SerializableHeader (),
+                        valueAsObject,
+                        entriesPerNode,
+                        nodesPerPage,
+                        allocator));
+                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt TransactedFileBTreeRegistry file (%s).",
+                    file->GetPath ().c_str ());
+            }
+        }
+
+        inline Serializer &operator << (
+                Serializer &serializer,
+                const TransactedFileBTreeRegistry::Header &header) {
+            serializer << header.btreeOffset;
+            return serializer;
+        }
+
+        void TransactedFileBTreeRegistry::Write (Serializer &serializer) const {
+            serializer << MAGIC32 << header;
         }
 
     } // namespace util

@@ -394,6 +394,9 @@ namespace thekogans {
 
         void TransactedFile::Flush () {
             if (IsOpen ()) {
+                if (registry != nullptr && registry->IsDirty ()) {
+                    assert (allocator != nullptr);
+                }
                 if (allocator != nullptr && allocator->IsDirty ()) {
                     Seek (UI32_SIZE, SEEK_SET);
                     SerializableHeader allocatorHeader;
@@ -498,7 +501,7 @@ namespace thekogans {
         void TransactedFile::Init () {
             if (allocator != nullptr) {
                 if (GetSize () == 0) {
-                    allocator->header.heapStart = UI32_SIZE + allocator->GetSize ();
+                    allocator->SetHeapStart (UI32_SIZE + allocator->GetSize ());
                     Seek (0, SEEK_SET);
                     *this << MAGIC32 << *allocator;
                 }
@@ -528,6 +531,33 @@ namespace thekogans {
                     );
                     *this >> allocator;
                 }
+                if (allocator->GetRegistryOffset () == 0 && registry != nullptr) {
+                    allocator->SetRegistryOffset (
+                        allocator->Alloc (UI32_SIZE + registry->GetSize ()));
+                    Seek (allocator->GetRegistryOffset (), SEEK_SET);
+                    *this << MAGIC32 << *registry;
+                }
+                if (allocator->GetRegistryOffset () != 0) {
+                    Seek (allocator->GetRegistryOffset (), SEEK_SET);
+                    *this >> magic;
+                    if (magic == MAGIC32) {
+                        ContextGuard guard (*this, SerializableHeader (), nullptr,
+                            [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                                Registry::SharedPtr regitry = dynamicCreatable;
+                                if (registry != nullptr) {
+                                    registry->file = this;
+                                }
+                            }
+                        );
+                        *this >> registry;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt TransactedFile file (%s).",
+                            GetPath ().c_str ());
+                    }
+                }
+                Flush ();
                 Seek (0, SEEK_SET);
             }
         }

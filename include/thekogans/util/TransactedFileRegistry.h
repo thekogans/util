@@ -22,9 +22,7 @@
 /// Registry provides global associative storage for \see{TransactedFile}
 /// clients. Use it to store and retrieve practically any value derived
 /// from \see{Serializable}. The key type is std::string.
-struct _LIB_THEKOGANS_UTIL_DECL Registry :
-        public DynamicCreatable,
-        public Subscriber<ObjectEvents> {
+struct _LIB_THEKOGANS_UTIL_DECL Registry : public Serializable {
     /// \brief
     /// Registry is a \see{DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Registry)
@@ -36,17 +34,17 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry :
     static void StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
+protected:
+    TransactedFile::SharedPtr file;
+
 public:
     /// \brief
     /// ctor.
     Registry () {}
 
-    /// \brief
-    /// Initialize the registry. Since registry is creaed before
-    /// the associated file, once the file is opened it calls
-    /// Init to create the link between it and the registry.
-    /// \param[in] file \see{TransactedFile} to associate the registry with.
-    virtual void Init (TransactedFile::SharedPtr /*file*/) = 0;
+    inline TransactedFile::SharedPtr GetFile () const {
+        return file;
+    }
 
     /// \brief
     /// Given a key, retrieve the associated value. If key is not found,
@@ -66,19 +64,9 @@ public:
         Serializable::SharedPtr /*value*/) = 0;
 
 protected:
-    // TransactedFile::ObjectEvents
     /// \brief
-    /// \see{Object} allocated a block in the file.
-    /// \param[in] object \see{Object} whose offset has become valid.
-    virtual void OnTransactedFileObjectAlloc (Object::SharedPtr object) noexcept override {
-        object->GetAllocator ()->SetRegistryOffset (object->GetOffset ());
-    }
-    /// \brief
-    /// \see{Object} freed its block.
-    /// \param[in] object \see{Object} whose offset has become invalid.
-    virtual void OnTransactedFileObjectFree (Object::SharedPtr object) noexcept override {
-        object->GetAllocator ()->SetRegistryOffset (0);
-    }
+    /// Needs access to file.
+    friend struct TransactedFile;
 
     /// \brief
     /// Registry is neither copy constructable, nor assignable.

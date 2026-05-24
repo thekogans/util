@@ -291,6 +291,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
             const Header &footer);
     };
 
+protected:
     TransactedFile::SharedPtr file;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
@@ -356,20 +357,15 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
             return flags.Test (FLAGS_SECURE);
         }
     } header;
-    /// \brief
-    /// Set if the internal cache is dirty.
-    static const ui32 FLAGS_DIRTY = 1;
-    /// \brief
-    /// Combination of the above flags.
-    Flags32 flags;
 
 public:
+    static const std::size_t SIZE = Header::SIZE;
+
     /// \brief
     /// ctor.
     /// \param[in] secure
     Allocator (bool secure = false) :
-        header (secure ? Header::FLAGS_SECURE : 0),
-        flags (0) {}
+        header (secure ? Header::FLAGS_SECURE : 0) {}
 
     /// \brief
     /// Minimum user data size.
@@ -399,12 +395,6 @@ public:
         return header.heapStart;
     }
     /// \brief
-    /// Return the offset of the first block in the heap.
-    /// \return Offset of the first block in the heap.
-    inline PtrType GetFirstBlockOffset () const {
-        return GetHeapStart () + Block::HEADER_SIZE;
-    }
-    /// \brief
     /// Return the pointer to the end of the heap.
     /// \return Pointer to the end of the heap.
     inline PtrType GetHeapEnd () const {
@@ -416,23 +406,6 @@ public:
     /// \return header.registryOffset;
     inline PtrType GetRegistryOffset () const {
         return header.registryOffset;
-    }
-    /// \brief
-    /// Set the header.registryOffset.
-    /// \param[in] registryOffset New registryOffset to set.
-    inline void SetRegistryOffset (PtrType registryOffset) {
-        header.registryOffset = registryOffset;
-        SetDirty (true);
-    }
-
-    inline bool IsDirty () const {
-        return flags.Test (FLAGS_DIRTY);
-    }
-    /// \brief
-    /// Set the dirty flag.
-    /// \param[in] dirty true == dirty, false == clean.
-    inline void SetDirty (bool dirty) {
-        flags.Set (FLAGS_DIRTY, dirty);
     }
 
     /// \brief
@@ -458,6 +431,21 @@ public:
         bool moveData = true) = 0;
 
 protected:
+    /// \brief
+    /// Set the header.heapStart.
+    /// \param[in] heapStart New heapStart to set.
+    inline void SetHeapStart (PtrType heapStart) {
+        header.heapStart = heapStart;
+        SetDirty (true);
+    }
+    /// \brief
+    /// Set the header.registryOffset.
+    /// \param[in] registryOffset New registryOffset to set.
+    inline void SetRegistryOffset (PtrType registryOffset) {
+        header.registryOffset = registryOffset;
+        SetDirty (true);
+    }
+
     // Serializable
     /// \brief
     /// Read the \see{Header} from the file.
@@ -469,8 +457,23 @@ protected:
     virtual void Write (Serializer &serializer) const override;
 
     /// \brief
-    /// Needs access to \see{Init}.
+    /// Needs access to file.
     friend struct TransactedFile;
+
+    /// \brief
+    /// Needs access to private members.
+    friend Serializer &operator << (
+        Serializer &serializer,
+        const Header &header);
+    /// \brief
+    /// Needs access to private members.
+    friend Serializer &operator >> (
+        Serializer &serializer,
+        Header &header);
+
+    /// \brief
+    /// Allocator is neither copy constructable, nor assignable.
+    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Allocator)
 };
 
 /// \struct TransactedFile::BlockReadOnlyRange TransactedFile.h

@@ -156,6 +156,9 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// dtor.
     virtual ~ObjectEvents () {}
 
+    virtual void OnTransactedFileObjectSetDirty (
+        RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+
     /// \brief
     /// \see{Object} allocated a block in the file.
     /// \param[in] object \see{Object} whose offset has become valid.
@@ -292,6 +295,9 @@ protected:
     /// \see{Serializable} creation factory.
     DynamicCreatable::FactoryType factory;
     /// \brief
+    /// \see{Serializable} creation factory.
+    DynamicCreatable::ParametersType parameters;
+    /// \brief
     /// The \see{Serializable} object itself.
     Serializable::SharedPtr object;
 
@@ -302,16 +308,19 @@ public:
     /// \param[in] offset
     /// \param[in] cotext_
     /// \param[in] factory_
+    /// \param[in] parameters_
     /// \param[in] object_
     SerializableObject (
         TransactedFile::SharedPtr file,
         TransactedFile::Allocator::PtrType offset = 0,
         const SerializableHeader &context_ = SerializableHeader (),
         DynamicCreatable::FactoryType factory_ = nullptr,
+        DynamicCreatable::ParametersType parameters_ = nullptr,
         Serializable::SharedPtr object_ = nullptr) :
         TransactedFile::Object (file, offset),
         context (context_),
         factory (factory_),
+        parameters (parameters_),
         object (object_) {}
 
     Serializable::SharedPtr GetObject ();
@@ -327,19 +336,22 @@ protected:
     }
 
     // TransactedFile::Object
+    virtual bool IsFixedSize () const override {
+        return object->ClassSize () != 0;
+    }
     /// \brief
-    /// Return value binary size (including the header).
-    /// \return Value binary size.
+    /// Return object binary size (including the header).
+    /// \return Object binary size.
     virtual std::size_t Size () const noexcept override {
         return object->GetSize (context);
     }
 
     /// \brief
-    /// Read the value from the given serializer.
-    /// \param[in] serializer Serializer to read the value from.
+    /// Read the object from the given serializer.
+    /// \param[in] serializer Serializer to read the object from.
     virtual void Read (Serializer &serializer) override;
     /// \brief
-    /// Write the value to the given serializer.
-    /// \param[out] serializer Serializer to write the value to.
+    /// Write the object to the given serializer.
+    /// \param[out] serializer Serializer to write the object to.
     virtual void Write (Serializer &serializer) override;
 };

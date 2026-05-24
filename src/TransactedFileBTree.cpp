@@ -715,6 +715,7 @@ namespace thekogans {
                         0,
                         header.valueContext,
                         valueFactory,
+                        nullptr,
                         value));
                 Node::Entry entry (key.Get (), valueObject.Get ());
                 Node::InsertResult result = root->Insert (entry, it);

@@ -797,6 +797,10 @@ namespace thekogans {
         /// Implement \see{TransactedFile::Allocator} extraction operators.
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::Allocator)
 
+        /// \brief
+        /// Implement \see{TransactedFile::Registry} extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::Registry)
+
         /// \struct SimpleTransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
