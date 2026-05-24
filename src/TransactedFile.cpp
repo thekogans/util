@@ -412,8 +412,10 @@ namespace thekogans {
                         buffer >> magic >> allocatorHeader;
                     }
                     {
+                        // Since allocator block is special (it's first and unresizable)...
                         UnsafeBlockWriteOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE);
                         buffer << MAGIC32 << allocatorHeader;
+                        // ...force the allocator to write a particular version of itself.
                         ContextGuard guard (buffer, allocatorHeader);
                         buffer << *allocator;
                     }
@@ -738,7 +740,8 @@ namespace thekogans {
                         File::Delete (logPath);
                     }
                     SetTransactionPending (false);
-                    if (allocator != nullptr && allocator->IsDirty ()) {
+                    if ((allocator != nullptr && allocator->IsDirty ()) ||
+                            (registry != nullptr && registry->IsDirty ())) {
                         Init ();
                     }
                     Produce (
