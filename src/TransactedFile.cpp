@@ -405,15 +405,17 @@ namespace thekogans {
                     registry->SetDirty (false);
                 }
                 if (allocator != nullptr && allocator->IsDirty ()) {
-                    Seek (UI32_SIZE, SEEK_SET);
                     SerializableHeader allocatorHeader;
                     {
-                        ContextGuard guard (*this);
-                        *this >> allocatorHeader;
+                        UnsafeBlockReadOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE);
+                        ui32 magic;
+                        buffer >> magic >> allocatorHeader;
                     }
                     {
-                        ContextGuard guard (*this, allocatorHeader);
-                        *this << *allocator;
+                        UnsafeBlockWriteOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE);
+                        buffer << MAGIC32 << allocatorHeader;
+                        ContextGuard guard (buffer, allocatorHeader);
+                        buffer << *allocator;
                     }
                     allocator->SetDirty (false);
                 }
@@ -509,11 +511,13 @@ namespace thekogans {
             if (allocator != nullptr) {
                 if (GetSize () == 0) {
                     std::size_t allocatorSize = UI32_SIZE + allocator->GetSize ();
-                    allocator->SetHeapStart (allocatorSize);
-                    UnsafeWriteOnlyRange buffer (*this, 0, allocatorSize);
+                    allocator->SetHeapStart (Allocator::Block::SIZE + allocatorSize);
+                    Allocator::Block block (Allocator::Block::HEADER_SIZE, 0, allocatorSize);
+                    block.Write (*this);
+                    UnsafeWriteOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE, allocatorSize);
                     buffer << MAGIC32 << *allocator;
                 }
-                UnsafeReadOnlyRange buffer (*this, 0, allocator->GetHeapStart ());
+                UnsafeBlockReadOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
@@ -541,13 +545,12 @@ namespace thekogans {
                 }
                 if (allocator->GetRegistryOffset () == 0 && registry != nullptr) {
                     std::size_t registrySize = UI32_SIZE + registry->GetSize ();
-                    Allocator::PtrType registryOffset = allocator->Alloc (registrySize);
-                    allocator->SetRegistryOffset (registryOffset);
-                    UnsafeWriteOnlyRange (*this, registryOffset, registrySize);
+                    allocator->SetRegistryOffset (allocator->Alloc (registrySize));
+                    UnsafeWriteOnlyRange buffer (*this, allocator->GetRegistryOffset (), registrySize);
                     buffer << MAGIC32 << *registry;
                 }
                 if (allocator->GetRegistryOffset () != 0) {
-                    UnsafeBlockWriteOnlyRange (*this, allocator->GetRegistryOffset ());
+                    UnsafeBlockReadOnlyRange buffer (*this, allocator->GetRegistryOffset ());
                     buffer >> magic;
                     if (magic == MAGIC32) {
                         ContextGuard guard (buffer, SerializableHeader (), nullptr,
