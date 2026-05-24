@@ -396,6 +396,16 @@ namespace thekogans {
             if (IsOpen ()) {
                 if (registry != nullptr && registry->IsDirty ()) {
                     assert (allocator != nullptr);
+                    Allocator::PtrType registryOffset =
+                        allocator->Realloc (
+                            allocator->GetRegistryOffset (),
+                            UI32_SIZE + registry->GetSize ());
+                    if (allocator->GetRegistryOffset () != registryOffset) {
+                        allocator->SetRegistryOffset (registryOffset);
+                    }
+                    Seek (registryOffset, SEEK_SET);
+                    *this << MAGIC32 << *registry;
+                    registry->SetDirty (false);
                 }
                 if (allocator != nullptr && allocator->IsDirty ()) {
                     Seek (UI32_SIZE, SEEK_SET);
