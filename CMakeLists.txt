@@ -61,7 +61,6 @@ target_sources(${PROJECT_NAME}
         src/3rdparty/zlib/zutil.c
         src/AlignedAllocator.cpp
         src/Allocator.cpp
-        src/BTreeValues.cpp
         src/Barrier.cpp
         src/Base64.cpp
         src/BitSet.cpp
@@ -70,6 +69,7 @@ target_sources(${PROJECT_NAME}
         src/ChildProcess.cpp
         src/CommandLineOptions.cpp
         src/Condition.cpp
+        src/Config.cpp
         src/Console.cpp
         src/ConsoleLogger.cpp
         src/CPU.cpp
@@ -118,6 +118,7 @@ target_sources(${PROJECT_NAME}
         src/Serializable.cpp
         src/SerializableHeader.cpp
         src/SerializableString.cpp
+        src/SerializableValues.cpp
         src/Serializer.cpp
         src/SHA1.cpp
         src/SHA2.cpp

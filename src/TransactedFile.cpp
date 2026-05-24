@@ -350,7 +350,7 @@ namespace thekogans {
                 DWORD dwCreationDisposition,
                 DWORD dwFlagsAndAttributes) {
             #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
+                i32 flags_,
                 i32 mode) {
             #endif // defined (TOOLCHAIN_OS_Windows)
             CommitLog (path);
@@ -362,7 +362,7 @@ namespace thekogans {
                 dwCreationDisposition,
                 dwFlagsAndAttributes);
         #else // defined (TOOLCHAIN_OS_Windows)
-            File::Open (path, flags, mode);
+            File::Open (path, flags_, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
             position = File::Tell ();
             sizeOnDisk = File::GetSize ();
@@ -553,7 +553,7 @@ namespace thekogans {
                     if (magic == MAGIC32) {
                         ContextGuard guard (*this, SerializableHeader (), nullptr,
                             [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
-                                Registry::SharedPtr regitry = dynamicCreatable;
+                                Registry::SharedPtr registry = dynamicCreatable;
                                 if (registry != nullptr) {
                                     registry->file = this;
                                 }
