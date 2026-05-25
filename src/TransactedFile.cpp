@@ -513,7 +513,6 @@ namespace thekogans {
             if (allocator != nullptr) {
                 if (GetSize () == 0) {
                     std::size_t allocatorSize = UI32_SIZE + allocator->GetSize ();
-                    allocator->SetHeapStart (Allocator::Block::SIZE + allocatorSize);
                     Allocator::Block block (Allocator::Block::HEADER_SIZE, 0, allocatorSize);
                     block.Write (*this);
                     UnsafeWriteOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE, allocatorSize);
@@ -540,6 +539,9 @@ namespace thekogans {
                             Allocator::SharedPtr allocator = dynamicCreatable;
                             if (allocator != nullptr) {
                                 allocator->file = this;
+                                allocator->heapStart =
+                                    Allocator::Block::SIZE +
+                                    Allocator::Block::GetSize (*this, Allocator::Block::HEADER_SIZE);
                             }
                         }
                     );

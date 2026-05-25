@@ -47,7 +47,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFileAllocator::Block::Header @"
+                    "Corrupt TransactedFile::Allocator::Block::Header @"
                     THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
@@ -88,7 +88,7 @@ namespace thekogans {
                 prev.header.Read (*allocator.GetFile (), prev.offset - HEADER_SIZE);
                 if (prev.header != footer) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFileAllocator::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
+                        "Corrupt TransactedFile::Allocator::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
                         " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT "\n"
                         " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
                         prev.offset,
@@ -145,7 +145,6 @@ namespace thekogans {
                 TransactedFile::Allocator::Header &header) {
             serializer >>
                 header.flags >>
-                header.heapStart >>
                 header.registryOffset;
             return serializer;
         }
@@ -180,7 +179,6 @@ namespace thekogans {
                 const TransactedFile::Allocator::Header &header) {
             serializer <<
                 header.flags <<
-                header.heapStart <<
                 header.registryOffset;
             return serializer;
         }

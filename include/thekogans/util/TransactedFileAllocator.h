@@ -293,6 +293,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
 
 protected:
     TransactedFile::SharedPtr file;
+    /// \brief
+    /// Points to the start of the heap (past the first block).
+    PtrType heapStart;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -312,9 +315,6 @@ protected:
         /// Heap flags.
         Flags32 flags;
         /// \brief
-        /// Points to the start of the heap past all the file bookkeeping.
-        PtrType heapStart;
-        /// \brief
         /// Contains the offset of the \see{Registry}.
         PtrType registryOffset;
         // NOTE: If you add new fields, adjust the SIZE and increment
@@ -328,7 +328,6 @@ protected:
         static const std::size_t SIZE =
             UI32_SIZE +     // magic
             UI32_SIZE +     // flags
-            PTR_TYPE_SIZE + // heapStart
             PTR_TYPE_SIZE;  // regisryOffset
 
         /// \brief
@@ -336,7 +335,6 @@ protected:
         /// \param[in] flags_ 0 or FLAGS_SECURE.
         Header (ui16 flags_ = 0) :
                 flags (flags_),
-                heapStart (0),
                 registryOffset (0) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
@@ -365,6 +363,7 @@ public:
     /// ctor.
     /// \param[in] secure
     Allocator (bool secure = false) :
+        heapStart (0),
         header (secure ? Header::FLAGS_SECURE : 0) {}
 
     /// \brief
@@ -392,7 +391,7 @@ public:
     /// Return the pointer to the start of the heap.
     /// \return Pointer to the start of the heap.
     inline PtrType GetHeapStart () const {
-        return header.heapStart;
+        return heapStart;
     }
     /// \brief
     /// Return the pointer to the end of the heap.
@@ -431,15 +430,6 @@ public:
         bool moveData = true) = 0;
 
 protected:
-    /// \brief
-    /// Set the header.heapStart.
-    /// \param[in] heapStart New heapStart to set.
-    inline void SetHeapStart (PtrType heapStart) {
-        if (header.heapStart != heapStart) {
-            header.heapStart = heapStart;
-            SetDirty (true);
-        }
-    }
     /// \brief
     /// Set the header.registryOffset.
     /// \param[in] registryOffset New registryOffset to set.
