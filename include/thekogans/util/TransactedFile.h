@@ -213,7 +213,8 @@ namespace thekogans {
             /// WARNING: Spent an hour chasing my tail looking for a stack
             /// overflow bug. Long story short, don't allocate buffers on
             /// the stack. They're too big.
-            struct Buffer {
+            struct Buffer : public RefCounted {
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Buffer)
                 /// \brief
                 /// Buffer has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
@@ -276,10 +277,8 @@ namespace thekogans {
             ///   Each index is used to access an internal tree node. (depth = 4).
             /// - The low order 32 bits are split in to a 12 bit index to access one
             ///   of 4K 20 bit, 4GB segment tiles (Buffer). (depth = 5)
-            struct Node {
-                /// \brief
-                /// dtor.
-                virtual ~Node () {}
+            struct Node : public RefCounted {
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
                 /// \brief
                 /// Delete the buffer cache.
@@ -311,7 +310,7 @@ namespace thekogans {
                 /// \param[in] segment If null, true == create \see{Segment},
                 /// otherwise create \see{Internal}
                 /// \retrun \see{Segment} or \see{Internal} node at index.
-                virtual Node *GetNode (
+                virtual Node::SharedPtr GetNode (
                     ui8 index,
                     bool segment = false) = 0;
             };
@@ -321,6 +320,7 @@ namespace thekogans {
             /// \brief
             /// Leaf node representing a 4GB chunk of the file.
             struct Segment : public Node {
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Segment)
                 /// \brief
                 /// Segment has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
@@ -330,16 +330,7 @@ namespace thekogans {
                 static const std::size_t BRANCHING_LEVEL = 0x00001000;
                 /// \brief
                 /// \see{Buffers} tiling the 4GB segment.
-                Buffer *buffers[BRANCHING_LEVEL];
-
-                /// \brief
-                /// ctor.
-                Segment () {
-                    SecureZeroMemory (buffers, sizeof (buffers));
-                }
-                /// \brief
-                /// dtor.
-                virtual ~Segment ();
+                Buffer::SharedPtr buffers[BRANCHING_LEVEL];
 
                 /// \brief
                 /// Delete the buffer cache.
@@ -366,20 +357,11 @@ namespace thekogans {
                 virtual bool SetSize (ui64 newSize) override;
                 /// \brief
                 /// We're a leaf. We don't have any children.
-                virtual Node *GetNode (
+                virtual Node::SharedPtr GetNode (
                         ui8 /*index*/,
                         bool /*segment*/ = false) override {
                     assert (0);
                     return nullptr;
-                }
-
-            private:
-                /// \brief
-                /// Delete a buffer at index.
-                /// \param[in] index Index of buffer to delete.
-                inline void DeleteBuffer (std::size_t index) {
-                    delete buffers[index];
-                    buffers[index] = nullptr;
                 }
             };
 
@@ -388,6 +370,7 @@ namespace thekogans {
             /// \brief
             /// Internal structure node representing 4G of 4GB segments.
             struct Internal : public Node {
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Internal)
                 /// \brief
                 /// Internal has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
@@ -399,16 +382,7 @@ namespace thekogans {
                 static const std::size_t BRANCHING_LEVEL = 0x00000100;
                 /// \brief
                 /// These are the internal 4G of 4GB segments.
-                Node *nodes[BRANCHING_LEVEL];
-
-                /// \brief
-                /// ctor.
-                Internal () {
-                    SecureZeroMemory (nodes, sizeof (nodes));
-                }
-                /// \brief
-                /// dtor.
-                virtual ~Internal ();
+                Node::SharedPtr nodes[BRANCHING_LEVEL];
 
                 /// \brief
                 /// Delete the buffer cache.
@@ -440,18 +414,9 @@ namespace thekogans {
                 /// \param[in] segment If null, true == create \see{Segment},
                 /// otherwise create \see{Internal}
                 /// \retrun \see{Segment} or \see{Internal} node at index.
-                virtual Node *GetNode (
+                virtual Node::SharedPtr GetNode (
                     ui8 index,
                     bool segment = false) override;
-
-            private:
-                /// \brief
-                /// Delete a node at index.
-                /// \param[in] index Index of node to delete.
-                inline void DeleteNode (std::size_t index) {
-                    delete nodes[index];
-                    nodes[index] = nullptr;
-                }
             } root;
             /// \brief
             /// Current buffer offset.
@@ -468,7 +433,7 @@ namespace thekogans {
             /// and access patterns. The less you Seek, the better your performance
             /// will be. To that end, you're highly encouraged to use \see{FileAllocator}
             /// and \see{FileAllocator::BlockBuffer}.
-            Buffer *currBuffer;
+            Buffer::SharedPtr currBuffer;
 
         public:
             #include "thekogans/util/TransactedFileRange.h"
@@ -775,7 +740,7 @@ namespace thekogans {
             /// Get the buffer that will cover the neighborhood around the given offset.
             /// \param[in] offset Offset whos buffer to return.
             /// \return Buffer that covers the neighborhood around the given offset.
-            Buffer *GetBuffer (ui64 offset);
+            Buffer::SharedPtr GetBuffer (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

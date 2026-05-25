@@ -53,24 +53,16 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
 
-        TransactedFile::Segment::~Segment () {
-            Delete ();
-        }
-
         void TransactedFile::Segment::Delete () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr) {
-                    DeleteBuffer (i);
-                }
+                buffers[i].Reset ();
             }
         }
 
         void TransactedFile::Segment::Clear () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr) {
-                    if (buffers[i]->dirty) {
-                        DeleteBuffer (i);
-                    }
+                if (buffers[i] != nullptr && buffers[i]->dirty) {
+                    buffers[i].Reset ();
                 }
             }
         }
@@ -79,25 +71,21 @@ namespace thekogans {
                 File &log,
                 ui64 &count) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr) {
-                    if (buffers[i]->dirty) {
-                        log << buffers[i]->offset << buffers[i]->length;
-                        log.Write (buffers[i]->data, buffers[i]->length);
-                        buffers[i]->dirty = false;
-                        ++count;
-                    }
+                if (buffers[i] != nullptr && buffers[i]->dirty) {
+                    log << buffers[i]->offset << buffers[i]->length;
+                    log.Write (buffers[i]->data, buffers[i]->length);
+                    buffers[i]->dirty = false;
+                    ++count;
                 }
             }
         }
 
         void TransactedFile::Segment::Flush (File &file) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr) {
-                    if (buffers[i]->dirty) {
-                        file.Seek (buffers[i]->offset, SEEK_SET);
-                        file.Write (buffers[i]->data, buffers[i]->length);
-                        buffers[i]->dirty = false;
-                    }
+                if (buffers[i] != nullptr && buffers[i]->dirty) {
+                    file.Seek (buffers[i]->offset, SEEK_SET);
+                    file.Write (buffers[i]->data, buffers[i]->length);
+                    buffers[i]->dirty = false;
                 }
             }
         }
@@ -106,13 +94,13 @@ namespace thekogans {
             for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
                 if (buffers[i] != nullptr) {
                     if (buffers[i]->offset > newSize) {
-                        DeleteBuffer (i);
+                        buffers[i].Reset ();
                     }
                     else {
                         if (buffers[i]->offset + buffers[i]->length > newSize) {
                             buffers[i]->length = newSize - buffers[i]->offset;
                             if (buffers[i]->length == 0) {
-                                DeleteBuffer (i);
+                                buffers[i].Reset ();
                             }
                         }
                         return false;
@@ -122,15 +110,9 @@ namespace thekogans {
             return true;
         }
 
-        TransactedFile::Internal::~Internal () {
-            Delete ();
-        }
-
         void TransactedFile::Internal::Delete () {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (nodes[i] != nullptr) {
-                    DeleteNode (i);
-                }
+                nodes[i].Reset ();
             }
         }
 
@@ -165,20 +147,20 @@ namespace thekogans {
                 if (nodes[i] != nullptr && !nodes[i]->SetSize (newSize)) {
                     return false;
                 }
-                DeleteNode (i);
+                nodes[i].Reset ();
             }
             return true;
         }
 
-        TransactedFile::Internal::Node *TransactedFile::Internal::GetNode (
+        TransactedFile::Internal::Node::SharedPtr TransactedFile::Internal::GetNode (
                 ui8 index,
                 bool segment) {
             if (nodes[index] == nullptr) {
                 if (segment) {
-                    nodes[index] = new Segment;
+                    nodes[index].Reset (new Segment);
                 }
                 else {
-                    nodes[index] = new Internal;
+                    nodes[index].Reset (new Internal);
                 }
             }
             return nodes[index];
@@ -200,7 +182,7 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        Buffer *buffer_ = GetBuffer (offset);
+                        Buffer::SharedPtr buffer_ = GetBuffer (offset);
                         std::size_t bufferOffset = offset - buffer_->offset;
                         std::size_t countToRead = MIN (buffer_->length - bufferOffset, count);
                         std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
@@ -239,7 +221,7 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        Buffer *buffer_ = GetBuffer (offset);
+                        Buffer::SharedPtr buffer_ = GetBuffer (offset);
                         std::size_t bufferOffset = offset - buffer_->offset;
                         if (buffer_->length < bufferOffset + count) {
                             buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
@@ -756,19 +738,19 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::Buffer *TransactedFile::GetBuffer (ui64 offset) {
+        TransactedFile::Buffer::SharedPtr TransactedFile::GetBuffer (ui64 offset) {
             ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
             if (currBufferOffset != bufferOffset) {
                 // --
                 ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
-                Node *internal = root.GetNode (
+                Node::SharedPtr internal = root.GetNode (
                     THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 0));
                 internal = internal->GetNode (
                     THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 1));
                 internal = internal->GetNode (
                     THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 2));
                 // Leafs are segments.
-                Segment *segment = (Segment *)internal->GetNode (
+                Segment::SharedPtr segment = internal->GetNode (
                     THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 3), true);
                 // -- We've just sparsely traversed the first 4
                 // layers of the 5 layer 64 bit index.
@@ -779,7 +761,7 @@ namespace thekogans {
                     ui64 bufferLength = MIN (
                         bufferOffset < size ? size - bufferOffset : 0,
                         Buffer::SIZE);
-                    segment->buffers[bufferIndex] = new Buffer (bufferOffset, bufferLength);
+                    segment->buffers[bufferIndex].Reset (new Buffer (bufferOffset, bufferLength));
                     if (bufferOffset < sizeOnDisk) {
                         File::Seek (bufferOffset, SEEK_SET);
                         File::Read (

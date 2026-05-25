@@ -97,7 +97,7 @@ private:
         std::size_t position;
         /// \brief
         /// TransactedFile::Buffer associated with this range.
-        TransactedFile::Buffer *buffer;
+        TransactedFile::Buffer::SharedPtr buffer;
         /// \brief
         /// true == We straddle a \see{Buffer} page boundary.
         /// We allocated data and need to copy and free it in
@@ -151,7 +151,7 @@ public:
     ///
     /// \brief
     /// UnsafeReadOnlyRange provides one directional extraction from a file.
-    /// It's unsafe because Read does absolutely no bounds checking.
+    /// It's unsafe because it does absolutely no bounds checking.
     struct _LIB_THEKOGANS_UTIL_DECL UnsafeReadOnlyRange : public Range {
         /// \brief
         /// ctor.
@@ -174,6 +174,7 @@ public:
     ///
     /// \brief
     /// ReadOnlyRange provides one directional extraction from a file.
+    /// It layers bounds checking on top of UnsafeReadOnlyRange ctor and Read.
     struct _LIB_THEKOGANS_UTIL_DECL ReadOnlyRange : public UnsafeReadOnlyRange {
         /// \brief
         /// ctor.
@@ -186,8 +187,10 @@ public:
             ui64 offset,
             std::size_t length,
             util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-            UnsafeReadOnlyRange (file, offset, length, allocator) {}
+            UnsafeReadOnlyRange (file, offset, MIN (length, file.GetSize () - offset), allocator) {}
 
+        /// \brief
+        /// Perform a safe read. Clamp count to the length of the range.
         virtual std::size_t Read (
             void *buffer,
             std::size_t count) override;

@@ -87,10 +87,6 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             ++file.stats.readOnlyRanges;
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ui64 available = file.GetSize () - offset;
-            if (length > available) {
-                length = available;
-            }
             if (owner) {
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 ++file.stats.readOnlyOwnerRanges;

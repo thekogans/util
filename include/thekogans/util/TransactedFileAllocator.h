@@ -22,17 +22,20 @@
 /// Allocator manages a heap on permanent storage. The heap physical
 /// layout looks like this:
 ///
-/// +--------+---------+-----+---------+
-/// | Header | Block 1 | ... | Block N |
-/// +--------+---------+-----+---------+
+/// +---------+-----+---------+
+/// | Block 1 | ... | Block N |
+/// +---------+-----+---------+
 ///
-/// Header            |<----- version 1 ------>|
-/// +-------+---------+-------+----------------+
-/// | magic | version | flags | registryOffset | + allocator spacific data.
-/// +-------+---------+-------+----------------+
-///     4        2        2            8
+/// Block 1 is special. It contains the \see{SerializableHeader} and \see{Allocator::Header}.
+/// This block is maintained in \see{TransactedFile::Init} and \see{TransactedFile::Flush}.
 ///
-/// Header::SIZE = 24 (version 1)
+/// Allocator::Header
+/// +-------+-------+----------------+
+/// | magic | flags | registryOffset | + allocator spacific data.
+/// +-------+-------+----------------+
+///     4       4           8
+///
+/// Header::SIZE = 16 (version 1)
 ///
 /// Block
 /// +--------+------+--------+
@@ -96,7 +99,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
     /// blocks.
     /// The drawback of this design is that every allocation has
     /// 32 bytes of overhead. Keep that in mind when designing
-    /// your objects.
+    /// your objects as this design favors fewer larger objects
+    /// over many smaller objects.
     struct _LIB_THEKOGANS_UTIL_DECL Block {
     protected:
         /// \brief
@@ -184,10 +188,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
 
         /// \brief
         /// ctor.
-        /// \param[in] offset_ Offset in the file where the Block resides.
+        /// \param[in] offset_ Block offset.
         /// \param[in] flags Combination of FLAGS_FREE and allocator specific flags.
-        /// \param[in] size Size of the block (not including the size
-        /// of the Block itself).
+        /// \param[in] size Block size (not including the size of the Block itself).
         Block (
             PtrType offset_ = 0,
             Flags32 flags = 0,
@@ -195,19 +198,24 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
             offset (offset_),
             header (flags, size) {}
 
+        /// \brief
+        /// Read the block from \see{TransactedFile} to get it's size.
+        /// \param[in] file \see{TransactedFile} containing the block.
+        /// \param[in] offset Block offset.
+        /// \return Block size.
         static ui64 GetSize (
             TransactedFile &file,
             PtrType offset);
 
         /// \brief
-        /// Return the offset.
-        /// \return Offset to the begining of the block.
+        /// Return the block offset.
+        /// \return Block offset.
         inline PtrType GetOffset () const {
             return offset;
         }
         /// \brief
-        /// Set offset to the given value.
-        /// \param[in] offset_ New offset value.
+        /// Set block offset.
+        /// \param[in] offset_ New block offset.
         inline void SetOffset (PtrType offset_) {
             offset = offset_;
         }
@@ -232,7 +240,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
             return header.size;
         }
         /// \brief
-        /// Set block size to the given value.
+        /// Set block size.
         /// \param[in] size New block size.
         inline void SetSize (ui64 size) {
             header.size = size;
@@ -246,6 +254,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         }
         /// \brief
         /// Return true if this is the last block in the heap.
+        /// \param[in] file \see{TransactedFile} where the block resides.
         /// \return true == last block in the heap.
         inline bool IsLast (TransactedFile &file) const {
             return GetOffset () + GetSize () + HEADER_SIZE == file.GetSize ();
@@ -253,6 +262,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
 
         /// \brief
         /// If not first, return the block right before this one.
+        /// \param[in] file \see{TransactedFile} where the block resides.
         /// \param[out] prev Where to put the previous block.
         /// \return true == prev contains previous block.
         /// false == we're the first block.
@@ -261,6 +271,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
             Block &prev) const;
         /// \brief
         /// If not last, return the block right after this one.
+        /// \param[in] file \see{TransactedFile} where the block resides.
         /// \param[out] next Where to put the next block.
         /// \return true == next contains the next block.
         /// false == we're the last block.
@@ -270,9 +281,11 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
 
         /// \brief
         /// Read the block.
+        /// \param[in] file \see{TransactedFile} where the block resides.
         void Read (TransactedFile &file);
         /// \brief
         /// Write the block.
+        /// \param[in] file \see{TransactedFile} where the block resides.
         void Write (TransactedFile &file) const;
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         /// \brief
@@ -281,6 +294,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// detection for free. By zeroing out the magic during \see{Free}
         /// the next time you access that block you get an exception
         /// instead of corrupted data.
+        /// \param[in] file \see{TransactedFile} where the block resides.
         void Invalidate (TransactedFile &file) const;
     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
@@ -354,11 +368,13 @@ protected:
     } header;
 
 public:
+    /// \brief
+    /// Allocaor size on disk.
     static const std::size_t SIZE = Header::SIZE;
 
     /// \brief
     /// ctor.
-    /// \param[in] secure
+    /// \param[in] secure true == Clear unused space in blocks.
     Allocator (bool secure = false) :
         header (secure ? Header::FLAGS_SECURE : 0) {}
 
@@ -372,6 +388,9 @@ public:
     /// allocate is 64 bytes.
     static const std::size_t MIN_BLOCK_SIZE = Block::SIZE + MIN_USER_DATA_SIZE;
 
+    /// \brief
+    /// Return the \see{TransactedFile}.
+    /// \return \see{TransactedFile}.
     inline TransactedFile::SharedPtr GetFile () const {
         return file;
     }
@@ -425,12 +444,15 @@ protected:
 
     // Serializable
     /// \brief
-    /// Read the \see{Header} from the file.
+    /// Read the \see{Header}.
+    /// \param[in] header_ \see{SerializableHeader} governing the underlying \see{Header}.
+    /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
     virtual void Read (
         const SerializableHeader &header_,
         Serializer &serializer) override;
     /// \brief
-    /// Write the \see{Header} to the file.
+    /// Write the \see{Header}.
+    /// \param[in] serializer \see{Serializer} to write the \see{Header} to.
     virtual void Write (Serializer &serializer) const override;
 
     /// \brief
@@ -453,8 +475,8 @@ protected:
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Allocator)
 };
 
-/// \struct TransactedFile::BlockReadOnlyRange TransactedFile.h
-/// thekogans/util/TransactedFile.h
+/// \struct TransactedFile::UnsafeBlockReadOnlyRange TransactedFileAllocator.h
+/// thekogans/util/TransactedFileAllocator.h
 ///
 /// \brief
 /// A convenience class which uses \see{Allocator::Block::GetSize} for
@@ -472,8 +494,8 @@ struct _LIB_THEKOGANS_UTIL_DECL UnsafeBlockReadOnlyRange : public UnsafeReadOnly
         UnsafeReadOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
 };
 
-/// \struct TransactedFile::BlockReadOnlyRange TransactedFile.h
-/// thekogans/util/TransactedFile.h
+/// \struct TransactedFile::BlockReadOnlyRange TransactedFileAllocator.h
+/// thekogans/util/TransactedFileAllocator.h
 ///
 /// \brief
 /// A convenience class which uses \see{Allocator::Block::GetSize} for
@@ -491,8 +513,8 @@ struct _LIB_THEKOGANS_UTIL_DECL BlockReadOnlyRange : public ReadOnlyRange {
         ReadOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
 };
 
-/// \struct TransactedFile::UnsafeBlockWriteOnlyRange TransactedFile.h
-/// thekogans/util/TransactedFile.h
+/// \struct TransactedFile::UnsafeBlockWriteOnlyRange TransactedFileAllocator.h
+/// thekogans/util/TransactedFileAllocator.h
 ///
 /// \brief
 /// A convenience class which uses \see{Allocator::Block::GetSize} for
@@ -510,8 +532,8 @@ struct _LIB_THEKOGANS_UTIL_DECL UnsafeBlockWriteOnlyRange : public UnsafeWriteOn
         UnsafeWriteOnlyRange (file, offset, Allocator::Block::GetSize (file, offset), allocator) {}
 };
 
-/// \struct TransactedFile::BlockWriteOnlyRange TransactedFile.h
-/// thekogans/util/TransactedFile.h
+/// \struct TransactedFile::BlockWriteOnlyRange TransactedFileAllocator.h
+/// thekogans/util/TransactedFileAllocator.h
 ///
 /// \brief
 /// A convenience class which uses \see{Allocator::Block::GetSize} for

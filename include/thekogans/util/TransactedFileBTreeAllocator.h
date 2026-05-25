@@ -38,8 +38,7 @@ namespace thekogans {
                 public TransactedFile::Allocator,
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
-            /// TransactedFileBTreeAllocator participates in the \see{DynamicCreatable}
-            /// dynamic discovery and creation.
+            /// TransactedFileBTreeAllocator is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeAllocator)
 
             /// \struct TransactedFileBTreeAllocator::Block TransactedFileBTreeAllocator.h
