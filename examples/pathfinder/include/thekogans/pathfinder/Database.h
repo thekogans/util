@@ -98,10 +98,6 @@ namespace thekogans {
 
             /// \brief
             /// Return the registry.
-            /// NOTE: Registry contains user defined types. These types
-            /// will need to read themselves from the file. We have to
-            /// create it outside the ctor to prevent potential deadlock
-            /// with database creation.
             /// \return registry.
             inline util::TransactedFile::Registry::SharedPtr GetRegistry () const {
                 return file->GetRegistry ();

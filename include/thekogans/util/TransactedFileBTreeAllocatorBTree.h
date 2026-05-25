@@ -15,18 +15,19 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-/// \struct TransactedFileBTreeAllocator::BTree TransactedFileBTreeAllocatorBTree.h thekogans/util/TransactedFileBTreeAllocatorBTree.h
+/// \struct TransactedFileBTreeAllocator::BTree TransactedFileBTreeAllocatorBTree.h
+/// thekogans/util/TransactedFileBTreeAllocatorBTree.h
 ///
 /// \brief
 /// BTree for managing \see{TransactedFileBTreeAllocator} free, random size block list.
 /// This class is private to and is only included in \see{TransactedFileBTreeAllocator}.
 /// This implementation is specifically tuned to act as \see{TransactedFileBTreeAllocator}
-/// free list manager. It's logic is subtly different from the general
-/// purpose \see{BTree} implementation. It has no need for values, just
-/// properly structured keys. Its search is also different as it results
-/// in near by entries being returned if they suit the need of an allocation.
-/// It's broken out in to its own file because TransactedFileBTreeAllocator.h was getting
-/// too big to maintain.
+/// free list manager. It's logic is subtly different from the general purpose
+/// \see{TransactedFileBTree} implementation. It has no need for values, just
+/// properly structured keys. Its search is also different as it results in near
+/// by entries being returned if they suit the need of an allocation. It's broken
+/// out in to its own file because TransactedFileBTreeAllocator.h was getting too
+/// big to maintain.
 struct BTree : public TransactedFile::Object {
     /// \brief
     /// Declare \see{RefCounted} pointers.
@@ -288,6 +289,7 @@ public:
     /// \brief
     /// ctor.
     /// \param[in] allocator_ \see{TransactedFileBTreeAllocator} to which this btree belongs.
+    /// \param[in] offset \see{Header} offset.
     /// \param[in] entriesPerNode If we're creating the heap, contains entries per
     /// \see{Node}. If we're reading an existing heap, this value will come from the
     /// \see{Header}.
