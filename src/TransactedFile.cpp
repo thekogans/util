@@ -540,9 +540,6 @@ namespace thekogans {
                             Allocator::SharedPtr allocator = dynamicCreatable;
                             if (allocator != nullptr) {
                                 allocator->file = this;
-                                allocator->heapStart =
-                                    Allocator::Block::SIZE +
-                                    Allocator::Block::GetSize (*this, Allocator::Block::HEADER_SIZE);
                             }
                         }
                     );

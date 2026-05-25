@@ -241,14 +241,14 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// \brief
         /// Return true if this is the first block in the heap.
         /// \return true == first block in the heap.
-        inline bool IsFirst (Allocator &allocator) const {
-            return GetOffset () == allocator.GetHeapStart () + HEADER_SIZE;
+        inline bool IsFirst () const {
+            return GetOffset () == HEADER_SIZE;
         }
         /// \brief
         /// Return true if this is the last block in the heap.
         /// \return true == last block in the heap.
-        inline bool IsLast (Allocator &allocator) const {
-            return GetOffset () + GetSize () + HEADER_SIZE == allocator.GetHeapEnd ();
+        inline bool IsLast (TransactedFile &file) const {
+            return GetOffset () + GetSize () + HEADER_SIZE == file.GetSize ();
         }
 
         /// \brief
@@ -257,7 +257,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// \return true == prev contains previous block.
         /// false == we're the first block.
         bool Prev (
-            Allocator &allocator,
+            TransactedFile &file,
             Block &prev) const;
         /// \brief
         /// If not last, return the block right after this one.
@@ -265,7 +265,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// \return true == next contains the next block.
         /// false == we're the last block.
         bool Next (
-            Allocator &allocator,
+            TransactedFile &file,
             Block &next) const;
 
         /// \brief
@@ -293,9 +293,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
 
 protected:
     TransactedFile::SharedPtr file;
-    /// \brief
-    /// Points to the start of the heap (past the first block).
-    PtrType heapStart;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -363,7 +360,6 @@ public:
     /// ctor.
     /// \param[in] secure
     Allocator (bool secure = false) :
-        heapStart (0),
         header (secure ? Header::FLAGS_SECURE : 0) {}
 
     /// \brief
@@ -385,19 +381,6 @@ public:
     /// \return true == secure.
     inline bool IsSecure () const {
         return header.IsSecure ();
-    }
-
-    /// \brief
-    /// Return the pointer to the start of the heap.
-    /// \return Pointer to the start of the heap.
-    inline PtrType GetHeapStart () const {
-        return heapStart;
-    }
-    /// \brief
-    /// Return the pointer to the end of the heap.
-    /// \return Pointer to the end of the heap.
-    inline PtrType GetHeapEnd () const {
-        return file->GetSize ();
     }
 
     /// \brief

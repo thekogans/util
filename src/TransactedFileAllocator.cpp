@@ -79,13 +79,13 @@ namespace thekogans {
         }
 
         bool TransactedFile::Allocator::Block::Prev (
-                Allocator &allocator,
+                TransactedFile &file,
                 Block &prev) const {
-            if (!IsFirst (allocator)) {
+            if (!IsFirst ()) {
                 Header footer;
-                footer.Read (*allocator.GetFile (), offset - SIZE);
+                footer.Read (file, offset - SIZE);
                 prev.offset = offset - SIZE - footer.size;
-                prev.header.Read (*allocator.GetFile (), prev.offset - HEADER_SIZE);
+                prev.header.Read (file, prev.offset - HEADER_SIZE);
                 if (prev.header != footer) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Corrupt TransactedFile::Allocator::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
@@ -101,11 +101,11 @@ namespace thekogans {
         }
 
         bool TransactedFile::Allocator::Block::Next (
-                Allocator &allocator,
+                TransactedFile &file,
                 Block &next) const {
-            if (!IsLast (allocator)) {
+            if (!IsLast (file)) {
                 next.offset = offset + header.size + SIZE;
-                next.Read (*allocator.GetFile ());
+                next.Read (file);
                 return true;
             }
             return false;
@@ -162,15 +162,13 @@ namespace thekogans {
                 if (header.IsBlockUsesMagic ()) {
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "This TransactedFile::Allocator file (%s) cannot be opened by this version of %s.",
-                        file->GetPath ().c_str (),
+                        "This TransactedFile::Allocator file cannot be opened by this version of %s.",
                         THEKOGANS_UTIL);
                 }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFile::Allocator file (%s).",
-                    file->GetPath ().c_str ());
+                    "Corrupt TransactedFile::Allocator file.");
             }
         }
 
