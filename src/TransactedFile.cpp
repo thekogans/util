@@ -388,17 +388,19 @@ namespace thekogans {
                     registry->SetDirty (false);
                 }
                 if (allocator != nullptr && allocator->IsDirty ()) {
+                    // Since allocator block is special (it's first and unresizable)...
                     SerializableHeader allocatorHeader;
                     {
+                        // ...extract the original SerializableHeader...
                         UnsafeBlockReadOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE);
-                        ui32 magic;
-                        buffer >> magic >> allocatorHeader;
+                        buffer.Advance (UI32_SIZE);
+                        buffer >> allocatorHeader;
                     }
                     {
-                        // Since allocator block is special (it's first and unresizable)...
                         UnsafeBlockWriteOnlyRange buffer (*this, Allocator::Block::HEADER_SIZE);
-                        buffer << MAGIC32 << allocatorHeader;
-                        // ...force the allocator to write a particular version of itself.
+                        buffer.Advance (UI32_SIZE + allocatorHeader.Size ());
+                        // ...and force the allocator to write that particular
+                        // version of itself so as not to overflow the first block.
                         ContextGuard guard (buffer, allocatorHeader);
                         buffer << *allocator;
                     }
