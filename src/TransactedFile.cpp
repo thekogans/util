@@ -395,6 +395,7 @@ namespace thekogans {
         void TransactedFile::Flush () {
             if (IsOpen ()) {
                 if (registry != nullptr && registry->IsDirty ()) {
+                    // Can't have a registry without an allocator.
                     assert (allocator != nullptr);
                     std::size_t registrySize = UI32_SIZE + registry->GetSize ();
                     allocator->SetRegistryOffset (
@@ -573,7 +574,6 @@ namespace thekogans {
                             GetPath ().c_str ());
                     }
                 }
-                Flush ();
             }
         }
 
