@@ -31,7 +31,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Block::Read (TransactedFile &file) {
             Allocator::Block::Read (file);
             if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::UnsafeReadOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
+                TransactedFile::Range buffer (file, offset, PTR_TYPE_SIZE);
                 buffer >> nextBTreeNodeOffset;
             }
         }
@@ -39,7 +39,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Block::Write (TransactedFile &file) const {
             Allocator::Block::Write (file);
             if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::UnsafeWriteOnlyRange buffer (file, offset, PTR_TYPE_SIZE);
+                TransactedFile::Range buffer (file, offset, PTR_TYPE_SIZE, false);
                 buffer << nextBTreeNodeOffset;
             }
         }
@@ -181,7 +181,7 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write (*file);
                         if (IsSecure ()) {
-                            TransactedFile::UnsafeWriteOnlyRange buffer (*file, clearOffset, clearLength);
+                            TransactedFile::Range buffer (*file, clearOffset, clearLength, false);
                             buffer.Advance (
                                 SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
                         }
@@ -213,9 +213,9 @@ namespace thekogans {
                 if (block.GetSize () < size) {
                     offset = Alloc (size);
                     if (moveData) {
-                        TransactedFile::UnsafeReadOnlyRange oldBuffer (
+                        TransactedFile::Range oldBuffer (
                             *file, block.GetOffset (), block.GetSize ());
-                        TransactedFile::UnsafeWriteOnlyRange buffer (*file, offset, size);
+                        TransactedFile::Range buffer (*file, offset, size, false);
                         buffer.Advance (
                             oldBuffer.Read (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
                         if (IsSecure ()) {

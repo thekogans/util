@@ -123,7 +123,7 @@ namespace thekogans {
         void TransactedFile::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            TransactedFile::UnsafeBlockWriteOnlyRange buffer (*file, GetOffset ());
+            TransactedFile::BlockRange buffer (*file, GetOffset (), false);
             Write (buffer);
             if (GetAllocator ()->IsSecure ()) {
                 buffer.Advance (
@@ -134,7 +134,7 @@ namespace thekogans {
         void TransactedFile::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                TransactedFile::UnsafeBlockReadOnlyRange buffer (*file, GetOffset ());
+                TransactedFile::BlockRange buffer (*file, GetOffset ());
                 Read (buffer);
             }
         }

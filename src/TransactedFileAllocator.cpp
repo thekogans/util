@@ -36,7 +36,7 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Read (
                 TransactedFile &file,
                 PtrType offset) {
-            UnsafeReadOnlyRange buffer (file, offset, SIZE);
+            Range buffer (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
             buffer >> magic;
@@ -57,7 +57,7 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Write (
                 TransactedFile &file,
                 PtrType offset) const {
-            UnsafeWriteOnlyRange buffer (file, offset, SIZE);
+            Range buffer (file, offset, SIZE, false);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             buffer << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -133,7 +133,7 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         void TransactedFile::Allocator::Block::Invalidate (TransactedFile &file) const {
-            UnsafeWriteOnlyRange buffer (file, offset - HEADER_SIZE, UI32_SIZE);
+            Range buffer (file, offset - HEADER_SIZE, UI32_SIZE, false);
             // Simply stepping on magic will invalidate
             // this block for all future reads.
             buffer << (ui32)0;

@@ -25,16 +25,26 @@ namespace thekogans {
                 TransactedFile &file_,
                 ui64 offset_,
                 std::size_t length_,
+                bool reading_,
                 util::Allocator::SharedPtr allocator_) :
-                Serializer (file_.endianness),
+                RandomSeekSerializer (file_.endianness),
                 file (file_),
                 offset (offset_),
                 length (length_),
+                reading (reading_),
                 allocator (allocator_),
                 data (nullptr),
                 position (0),
                 buffer (nullptr),
                 owner (false) {
+        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+            if (reading) {
+                ++file.stats.readOnlyRanges;
+            }
+            else {
+                ++file.stats.writeOnlyRanges;
+            }
+        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             buffer = file.GetBuffer (offset);
             std::size_t bufferOffset = offset - buffer->offset;
             // To us it maters not how long the actual block is.
@@ -45,6 +55,17 @@ namespace thekogans {
             if (length > Buffer::SIZE - bufferOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
+                if (reading) {
+                #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+                    ++file.stats.readOnlyOwnerRanges;
+                #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+                    file.ReadEx (offset, data, length);
+                }
+            #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+                else {
+                    ++file.stats.writeOnlyOwnerRanges;
+                }
+            #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
             else {
                 data = buffer->data + bufferOffset;
@@ -52,89 +73,7 @@ namespace thekogans {
         }
 
         TransactedFile::Range::~Range () {
-            if (owner) {
-                allocator->Free (data, length);
-            }
-        }
-
-        std::size_t TransactedFile::Range::Advance (std::size_t advance) {
-            std::size_t available = GetDataAvailable ();
-            if (advance > available) {
-                advance = available;
-            }
-            position += advance;
-            return advance;
-        }
-
-        std::size_t TransactedFile::Range::Read (
-               void *buffer,
-               std::size_t count) {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("WriteOnlyRange can't read.");
-        }
-
-        std::size_t TransactedFile::Range::Write (
-                const void *buffer,
-                std::size_t count) {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("ReadOnlyRange can't write.");
-        }
-
-        TransactedFile::UnsafeReadOnlyRange::UnsafeReadOnlyRange (
-                TransactedFile &file,
-                ui64 offset,
-                std::size_t length,
-                util::Allocator::SharedPtr allocator) :
-                Range (file, offset, length, allocator) {
-        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ++file.stats.readOnlyRanges;
-        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            if (owner) {
-            #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-                ++file.stats.readOnlyOwnerRanges;
-            #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-                file.ReadEx (offset, data, length);
-            }
-        }
-
-        std::size_t TransactedFile::UnsafeReadOnlyRange::Read (
-                void *buffer,
-                std::size_t count) {
-            std::memcpy (buffer, data + position, count);
-            position += count;
-            return count;
-        }
-
-        std::size_t TransactedFile::ReadOnlyRange::Read (
-                void *buffer,
-                std::size_t count) {
-            if (buffer != nullptr) {
-                std::size_t available = GetDataAvailable ();
-                if (count > available) {
-                    count = available;
-                }
-                return UnsafeReadOnlyRange::Read (buffer, count);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        TransactedFile::UnsafeWriteOnlyRange::UnsafeWriteOnlyRange (
-                TransactedFile &file,
-                ui64 offset,
-                std::size_t length,
-                util::Allocator::SharedPtr allocator) :
-                Range (file, offset, length, allocator) {
-        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ++file.stats.writeOnlyRanges;
-            if (owner) {
-                ++file.stats.writeOnlyOwnerRanges;
-            }
-        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-        }
-
-        TransactedFile::UnsafeWriteOnlyRange::~UnsafeWriteOnlyRange () {
-            if (position > 0) {
+            if (!reading && position > 0) {
                 if (owner) {
                     file.WriteEx (offset, data, position);
                 }
@@ -154,9 +93,25 @@ namespace thekogans {
                     }
                 }
             }
+            if (owner) {
+                allocator->Free (data, length);
+            }
         }
 
-        std::size_t TransactedFile::UnsafeWriteOnlyRange::Write (
+        std::size_t TransactedFile::Range::Advance (std::size_t advance) {
+            position += advance;
+            return advance;
+        }
+
+        std::size_t TransactedFile::Range::Read (
+               void *buffer,
+               std::size_t count) {
+            std::memcpy (buffer, data + position, count);
+            position += count;
+            return count;
+        }
+
+        std::size_t TransactedFile::Range::Write (
                 const void *buffer,
                 std::size_t count) {
             std::memcpy (data + position, buffer, count);
@@ -164,7 +119,48 @@ namespace thekogans {
             return count;
         }
 
-        std::size_t TransactedFile::WriteOnlyRange::Write (
+        i64 TransactedFile::Range::Seek (
+                i64 offset,
+                i32 fromWhere) {
+            switch (fromWhere) {
+                case SEEK_SET:
+                    position = offset;
+                    break;
+                case SEEK_CUR:
+                    position += offset;
+                    break;
+                case SEEK_END:
+                    position = (i64)length + offset;
+                    break;
+            }
+            return position;
+        }
+
+        std::size_t TransactedFile::SafeRange::Advance (std::size_t advance) {
+            std::size_t available = GetDataAvailable ();
+            if (advance > available) {
+                advance = available;
+            }
+            return Range::Advance (advance);
+        }
+
+        std::size_t TransactedFile::SafeRange::Read (
+                void *buffer,
+                std::size_t count) {
+            if (buffer != nullptr) {
+                std::size_t available = GetDataAvailable ();
+                if (count > available) {
+                    count = available;
+                }
+                return Range::Read (buffer, count);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        std::size_t TransactedFile::SafeRange::Write (
                 const void *buffer,
                 std::size_t count) {
             if (buffer != nullptr) {
@@ -172,7 +168,7 @@ namespace thekogans {
                 if (count > available) {
                     count = available;
                 }
-                return UnsafeWriteOnlyRange::Write (buffer, count);
+                return Range::Write (buffer, count);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

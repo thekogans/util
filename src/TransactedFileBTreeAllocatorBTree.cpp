@@ -96,7 +96,7 @@ namespace thekogans {
                 BTree &btree,
                 PtrType offset) {
             if (offset != 0) {
-                TransactedFile::UnsafeBlockReadOnlyRange buffer (*btree.file, offset);
+                TransactedFile::BlockRange buffer (*btree.file, offset);
                 ui32 magic;
                 buffer >> magic;
                 if (magic == MAGIC32) {
