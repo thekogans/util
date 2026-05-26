@@ -98,11 +98,6 @@ namespace thekogans {
             }
         }
 
-        std::size_t TransactedFile::Range::Advance (std::size_t advance) {
-            position += advance;
-            return advance;
-        }
-
         std::size_t TransactedFile::Range::Read (
                void *buffer,
                std::size_t count) {
@@ -136,14 +131,6 @@ namespace thekogans {
             return position;
         }
 
-        std::size_t TransactedFile::SafeRange::Advance (std::size_t advance) {
-            std::size_t available = GetDataAvailable ();
-            if (advance > available) {
-                advance = available;
-            }
-            return Range::Advance (advance);
-        }
-
         std::size_t TransactedFile::SafeRange::Read (
                 void *buffer,
                 std::size_t count) {
@@ -174,6 +161,38 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        i64 TransactedFile::SafeRange::Seek (
+                i64 offset,
+                i32 fromWhere) {
+            switch (fromWhere) {
+                case SEEK_SET:
+                    if (offset < 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                    }
+                    position = offset;
+                    break;
+                case SEEK_CUR:
+                    if (position + offset < 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                    }
+                    position += offset;
+                    break;
+                case SEEK_END:
+                    if ((i64)length + offset < 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
+                    }
+                    position = (i64)length + offset;
+                    break;
+                default:
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+            return position;
         }
 
     } // namespace util

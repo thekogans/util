@@ -121,24 +121,6 @@ public:
     /// dtor.
     virtual ~Range ();
 
-    /// \brief
-    /// Return the next location we will read/write from/to.
-    /// \return data at the next location we will read/write from/to.
-    inline ui8 *GetDataPtr () const {
-        return data + position;
-    }
-    /// \brief
-    /// Reurn the number of bytes till the end of the range.
-    /// \reurn Number of bytes till the end of the range.
-    inline std::size_t GetDataAvailable () const {
-        return length - position;
-    }
-    /// \brief
-    /// Advance position a given amount.
-    /// \param[in] advance Amount to advance (no backing up).
-    /// \return New position.
-    virtual std::size_t Advance (std::size_t advance);
-
     // Serializer
     virtual std::size_t Read (
         void *buffer,
@@ -162,6 +144,19 @@ public:
     virtual i64 Seek (
         i64 offset,
         i32 fromWhere) override;
+
+    /// \brief
+    /// Return the next location we will read/write from/to.
+    /// \return data at the next location we will read/write from/to.
+    inline ui8 *GetDataPtr () const {
+        return data + position;
+    }
+    /// \brief
+    /// Reurn the number of bytes till the end of the range.
+    /// \reurn Number of bytes till the end of the range.
+    inline std::size_t GetDataAvailable () const {
+        return length - position;
+    }
 };
 
 /// \struct TransactedFile::UnsafeReadOnlyRange TransactedFile.h thekogans/util/TransactedFile.h
@@ -189,8 +184,7 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
             reading,
             allocator) {}
 
-    virtual std::size_t Advance (std::size_t advance) override;
-
+    // Serializer
     /// \brief
     /// Perform a safe read. Clamp count to the length of the range.
     virtual std::size_t Read (
@@ -199,4 +193,14 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
     virtual std::size_t Write (
         const void *buffer,
         std::size_t count) override;
+
+    // RandomSeekSerializer
+    /// \brief
+    /// Reposition the serializer pointer.
+    /// \param[in] offset Offset to move relative to fromWhere.
+    /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
+    /// \return The new serializer pointer position.
+    virtual i64 Seek (
+        i64 offset,
+        i32 fromWhere) override;
 };

@@ -126,8 +126,9 @@ namespace thekogans {
             TransactedFile::BlockRange buffer (*file, GetOffset (), false);
             Write (buffer);
             if (GetAllocator ()->IsSecure ()) {
-                buffer.Advance (
-                    SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
+                buffer.Seek (
+                    SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()),
+                    SEEK_CUR);
             }
         }
 

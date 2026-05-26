@@ -182,8 +182,8 @@ namespace thekogans {
                         block.Write (*file);
                         if (IsSecure ()) {
                             TransactedFile::Range buffer (*file, clearOffset, clearLength, false);
-                            buffer.Advance (
-                                SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
+                            buffer.Seek (
+                                SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()), SEEK_CUR);
                         }
                     }
                     else {
@@ -216,11 +216,11 @@ namespace thekogans {
                         TransactedFile::Range oldBuffer (
                             *file, block.GetOffset (), block.GetSize ());
                         TransactedFile::Range buffer (*file, offset, size, false);
-                        buffer.Advance (
-                            oldBuffer.Read (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
+                        buffer.Seek (
+                            oldBuffer.Read (buffer.GetDataPtr (), buffer.GetDataAvailable ()), SEEK_CUR);
                         if (IsSecure ()) {
-                            buffer.Advance (
-                                SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()));
+                            buffer.Seek (
+                                SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()), SEEK_CUR);
                         }
                     }
                     Free (block.GetOffset ());

@@ -630,10 +630,11 @@ namespace thekogans {
                 if (GetAllocator ()->IsSecure ()) {
                     // Zero out the unused portion of the keyValueBuffer to
                     // prevent leaking sensitive data.
-                    keyValueBuffer.Advance (
+                    keyValueBuffer.Seek (
                         SecureZeroMemory (
                             keyValueBuffer.GetDataPtr (),
-                            keyValueBuffer.GetDataAvailable ()));
+                            keyValueBuffer.GetDataAvailable ()),
+                        SEEK_CUR);
                 }
             }
             else if (keyValueOffset != 0) {

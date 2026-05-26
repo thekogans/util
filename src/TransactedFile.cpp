@@ -392,12 +392,12 @@ namespace thekogans {
                     {
                         // ...extract the original SerializableHeader...
                         BlockRange buffer (*this, Allocator::Block::HEADER_SIZE);
-                        buffer.Advance (UI32_SIZE);
+                        buffer.Seek (UI32_SIZE, SEEK_CUR);
                         buffer >> allocatorHeader;
                     }
                     {
                         BlockRange buffer (*this, Allocator::Block::HEADER_SIZE, false);
-                        buffer.Advance (UI32_SIZE + allocatorHeader.Size ());
+                        buffer.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
                         // ...and force the allocator to write that particular
                         // version of itself so as not to overflow the first block.
                         ContextGuard guard (buffer, allocatorHeader);
