@@ -60,7 +60,11 @@ namespace thekogans {
             THEKOGANS_UTIL_TRY {
                 assert (flags);
                 Reload ();
-                SetFlag (FLAGS_DIRTY | FLAGS_DELETED, false);
+                SetDirty (false);
+                if (IsDeleted ()) {
+                    SetDeleted (false);
+                    Release ();
+                }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
@@ -69,21 +73,9 @@ namespace thekogans {
                 ui32 flag,
                 bool on) {
             ui32 oldFlags = flags.SetAll (flag, on);
-            if (oldFlags != flags) {
-                if (oldFlags == 0 && flags != 0) {
-                    Subscriber<TransactedFileEvents>::Subscribe (*file);
-                }
-                else if (oldFlags != 0 && flags == 0) {
-                    Subscriber<TransactedFileEvents>::Unsubscribe (*file);
-                }
+            if (oldFlags == 0 && flags != 0) {
+                Subscriber<TransactedFileEvents>::Subscribe (*file);
             }
-        }
-
-        TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
-            SetDirty (true);
-            Alloc ();
-            Flush ();
-            return GetOffset ();
         }
 
         void TransactedFile::Object::Alloc () {

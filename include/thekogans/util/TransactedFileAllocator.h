@@ -475,7 +475,7 @@ protected:
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Allocator)
 };
 
-/// \struct TransactedFile::UnsafeBlockReadOnlyRange TransactedFileAllocator.h
+/// \struct TransactedFile::BlockRange TransactedFileAllocator.h
 /// thekogans/util/TransactedFileAllocator.h
 ///
 /// \brief
@@ -486,6 +486,8 @@ struct _LIB_THEKOGANS_UTIL_DECL BlockRange : public Range {
     /// ctor.
     /// \param[in] file \see{TransactedFile} to buffer.
     /// \param[in] offset File offset.
+    /// \param[in] reading true == Range will be used for reading.
+    /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     BlockRange (
         TransactedFile &file,
@@ -495,7 +497,7 @@ struct _LIB_THEKOGANS_UTIL_DECL BlockRange : public Range {
         Range (file, offset, Allocator::Block::GetSize (file, offset), reading, allocator) {}
 };
 
-/// \struct TransactedFile::BlockReadOnlyRange TransactedFileAllocator.h
+/// \struct TransactedFile::SafeBlockRange TransactedFileAllocator.h
 /// thekogans/util/TransactedFileAllocator.h
 ///
 /// \brief
@@ -506,6 +508,8 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeBlockRange : public SafeRange {
     /// ctor.
     /// \param[in] file \see{TransactedFile} to buffer.
     /// \param[in] offset File offset.
+    /// \param[in] reading true == Range will be used for reading.
+    /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     SafeBlockRange (
         TransactedFile &file,

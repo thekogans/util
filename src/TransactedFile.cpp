@@ -43,10 +43,12 @@ namespace thekogans {
 
         TransactedFile::Transaction::~Transaction () {
             file->AbortTransaction ();
+            file->Unsubscribe ();
         }
 
         void TransactedFile::Transaction::Commit () {
             file->CommitTransaction ();
+            file->Unsubscribe ();
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Buffer)

@@ -214,6 +214,8 @@ namespace thekogans {
             /// overflow bug. Long story short, don't allocate buffers on
             /// the stack. They're too big.
             struct Buffer : public RefCounted {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Buffer)
                 /// \brief
                 /// Buffer has a private heap.
@@ -278,6 +280,8 @@ namespace thekogans {
             /// - The low order 32 bits are split in to a 12 bit index to access one
             ///   of 4K 20 bit, 4GB segment tiles (Buffer). (depth = 5)
             struct Node : public RefCounted {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
                 /// \brief
@@ -320,6 +324,8 @@ namespace thekogans {
             /// \brief
             /// Leaf node representing a 4GB chunk of the file.
             struct Segment : public Node {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Segment)
                 /// \brief
                 /// Segment has a private heap.
@@ -370,6 +376,8 @@ namespace thekogans {
             /// \brief
             /// Internal structure node representing 4G of 4GB segments.
             struct Internal : public Node {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Internal)
                 /// \brief
                 /// Internal has a private heap.
