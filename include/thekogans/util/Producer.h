@@ -21,6 +21,7 @@
 #include <functional>
 #include <unordered_map>
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/Array.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/RunLoop.h"
@@ -302,30 +303,36 @@ namespace thekogans {
             /// Produce an event for subscribers to consume.
             /// \param[in] event Event to deliver to all registered subscribers.
             void Produce (const typename EventDeliveryPolicy::Event &event) {
-                Subscribers subscribers_;
+                using SharedSubscriberInfo = std::pair<
+                    typename Subscriber<T>::SharedPtr,
+                    typename EventDeliveryPolicy::SharedPtr>;
+                Array<SharedSubscriberInfo> subscribers_;
+                std::size_t count = 0;
                 {
-                    // Copy the subscribers map in to a local
-                    // variable before delivering the event in case
-                    // they want to unsubscribe while processing it.
                     LockGuard<SpinLock> guard (spinLock);
-                    subscribers_ = subscribers;
-                }
-                for (typename Subscribers::iterator
-                        it = subscribers_.begin (),
-                        end = subscribers_.end (); it != end; ++it) {
-                    // NOTE: If we get a NULL pointer here it simply means
-                    // that that particular subscriber is in the porocess
-                    // of deallocating. It just hasn't removed itself from
-                    // our subscriber list (~Subscriber) in time for us to
-                    // include it in subscribers_ above. This race is unavoidable
-                    // but harmless. We want to preserve the right of the
-                    // \see{Subscriber} to be able to call back in to the
-                    // producer while processing a particular event.
-                    typename Subscriber<T>::SharedPtr subscriber =
-                        it->second.first.GetSharedPtr ();
-                    if (subscriber != nullptr) {
-                        it->second.second->DeliverEvent (event, subscriber);
+                    if (!subscribers.empty ()) {
+                        subscribers_.Resize (subscribers.size ());
+                        for (typename Subscribers::iterator
+                                it = subscribers.begin (),
+                                end = subscribers.end (); it != end; ++it) {
+                            // NOTE: If we get a NULL pointer here it simply means
+                            // that that particular subscriber is in the porocess
+                            // of deallocating. It just hasn't removed itself from
+                            // our subscriber list (~Subscriber) in time for us to
+                            // include it in subscribers_ above. This race is unavoidable
+                            // but harmless. We want to preserve the right of the
+                            // \see{Subscriber} to be able to call back in to the
+                            // producer while processing a particular event.
+                            typename Subscriber<T>::SharedPtr subscriber =
+                                it->second.first.GetSharedPtr ();
+                            if (subscriber != nullptr) {
+                                subscribers_[count++] = SharedSubscriberInfo (subscriber, it->second.second);
+                            }
+                        }
                     }
+                }
+                for (std::size_t i = 0; i < count; ++i) {
+                    subscribers_[i].second->DeliverEvent (event, subscribers_[i].first);
                 }
             }
 
