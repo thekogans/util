@@ -115,11 +115,11 @@ namespace thekogans {
         void TransactedFile::Object::Flush () {
             assert (IsDirty ());
             assert (GetOffset () != 0);
-            TransactedFile::BlockRange buffer (*file, GetOffset (), false);
-            Write (buffer);
+            TransactedFile::BlockRange range (*file, GetOffset (), false);
+            Write (range);
             if (GetAllocator ()->IsSecure ()) {
-                buffer.Seek (
-                    SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()),
+                range.Seek (
+                    SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
                     SEEK_CUR);
             }
         }
@@ -127,8 +127,8 @@ namespace thekogans {
         void TransactedFile::Object::Reload () {
             Reset ();
             if (GetOffset () != 0) {
-                TransactedFile::BlockRange buffer (*file, GetOffset ());
-                Read (buffer);
+                TransactedFile::BlockRange range (*file, GetOffset ());
+                Read (range);
             }
         }
 

@@ -337,11 +337,14 @@ public:
 protected:
     // TransactedFile::TransactionParticipant
     /// \brief
-    /// .
+    /// Allocate block for \see{Header} using \see{TransactedFileBTreeAllocator::AllocBTreeNode}.
     virtual void Alloc () override;
+    /// \brief
+    /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
+    /// Also free the \see{Node} hierarchy @root.
     virtual void Free () override;
     /// \brief
-    /// .
+    /// Compulsory implementation resetting to factory defaults.
     virtual void Reset () override;
 
     // TransactedFile::Object
@@ -352,10 +355,17 @@ protected:
         return true;
     }
     /// \brief
+    /// Our size is \see{Header::SIZE}.
     virtual std::size_t Size () const noexcept override {
         return Header::SIZE;
     }
+    /// \brief
+    /// Read \see{Header::SIZE}.
+    /// \param[in] serializer \see{Serializer} to read the header from.
     virtual void Read (Serializer &serializer) override;
+    /// \brief
+    /// Write \see{Header::SIZE}.
+    /// \param[in] serializer \see{Serializer} to write the header to.
     virtual void Write (Serializer &serializer) override;
 
     /// \brief

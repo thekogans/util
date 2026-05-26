@@ -31,16 +31,16 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::Block::Read (TransactedFile &file) {
             Allocator::Block::Read (file);
             if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::Range buffer (file, offset, PTR_TYPE_SIZE);
-                buffer >> nextBTreeNodeOffset;
+                TransactedFile::Range range (file, offset, PTR_TYPE_SIZE);
+                range >> nextBTreeNodeOffset;
             }
         }
 
         void TransactedFileBTreeAllocator::Block::Write (TransactedFile &file) const {
             Allocator::Block::Write (file);
             if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::Range buffer (file, offset, PTR_TYPE_SIZE, false);
-                buffer << nextBTreeNodeOffset;
+                TransactedFile::Range range (file, offset, PTR_TYPE_SIZE, false);
+                range << nextBTreeNodeOffset;
             }
         }
 
@@ -181,9 +181,9 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write (*file);
                         if (IsSecure ()) {
-                            TransactedFile::Range buffer (*file, clearOffset, clearLength, false);
-                            buffer.Seek (
-                                SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()), SEEK_CUR);
+                            TransactedFile::Range range (*file, clearOffset, clearLength, false);
+                            range.Seek (
+                                SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         }
                     }
                     else {
@@ -213,14 +213,14 @@ namespace thekogans {
                 if (block.GetSize () < size) {
                     offset = Alloc (size);
                     if (moveData) {
-                        TransactedFile::Range oldBuffer (
+                        TransactedFile::Range oldRange (
                             *file, block.GetOffset (), block.GetSize ());
-                        TransactedFile::Range buffer (*file, offset, size, false);
-                        buffer.Seek (
-                            oldBuffer.Read (buffer.GetDataPtr (), buffer.GetDataAvailable ()), SEEK_CUR);
+                        TransactedFile::Range range (*file, offset, size, false);
+                        range.Seek (
+                            oldRange.Read (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         if (IsSecure ()) {
-                            buffer.Seek (
-                                SecureZeroMemory (buffer.GetDataPtr (), buffer.GetDataAvailable ()), SEEK_CUR);
+                            range.Seek (
+                                SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         }
                     }
                     Free (block.GetOffset ());

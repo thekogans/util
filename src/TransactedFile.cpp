@@ -384,8 +384,8 @@ namespace thekogans {
                     std::size_t registrySize = UI32_SIZE + registry->GetSize ();
                     allocator->SetRegistryOffset (
                         allocator->Realloc (allocator->GetRegistryOffset (), registrySize));
-                    Range buffer (*this, allocator->GetRegistryOffset (), registrySize, false);
-                    buffer << MAGIC32 << *registry;
+                    Range range (*this, allocator->GetRegistryOffset (), registrySize, false);
+                    range << MAGIC32 << *registry;
                     registry->SetDirty (false);
                 }
                 if (allocator != nullptr && allocator->IsDirty ()) {
@@ -393,17 +393,17 @@ namespace thekogans {
                     SerializableHeader allocatorHeader;
                     {
                         // ...extract the original SerializableHeader...
-                        BlockRange buffer (*this, Allocator::Block::HEADER_SIZE);
-                        buffer.Seek (UI32_SIZE, SEEK_CUR);
-                        buffer >> allocatorHeader;
+                        BlockRange range (*this, Allocator::Block::HEADER_SIZE);
+                        range.Seek (UI32_SIZE, SEEK_CUR);
+                        range >> allocatorHeader;
                     }
                     {
-                        BlockRange buffer (*this, Allocator::Block::HEADER_SIZE, false);
-                        buffer.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
+                        BlockRange range (*this, Allocator::Block::HEADER_SIZE, false);
+                        range.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
                         // ...and force the allocator to write that particular
                         // version of itself so as not to overflow the first block.
-                        ContextGuard guard (buffer, allocatorHeader);
-                        buffer << *allocator;
+                        ContextGuard guard (range, allocatorHeader);
+                        range << *allocator;
                     }
                     allocator->SetDirty (false);
                 }
@@ -501,12 +501,12 @@ namespace thekogans {
                     std::size_t allocatorSize = UI32_SIZE + allocator->GetSize ();
                     Allocator::Block block (Allocator::Block::HEADER_SIZE, 0, allocatorSize);
                     block.Write (*this);
-                    Range buffer (*this, Allocator::Block::HEADER_SIZE, allocatorSize, false);
-                    buffer << MAGIC32 << *allocator;
+                    Range range (*this, Allocator::Block::HEADER_SIZE, allocatorSize, false);
+                    range << MAGIC32 << *allocator;
                 }
-                BlockRange buffer (*this, Allocator::Block::HEADER_SIZE);
+                BlockRange range (*this, Allocator::Block::HEADER_SIZE);
                 ui32 magic;
-                buffer >> magic;
+                range >> magic;
                 if (magic == MAGIC32) {
                     // File is host endian.
                 }
@@ -520,7 +520,7 @@ namespace thekogans {
                         GetPath ().c_str ());
                 }
                 {
-                    ContextGuard guard (buffer, SerializableHeader (), nullptr,
+                    ContextGuard guard (range, SerializableHeader (), nullptr,
                         [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
                             Allocator::SharedPtr allocator = dynamicCreatable;
                             if (allocator != nullptr) {
@@ -528,19 +528,19 @@ namespace thekogans {
                             }
                         }
                     );
-                    buffer >> allocator;
+                    range >> allocator;
                 }
                 if (allocator->GetRegistryOffset () == 0 && registry != nullptr) {
                     std::size_t registrySize = UI32_SIZE + registry->GetSize ();
                     allocator->SetRegistryOffset (allocator->Alloc (registrySize));
-                    Range buffer (*this, allocator->GetRegistryOffset (), registrySize, false);
-                    buffer << MAGIC32 << *registry;
+                    Range range (*this, allocator->GetRegistryOffset (), registrySize, false);
+                    range << MAGIC32 << *registry;
                 }
                 if (allocator->GetRegistryOffset () != 0) {
-                    BlockRange buffer (*this, allocator->GetRegistryOffset ());
-                    buffer >> magic;
+                    BlockRange range (*this, allocator->GetRegistryOffset ());
+                    range >> magic;
                     if (magic == MAGIC32) {
-                        ContextGuard guard (buffer, SerializableHeader (), nullptr,
+                        ContextGuard guard (range, SerializableHeader (), nullptr,
                             [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
                                 Registry::SharedPtr registry = dynamicCreatable;
                                 if (registry != nullptr) {
@@ -548,7 +548,7 @@ namespace thekogans {
                                 }
                             }
                         );
-                        buffer >> registry;
+                        range >> registry;
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

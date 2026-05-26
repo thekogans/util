@@ -36,13 +36,13 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Read (
                 TransactedFile &file,
                 PtrType offset) {
-            Range buffer (file, offset, SIZE);
+            Range range (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
-            buffer >> magic;
+            range >> magic;
             if (magic == MAGIC32) {
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-                buffer >> flags >> size;
+                range >> flags >> size;
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             }
             else {
@@ -57,11 +57,11 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Header::Write (
                 TransactedFile &file,
                 PtrType offset) const {
-            Range buffer (file, offset, SIZE, false);
+            Range range (file, offset, SIZE, false);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            buffer << MAGIC32;
+            range << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            buffer << flags << size;
+            range << flags << size;
         }
 
         inline bool operator != (
@@ -133,10 +133,10 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         void TransactedFile::Allocator::Block::Invalidate (TransactedFile &file) const {
-            Range buffer (file, offset - HEADER_SIZE, UI32_SIZE, false);
+            Range range (file, offset - HEADER_SIZE, UI32_SIZE, false);
             // Simply stepping on magic will invalidate
             // this block for all future reads.
-            buffer << (ui32)0;
+            range << (ui32)0;
         }
     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 

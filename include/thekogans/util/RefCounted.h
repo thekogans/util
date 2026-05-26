@@ -235,6 +235,16 @@ namespace thekogans {
                 /// \brief
                 /// Polymorphic copy ctor.
                 /// \param[in] ptr Pointer to copy.
+                /// ********* VERY IMPORTANT *********
+                /// This ctor is both a blessing and a curse. On one hand it alows you to
+                /// polymorphicaly assign one SharedPtr to another. And that's fantastic
+                /// as it eliminates a lot of code clutter. But on the other hand it alows
+                /// you to assign ANY SharedPtr to ANY other. And that can make for some
+                /// hard to spot bugs. That dynamic_cast is there for a reason. If ptr.object
+                /// has no relationship to T *, nullptr is the best we can do. I thought about
+                /// it's design long and hard and in the end decided to leave it in for it's
+                /// sheer utility.
+                /// **********************************
                 template<typename _U>
                 SharedPtr (const SharedPtr<_U> &ptr) :
                         object (nullptr) {
@@ -279,6 +289,9 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Polymorphic assignemnet operator.
+                /// ********* VERY IMPORTANT *********
+                /// Same warning applies as with the polymorphic ctor above.
+                /// **********************************
                 /// \param[in] ptr Pointer to copy.
                 /// \return *this.
                 template<typename _U>
@@ -317,10 +330,19 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Release the object without calling object->Release ().
+                /// \param[in] object_ New object to point to.
+                /// \param[in] addRef true == take out a new reference on the passed in object,
+                /// false == this object was probably Release(d) by another SharedPtr.
                 /// \return T *.
-                inline T *Release () {
-                    T *object_ = nullptr;
-                    return EXCHANGE (object, object_);
+                inline T *Release (
+                        T *object_ = nullptr,
+                        bool addRef = true) {
+                    T *oldObject = object;
+                    object = object_;
+                    if (object != nullptr && addRef) {
+                        object->AddRef ();
+                    }
+                    return oldObject;
                 }
 
                 /// \brief

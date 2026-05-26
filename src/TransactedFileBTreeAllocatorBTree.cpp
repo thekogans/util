@@ -96,19 +96,19 @@ namespace thekogans {
                 BTree &btree,
                 PtrType offset) {
             if (offset != 0) {
-                TransactedFile::BlockRange buffer (*btree.file, offset);
+                TransactedFile::BlockRange range (*btree.file, offset);
                 ui32 magic;
-                buffer >> magic;
+                range >> magic;
                 if (magic == MAGIC32) {
                     ui32 count;
-                    buffer >> count;
+                    range >> count;
                     if (count > 0) {
                         PtrType leftOffset;
-                        buffer >> leftOffset;
+                        range >> leftOffset;
                         FreeSubtree (btree, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
                             PtrType rightOffset;
-                            buffer >> rightOffset;
+                            range >> rightOffset;
                             FreeSubtree (btree, rightOffset);
                         }
                     }
