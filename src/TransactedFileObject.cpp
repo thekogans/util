@@ -34,7 +34,7 @@ namespace thekogans {
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 if (phase == COMMIT_PHASE_1) {
-                    assert (IsDeleted () || IsDirty ());
+                    assert (IsDirty () || IsDeleted ());
                     if (IsDeleted ()) {
                         Free ();
                     }
@@ -58,9 +58,11 @@ namespace thekogans {
         void TransactedFile::TransactionParticipant::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
-                assert (flags);
-                Reload ();
-                SetDirty (false);
+                assert (IsDirty () || IsDeleted ());
+                if (IsDirty ()) {
+                    Reload ();
+                    SetDirty (false);
+                }
                 if (IsDeleted ()) {
                     SetDeleted (false);
                     Release ();
