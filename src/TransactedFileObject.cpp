@@ -59,10 +59,8 @@ namespace thekogans {
                 TransactedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
                 assert (IsDirty () || IsDeleted ());
-                if (IsDirty ()) {
-                    Reload ();
-                    SetDirty (false);
-                }
+                Reload ();
+                SetDirty (false);
                 if (IsDeleted ()) {
                     SetDeleted (false);
                     Release ();
