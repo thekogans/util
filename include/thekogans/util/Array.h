@@ -132,7 +132,7 @@ namespace thekogans {
                     T *array_ = nullptr;
                     if (length_ > 0) {
                         array_ = (T *)allocator_->Alloc (length_ * sizeof (T));
-                        if (array != nullptr) {
+                        if (array_ != nullptr) {
                             std::size_t i = 0;
                             for (std::size_t count =
                                     MIN (length_, (std::size_t)length.value); i < count; ++i) {
