@@ -306,6 +306,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
     };
 
 protected:
+    /// \brief
+    /// \see{TransactedFile} this allocator is servicing.
     TransactedFile::SharedPtr file;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h

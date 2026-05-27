@@ -69,13 +69,27 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void TransactedFile::TransactionParticipant::SetFlag (
+        bool TransactedFile::TransactionParticipant::SetFlag (
                 ui32 flag,
                 bool on) {
-            ui32 oldFlags = flags.SetAll (flag, on);
-            if (oldFlags == 0 && flags != 0) {
+            bool oldFlag = flags.Set (flag, on);
+            if (!oldFlag && on) {
                 Subscriber<TransactedFileEvents>::Subscribe (*file);
+                return true;
             }
+            return false;
+        }
+
+        bool TransactedFile::Object::SetDirty (bool dirty) {
+            if (TransactionParticipant::SetDirty (dirty)) {
+                Produce (
+                    std::bind (
+                        &ObjectEvents::OnTransactedFileObjectDirty,
+                        std::placeholders::_1,
+                        this));
+                return true;
+            }
+            return false;
         }
 
         void TransactedFile::Object::Alloc () {
@@ -134,25 +148,25 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::SerializableObject)
 
-        Serializable::SharedPtr TransactedFile::SerializableObject::GetObject () {
-            if (object == nullptr) {
+        Serializable::SharedPtr TransactedFile::SerializableObject::GetSerializable () {
+            if (serializable == nullptr) {
                 Reload ();
             }
-            return object;
+            return serializable;
         }
 
-        void TransactedFile::SerializableObject::SetObject (Serializable::SharedPtr object_) {
-            object = object_;
+        void TransactedFile::SerializableObject::SetSerializable (Serializable::SharedPtr serializable_) {
+            serializable = serializable_;
         }
 
         void TransactedFile::SerializableObject::Read (Serializer &serializer) {
             Serializer::ContextGuard guard (serializer, context, factory, parameters);
-            serializer >> object;
+            serializer >> serializable;
         }
 
         void TransactedFile::SerializableObject::Write (Serializer &serializer) {
             Serializer::ContextGuard guard (serializer, context, factory, parameters);
-            serializer << *object;
+            serializer << *serializable;
         }
 
     } // namespace util

@@ -65,9 +65,14 @@ namespace thekogans {
             /// Combination of the above flags.
             Flags32 flags;
 
+            /// \brief
+            /// ctor.
             Serializable () :
                 flags (0) {}
 
+            /// \brief
+            /// Return true if internal cache is dirty.
+            /// \return true == internal cache is dirty.
             inline bool IsDirty () const {
                 return flags.Test (FLAGS_DIRTY);
             }
@@ -112,13 +117,15 @@ namespace thekogans {
             }
             /// \brief
             /// Read the serializable from the given serializer.
-            /// \param[in] header
+            /// \param[in] header \see{SerializableHeader} governing the stored data.
             /// \param[in] serializer Serializer to read the serializable from.
             virtual void Read (
                 const SerializableHeader & /*header*/,
                 Serializer & /*serializer*/) = 0;
             /// \brief
             /// Write the serializable to the given serializer.
+            /// IMPORTANT: You must use the \see{Serializer::context} to determine
+            /// the version and the amount of space you have to write.
             /// \param[out] serializer Serializer to write the serializable to.
             virtual void Write (Serializer & /*serializer*/) const = 0;
 

@@ -70,8 +70,14 @@ public:
     /// \brief
     /// Set the dirty flag, preserving the state of the deleted flag.
     /// \param[in] dirty true == dirty, false == clean.
-    inline void SetDirty (bool dirty) {
-        SetFlag (FLAGS_DIRTY, dirty);
+    /// \return true == the state has transitioned from clean to dirty.
+    /// IMPORTANT SEMANTICS: SetDirty will return true only on the transition
+    /// from !dirty to dirty. Subsequint calls to SetDirty (true) while
+    /// already dirty will return false. This is meant so that derivatives
+    /// of TransactionParticipant can call SetDirty and perform whatever
+    /// one time transition processing they need (See \see{Object} below).
+    virtual bool SetDirty (bool dirty) {
+        return SetFlag (FLAGS_DIRTY, dirty);
     }
 
     /// \brief
@@ -128,9 +134,13 @@ private:
         SetFlag (FLAGS_DELETED, deleted);
     }
     /// \brief
-    /// Set the flags.
-    /// \param[in] flags_ New flags value.
-    void SetFlag (
+    /// Set a flag. Helper for SetDirty and Delete to automaticaly
+    /// subscribe to \see{TransactedFileEvents}.
+    /// \param[in] flag Flag to set/clear.
+    /// \param[in] on New flag value.
+    /// \return true == the given flag transitioned from !on to on.
+    /// If the flag was already on or on == false, return false.
+    bool SetFlag (
         ui32 flag,
         bool on);
 
@@ -156,21 +166,22 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// dtor.
     virtual ~ObjectEvents () {}
 
-    virtual void OnTransactedFileObjectSetDirty (
+    /// \brief
+    /// \see{Object} became dirty.
+    /// \param[in] object \see{Object} that became dirty.
+    virtual void OnTransactedFileObjectDirty (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 
     /// \brief
     /// \see{Object} allocated a block in the file.
     /// \param[in] object \see{Object} whose offset has become valid.
-    /// VERY IMPORTANT SEMANTICS: When you get this notification,
-    /// object->GetOffset () will tell you which block has been freed.
     virtual void OnTransactedFileObjectAlloc (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
     /// \brief
     /// \see{Object} freed its file block.
     /// \param[in] object \see{Object} whose offset has become invalid.
     /// VERY IMPORTANT SEMANTICS: When you get this notification,
-    /// object->GetOffset () will tell you which block has been allocated.
+    /// object->GetOffset () will still point to the old offset (which been freed).
     virtual void OnTransactedFileObjectFree (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 };
@@ -196,7 +207,7 @@ public:
     /// \brief
     /// ctor.
     /// \param[in] file \see{TransactedFile} where this object resides.
-    /// \param[in] offset_ Offset of the \see{Allocator::Block}.
+    /// \param[in] offset_ Offset of the \see{TransactedFile::Allocator::Block}.
     Object (
         TransactedFile::SharedPtr file,
         Allocator::PtrType offset_ = 0) :
@@ -207,10 +218,10 @@ public:
     virtual ~Object () {}
 
     /// \brief
-    /// Return the file.
-    /// \return file.
+    /// Return the \see{TransactedFile::Allocator}.
+    /// \return \see{TransactedFile::Allocator}.
     inline Allocator::SharedPtr GetAllocator () const {
-        return file->allocator;
+        return file->GetAllocator ();
     }
 
     /// \brief
@@ -220,7 +231,26 @@ public:
         return offset;
     }
 
+    // TransactedFile::TransactionParticipant
+    virtual bool SetDirty (bool dirty) override;
+
 protected:
+    /// \brief
+    /// If needed allocate space from \see{TransactedFile::Allocator}.
+    virtual void Alloc () override;
+    /// \brief
+    /// Default free implementation for single block objects.
+    /// If your objects contain internal pointers to other
+    /// blocks you will need to implement this method and
+    /// properly free the containing blocks.
+    virtual void Free () override;
+    /// \brief
+    /// Flush the internal cache to file.
+    virtual void Flush () override;
+    /// \brief
+    /// Reload the internal cache from file.
+    virtual void Reload () override;
+
     /// \brief
     /// Optimization for Alloc below. If an object declares
     /// itself as fixed size, Alloc will not check the object
@@ -236,30 +266,13 @@ protected:
     virtual std::size_t Size () const noexcept = 0;
 
     /// \brief
-    /// Write the serializable from the given serializer.
-    /// \param[in] serializer Serializer to read the serializable from.
+    /// Read the object from the given serializer.
+    /// \param[in] serializer Serializer to read the object from.
     virtual void Read (Serializer & /*serializer*/) = 0;
     /// \brief
-    /// Write the serializable to the given serializer.
-    /// \param[out] serializer Serializer to write the serializable to.
+    /// Write the object to the given serializer.
+    /// \param[out] serializer Serializer to write the object to.
     virtual void Write (Serializer & /*serializer*/) = 0;
-
-    // TransactedFile::TransactionParticipant
-    /// \brief
-    /// If needed allocate space from \see{File::Allocator}.
-    virtual void Alloc () override;
-    /// \brief
-    /// Default free implementation for single block objects.
-    /// If your objects contain internal pointers to other
-    /// blocks you will need to implement this method and
-    /// properly free the containing blocks.
-    virtual void Free () override;
-    /// \brief
-    /// Flush the internal cache to file.
-    virtual void Flush () override;
-    /// \brief
-    /// Reload the internal cache from file.
-    virtual void Reload () override;
 
     /// \brief
     /// Object is neither copy constructable, nor assignable.
@@ -293,7 +306,7 @@ protected:
     DynamicCreatable::ParametersType parameters;
     /// \brief
     /// The \see{Serializable} object itself.
-    Serializable::SharedPtr object;
+    Serializable::SharedPtr serializable;
 
 public:
     /// \brief
@@ -303,22 +316,22 @@ public:
     /// \param[in] cotext_
     /// \param[in] factory_
     /// \param[in] parameters_
-    /// \param[in] object_
+    /// \param[in] serializable_
     SerializableObject (
         TransactedFile::SharedPtr file,
         TransactedFile::Allocator::PtrType offset = 0,
         const SerializableHeader &context_ = SerializableHeader (),
         DynamicCreatable::FactoryType factory_ = nullptr,
         DynamicCreatable::ParametersType parameters_ = nullptr,
-        Serializable::SharedPtr object_ = nullptr) :
+        Serializable::SharedPtr serializable_ = nullptr) :
         TransactedFile::Object (file, offset),
         context (context_),
         factory (factory_),
         parameters (parameters_),
-        object (object_) {}
+        serializable (serializable_) {}
 
-    Serializable::SharedPtr GetObject ();
-    void SetObject (Serializable::SharedPtr object_);
+    Serializable::SharedPtr GetSerializable ();
+    void SetSerializable (Serializable::SharedPtr serializable_);
 
 protected:
     // TransactedFile::TransactionParticipant
@@ -326,26 +339,26 @@ protected:
     /// Compulsory implementation of \see{TransactedFile::TransactionParticipant::Reset}.
     /// Every leaf class must have one.
     virtual void Reset () override {
-        object.Reset ();
+        serializable.Reset ();
     }
 
     // TransactedFile::Object
     virtual bool IsFixedSize () const override {
-        return object->ClassSize () != 0;
+        return serializable->ClassSize () != 0;
     }
     /// \brief
-    /// Return object binary size (including the header).
-    /// \return Object binary size.
+    /// Return \see{Serializable} binary size (including the header).
+    /// \return \see{Serializable} binary size.
     virtual std::size_t Size () const noexcept override {
-        return object->GetSize (context);
+        return serializable->GetSize (context);
     }
 
     /// \brief
-    /// Read the object from the given serializer.
-    /// \param[in] serializer Serializer to read the object from.
+    /// Read the \see{Serializable} from the given serializer.
+    /// \param[in] serializer \see{Serializer} to read the \see{Serializable} from.
     virtual void Read (Serializer &serializer) override;
     /// \brief
-    /// Write the object to the given serializer.
-    /// \param[out] serializer Serializer to write the object to.
+    /// Write the \see{Serializable} to the given serializer.
+    /// \param[out] serializer \see{Serializer} to write the \see{Serializable} to.
     virtual void Write (Serializer &serializer) override;
 };

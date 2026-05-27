@@ -34,16 +34,15 @@ namespace thekogans {
         ///
         /// \brief
         /// A TransactedFileBTree is a \see{TransactedFile::Object}. It's attributes are that
-        /// all searches, insertions and deletions take O(H) where H is the
-        /// height of the tree. These are TransactedFileBTree's bigest strengths. One of it's
-        /// biggest weaknesses is the fact that iterators don't survive modifications
-        /// (Insert/Delete). This is why I provide a forward iterator only.
-        /// Use it to step through a range of nodes collecting their data. See an example
-        /// provided with \see{TransactedFileBTree::Iterator}. TransactedFileBTree uses the full power of
-        /// \see{DynamicCreatable} and \see{Serializable} for it's key and value.
-        /// That means that key can be practically any random size object (as long
-        /// as it derives from TransactedFileBTree::Key and implements the interface). And value
-        /// can be any \see{Serializable} derived type.
+        /// all searches, insertions and deletions take O(H) where H is the height of the tree.
+        /// These are TransactedFileBTree's bigest strengths. One of it's biggest weaknesses is
+        /// the fact that iterators don't survive modifications (Insert/Delete). This is why I
+        /// provide a forward iterator only. Use it to step through a range of nodes collecting
+        /// their data. See an example provided with \see{TransactedFileBTree::Iterator}.
+        /// TransactedFileBTree uses the full power of \see{DynamicCreatable} and \see{Serializable}
+        /// for it's key and value. That means that key can be practically any random size object
+        /// (as long as it derives from \see{TransactedFileBTree::Key} and implements the interface).
+        /// And value can be any \see{Serializable} derived type.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTree : public TransactedFile::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -237,7 +236,12 @@ namespace thekogans {
                 /// \brief
                 /// Value type.
                 SerializableHeader valueContext;
+                /// \brief
+                /// Values can be stored as a single array or as first class objects
+                /// (\see{TransactedFile::SerializableObject}) in their own right.
                 static const ui32 FLAGS_VALUE_AS_OBJECT = 1;
+                /// \brief
+                /// Combination of the above flags.
                 Flags32 flags;
                 /// \brief
                 /// Entries per node.
@@ -265,6 +269,9 @@ namespace thekogans {
                     entriesPerNode (entriesPerNode_),
                     rootOffset (0) {}
 
+                /// \brief
+                /// Return true if values are stored as objects (\see{TransactedFile::SerializableObject}).
+                /// \return true == values are stored as objects (\see{TransactedFile::SerializableObject}).
                 inline bool IsValueAsObject () const {
                     return flags.Test (FLAGS_VALUE_AS_OBJECT);
                 }
@@ -402,6 +409,9 @@ namespace thekogans {
                     TransactedFileBTree &btree,
                     TransactedFile::Allocator::PtrType offset);
 
+                /// \brief
+                /// Return value at entry index.
+                /// \return Value at entry index.
                 Serializable::SharedPtr GetValue (ui32 index);
                 /// \brief
                 /// Set value at the given \see{Entry} index.
@@ -610,12 +620,12 @@ namespace thekogans {
                                 Entry::SIZE_WITHOUT_VALUE); // entries
                 }
                 /// \brief
-                /// Read the key from the given serializer.
-                /// \param[in] serializer \see{Serializer} to read the key from.
+                /// Read the node from the given serializer.
+                /// \param[in] serializer \see{Serializer} to read the node from.
                 virtual void Read (Serializer &serializer) override;
                 /// \brief
-                /// Write the key to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the key to.
+                /// Write the node to the given serializer.
+                /// \param[in] serializer \see{Serializer} to write the node to.
                 virtual void Write (Serializer &serializer) override;
             } *root;
 
@@ -636,7 +646,9 @@ namespace thekogans {
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
             /// will store any type derived from \see{Serializable}.
-            /// \param[in] valueAsObject
+            /// \param[in] valueAsObject true == Values are stored as seperate objects
+            /// (\see{TransactedFile::SerializableObject}). false == objects are stored
+            /// in one contiguous array.
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
             /// \see{Node}. If we're reading an existing btree, this value will come from the
             /// \see{Header}.
@@ -732,12 +744,12 @@ namespace thekogans {
                 return header.Size ();
             }
             /// \brief
-            /// Read the key from the given serializer.
-            /// \param[in] serializer \see{Serializer} to read the key from.
+            /// Read the \see{Header} from the given serializer.
+            /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
             virtual void Read (Serializer &serializer) override;
             /// \brief
-            /// Write the key to the given serializer.
-            /// \param[out] serializer \see{Serializer} to write the key to.
+            /// Write the \see{Header} to the given serializer.
+            /// \param[out] serializer \see{Serializer} to write the \see{Header} to.
             virtual void Write (Serializer &serializer) override;
 
             /// \brief

@@ -45,6 +45,10 @@ namespace thekogans {
             /// thekogans/util/TransactedFileBTreeAllocator.h
             ///
             /// \brief
+            /// Extends the \see{TransactedFile::Allocator::Header} to provide a singly linked list
+            /// of blocks. These are special blocks allocated and freed by \see{AllocBTreeNode} and
+            /// \see{FreeBTreeNode}. Used by \see{TransactedFileBTreeAllocator::Btree} to allocate
+            /// and free \see{TransactedFileBTreeAllocator::Btree::Node}.
             struct _LIB_THEKOGANS_UTIL_DECL Block : public Allocator::Block {
                 /// \brief
                 /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
@@ -197,6 +201,7 @@ namespace thekogans {
                 allocator (allocator_),
                 btreeNodeFileSize (BTree::Node::FileSize (btreeNodesPerPage)) {}
 
+            // Allocator
             /// \brief
             /// Allocate a block.
             /// \param[in] size Size of block to allocate.
@@ -220,6 +225,7 @@ namespace thekogans {
                 bool moveData = true) override;
 
         private:
+            // Serializable
             /// \brief
             /// Read the \see{Header} from the file.
             virtual void Read (
