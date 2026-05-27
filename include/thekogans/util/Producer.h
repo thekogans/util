@@ -306,6 +306,34 @@ namespace thekogans {
                 using SharedSubscriberInfo = std::pair<
                     typename Subscriber<T>::SharedPtr,
                     typename EventDeliveryPolicy::SharedPtr>;
+                // FIXME: Need to profile these two approaches to see which is faster.
+#if 0
+                Subscribers subscribers_;
+                {
+                    // Copy the subscribers map in to a local
+                    // variable before delivering the event in case
+                    // they want to unsubscribe while processing it.
+                    LockGuard<SpinLock> guard (spinLock);
+                    subscribers_ = subscribers;
+                }
+                for (typename Subscribers::iterator
+                        it = subscribers_.begin (),
+                        end = subscribers_.end (); it != end; ++it) {
+                    // NOTE: If we get a NULL pointer here it simply means
+                    // that that particular subscriber is in the porocess
+                    // of deallocating. It just hasn't removed itself from
+                    // our subscriber list (~Subscriber) in time for us to
+                    // include it in subscribers_ above. This race is unavoidable
+                    // but harmless. We want to preserve the right of the
+                    // \see{Subscriber} to be able to call back in to the
+                    // producer while processing a particular event.
+                    typename Subscriber<T>::SharedPtr subscriber =
+                        it->second.first.GetSharedPtr ();
+                    if (subscriber != nullptr) {
+                        it->second.second->DeliverEvent (event, subscriber);
+                    }
+                }
+#else
                 Array<SharedSubscriberInfo> subscribers_;
                 std::size_t count = 0;
                 {
@@ -334,6 +362,7 @@ namespace thekogans {
                 for (std::size_t i = 0; i < count; ++i) {
                     subscribers_[i].second->DeliverEvent (event, subscribers_[i].first);
                 }
+#endif
             }
 
             /// \brief

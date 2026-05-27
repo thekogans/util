@@ -351,23 +351,6 @@ namespace thekogans {
             SetDirty (true);
         }
 
-        void TransactedFileBTreeAllocator::BTree::Node::Dump () {
-            if (count > 0) {
-                std::cout << offset << ": " << leftOffset;
-                for (ui32 i = 0; i < count; ++i) {
-                    std::cout << " ; [" << entries[i].key.first << ", " <<
-                        entries[i].key.second << "] ; " << entries[i].rightOffset;
-                }
-                std::cout << "\n";
-                for (ui32 i = 0; i < count; ++i) {
-                    Node *child = GetChild (i);
-                    if (child != nullptr) {
-                        child->Dump ();
-                    }
-                }
-            }
-        }
-
         void TransactedFileBTreeAllocator::BTree::Node::Alloc () {
             if (offset == 0) {
                 offset = btree.allocator.AllocBTreeNode (

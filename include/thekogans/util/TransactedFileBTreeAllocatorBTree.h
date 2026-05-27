@@ -148,6 +148,10 @@ private:
         static Node *Alloc (
             BTree &btree,
             PtrType offset = 0);
+        /// \brief
+        /// Free the subtree rooted at node.
+        /// \param[in] btree BTree to which this node belongs.
+        /// \param[in] offset Node offset.
         static void FreeSubtree (
             BTree &btree,
             PtrType offset);
@@ -250,12 +254,10 @@ private:
             return count > btree.header.entriesPerNode / 2;
         }
 
-        /// \brief
-        /// Dump the nodes entries to stdout. Used to debug the implementation.
-        void Dump ();
-
     protected:
         // RefCounted
+        /// \brief
+        /// Undo what \see{Alloc} did.
         virtual void Harakiri () override {
             this->~Node ();
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
@@ -263,11 +265,13 @@ private:
 
         // TransactedFile::TransactionParticipant
         /// \brief
-        /// Allocate space for the node.
+        /// Allocae the node using \see{TransactedFileBTreeAllocator::AllocBTreeNode}.
         virtual void Alloc () override;
         /// \brief
+        /// Free the node using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
         virtual void Free () override;
         /// \brief
+        /// Compulsory implementation resetting to factory defaults.
         virtual void Reset () override;
 
         // TransactedFile::Object
@@ -278,10 +282,18 @@ private:
             return true;
         }
         /// \brief
+        /// Return the node size.
+        /// \return btree.allocator.btreeNodeFileSize.
         virtual std::size_t Size () const noexcept override {
             return btree.allocator.btreeNodeFileSize;
         }
+        /// \brief
+        /// Read the node.
+        /// \param[in] serializer \see{Serializer} to read the node from.
         virtual void Read (Serializer &serializer) override;
+        /// \brief
+        /// Write the node.
+        /// \param[in] serializer \see{Serializer} to write the node to.
         virtual void Write (Serializer &serializer) override;
     } *rootNode;
 
@@ -328,12 +340,6 @@ public:
     /// \return true == entry deleted. false == entry not found.
     bool Remove (const KeyType &key);
 
-    /// \brief
-    /// Use for debugging. Dump the btree nodes to stdout.
-    inline void Dump () {
-        rootNode->Dump ();
-    }
-
 protected:
     // TransactedFile::TransactionParticipant
     /// \brief
@@ -356,6 +362,7 @@ protected:
     }
     /// \brief
     /// Our size is \see{Header::SIZE}.
+    /// \return \see{Header::SIZE}.
     virtual std::size_t Size () const noexcept override {
         return Header::SIZE;
     }

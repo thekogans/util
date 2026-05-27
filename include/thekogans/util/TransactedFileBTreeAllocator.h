@@ -145,8 +145,14 @@ namespace thekogans {
             /// Include the \see{BTree} header.
             /// I split it out because this file was getting too big to maintain.
             #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
+            /// \brief
+            /// Number of entries per \see{BTree::Node}.
             std::size_t btreeEntriesPerNode;
+            /// \brief
+            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
             std::size_t btreeNodesPerPage;
+            /// \brief
+            /// \see{util::Allocator} for \see{BTree::Node}.
             util::Allocator::SharedPtr allocator;
             /// \brief
             /// \see{BTree} to manage heap free space.
@@ -158,6 +164,8 @@ namespace thekogans {
             std::size_t btreeNodeFileSize;
 
         public:
+            /// \brief
+            /// Allocator size on disk.
             static const std::size_t SIZE = Allocator::Header::SIZE + Header::SIZE;
 
             // NOTE: The following constants are meant to be tuned during
@@ -177,7 +185,7 @@ namespace thekogans {
             /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit
             /// in to a \see{BlockAllocator} page.
-            /// \param[in] allocator \see{Allocator} for \see{BTree}.
+            /// \param[in] allocator_ \see{util::Allocator} for \see{BTree::Node}.
             TransactedFileBTreeAllocator (
                 bool secure = false,
                 std::size_t btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
@@ -190,13 +198,7 @@ namespace thekogans {
                 btreeNodeFileSize (BTree::Node::FileSize (btreeNodesPerPage)) {}
 
             /// \brief
-            /// Debugging helper. Dumps \see{BTree::Node}s to stdout.
-            inline void DumpBTree () {
-                btree->Dump ();
-            }
-
-            /// \brief
-            /// Alloc a block.
+            /// Allocate a block.
             /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
             virtual PtrType Alloc (std::size_t size) override;
