@@ -75,7 +75,7 @@
 struct _LIB_THEKOGANS_UTIL_DECL Range : public RandomSeekSerializer {
 protected:
     /// \brief
-    /// TransactedFile the range is referring too.
+    /// \see{TransactedFile} the range is referring too.
     TransactedFile &file;
     /// \brief
     /// Begining of range.
@@ -83,23 +83,25 @@ protected:
     /// \brief
     /// Length of range.
     std::size_t length;
+    /// \brief
+    /// true == range is for reading, false == range is for writing.
     bool reading;
     /// \brief
     /// If the provided range straddles a page boundary
-    /// use this allocaor to allocate a range buffer.
+    /// use this allocator to allocate a range buffer.
     util::Allocator::SharedPtr allocator;
     /// \brief
-    /// Either a pointer in to \see{Buffer::data} or self
+    /// Either a pointer in to \see{TransactedFile::Buffer::data} or self
     /// allocated range buffer.
     ui8 *data;
     /// \brief
     /// Mainains current position in the range.
     std::size_t position;
     /// \brief
-    /// TransactedFile::Buffer associated with this range.
+    /// \see{TransactedFile::Buffer} associated with this range.
     TransactedFile::Buffer::SharedPtr buffer;
     /// \brief
-    /// true == We straddle a \see{Buffer} page boundary.
+    /// true == We straddle a \see{TransactedFile::Buffer} page boundary.
     /// We allocated data and need to copy and free it in
     /// the dtor.
     bool owner;
@@ -121,30 +123,6 @@ public:
     /// dtor.
     virtual ~Range ();
 
-    // Serializer
-    virtual std::size_t Read (
-        void *buffer,
-        std::size_t count) override;
-    virtual std::size_t Write (
-        const void *buffer,
-        std::size_t count) override;
-
-    // RandomSeekSerializer
-    /// \brief
-    /// Return the serializer pointer position.
-    /// \return The serializer pointer position.
-    virtual i64 Tell () const override {
-        return position;
-    }
-    /// \brief
-    /// Reposition the serializer pointer.
-    /// \param[in] offset Offset to move relative to fromWhere.
-    /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
-    /// \return The new serializer pointer position.
-    virtual i64 Seek (
-        i64 offset,
-        i32 fromWhere) override;
-
     /// \brief
     /// Return the next location we will read/write from/to.
     /// \return data at the next location we will read/write from/to.
@@ -157,6 +135,40 @@ public:
     inline std::size_t GetDataAvailable () const {
         return length - position;
     }
+
+    // Serializer
+    /// \brief
+    /// Read raw bytes.
+    /// \param[out] buffer Where to place the bytes.
+    /// \param[in] count Number of bytes to read.
+    /// \return count.
+    virtual std::size_t Read (
+        void *buffer,
+        std::size_t count) override;
+    /// \brief
+    /// Write raw bytes.
+    /// \param[in] buffer Bytes to write.
+    /// \param[in] count Number of bytes to write.
+    /// \return count.
+    virtual std::size_t Write (
+        const void *buffer,
+        std::size_t count) override;
+
+    // RandomSeekSerializer
+    /// \brief
+    /// Return the range position pointer.
+    /// \return The range position pointer.
+    virtual i64 Tell () const override {
+        return position;
+    }
+    /// \brief
+    /// Reposition the range position pointer.
+    /// \param[in] offset Offset to move relative to fromWhere.
+    /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
+    /// \return The new range position pointer.
+    virtual i64 Seek (
+        i64 offset,
+        i32 fromWhere) override;
 };
 
 /// \struct TransactedFile::UnsafeReadOnlyRange TransactedFile.h thekogans/util/TransactedFile.h
@@ -187,9 +199,17 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
     // Serializer
     /// \brief
     /// Perform a safe read. Clamp count to the length of the range.
+    /// \param[out] buffer Where to place the bytes.
+    /// \param[in] count Number of bytes to read.
+    /// \return Number of bytes actually read.
     virtual std::size_t Read (
         void *buffer,
         std::size_t count) override;
+    /// \brief
+    /// Perform a safe write. Clamp count to the length of the range.
+    /// \param[in] buffer Bytes to write.
+    /// \param[in] count Number of bytes to write.
+    /// \return Number of bytes actually written.
     virtual std::size_t Write (
         const void *buffer,
         std::size_t count) override;

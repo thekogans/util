@@ -35,6 +35,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry : public Serializable {
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 protected:
+    /// \brief
+    /// The \see{TransactedFile} this registry belogs to.
     TransactedFile::SharedPtr file;
 
 public:
@@ -42,6 +44,9 @@ public:
     /// ctor.
     Registry () {}
 
+    /// \brief
+    /// Return the file.
+    /// \return file.
     inline TransactedFile::SharedPtr GetFile () const {
         return file;
     }

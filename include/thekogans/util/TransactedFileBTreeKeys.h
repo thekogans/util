@@ -103,7 +103,7 @@ namespace thekogans {
             }
         };
 
-        /// \struct GUIDKey TransactedFileBTree.h thekogans/util/TransactedFileBTreeKeys.h
+        /// \struct GUIDKey TransactedFileBTreeKeys.h thekogans/util/TransactedFileBTreeKeys.h
         ///
         /// \brief
         /// GUID key.
