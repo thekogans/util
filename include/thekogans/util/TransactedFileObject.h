@@ -302,7 +302,7 @@ protected:
     /// \see{Serializable} creation factory.
     DynamicCreatable::FactoryType factory;
     /// \brief
-    /// \see{Serializable} creation factory.
+    /// \see{Serializable} creation factory parameters.
     DynamicCreatable::ParametersType parameters;
     /// \brief
     /// The \see{Serializable} object itself.
@@ -311,12 +311,13 @@ protected:
 public:
     /// \brief
     /// ctor.
-    /// \param[in] file
-    /// \param[in] offset
-    /// \param[in] cotext_
-    /// \param[in] factory_
-    /// \param[in] parameters_
-    /// \param[in] serializable_
+    /// \param[in] file \see{TransactedFile} where the object resides.
+    /// \param[in] offset Object's offset.
+    /// \param[in] context_ Determines how the object's \see{SerializableHeader}
+    /// is read/writen to/from the file.
+    /// \param[in] factory_ \see{Serializable} creation factory.
+    /// \param[in] parameters_ \see{Serializable} creation factory parameters.
+    /// \param[in] serializable_ The \see{Serializable} object itself.
     SerializableObject (
         TransactedFile::SharedPtr file,
         TransactedFile::Allocator::PtrType offset = 0,
@@ -343,14 +344,17 @@ protected:
     }
 
     // TransactedFile::Object
+    /// Optimization for Alloc. \see{Serializable} declares itself
+    /// as fixed size by having ClassSize return > 0.
+    /// \return true == object is fixed size.
     virtual bool IsFixedSize () const override {
-        return serializable->ClassSize () != 0;
+        return serializable != nullptr && serializable->ClassSize () != 0;
     }
     /// \brief
     /// Return \see{Serializable} binary size (including the header).
     /// \return \see{Serializable} binary size.
     virtual std::size_t Size () const noexcept override {
-        return serializable->GetSize (context);
+        return serializable != nullptr ? serializable->GetSize (context) : 0;
     }
 
     /// \brief

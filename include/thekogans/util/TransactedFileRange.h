@@ -16,31 +16,32 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-    /// \struct TransactedFile::Stats TransactedFile.h thekogans/util/TransactedFile.h
+    /// \struct TransactedFile::Stats TransactedFileRange.h thekogans/util/TransactedFileRange.h
     ///
     /// \brief
     /// Stats should be used during system integration and tuning. Every time
-    /// a \see{Range} is created (\see{ReadOnlyRange} and \see{WriteOnlyRange})
-    /// it bumps up the appropriate counter in it's ctor. It also bumps up an
-    /// appropriate *Owner* counter if it happens to straddle a \see{Buffer} boundary.
-    /// If the ratio of *Owner* counter and range counter approaches 1 then you
-    /// have some tuning to do.
+    /// a \see{Range} is created/ it bumps up the appropriate (based on reading)
+    /// counter in it's ctor. It also bumps up an appropriate *Owner* counter if
+    /// it happens to straddle a \see{TransactedFile::Buffer} boundary. If the
+    /// ratio of *Owner* counter and range counter approaches 1 then you have some
+    /// tuning to do.
     /// In an ideal world, no range would ever cross a buffer boundary and you would
     /// always have the best performing reads and writes. When a range does cross a
     /// buffer boundary it needs to allocate a local buffer to satisfy the fact
     /// range reads and writes do no boundary checking (hence the performance boost).
     /// If a large percentage of your ranges have to allocate the buffer it means
-    /// that \see{Buffer::SIZE} size is not properly tuned for your application.
-    /// Follow the instructions in \see{Buffer::SIZE} to change the page size.
+    /// that \see{TransactedFile::Buffer::SIZE} size is not properly tuned for your
+    /// application. Follow the instructions in \see{TransactedFile::Buffer::SIZE}
+    /// to change the page size.
     struct Stats {
         /// \brief
-        /// A count of \see{ReadOnlyRange} that have been created for this file.
+        /// A count of \see{Range} (reading == true) that have been created for this file.
         std::atomic<ui64> readOnlyRanges;
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
         std::atomic<ui64> readOnlyOwnerRanges;
         /// \brief
-        /// A count of \see{WriteOnlyRange} that have been created for this file.
+        /// A count of \see{Range} (reading == false) that have been created for this file.
         std::atomic<ui64> writeOnlyRanges;
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
@@ -56,13 +57,11 @@
     } stats;
 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
 
-/// \struct TransactedFile::Range TransactedFile.h thekogans/util/TransactedFile.h
+/// \struct TransactedFile::Range TransactedFileRange.h thekogans/util/TransactedFileRange.h
 ///
 /// \brief
 /// Range provides direct access to TransactedFile's underlying \see{Buffer}.
-/// Range is an abstract base (that's why it's private). Range's two direct
-/// discendents are \see{UnsafeReadOnlyRange} and \see{UnsafeWriteOnlyRange}.
-/// By pairing it with \see{Serializer}, Range provides serialization/
+/// By pairing it with \see{RandomSeekSerializer}, Range provides serialization/
 /// deserialization capabilities without the need to copy chunks of data
 /// in to and out of the buffers resulting in better performance. Because
 /// the file's 64 bit address space is chunked in to hierarchical pages,
@@ -72,6 +71,8 @@
 /// it's own set of state variables in to the file, if you create nonoveralapping
 /// ranges, you can access the file from multiple threads without the need
 /// for synchronization.
+/// IMPORTANT: Range does no bounds checking on it's inputs. That's what
+/// \see{SafeRange} (below) is for.
 struct _LIB_THEKOGANS_UTIL_DECL Range : public RandomSeekSerializer {
 protected:
     /// \brief
@@ -171,11 +172,10 @@ public:
         i32 fromWhere) override;
 };
 
-/// \struct TransactedFile::UnsafeReadOnlyRange TransactedFile.h thekogans/util/TransactedFile.h
+/// \struct TransactedFile::SafeRange TransactedFileRange.h thekogans/util/TransactedFileRange.h
 ///
 /// \brief
-/// UnsafeReadOnlyRange provides one directional extraction from a file.
-/// It's unsafe because it does absolutely no bounds checking.
+/// SafeRange layers bounds checking on top of \see{Range}.
 struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
     /// \brief
     /// ctor.
@@ -198,7 +198,8 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
 
     // Serializer
     /// \brief
-    /// Perform a safe read. Clamp count to the length of the range.
+    /// Perform a safe read. Check buffer for null and
+    /// clamp count to the length of the range.
     /// \param[out] buffer Where to place the bytes.
     /// \param[in] count Number of bytes to read.
     /// \return Number of bytes actually read.
@@ -206,7 +207,8 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
         void *buffer,
         std::size_t count) override;
     /// \brief
-    /// Perform a safe write. Clamp count to the length of the range.
+    /// Perform a safe write. Check buffer for null and
+    /// clamp count to the length of the range.
     /// \param[in] buffer Bytes to write.
     /// \param[in] count Number of bytes to write.
     /// \return Number of bytes actually written.

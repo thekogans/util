@@ -165,8 +165,10 @@ namespace thekogans {
         }
 
         void TransactedFile::SerializableObject::Write (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, context, factory, parameters);
-            serializer << *serializable;
+            if (serializable != nullptr) {
+                Serializer::ContextGuard guard (serializer, context, factory, parameters);
+                serializer << *serializable;
+            }
         }
 
     } // namespace util
