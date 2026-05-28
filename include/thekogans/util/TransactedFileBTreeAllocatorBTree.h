@@ -255,6 +255,10 @@ private:
         }
 
     protected:
+        /// \brief
+        /// Clear the cache.
+        void Reset ();
+
         // RefCounted
         /// \brief
         /// Undo what \see{Alloc} did.
@@ -263,6 +267,7 @@ private:
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
         }
 
+    public:
         // TransactedFile::TransactionParticipant
         /// \brief
         /// Allocae the node using \see{TransactedFileBTreeAllocator::AllocBTreeNode}.
@@ -270,10 +275,8 @@ private:
         /// \brief
         /// Free the node using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
         virtual void Free () override;
-        /// \brief
-        /// Compulsory implementation resetting to factory defaults.
-        virtual void Reset () override;
 
+    protected:
         // TransactedFile::Object
         /// \brief
         /// Node is fixed size.
@@ -349,9 +352,6 @@ protected:
     /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
     /// Also free the \see{Node} hierarchy @root.
     virtual void Free () override;
-    /// \brief
-    /// Compulsory implementation resetting to factory defaults.
-    virtual void Reset () override;
 
     // TransactedFile::Object
     /// \brief

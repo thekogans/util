@@ -306,7 +306,8 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            right->Delete ();
+            right->Free ();
+            right->Release ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Split (Node *node) {
@@ -351,6 +352,22 @@ namespace thekogans {
             SetDirty (true);
         }
 
+        void TransactedFileBTreeAllocator::BTree::Node::Reset () {
+            if (count > 0) {
+                if (leftNode != nullptr) {
+                    leftNode->Release ();
+                    leftNode = nullptr;
+                }
+                for (ui32 i = 0; i < count; ++i) {
+                    if (entries[i].rightNode != nullptr) {
+                        entries[i].rightNode->Release ();
+                        entries[i].rightNode = nullptr;
+                    }
+                }
+                count = 0;
+            }
+        }
+
         void TransactedFileBTreeAllocator::BTree::Node::Alloc () {
             if (offset == 0) {
                 offset = btree.allocator.AllocBTreeNode (
@@ -376,23 +393,8 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::BTree::Node::Reset () {
-            if (count > 0) {
-                if (leftNode != nullptr) {
-                    leftNode->Release ();
-                    leftNode = nullptr;
-                }
-                for (ui32 i = 0; i < count; ++i) {
-                    if (entries[i].rightNode != nullptr) {
-                        entries[i].rightNode->Release ();
-                        entries[i].rightNode = nullptr;
-                    }
-                }
-                count = 0;
-            }
-        }
-
         void TransactedFileBTreeAllocator::BTree::Node::Read (Serializer &serializer) {
+            Reset ();
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -490,7 +492,8 @@ namespace thekogans {
                 if (rootNode->IsEmpty () && rootNode->GetChild (0) != nullptr) {
                     Node *node = rootNode;
                     rootNode = rootNode->GetChild (0);
-                    node->Delete ();
+                    node->Free ();
+                    node->Release ();
                 }
                 if (!IsDirty () &&
                         (header.rootOffset == 0 ||
@@ -513,9 +516,11 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Free () {
-            if (offset != 0) {
+            if (header.rootOffset != 0) {
                 Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
+            }
+            if (offset != 0) {
                 allocator.FreeBTreeNode (offset);
                 Produce (
                     std::bind (
@@ -524,10 +529,6 @@ namespace thekogans {
                         this));
                 offset = 0;
             }
-        }
-
-        void TransactedFileBTreeAllocator::BTree::Reset () {
-            header.rootOffset = 0;
             rootNode->Release ();
             rootNode = Node::Alloc (*this, header.rootOffset);
         }

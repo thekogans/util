@@ -466,7 +466,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            right->Delete ();
+            right->Free ();
             right->Release ();
         }
 
@@ -543,6 +543,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::Read (Serializer &serializer) {
+            Reset ();
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -762,7 +763,7 @@ namespace thekogans {
                     if (root->IsEmpty () && root->GetChild (0) != nullptr) {
                         Node *node = root;
                         root = root->GetChild (0);
-                        node->Delete ();
+                        node->Free ();
                         node->Release ();
                     }
                     if (!IsDirty () &&
@@ -818,15 +819,11 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Free () {
-            if (GetOffset () != 0) {
+            if (header.rootOffset != 0) {
                 Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
-                Object::Free ();
             }
-        }
-
-        void TransactedFileBTree::Reset () {
-            header.rootOffset = 0;
+            Object::Free ();
             root->Release ();
             root = Node::Alloc (*this, header.rootOffset);
         }

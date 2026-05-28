@@ -21,33 +21,16 @@
 namespace thekogans {
     namespace util {
 
-        void TransactedFile::TransactionParticipant::Delete () {
-            Reset ();
-            if (!IsDeleted ()) {
-                SetDeleted (true);
-                AddRef ();
-            }
-        }
-
         void TransactedFile::TransactionParticipant::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 if (phase == COMMIT_PHASE_1) {
-                    assert (IsDirty () || IsDeleted ());
-                    if (IsDeleted ()) {
-                        Free ();
-                    }
-                    if (IsDirty ()) {
-                        Alloc ();
-                    }
-                    if (IsDeleted ()) {
-                        SetDeleted (false);
-                        Release ();
-                    }
+                    assert (IsDirty ());
+                    Alloc ();
                 }
                 else if (phase == COMMIT_PHASE_2) {
-                    assert (!IsDeleted () && IsDirty ());
+                    assert (IsDirty ());
                     Flush ();
                     SetDirty (false);
                 }
@@ -58,22 +41,15 @@ namespace thekogans {
         void TransactedFile::TransactionParticipant::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
-                assert (IsDirty () || IsDeleted ());
+                assert (IsDirty ());
                 Reload ();
                 SetDirty (false);
-                if (IsDeleted ()) {
-                    SetDeleted (false);
-                    Release ();
-                }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        bool TransactedFile::TransactionParticipant::SetFlag (
-                ui32 flag,
-                bool on) {
-            bool oldFlag = flags.Set (flag, on);
-            if (!oldFlag && on) {
+        bool TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
+            if (!flags.Set (FLAGS_DIRTY, dirty) && dirty) {
                 Subscriber<TransactedFileEvents>::Subscribe (*file);
                 return true;
             }
@@ -128,8 +104,8 @@ namespace thekogans {
 
         void TransactedFile::Object::Flush () {
             assert (IsDirty ());
-            assert (GetOffset () != 0);
-            TransactedFile::BlockRange range (*file, GetOffset (), false);
+            assert (offset != 0);
+            TransactedFile::BlockRange range (*file, offset, false);
             Write (range);
             if (GetAllocator ()->IsSecure ()) {
                 range.Seek (
@@ -139,9 +115,8 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::Reload () {
-            Reset ();
-            if (GetOffset () != 0) {
-                TransactedFile::BlockRange range (*file, GetOffset ());
+            if (offset != 0) {
+                TransactedFile::BlockRange range (*file, offset);
                 Read (range);
             }
         }

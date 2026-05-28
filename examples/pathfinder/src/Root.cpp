@@ -52,13 +52,13 @@ namespace thekogans {
                     &RootEvents::OnRootDeleteBegin,
                     std::placeholders::_1,
                     this));
-            pathBTree->Delete ();
+            pathBTree->Free ();
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeletedPathBTree,
                     std::placeholders::_1,
                     this));
-            componentBTree->Delete ();
+            componentBTree->Free ();
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeletedComponentBTree,

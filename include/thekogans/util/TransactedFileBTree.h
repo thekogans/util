@@ -587,16 +587,14 @@ namespace thekogans {
                 }
 
             protected:
+                /// \brief
+                /// Clear the cache.
+                void Reset ();
+
                 // RefCounted
                 /// \brief
                 /// Undo what Alloc does.
                 virtual void Harakiri () override;
-
-                // TransactedFile::TransactionParticipant
-                /// \brief
-                /// Compulsory implementation of \see{TransactedFile::TransactionParticipant::Reset}.
-                /// Every leaf class must have one.
-                virtual void Reset () override;
 
                 // TransactedFile::Object
                 /// \brief
@@ -721,15 +719,12 @@ namespace thekogans {
             /// iterator is empty.
             bool FindFirst (Iterator &it);
 
-        protected:
             // TransactedFile::TransactionParticipant
             /// \brief
             /// We have a pointer to root we need to dispose of.
             virtual void Free () override;
-            /// \brief
-            /// Reset needs to be implemented by all concrete classes.
-            virtual void Reset () override;
 
+        protected:
             // TransactedFile::Object
             /// \brief
             /// \see{Header} is fixed size.

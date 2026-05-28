@@ -37,9 +37,6 @@ protected:
     /// Set if the internal cache is dirty.
     static const ui32 FLAGS_DIRTY = 1;
     /// \brief
-    /// Set if we've been deleted.
-    static const ui32 FLAGS_DELETED = 2;
-    /// \brief
     /// Combination of the above flags.
     Flags32 flags;
 
@@ -76,22 +73,8 @@ public:
     /// already dirty will return false. This is meant so that derivatives
     /// of TransactionParticipant can call SetDirty and perform whatever
     /// one time transition processing they need (See \see{Object} below).
-    virtual bool SetDirty (bool dirty) {
-        return SetFlag (FLAGS_DIRTY, dirty);
-    }
+    virtual bool SetDirty (bool dirty);
 
-    /// \brief
-    /// Return deleted.
-    /// \return deleted.
-    inline bool IsDeleted () const {
-        return flags.Test (FLAGS_DELETED);
-    }
-
-    /// \brief
-    /// Delete the disk image and reset the internal state.
-    void Delete ();
-
-protected:
     // NOTE: The following API abstracts out the protocol called for in
     // OnTransactedFileTransactionCommit, OnTransactedFileTransactionAbort
     // and Delete.
@@ -108,10 +91,8 @@ protected:
     /// \brief
     /// Reload the internal cache from file.
     virtual void Reload () = 0;
-    /// \brief
-    /// Reset internal state.
-    virtual void Reset () = 0;
 
+protected:
     // TransactedFileEvents
     /// \brief
     /// Transaction is commiting. Flush the internal cache to file.
@@ -125,24 +106,6 @@ protected:
     /// \param[in] file \see{TransactedFile} aborting the transaction.
     virtual void OnTransactedFileTransactionAbort (
         TransactedFile::SharedPtr /*file*/) noexcept override;
-
-private:
-    /// \brief
-    /// Set the deleted flag, preserving the state of the dirty flag.
-    /// \param[in] deleted true == deleted, false == alive.
-    inline void SetDeleted (bool deleted) {
-        SetFlag (FLAGS_DELETED, deleted);
-    }
-    /// \brief
-    /// Set a flag. Helper for SetDirty and Delete to automaticaly
-    /// subscribe to \see{TransactedFileEvents}.
-    /// \param[in] flag Flag to set/clear.
-    /// \param[in] on New flag value.
-    /// \return true == the given flag transitioned from !on to on.
-    /// If the flag was already on or on == false, return false.
-    bool SetFlag (
-        ui32 flag,
-        bool on);
 
     /// \brief
     /// TransactionParticipant is neither copy constructable, nor assignable.
@@ -234,7 +197,6 @@ public:
     // TransactedFile::TransactionParticipant
     virtual bool SetDirty (bool dirty) override;
 
-protected:
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
     virtual void Alloc () override;
@@ -251,6 +213,7 @@ protected:
     /// Reload the internal cache from file.
     virtual void Reload () override;
 
+protected:
     /// \brief
     /// Optimization for Alloc below. If an object declares
     /// itself as fixed size, Alloc will not check the object
@@ -331,18 +294,17 @@ public:
         parameters (parameters_),
         serializable (serializable_) {}
 
+    /// \brief
+    /// Return the contained \see{Serializable}. Load it null and offset != 0.
+    /// \return serializable.
     Serializable::SharedPtr GetSerializable ();
+    /// \brief
+    /// Set the contained serializable.
+    /// NOTE: Does not call SetDirty (true).
+    /// \param[in] serializable_ New contained \see{Serializable}.
     void SetSerializable (Serializable::SharedPtr serializable_);
 
 protected:
-    // TransactedFile::TransactionParticipant
-    /// \brief
-    /// Compulsory implementation of \see{TransactedFile::TransactionParticipant::Reset}.
-    /// Every leaf class must have one.
-    virtual void Reset () override {
-        serializable.Reset ();
-    }
-
     // TransactedFile::Object
     /// Optimization for Alloc. \see{Serializable} declares itself
     /// as fixed size by having ClassSize return > 0.
