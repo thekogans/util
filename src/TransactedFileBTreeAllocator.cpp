@@ -292,25 +292,23 @@ namespace thekogans {
 
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {
             PtrType offset = 0;
-            {
-                if (header.freeBTreeNodeOffset != 0) {
-                    offset = header.freeBTreeNodeOffset;
-                    Block block (offset);
-                    block.Read (*file);
-                    if (block.IsFree () && block.IsBTreeNode ()) {
-                        header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
-                        SetDirty (true);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
-                            ", expecting a free BTree::Node block.",
-                            offset);
-                    }
+            if (header.freeBTreeNodeOffset != 0) {
+                offset = header.freeBTreeNodeOffset;
+                Block block (offset);
+                block.Read (*file);
+                if (block.IsFree () && block.IsBTreeNode ()) {
+                    header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
+                    SetDirty (true);
                 }
                 else {
-                    offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
+                        ", expecting a free BTree::Node block.",
+                        offset);
                 }
+            }
+            else {
+                offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
             }
             Block block (offset, Block::FLAGS_BTREE_NODE, size);
             block.Write (*file);
@@ -323,11 +321,11 @@ namespace thekogans {
                 block.Read (*file);
                 if (!block.IsFree () && block.IsBTreeNode ()) {
                     if (!block.IsLast (*file)) {
+                        block.SetFree (true);
                         block.SetNextBTreeNodeOffset (header.freeBTreeNodeOffset);
+                        block.Write (*file);
                         header.freeBTreeNodeOffset = offset;
                         SetDirty (true);
-                        block.SetFree (true);
-                        block.Write (*file);
                     }
                     else {
                         file->SetSize (block.GetOffset () - Block::HEADER_SIZE);

@@ -20,7 +20,7 @@
     ///
     /// \brief
     /// Stats should be used during system integration and tuning. Every time
-    /// a \see{Range} is created/ it bumps up the appropriate (based on reading)
+    /// a \see{Range} is created it bumps up the appropriate (based on reading)
     /// counter in it's ctor. It also bumps up an appropriate *Owner* counter if
     /// it happens to straddle a \see{TransactedFile::Buffer} boundary. If the
     /// ratio of *Owner* counter and range counter approaches 1 then you have some
@@ -36,24 +36,24 @@
     struct Stats {
         /// \brief
         /// A count of \see{Range} (reading == true) that have been created for this file.
-        std::atomic<ui64> readOnlyRanges;
+        std::atomic<ui64> readingRanges;
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
-        std::atomic<ui64> readOnlyOwnerRanges;
+        std::atomic<ui64> readingOwnerRanges;
         /// \brief
         /// A count of \see{Range} (reading == false) that have been created for this file.
-        std::atomic<ui64> writeOnlyRanges;
+        std::atomic<ui64> writingRanges;
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
-        std::atomic<ui64> writeOnlyOwnerRanges;
+        std::atomic<ui64> writingOwnerRanges;
 
         /// \brief
         /// ctor.
         Stats () :
-            readOnlyRanges (0),
-            readOnlyOwnerRanges (0),
-            writeOnlyRanges (0),
-            writeOnlyOwnerRanges (0) {}
+            readingRanges (0),
+            readingOwnerRanges (0),
+            writingRanges (0),
+            writingOwnerRanges (0) {}
     } stats;
 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
 
@@ -192,7 +192,7 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
         Range (
             file,
             offset,
-            reading ? MIN (length, file.GetSize () - offset) : length,
+            MIN (length, file.GetSize () - offset),
             reading,
             allocator) {}
 

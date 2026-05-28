@@ -47,24 +47,42 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeRegistry)
 
         private:
+            /// \brief
+            /// true == \see{TransactedFileBTree::Node} stores values
+            /// as \see{TransactedFile::Object}.
             bool valueAsObject;
+            /// \brief
+            /// Number of entries per \see{TransactedFileBTree::Node}.
             std::size_t entriesPerNode;
+            /// \brief
+            /// Number of \see{TransactedFileBTree::Node}s per allocator page.
             std::size_t nodesPerPage;
+            /// \brief
+            /// Where \see{TransactedFileBTree::Node} pages come from.
             Allocator::SharedPtr allocator;
+            /// \struct TransactedFileBTreeRegistry::Header TransactedFileBTreeRegistry.h
+            /// thekogans/util/TransactedFileBTreeRegistry.h
+            ///
+            /// \brief
+            /// Header stores global registry info.
             struct _LIB_THEKOGANS_UTIL_DECL Header {
+                /// \brief
+                /// \see{TransactedFileBTree::Header} offset.
                 TransactedFile::Allocator::PtrType btreeOffset;
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
-                    UI32_SIZE +     // magic
-                    TransactedFile::Allocator::PTR_TYPE_SIZE;  // btreeOffset
+                    UI32_SIZE + // magic
+                    TransactedFile::Allocator::PTR_TYPE_SIZE; // btreeOffset
 
                 /// \brief
                 /// ctor.
                 Header () :
                     btreeOffset (0) {}
             } header;
+            /// \brief
+            /// \see{TransactedFileBTree} used to store key/values.
             TransactedFileBTree::SharedPtr btree;
             /// \brief
             /// Synchronization lock.
@@ -83,7 +101,7 @@ namespace thekogans {
             /// \param[in] valueAsObject_ true == \see{TransactedFileBTree::Node} stores values
             /// as \see{TransactedFile::Object}.
             /// \param[in] entriesPerNode_ Number of entries per \see{TransactedFileBTree::Node}.
-            /// \param[in] nodesPerPage Number_ of \see{TransactedFileBTree::Node}s per allocator page.
+            /// \param[in] nodesPerPage Number of \see{TransactedFileBTree::Node}s per allocator page.
             /// \param[in] allocator_ Where \see{TransactedFileBTree::Node} pages come from.
             TransactedFileBTreeRegistry (
                 bool valueAsObject_ = true,
@@ -116,17 +134,20 @@ namespace thekogans {
             // Serializable
             /// \brief
             /// Read the \see{Header} from the file.
+            /// \param[in] header \see{SerializableHeader} governig the underlying data.
+            /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
             virtual void Read (
                 const SerializableHeader & /*header*/,
                 Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the file.
+            /// \param[in] serializer \see{Serializer} to write the \see{Header} to.
             virtual void Write (Serializer &serializer) const override;
 
             // TransactedFile::ObjectEvents
             /// \brief
-            /// \see{Object} allocated a block in the file.
-            /// \param[in] object \see{Object} whose offset has become valid.
+            /// \see{TransactedFileBTree} allocated a block for it's \see{TransactedFileBTree::Header}.
+            /// \param[in] object \see{TransactedFileBTree} whose offset has become valid.
             virtual void OnTransactedFileObjectAlloc (
                     TransactedFile::Object::SharedPtr object) noexcept override {
                 LockGuard<SpinLock> guard (spinLock);
@@ -134,8 +155,9 @@ namespace thekogans {
                 SetDirty (true);
             }
             /// \brief
-            /// \see{Object} freed its block.
-            /// \param[in] object \see{Object} whose offset has become invalid.
+            /// \see{TransactedFileBTree} freed its \see{TransactedFileBTree::Header} block.
+            /// \param[in] object \see{TransactedFileBTree} whose \see{TransactedFileBTree::Header}
+            /// has become invalid.
             virtual void OnTransactedFileObjectFree (
                     TransactedFile::Object::SharedPtr /*object*/) noexcept override {
                 LockGuard<SpinLock> guard (spinLock);

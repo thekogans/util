@@ -39,31 +39,26 @@ namespace thekogans {
                 owner (false) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             if (reading) {
-                ++file.stats.readOnlyRanges;
+                ++file.stats.readingRanges;
             }
             else {
-                ++file.stats.writeOnlyRanges;
+                ++file.stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             buffer = file.GetBuffer (offset);
             std::size_t bufferOffset = offset - buffer->offset;
-            // To us it maters not how long the actual block is.
-            // All we care about is that our range fits in to it's
-            // range. It's up to the down stream ReadOnlyRange and
-            // WriteOnlyRange (below) to do the checking and
-            // perform appropriate actions.
-            if (length > Buffer::SIZE - bufferOffset) {
+            if (length > buffer->length - bufferOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
                 if (reading) {
                 #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-                    ++file.stats.readOnlyOwnerRanges;
+                    ++file.stats.readingOwnerRanges;
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                     file.ReadEx (offset, data, length);
                 }
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 else {
-                    ++file.stats.writeOnlyOwnerRanges;
+                    ++file.stats.writingOwnerRanges;
                 }
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
@@ -78,16 +73,7 @@ namespace thekogans {
                     file.WriteEx (offset, data, position);
                 }
                 else {
-                    LockGuard<SpinLock> guard (file.spinLock);
                     buffer->dirty = true;
-                    std::size_t bufferLength = offset - buffer->offset + position;
-                    if (buffer->length < bufferLength) {
-                        buffer->length = bufferLength;
-                        // Only last block can be < SIZE. Therefore, if
-                        // it's size changes, file size changed too.
-                        // SetSize will call SetDirty (true).
-                        file.size = offset + position;
-                    }
                     file.SetDirty (true);
                 }
             }

@@ -517,6 +517,7 @@ namespace thekogans {
             if (allocator != nullptr) {
                 if (GetSize () == 0) {
                     std::size_t allocatorSize = UI32_SIZE + allocator->GetSize ();
+                    SetSize (Allocator::Block::SIZE + allocatorSize);
                     Allocator::Block block (Allocator::Block::HEADER_SIZE, 0, allocatorSize);
                     block.Write (*this);
                     Range range (*this, Allocator::Block::HEADER_SIZE, allocatorSize, false);
