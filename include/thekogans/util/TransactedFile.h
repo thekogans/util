@@ -201,8 +201,10 @@ namespace thekogans {
             /// Combination of the above flags.
             Flags32 flags;
             /// \brief
-            /// For use by \see{Guard} and \see{Transaction}
+            /// For use by \see{Transaction}.
             Mutex mutex;
+            /// \brief
+            /// Synchronization lock.
             SpinLock spinLock;
 
             /// \struct TransactedFile::Buffer TransactedFile.h thekogans/util/TransactedFile.h
@@ -467,24 +469,11 @@ namespace thekogans {
             /// \param[in] allocator_
             /// \param[in] registry_
             TransactedFile (
-                    Endianness endianness = HostEndian,
-                    THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                    const std::string &path = std::string (),
-                    Allocator::SharedPtr allocator_ = nullptr,
-                    Registry::SharedPtr regitry_ = nullptr) :
-                    File (endianness, handle, path),
-                    position (IsOpen () ? File::Tell () : 0),
-                    sizeOnDisk (IsOpen () ? File::GetSize () : 0),
-                    size (sizeOnDisk),
-                    flags (0),
-                    currBufferOffset (NOFFS),
-                    currBuffer (nullptr),
-                    allocator (IsOpen () ? allocator_ : nullptr),
-                    registry (IsOpen () ? regitry_ : nullptr) {
-                if (IsOpen ()) {
-                    Init ();
-                }
-            }
+                Endianness endianness = HostEndian,
+                THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
+                const std::string &path = std::string (),
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr regitry_ = nullptr);
             /// \brief
             /// ctor. Open or create the file.
             /// \param[in] endianness File endianness.
@@ -501,42 +490,19 @@ namespace thekogans {
             /// \param[in] allocator
             /// \param[in] registry
             TransactedFile (
-                    Endianness endianness,
-                    const std::string &path,
-                #if defined (TOOLCHAIN_OS_Windows)
-                    DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
-                    DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                    DWORD dwCreationDisposition = OPEN_ALWAYS,
-                    DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    i32 flags = O_RDWR | O_CREAT,
-                    i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    Allocator::SharedPtr allocator = nullptr,
-                    Registry::SharedPtr registry = nullptr) :
-                    File (endianness),
-                    position (0),
-                    sizeOnDisk (0),
-                    size (0),
-                    flags (0),
-                    currBufferOffset (NOFFS),
-                    currBuffer (nullptr),
-                    allocator (nullptr),
-                    registry (nullptr) {
-                OpenEx (
-                    path,
-                #if defined (TOOLCHAIN_OS_Windows)
-                    dwDesiredAccess,
-                    dwShareMode,
-                    dwCreationDisposition,
-                    dwFlagsAndAttributes,
-                #else // defined (TOOLCHAIN_OS_Windows)
-                    flags,
-                    mode,
-                #endif // defined (TOOLCHAIN_OS_Windows)
-                    allocator,
-                    registry);
-            }
+                Endianness endianness,
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
+                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                DWORD dwCreationDisposition = OPEN_ALWAYS,
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags = O_RDWR | O_CREAT,
+                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr);
             /// \brief
             /// dtor.
             virtual ~TransactedFile ();
@@ -569,11 +535,35 @@ namespace thekogans {
                 return mutex;
             }
 
-            // Serializer
             std::size_t ReadEx (
                 ui64 offset,
                 void *buffer,
                 std::size_t count);
+            std::size_t WriteEx (
+                ui64 offset,
+                const void *buffer,
+                std::size_t count);
+
+            void OpenEx (
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
+                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+                DWORD dwCreationDisposition = OPEN_EXISTING,
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags = O_RDWR,
+                i32 mode = S_IRUSR | S_IWUSR,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr);
+
+            /// \brief
+            /// Flush dirty pages and delete the cache.
+            void DeleteCache ();
+            ui32 Grow (ui64 amount);
+
+            // Serializer
             /// \brief
             /// Read bytes from a file.
             /// \param[out] buffer Where to place the bytes.
@@ -582,10 +572,6 @@ namespace thekogans {
             virtual std::size_t Read (
                 void *buffer,
                 std::size_t count) override;
-            std::size_t WriteEx (
-                ui64 offset,
-                const void *buffer,
-                std::size_t count);
             /// \brief
             /// Write bytes to a file.
             /// \param[in] buffer Where the bytes come from.
@@ -610,20 +596,6 @@ namespace thekogans {
             virtual i64 Seek (
                 i64 offset,
                 i32 fromWhere) override;
-
-            void OpenEx (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
-                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
-                DWORD dwCreationDisposition = OPEN_EXISTING,
-                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags = O_RDWR,
-                i32 mode = S_IRUSR | S_IWUSR,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr registry_ = nullptr);
 
             // File
             /// \brief
@@ -670,7 +642,6 @@ namespace thekogans {
             /// Truncates or expands the file.
             /// \param[in] newSize New size to set the file to.
             virtual void SetSize (ui64 newSize) override;
-            ui32 Grow (ui64 amount);
 
             /// \brief
             /// Lock a range of bytes in the file.
@@ -687,10 +658,6 @@ namespace thekogans {
             /// \region[in] region region to unlock.
             virtual void UnlockRegion (const Region & /*region*/) override {}
 
-            /// \brief
-            /// Flush dirty pages and delete the cache.
-            void DeleteCache ();
-
         private:
             /// \brief
             /// Called during file open. If the file is empty and an
@@ -701,7 +668,9 @@ namespace thekogans {
             /// to be structured and the \see{Allocator} and an optional
             /// \see{Registry} will come from the file. If no \see{Allocator}
             /// was provided the file is assumed to be unstrucured.
-            void Init ();
+            void Init (
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_);
 
             /// \brief
             /// Used by Open to apply the log before opening the file.

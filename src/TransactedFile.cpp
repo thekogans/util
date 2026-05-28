@@ -168,6 +168,60 @@ namespace thekogans {
             return nodes[index];
         }
 
+        TransactedFile::TransactedFile (
+                Endianness endianness,
+                THEKOGANS_UTIL_HANDLE handle,
+                const std::string &path,
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_) :
+                File (endianness, handle, path),
+                position (0),
+                sizeOnDisk (0),
+                size (0),
+                flags (0),
+                currBufferOffset (NOFFS) {
+            if (IsOpen ()) {
+                position = File::Tell ();
+                size = sizeOnDisk = File::GetSize ();
+                Init (allocator_, registry_);
+            }
+        }
+
+        TransactedFile::TransactedFile (
+                Endianness endianness,
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess | GENERIC_WRITE,
+                DWORD dwShareMode,
+                DWORD dwCreationDisposition,
+                DWORD dwFlagsAndAttributes,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags,
+                i32 mode,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_) :
+                File (endianness),
+                position (0),
+                sizeOnDisk (0),
+                size (0),
+                flags (0),
+                currBufferOffset (NOFFS) {
+            OpenEx (
+                path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                flags,
+                mode,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                allocator_,
+                registry_);
+        }
+
         TransactedFile::~TransactedFile () {
             THEKOGANS_UTIL_TRY {
                 Close ();
@@ -204,14 +258,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-        }
-
-        std::size_t TransactedFile::Read (
-                void *buffer,
-                std::size_t count) {
-            std::size_t countRead = ReadEx (position, buffer, count);
-            position += countRead;
-            return countRead;
         }
 
         std::size_t TransactedFile::WriteEx (
@@ -254,6 +300,67 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+        }
+
+        void TransactedFile::OpenEx (
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess,
+                DWORD dwShareMode,
+                DWORD dwCreationDisposition,
+                DWORD dwFlagsAndAttributes,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags,
+                i32 mode,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            Open (
+                path,
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            Open (path, flags, mode);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            Init (allocator_, registry_);
+        }
+
+        ui32 TransactedFile::Grow (ui64 amount) {
+            if (IsOpen ()) {
+                LockGuard<SpinLock> guard (spinLock);
+                ui32 oldSize = size;
+                size += amount;
+                SetDirty (true);
+                return oldSize;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
+        void TransactedFile::DeleteCache () {
+            if (IsOpen ()) {
+                Flush ();
+                root.Delete ();
+                currBufferOffset = NOFFS;
+                currBuffer.Reset ();
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
+        std::size_t TransactedFile::Read (
+                void *buffer,
+                std::size_t count) {
+            std::size_t countRead = ReadEx (position, buffer, count);
+            position += countRead;
+            return countRead;
         }
 
         std::size_t TransactedFile::Write (
@@ -302,33 +409,6 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::OpenEx (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
-                i32 mode,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) {
-            allocator = allocator_;
-            registry = registry_;
-        #if defined (TOOLCHAIN_OS_Windows)
-            Open (
-                path,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            Open (path, flags, mode);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
         void TransactedFile::Open (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -356,8 +436,7 @@ namespace thekogans {
             size = sizeOnDisk;
             flags = 0;
             currBufferOffset = NOFFS;
-            currBuffer = nullptr;
-            Init ();
+            currBuffer.Reset ();
         }
 
         void TransactedFile::Close () {
@@ -372,7 +451,7 @@ namespace thekogans {
                 size = 0;
                 flags = 0;
                 currBufferOffset = NOFFS;
-                currBuffer = nullptr;
+                currBuffer.Reset ();
                 allocator.Reset ();
                 registry.Reset ();
                 File::Close ();
@@ -473,7 +552,7 @@ namespace thekogans {
                         // currBuffer will be deleted by root.SetSize.
                         if (currBufferOffset >= newSize) {
                             currBufferOffset = NOFFS;
-                            currBuffer = nullptr;
+                            currBuffer.Reset ();
                         }
                     }
                     size = newSize;
@@ -486,42 +565,17 @@ namespace thekogans {
             }
         }
 
-        ui32 TransactedFile::Grow (ui64 amount) {
-            if (IsOpen ()) {
-                LockGuard<SpinLock> guard (spinLock);
-                ui32 oldSize = size;
-                size += amount;
-                SetDirty (true);
-                return oldSize;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        void TransactedFile::DeleteCache () {
-            if (IsOpen ()) {
-                Flush ();
-                root.Delete ();
-                currBufferOffset = NOFFS;
-                currBuffer = nullptr;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        void TransactedFile::Init () {
-            if (allocator != nullptr) {
+        void TransactedFile::Init (
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_) {
+            if (allocator_ != nullptr) {
                 if (GetSize () == 0) {
-                    std::size_t allocatorSize = UI32_SIZE + allocator->GetSize ();
+                    std::size_t allocatorSize = UI32_SIZE + allocator_->GetSize ();
                     SetSize (Allocator::Block::SIZE + allocatorSize);
                     Allocator::Block block (Allocator::Block::HEADER_SIZE, 0, allocatorSize);
                     block.Write (*this);
                     Range range (*this, Allocator::Block::HEADER_SIZE, allocatorSize, false);
-                    range << MAGIC32 << *allocator;
+                    range << MAGIC32 << *allocator_;
                 }
                 BlockRange range (*this, Allocator::Block::HEADER_SIZE);
                 ui32 magic;
@@ -549,11 +603,11 @@ namespace thekogans {
                     );
                     range >> allocator;
                 }
-                if (allocator->GetRegistryOffset () == 0 && registry != nullptr) {
-                    std::size_t registrySize = UI32_SIZE + registry->GetSize ();
+                if (allocator->GetRegistryOffset () == 0 && registry_ != nullptr) {
+                    std::size_t registrySize = UI32_SIZE + registry_->GetSize ();
                     allocator->SetRegistryOffset (allocator->Alloc (registrySize));
                     Range range (*this, allocator->GetRegistryOffset (), registrySize, false);
-                    range << MAGIC32 << *registry;
+                    range << MAGIC32 << *registry_;
                 }
                 if (allocator->GetRegistryOffset () != 0) {
                     BlockRange range (*this, allocator->GetRegistryOffset ());
@@ -745,7 +799,7 @@ namespace thekogans {
                     SetTransactionPending (false);
                     if ((allocator != nullptr && allocator->IsDirty ()) ||
                             (registry != nullptr && registry->IsDirty ())) {
-                        Init ();
+                        Init (allocator, registry);
                     }
                     Produce (
                         std::bind (
