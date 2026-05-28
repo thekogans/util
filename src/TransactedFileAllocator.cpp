@@ -143,9 +143,7 @@ namespace thekogans {
         inline Serializer &operator >> (
                 Serializer &serializer,
                 TransactedFile::Allocator::Header &header) {
-            serializer >>
-                header.flags >>
-                header.registryOffset;
+            serializer >> header.flags >> header.registryOffset;
             return serializer;
         }
 
@@ -175,9 +173,7 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const TransactedFile::Allocator::Header &header) {
-            serializer <<
-                header.flags <<
-                header.registryOffset;
+            serializer << header.flags << header.registryOffset;
             return serializer;
         }
 
