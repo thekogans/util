@@ -25,12 +25,11 @@ namespace thekogans {
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
+                assert (IsDirty ());
                 if (phase == COMMIT_PHASE_1) {
-                    assert (IsDirty ());
                     Alloc ();
                 }
                 else if (phase == COMMIT_PHASE_2) {
-                    assert (IsDirty ());
                     Flush ();
                     SetDirty (false);
                 }
