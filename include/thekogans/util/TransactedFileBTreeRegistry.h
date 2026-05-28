@@ -20,6 +20,8 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFile.h"
@@ -31,11 +33,12 @@ namespace thekogans {
         /// thekogans/util/TransactedFileBTreeRegistry.h
         ///
         /// \brief
-        /// \see{TransactedFileBTreeRegistry} is a \see{TransactedFileBTree}.
+        /// TransactedFileBTreeRegistry is a \see{TransactedFileBTree}.
         /// It's also a \see{TransactedFile::Allocator::Header::rootObject}.
         /// It provides global ordered, associative storage for \see{TransactedFile}
         /// clients. Use it to store and retrieve practically any value derived
         /// from \see{Serializable}. The key type is std::string.
+        /// TransactedFileBTreeRegistry is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
                 public TransactedFile::Registry,
                 public Subscriber<TransactedFile::ObjectEvents> {
@@ -48,7 +51,6 @@ namespace thekogans {
             std::size_t entriesPerNode;
             std::size_t nodesPerPage;
             Allocator::SharedPtr allocator;
-
             struct _LIB_THEKOGANS_UTIL_DECL Header {
                 TransactedFile::Allocator::PtrType btreeOffset;
 
@@ -64,6 +66,9 @@ namespace thekogans {
                     btreeOffset (0) {}
             } header;
             TransactedFileBTree::SharedPtr btree;
+            /// \brief
+            /// Synchronization lock.
+            mutable SpinLock spinLock;
 
         public:
             /// \brief
@@ -124,6 +129,7 @@ namespace thekogans {
             /// \param[in] object \see{Object} whose offset has become valid.
             virtual void OnTransactedFileObjectAlloc (
                     TransactedFile::Object::SharedPtr object) noexcept override {
+                LockGuard<SpinLock> guard (spinLock);
                 header.btreeOffset = object->GetOffset ();
                 SetDirty (true);
             }
@@ -132,6 +138,7 @@ namespace thekogans {
             /// \param[in] object \see{Object} whose offset has become invalid.
             virtual void OnTransactedFileObjectFree (
                     TransactedFile::Object::SharedPtr /*object*/) noexcept override {
+                LockGuard<SpinLock> guard (spinLock);
                 header.btreeOffset = 0;
                 SetDirty (true);
             }

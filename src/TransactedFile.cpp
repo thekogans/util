@@ -236,10 +236,13 @@ namespace thekogans {
                         offset += countToWrite;
                         count -= countToWrite;
                     }
-                    if (size < offset) {
-                        size = offset;
+                    {
+                        LockGuard<SpinLock> guard (spinLock);
+                        if (size < offset) {
+                            size = offset;
+                        }
+                        SetDirty (true);
                     }
-                    SetDirty (true);
                     return countWritten;
                 }
                 else {
@@ -461,13 +464,14 @@ namespace thekogans {
 
         void TransactedFile::SetSize (ui64 newSize) {
             if (IsOpen ()) {
+                LockGuard<SpinLock> guard (spinLock);
                 if (size != newSize) {
                     if (size > newSize) {
                         // shrinking
                         root.SetSize (newSize);
-                        // If new size is <= current position,
+                        // If new size is <= current buffer offset,
                         // currBuffer will be deleted by root.SetSize.
-                        if ((ui64)position >= newSize) {
+                        if (currBufferOffset >= newSize) {
                             currBufferOffset = NOFFS;
                             currBuffer = nullptr;
                         }
@@ -475,6 +479,20 @@ namespace thekogans {
                     size = newSize;
                     SetDirty (true);
                 }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
+        ui32 TransactedFile::Grow (ui64 amount) {
+            if (IsOpen ()) {
+                LockGuard<SpinLock> guard (spinLock);
+                ui32 oldSize = size;
+                size += amount;
+                SetDirty (true);
+                return oldSize;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -743,6 +761,7 @@ namespace thekogans {
 
         TransactedFile::Buffer::SharedPtr TransactedFile::GetBuffer (ui64 offset) {
             ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
+            LockGuard<SpinLock> guard (spinLock);
             if (currBufferOffset != bufferOffset) {
                 // --
                 ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);

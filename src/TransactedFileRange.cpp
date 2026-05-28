@@ -78,19 +78,17 @@ namespace thekogans {
                     file.WriteEx (offset, data, position);
                 }
                 else {
+                    LockGuard<SpinLock> guard (file.spinLock);
                     buffer->dirty = true;
-                    std::size_t bufferOffset = offset - buffer->offset;
-                    std::size_t bufferLength = bufferOffset + position;
+                    std::size_t bufferLength = offset - buffer->offset + position;
                     if (buffer->length < bufferLength) {
                         buffer->length = bufferLength;
                         // Only last block can be < SIZE. Therefore, if
                         // it's size changes, file size changed too.
                         // SetSize will call SetDirty (true).
-                        file.SetSize (offset + position);
+                        file.size = offset + position;
                     }
-                    else {
-                        file.SetDirty (true);
-                    }
+                    file.SetDirty (true);
                 }
             }
             if (owner) {

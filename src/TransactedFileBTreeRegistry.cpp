@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFileBTreeRegistry.h"
 
@@ -29,6 +30,7 @@ namespace thekogans {
             TransactedFile::Registry::TYPE)
 
         Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
+            LockGuard<SpinLock> guard (spinLock);
             TransactedFileBTree::Iterator it;
             return btree->Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
@@ -36,6 +38,7 @@ namespace thekogans {
         void TransactedFileBTreeRegistry::SetValue (
                 const std::string &key,
                 Serializable::SharedPtr value) {
+            LockGuard<SpinLock> guard (spinLock);
             if (value == nullptr) {
                 btree->Remove (StringKey (key));
             }
@@ -57,6 +60,7 @@ namespace thekogans {
         void TransactedFileBTreeRegistry::Read (
                 const SerializableHeader & /*header*/,
                 Serializer &serializer) {
+            LockGuard<SpinLock> guard (spinLock);
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -88,6 +92,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeRegistry::Write (Serializer &serializer) const {
+            LockGuard<SpinLock> guard (spinLock);
             serializer << MAGIC32 << header;
         }
 

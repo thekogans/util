@@ -21,6 +21,8 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/BlockAllocator.h"
@@ -34,6 +36,7 @@ namespace thekogans {
         /// \brief
         /// TransactedFileBTreeAllocator is a general purpose \see{TransactedFile::Allocator}.
         /// It uses a hand tuned \see{TransactedFileBTreeAllocator::BTree} to manage the free list.
+        /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
                 public TransactedFile::Allocator,
                 public Subscriber<TransactedFile::ObjectEvents> {
@@ -119,6 +122,15 @@ namespace thekogans {
             };
 
         private:
+            /// \brief
+            /// Number of entries per \see{BTree::Node}.
+            const std::size_t btreeEntriesPerNode;
+            /// \brief
+            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
+            const std::size_t btreeNodesPerPage;
+            /// \brief
+            /// \see{util::Allocator} for \see{BTree::Node}.
+            util::Allocator::SharedPtr allocator;
             /// \struct TransactedFileBTreeAllocator::Header TransactedFileBTreeAllocator.h
             /// thekogans/util/TransactedFileBTreeAllocator.h
             ///
@@ -150,15 +162,6 @@ namespace thekogans {
             /// I split it out because this file was getting too big to maintain.
             #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
             /// \brief
-            /// Number of entries per \see{BTree::Node}.
-            std::size_t btreeEntriesPerNode;
-            /// \brief
-            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
-            std::size_t btreeNodesPerPage;
-            /// \brief
-            /// \see{util::Allocator} for \see{BTree::Node}.
-            util::Allocator::SharedPtr allocator;
-            /// \brief
             /// \see{BTree} to manage heap free space.
             BTree::SharedPtr btree;
             /// \brief
@@ -166,6 +169,9 @@ namespace thekogans {
             /// don't pay the price of calculating it everytime \see{Alloc}
             /// is called.
             std::size_t btreeNodeFileSize;
+            /// \brief
+            /// Synchronization lock.
+            mutable SpinLock spinLock;
 
         public:
             /// \brief
@@ -241,6 +247,7 @@ namespace thekogans {
             /// \param[in] object \see{Object} whose offset has become valid.
             virtual void OnTransactedFileObjectAlloc (
                     TransactedFile::Object::SharedPtr object) noexcept override {
+                LockGuard<SpinLock> guard (spinLock);
                 header.btreeOffset = object->GetOffset ();
                 SetDirty (true);
             }
@@ -249,6 +256,7 @@ namespace thekogans {
             /// \param[in] object \see{Object} whose offset has become invalid.
             virtual void OnTransactedFileObjectFree (
                     TransactedFile::Object::SharedPtr /*object*/) noexcept override {
+                LockGuard<SpinLock> guard (spinLock);
                 header.btreeOffset = 0;
                 SetDirty (true);
             }

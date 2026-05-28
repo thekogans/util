@@ -203,6 +203,7 @@ namespace thekogans {
             /// \brief
             /// For use by \see{Guard} and \see{Transaction}
             Mutex mutex;
+            SpinLock spinLock;
 
             /// \struct TransactedFile::Buffer TransactedFile.h thekogans/util/TransactedFile.h
             ///
@@ -439,8 +440,8 @@ namespace thekogans {
             /// going to do a lot of 'local' io, GetBuffer will be reduced to a single
             /// and and compare. Keep that in mind when designing your data structures
             /// and access patterns. The less you Seek, the better your performance
-            /// will be. To that end, you're highly encouraged to use \see{FileAllocator}
-            /// and \see{FileAllocator::BlockBuffer}.
+            /// will be. To that end, you're highly encouraged to use \see{Allocator}
+            /// and \see{Range}.
             Buffer::SharedPtr currBuffer;
 
         public:
@@ -669,6 +670,7 @@ namespace thekogans {
             /// Truncates or expands the file.
             /// \param[in] newSize New size to set the file to.
             virtual void SetSize (ui64 newSize) override;
+            ui32 Grow (ui64 amount);
 
             /// \brief
             /// Lock a range of bytes in the file.
