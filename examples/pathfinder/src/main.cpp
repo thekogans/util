@@ -104,17 +104,11 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            Roots::SharedPtr roots;
-            IgnoreList::SharedPtr ignoreList;
-            {
-                util::LockGuard<util::Mutex> guard (
-                    Database::Instance ()->GetFile ()->GetLock ());
-                roots = Database::Instance ()->GetRegistry ()->GetValue ("roots");
-                ignoreList = Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
-            }
+            Roots::SharedPtr roots = Database::Instance ()->GetRegistry ()->GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots);
             }
+            IgnoreList::SharedPtr ignoreList = Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
             if (ignoreList == nullptr) {
                 ignoreList.Reset (new IgnoreList);
             }
@@ -122,14 +116,14 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::TransactedFile::Transaction transaction (
-                            Database::Instance ()->GetFile ());
                         roots->ScanRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
-                        Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
-                        transaction.Commit ();
                     }
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
+                    Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
+                    transaction.Commit ();
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to scan.\n");
@@ -138,12 +132,12 @@ int main (
             else if (Options::Instance ()->action == "enable_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
-                    util::TransactedFile::Transaction transaction (
-                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->EnableRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                     transaction.Commit ();
                 }
@@ -154,12 +148,12 @@ int main (
             else if (Options::Instance ()->action == "disable_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
-                    util::TransactedFile::Transaction transaction (
-                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->DisableRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                     transaction.Commit ();
                 }
@@ -171,14 +165,12 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
-                        util::TransactedFile::Transaction transaction (
-                            Database::Instance ()->GetFile ());
-                        if (roots->DeleteRoot (
-                                NormalizePath (util::Path (roots_[i]).MakeAbsolute ()))) {
-                            Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
-                            transaction.Commit ();
-                        }
+                        roots->DeleteRoot (NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
+                    Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
+                    transaction.Commit ();
                 }
                 else {
                     THEKOGANS_UTIL_LOG_ERROR ("Must specify at least one root to delete.\n");
@@ -193,8 +185,6 @@ int main (
             }
             else if (Options::Instance ()->action == "find") {
                 if (!Options::Instance ()->pattern.empty ()) {
-                    util::LockGuard<util::Mutex> guard (
-                        Database::Instance ()->GetFile ()->GetLock ());
                     roots->Find (
                         Options::Instance ()->pattern,
                         Options::Instance ()->ignoreCase,
@@ -212,11 +202,11 @@ int main (
             else if (Options::Instance ()->action == "add_ignore") {
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
-                    util::TransactedFile::Transaction transaction (
-                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
                         ignoreList->AddIgnore (ignoreList_[i]);
                     }
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     Database::Instance ()->GetRegistry ()->SetValue ("ignore_list", ignoreList);
                     transaction.Commit ();
                 }
@@ -227,11 +217,11 @@ int main (
             else if (Options::Instance ()->action == "delete_ignore") {
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
-                    util::TransactedFile::Transaction transaction (
-                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
                         ignoreList->DeleteIgnore (ignoreList_[i]);
                     }
+                    util::TransactedFile::Transaction transaction (
+                        Database::Instance ()->GetFile ());
                     Database::Instance ()->GetRegistry ()->SetValue ("ignore_list", ignoreList);
                     transaction.Commit ();
                 }

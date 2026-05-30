@@ -186,9 +186,6 @@ namespace thekogans {
             /// Current read/write position.
             i64 position;
             /// \brief
-            /// File size on disk.
-            ui64 sizeOnDisk;
-            /// \brief
             /// File size.
             ui64 size;
             /// \brief
@@ -228,9 +225,6 @@ namespace thekogans {
                 /// Buffer offset (multiple of SIZE).
                 ui64 offset;
                 /// \brief
-                /// Buffer length (max SIZE).
-                ui64 length;
-                /// \brief
                 /// Buffer size. This (and the coresponding
                 /// \see{SHIFT_COUNT} below) is a tuning parameter.
                 /// Set it based on your typical file sizes. Meaning that,
@@ -260,12 +254,9 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] offset_ Buffer offset (multiple of SIZE).
-                /// \param[in] length_ Buffer length (max SIZE).
                 Buffer (
-                    ui64 offset_ = 0,
-                    ui64 length_ = 0) :
+                    ui64 offset_ = 0) :
                     offset (offset_),
-                    length (length_),
                     dirty (false) {}
             };
 
@@ -296,10 +287,7 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
-                /// \param[out] count Incremental count of the dirty buffers.
-                virtual void Save (
-                    File &log,
-                    ui64 &count) = 0;
+                virtual void Save (File &log) = 0;
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
@@ -350,10 +338,7 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
-                /// \param[out] count Incremental count of the dirty buffers.
-                virtual void Save (
-                    File &log,
-                    ui64 &count) override;
+                virtual void Save (File &log) override;
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
@@ -404,10 +389,7 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
-                /// \param[out] count Incremental count of the dirty buffers.
-                virtual void Save (
-                    File &log,
-                    ui64 &count) override;
+                virtual void Save (File &log) override;
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
@@ -512,27 +494,6 @@ namespace thekogans {
             }
             inline Registry::SharedPtr GetRegistry () const {
                 return registry;
-            }
-
-            /// \brief
-            /// Use the lock to gain exclusive access to the file.
-            /// NOTE: TransactedFile does not use mutex (at all). As
-            /// noted elsewhere, locking with every seek/read/write
-            /// would be prohibitively expensive (not to mention it
-            /// would do nothing to preserve the atomicity of seek/read
-            /// and seek/write operations). Instead each
-            /// TransactedFile exposes a mutex that your threads can
-            /// use to synchronize access to the file based on
-            /// access patterns that are more appropriate to your
-            /// particular situation. Again, the use of the lock
-            /// is completely optional and in order for the entire
-            /// scheme to work your threads must manually cooperate
-            /// by acquiring the lock before use. To help this pattern,
-            /// TransactedFile::Transaction should be used for all
-            /// writes. LockGuard<Mutex> should be used for all reads.
-            /// \return mutex.
-            inline Mutex &GetLock () {
-                return mutex;
             }
 
             std::size_t ReadEx (
@@ -717,9 +678,10 @@ namespace thekogans {
 
             /// \brief
             /// Get the buffer that will cover the neighborhood around the given offset.
-            /// \param[in] offset Offset whos buffer to return.
+            /// \param[in] offset Offset whose buffer to return.
             /// \return Buffer that covers the neighborhood around the given offset.
             Buffer::SharedPtr GetBuffer (ui64 offset);
+            Buffer::SharedPtr GetBufferHelper (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

@@ -37,7 +37,7 @@ namespace thekogans {
 
         TransactedFile::Transaction::Transaction (TransactedFile::SharedPtr file_) :
                 file (file_),
-                guard (file->GetLock ()) {
+                guard (file->mutex) {
             file->BeginTransaction ();
         }
 
@@ -69,15 +69,12 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Segment::Save (
-                File &log,
-                ui64 &count) {
+        void TransactedFile::Segment::Save (File &log) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr && buffers[i]->dirty) {
-                    log << buffers[i]->offset << buffers[i]->length;
-                    log.Write (buffers[i]->data, buffers[i]->length);
+                    log << buffers[i]->offset;
+                    log.Write (buffers[i]->data, Buffer::SIZE);
                     buffers[i]->dirty = false;
-                    ++count;
                 }
             }
         }
@@ -86,7 +83,7 @@ namespace thekogans {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr && buffers[i]->dirty) {
                     file.Seek (buffers[i]->offset, SEEK_SET);
-                    file.Write (buffers[i]->data, buffers[i]->length);
+                    file.Write (buffers[i]->data, Buffer::SIZE);
                     buffers[i]->dirty = false;
                 }
             }
@@ -95,15 +92,14 @@ namespace thekogans {
         bool TransactedFile::Segment::SetSize (ui64 newSize) {
             for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
                 if (buffers[i] != nullptr) {
-                    if (buffers[i]->offset > newSize) {
+                    if (buffers[i]->offset >= newSize) {
                         buffers[i].Reset ();
                     }
                     else {
-                        if (buffers[i]->offset + buffers[i]->length > newSize) {
-                            buffers[i]->length = newSize - buffers[i]->offset;
-                            if (buffers[i]->length == 0) {
-                                buffers[i].Reset ();
-                            }
+                        ui64 consumed = newSize - buffers[i]->offset;
+                        if (consumed < Buffer::SIZE) {
+                            std::memset (
+                                buffers[i]->data + consumed, 0, Buffer::SIZE - consumed);
                         }
                         return false;
                     }
@@ -126,12 +122,10 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Internal::Save (
-                File &log,
-                ui64 &count) {
+        void TransactedFile::Internal::Save (File &log) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
-                    nodes[i]->Save (log, count);
+                    nodes[i]->Save (log);
                 }
             }
         }
@@ -176,13 +170,12 @@ namespace thekogans {
                 Registry::SharedPtr registry_) :
                 File (endianness, handle, path),
                 position (0),
-                sizeOnDisk (0),
                 size (0),
                 flags (0),
                 currBufferOffset (NOFFS) {
             if (IsOpen ()) {
                 position = File::Tell ();
-                size = sizeOnDisk = File::GetSize ();
+                size = File::GetSize ();
                 Init (allocator_, registry_);
             }
         }
@@ -203,7 +196,6 @@ namespace thekogans {
                 Registry::SharedPtr registry_) :
                 File (endianness),
                 position (0),
-                sizeOnDisk (0),
                 size (0),
                 flags (0),
                 currBufferOffset (NOFFS) {
@@ -235,13 +227,13 @@ namespace thekogans {
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
                 if (IsOpen ()) {
+                    LockGuard<SpinLock> guard (spinLock);
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        Buffer::SharedPtr buffer_ = GetBuffer (offset);
-                        std::size_t bufferOffset = offset - buffer_->offset;
-                        std::size_t countToRead = MIN (buffer_->length - bufferOffset, count);
-                        std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
+                        Buffer::SharedPtr buffer_ = GetBufferHelper (offset);
+                        std::size_t countToRead = MIN (MIN (size - buffer_->offset, count), Buffer::SIZE);
+                        std::memcpy (ptr, buffer_->data + offset - buffer_->offset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         offset += countToRead;
@@ -266,29 +258,23 @@ namespace thekogans {
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
                 if (IsOpen ()) {
+                    LockGuard<SpinLock> guard (spinLock);
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        Buffer::SharedPtr buffer_ = GetBuffer (offset);
-                        std::size_t bufferOffset = offset - buffer_->offset;
-                        if (buffer_->length < bufferOffset + count) {
-                            buffer_->length = MIN (bufferOffset + count, Buffer::SIZE);
-                        }
-                        std::size_t countToWrite = MIN (buffer_->length - bufferOffset, count);
-                        std::memcpy (buffer_->data + bufferOffset, ptr, countToWrite);
+                        Buffer::SharedPtr buffer_ = GetBufferHelper (offset);
+                        std::size_t countToWrite = MIN (MIN (size - buffer_->offset, count), Buffer::SIZE);
+                        std::memcpy (buffer_->data + offset - buffer_->offset, ptr, countToWrite);
                         buffer_->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;
                         offset += countToWrite;
                         count -= countToWrite;
                     }
-                    {
-                        LockGuard<SpinLock> guard (spinLock);
-                        if (size < offset) {
-                            size = offset;
-                        }
-                        SetDirty (true);
+                    if (size < offset) {
+                        size = offset;
                     }
+                    SetDirty (true);
                     return countWritten;
                 }
                 else {
@@ -432,11 +418,12 @@ namespace thekogans {
             File::Open (path, flags_, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
             position = File::Tell ();
-            sizeOnDisk = File::GetSize ();
-            size = sizeOnDisk;
+            size = File::GetSize ();
             flags = 0;
             currBufferOffset = NOFFS;
             currBuffer.Reset ();
+            allocator.Reset ();
+            registry.Reset ();
         }
 
         void TransactedFile::Close () {
@@ -447,7 +434,6 @@ namespace thekogans {
                 AbortTransaction ();
                 DeleteCache ();
                 position = 0;
-                sizeOnDisk = 0;
                 size = 0;
                 flags = 0;
                 currBufferOffset = NOFFS;
@@ -496,13 +482,13 @@ namespace thekogans {
                             endianness,
                             logPath,
                             SimpleFile::ReadWrite | SimpleFile::Create);
-                        ui32 isClean = 0;
-                        ui64 count = 0;
                         if (log.GetSize () > 0) {
                             ui32 magic;
                             log >> magic;
                             if (magic == MAGIC32) {
-                                log >> isClean >> count;
+                                ui32 isClean;
+                                log >> isClean;
+                                log << size;
                                 log.Seek (0, SEEK_END);
                             }
                             else {
@@ -512,11 +498,9 @@ namespace thekogans {
                             }
                         }
                         else {
-                            log << MAGIC32 << isClean << count << sizeOnDisk << size;
+                            log << MAGIC32 << (ui32)0 << size;
                         }
-                        root.Save (log, count);
-                        log.Seek (0, SEEK_SET);
-                        log << MAGIC32 << isClean << count << sizeOnDisk << size;
+                        root.Save (log);
                     }
                     else {
                         {
@@ -526,10 +510,7 @@ namespace thekogans {
                             TenantFile file (endianness, handle, path);
                             root.Flush (file);
                         }
-                        if (sizeOnDisk != size) {
-                            File::SetSize (size);
-                            sizeOnDisk = size;
-                        }
+                        File::SetSize (size);
                         File::Flush ();
                     }
                     SetDirty (false);
@@ -661,28 +642,22 @@ namespace thekogans {
                     ui32 isClean;
                     log >> isClean;
                     if (isClean == 1) {
-                        ui64 count;
-                        ui64 sizeOnDisk;
                         ui64 size;
-                        log >> count >> sizeOnDisk >> size;
-                        std::unique_ptr<Buffer> buffer (new Buffer);
-                        while (count-- != 0) {
-                            log >> buffer->offset >> buffer->length;
-                            log.Read (buffer->data, buffer->length);
-                            if (buffer->offset < size) {
-                                ui64 length = size - buffer->offset;
-                                if (length > buffer->length) {
-                                    length = buffer->length;
-                                }
-                                if (length != 0) {
-                                    file.Seek (buffer->offset, SEEK_SET);
-                                    file.Write (buffer->data, length);
+                        log >> size;
+                        ui64 offset;
+                        HostBuffer buffer (Buffer::SIZE);
+                        for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
+                            log >> offset;
+                            logPosition += UI64_SIZE + log.Read (buffer.GetDataPtr (), Buffer::SIZE);
+                            if (offset < size) {
+                                ui64 available = MIN (size - offset, Buffer::SIZE);
+                                if (available != 0) {
+                                    file.Seek (offset, SEEK_SET);
+                                    file.Write (buffer.GetDataPtr (), available);
                                 }
                             }
                         }
-                        if (sizeOnDisk != size) {
-                            file.SetSize (size);
-                        }
+                        file.SetSize (size);
                         file.Flush ();
                     }
                     else {
@@ -698,13 +673,13 @@ namespace thekogans {
         void TransactedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!IsTransactionPending ()) {
+                    Flush ();
                     SetTransactionPending (true);
                     Produce (
                         std::bind (
                             &TransactedFileEvents::OnTransactedFileTransactionBegin,
                             std::placeholders::_1,
                             this));
-                    Flush ();
                 }
             }
             else {
@@ -738,27 +713,21 @@ namespace thekogans {
                             if (magic == MAGIC32) {
                                 ui32 isClean = 1;
                                 log << isClean;
-                                ui64 count;
-                                log >> count >> sizeOnDisk >> size;
-                                std::unique_ptr<Buffer> buffer (new Buffer);
-                                while (count-- != 0) {
-                                    log >> buffer->offset >> buffer->length;
-                                    log.Read (buffer->data, buffer->length);
-                                    if (buffer->offset < size) {
-                                        ui64 length = size - buffer->offset;
-                                        if (length > buffer->length) {
-                                            length = buffer->length;
-                                        }
-                                        if (length != 0) {
-                                            File::Seek (buffer->offset, SEEK_SET);
-                                            File::Write (buffer->data, length);
+                                log >> size;
+                                ui64 offset;
+                                HostBuffer buffer (Buffer::SIZE);
+                                for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
+                                    log >> offset;
+                                    logPosition += UI64_SIZE + log.Read (buffer.GetDataPtr (), Buffer::SIZE);
+                                    if (offset < size) {
+                                        ui64 available = MIN (size - offset, Buffer::SIZE);
+                                        if (available != 0) {
+                                            File::Seek (offset, SEEK_SET);
+                                            File::Write (buffer.GetDataPtr (), available);
                                         }
                                     }
                                 }
-                                if (sizeOnDisk != size) {
-                                    File::SetSize (size);
-                                    sizeOnDisk = size;
-                                }
+                                File::SetSize (size);
                                 File::Flush ();
                             }
                             else {
@@ -782,7 +751,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
-                        SetSize (sizeOnDisk);
+                        SetSize (File::GetSize ());
                         // If SetSize did not delete the current buffer and
                         // if it is dirty, it will be deleted bu root.Clear.
                         if (currBuffer != nullptr && currBuffer->dirty) {
@@ -815,8 +784,12 @@ namespace thekogans {
         }
 
         TransactedFile::Buffer::SharedPtr TransactedFile::GetBuffer (ui64 offset) {
-            ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
             LockGuard<SpinLock> guard (spinLock);
+            return GetBufferHelper (offset);
+        }
+
+        TransactedFile::Buffer::SharedPtr TransactedFile::GetBufferHelper (ui64 offset) {
+            ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
             if (currBufferOffset != bufferOffset) {
                 // --
                 ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
@@ -835,15 +808,15 @@ namespace thekogans {
                 ui32 bufferIndex =
                     THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> Buffer::SHIFT_COUNT;
                 if (segment->buffers[bufferIndex] == nullptr) {
-                    ui64 bufferLength = MIN (
-                        bufferOffset < size ? size - bufferOffset : 0,
-                        Buffer::SIZE);
-                    segment->buffers[bufferIndex].Reset (new Buffer (bufferOffset, bufferLength));
+                    segment->buffers[bufferIndex].Reset (new Buffer (bufferOffset));
+                    ui64 sizeOnDisk = File::GetSize ();
                     if (bufferOffset < sizeOnDisk) {
                         File::Seek (bufferOffset, SEEK_SET);
-                        File::Read (
+                        ui64 countRead = File::Read (
                             segment->buffers[bufferIndex]->data,
-                            MIN (sizeOnDisk - bufferOffset, bufferLength));
+                            MIN (sizeOnDisk - bufferOffset, Buffer::SIZE));
+                        std::memset (
+                            segment->buffers[bufferIndex]->data + countRead, 0, Buffer::SIZE - countRead);
                     }
                 }
                 // -- After potentially creating the buffer above,

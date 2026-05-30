@@ -35,7 +35,6 @@ namespace thekogans {
                 allocator (allocator_),
                 data (nullptr),
                 position (0),
-                buffer (nullptr),
                 owner (false) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             if (reading) {
@@ -47,7 +46,7 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             buffer = file.GetBuffer (offset);
             std::size_t bufferOffset = offset - buffer->offset;
-            if (length > buffer->length - bufferOffset) {
+            if (length > Buffer::SIZE - bufferOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
                 if (reading) {
