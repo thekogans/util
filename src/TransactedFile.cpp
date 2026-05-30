@@ -569,11 +569,12 @@ namespace thekogans {
                 Registry::SharedPtr registry_) {
             if (allocator_ != nullptr) {
                 if (GetSize () == 0) {
-                    std::size_t allocatorSize = UI32_SIZE + allocator_->GetSize ();
-                    SetSize (Allocator::Block::SIZE + allocatorSize);
-                    Allocator::Block block (Allocator::Block::HEADER_SIZE, 0, allocatorSize);
+                    // Initialize the first block.
+                    Allocator::Block block (
+                        Allocator::Block::HEADER_SIZE, 0, UI32_SIZE + allocator_->GetSize ());
+                    SetSize (Allocator::Block::SIZE + block.GetSize ());
                     block.Write (*this);
-                    Range range (*this, Allocator::Block::HEADER_SIZE, allocatorSize, false);
+                    BlockRange range (*this, block.GetOffset (), false);
                     range << MAGIC32 << *allocator_;
                 }
                 BlockRange range (*this, Allocator::Block::HEADER_SIZE);
@@ -603,9 +604,9 @@ namespace thekogans {
                     range >> allocator;
                 }
                 if (allocator->GetRegistryOffset () == 0 && registry_ != nullptr) {
-                    std::size_t registrySize = UI32_SIZE + registry_->GetSize ();
-                    allocator->SetRegistryOffset (allocator->Alloc (registrySize));
-                    Range range (*this, allocator->GetRegistryOffset (), registrySize, false);
+                    allocator->SetRegistryOffset (
+                        allocator->Alloc (UI32_SIZE + registry_->GetSize ()));
+                    BlockRange range (*this, allocator->GetRegistryOffset (), false);
                     range << MAGIC32 << *registry_;
                 }
                 if (allocator->GetRegistryOffset () != 0) {
@@ -861,9 +862,9 @@ namespace thekogans {
                 const std::string &path,
                 Flags32 flags,
                 Allocator::SharedPtr allocator,
-                Registry::SharedPtr regitry) :
+                Registry::SharedPtr registry) :
                 TransactedFile (endianness) {
-            SimpleOpen (path, flags, allocator, regitry);
+            SimpleOpen (path, flags, allocator, registry);
         }
 
         void SimpleTransactedFile::SimpleOpen (

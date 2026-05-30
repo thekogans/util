@@ -728,8 +728,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
                 const std::string &path = std::string (),
                 Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr regitry = nullptr) :
-                TransactedFile (endianness, handle, path, allocator, regitry) {}
+                Registry::SharedPtr registry = nullptr) :
+                TransactedFile (endianness, handle, path, allocator, registry) {}
             /// \brief
             /// ctor. Abstracts most useful functionality from POSIX open.
             /// \param[in] endianness File endianness.
@@ -740,7 +740,7 @@ namespace thekogans {
                 const std::string &path,
                 Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
                 Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr regitry = nullptr);
+                Registry::SharedPtr registry = nullptr);
 
             /// \brief
             /// Open the file.
@@ -750,7 +750,7 @@ namespace thekogans {
                 const std::string &path,
                 Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
                 Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr regitry = nullptr);
+                Registry::SharedPtr registry = nullptr);
 
             /// \brief
             /// SimpleTransactedFile is neither copy constructable, nor assignable.
