@@ -236,8 +236,9 @@ namespace thekogans {
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
                         Buffer::SharedPtr buffer_ = GetBufferHelper (offset);
-                        std::size_t countToRead = MIN (MIN (size - buffer_->offset, count), Buffer::SIZE);
-                        std::memcpy (ptr, buffer_->data + offset - buffer_->offset, countToRead);
+                        std::size_t bufferOffset = offset - buffer_->offset;
+                        std::size_t countToRead = MIN (MIN (Buffer::SIZE - bufferOffset, count), size - buffer_->offset);
+                        std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         offset += countToRead;
@@ -267,8 +268,9 @@ namespace thekogans {
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
                         Buffer::SharedPtr buffer_ = GetBufferHelper (offset);
-                        std::size_t countToWrite = MIN (MIN (size - buffer_->offset, count), Buffer::SIZE);
-                        std::memcpy (buffer_->data + offset - buffer_->offset, ptr, countToWrite);
+                        std::size_t bufferOffset = offset - buffer_->offset;
+                        std::size_t countToWrite = MIN (Buffer::SIZE - bufferOffset, count);
+                        std::memcpy (buffer_->data + bufferOffset, ptr, countToWrite);
                         buffer_->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;
@@ -507,13 +509,11 @@ namespace thekogans {
                         root.Save (log);
                     }
                     else {
-                        {
-                            // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
-                            // If we were to pass *this, Flush would call in to our Seek and Write.
-                            // And thats not what we want!
-                            TenantFile file (endianness, handle, path);
-                            root.Flush (file, size);
-                        }
+                        // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
+                        // If we were to pass *this, Flush would call in to our Seek and Write.
+                        // And thats not what we want!
+                        TenantFile file (endianness, handle, path);
+                        root.Flush (file, size);
                         File::SetSize (size);
                         File::Flush ();
                     }
