@@ -33,12 +33,11 @@ namespace thekogans {
         /// thekogans/util/TransactedFileBTreeRegistry.h
         ///
         /// \brief
-        /// TransactedFileBTreeRegistry is a \see{TransactedFileBTree}.
-        /// It's also a \see{TransactedFile::Allocator::Header::rootObject}.
-        /// It provides global ordered, associative storage for \see{TransactedFile}
-        /// clients. Use it to store and retrieve practically any value derived
-        /// from \see{Serializable}. The key type is std::string.
-        /// TransactedFileBTreeRegistry is thread safe.
+        /// TransactedFileBTreeRegistry is a \see{TransactedFile::Regitry}.
+        /// It uses a \see{TransactedFileBree} to provide global ordered,
+        /// associative storage for \see{TransactedFile} clients. Use it to
+        /// store and retrieve practically any value derived from \see{Serializable}.
+        /// The key type is std::string. TransactedFileBTreeRegistry is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
                 public TransactedFile::Registry,
                 public Subscriber<TransactedFile::ObjectEvents> {

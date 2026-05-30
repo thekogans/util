@@ -33,7 +33,8 @@ namespace thekogans {
         /// \struct TransactedFileBTree TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
         ///
         /// \brief
-        /// A TransactedFileBTree is a \see{TransactedFile::Object}. It's attributes are that
+        /// A TransactedFileBTree is a \see{TransactedFile::Object}. It's an ordered, associative
+        /// container capable of storing practically any key/value type. It's attributes are that
         /// all searches, insertions and deletions take O(H) where H is the height of the tree.
         /// These are TransactedFileBTree's bigest strengths. One of it's biggest weaknesses is
         /// the fact that iterators don't survive modifications (Insert/Delete). This is why I
