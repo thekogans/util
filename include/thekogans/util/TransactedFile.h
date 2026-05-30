@@ -291,7 +291,9 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
-                virtual void Flush (File &file) = 0;
+                virtual void Flush (
+                    File &file,
+                    ui64 size) = 0;
                 /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -342,7 +344,9 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
-                virtual void Flush (File &file) override;
+                virtual void Flush (
+                    File &file,
+                    ui64 size) override;
                 /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -393,7 +397,9 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
-                virtual void Flush (File &file) override;
+                virtual void Flush (
+                    File &file,
+                    ui64 size) override;
                 /// \brief
                 /// Delete all buffers whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.

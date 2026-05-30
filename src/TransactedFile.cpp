@@ -79,11 +79,13 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Segment::Flush (File &file) {
+        void TransactedFile::Segment::Flush (
+                File &file,
+                ui64 size) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr && buffers[i]->dirty) {
                     file.Seek (buffers[i]->offset, SEEK_SET);
-                    file.Write (buffers[i]->data, Buffer::SIZE);
+                    file.Write (buffers[i]->data, MIN (size - buffers[i]->offset, Buffer::SIZE));
                     buffers[i]->dirty = false;
                 }
             }
@@ -130,10 +132,12 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Internal::Flush (File &file) {
+        void TransactedFile::Internal::Flush (
+                File &file,
+                ui64 size) {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
-                    nodes[i]->Flush (file);
+                    nodes[i]->Flush (file, size);
                 }
             }
         }
@@ -508,7 +512,7 @@ namespace thekogans {
                             // If we were to pass *this, Flush would call in to our Seek and Write.
                             // And thats not what we want!
                             TenantFile file (endianness, handle, path);
-                            root.Flush (file);
+                            root.Flush (file, size);
                         }
                         File::SetSize (size);
                         File::Flush ();
