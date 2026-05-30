@@ -55,18 +55,19 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
 
-        void TransactedFile::Segment::Delete () {
+        bool TransactedFile::Segment::Clear () {
+            bool clean = false;
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                buffers[i].Reset ();
-            }
-        }
-
-        void TransactedFile::Segment::Clear () {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr && buffers[i]->dirty) {
-                    buffers[i].Reset ();
+                if (buffers[i] != nullptr) {
+                    if (buffers[i]->dirty) {
+                        buffers[i].Reset ();
+                    }
+                    else {
+                        clean = true;
+                    }
                 }
             }
+            return clean;
         }
 
         void TransactedFile::Segment::Save (File &log) {
@@ -116,12 +117,19 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Internal::Clear () {
+        bool TransactedFile::Internal::Clear () {
+            bool clean = false;
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
-                    nodes[i]->Clear ();
+                    if (nodes[i]->Clear ()) {
+                        nodes[i].Reset ();
+                    }
+                    else {
+                        clean = true;
+                    }
                 }
             }
+            return clean;
         }
 
         void TransactedFile::Internal::Save (File &log) {
@@ -170,8 +178,8 @@ namespace thekogans {
                 Endianness endianness,
                 THEKOGANS_UTIL_HANDLE handle,
                 const std::string &path,
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) :
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry) :
                 File (endianness, handle, path),
                 position (0),
                 size (0),
@@ -180,7 +188,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 position = File::Tell ();
                 size = File::GetSize ();
-                Init (allocator_, registry_);
+                Init (allocator, registry);
             }
         }
 
@@ -196,8 +204,8 @@ namespace thekogans {
                 i32 flags,
                 i32 mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) :
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry) :
                 File (endianness),
                 position (0),
                 size (0),
@@ -214,8 +222,8 @@ namespace thekogans {
                 flags,
                 mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
-                allocator_,
-                registry_);
+                allocator,
+                registry);
         }
 
         TransactedFile::~TransactedFile () {

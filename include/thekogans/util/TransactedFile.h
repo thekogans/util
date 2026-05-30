@@ -279,11 +279,8 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
                 /// \brief
-                /// Delete the buffer cache.
-                virtual void Delete () = 0;
-                /// \brief
                 /// Delete the dirty buffers.
-                virtual void Clear () = 0;
+                virtual bool Clear () = 0;
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
@@ -332,11 +329,8 @@ namespace thekogans {
                 Buffer::SharedPtr buffers[BRANCHING_LEVEL];
 
                 /// \brief
-                /// Delete the buffer cache.
-                virtual void Delete () override;
-                /// \brief
                 /// Delete dirty buffers.
-                virtual void Clear () override;
+                virtual bool Clear () override;
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
@@ -385,11 +379,12 @@ namespace thekogans {
                 Node::SharedPtr nodes[BRANCHING_LEVEL];
 
                 /// \brief
-                /// Delete the buffer cache.
-                virtual void Delete () override;
+                /// Delete the node cache.
+                void Delete ();
+
                 /// \brief
                 /// Delete dirty buffers.
-                virtual void Clear () override;
+                virtual bool Clear () override;
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
@@ -454,14 +449,14 @@ namespace thekogans {
             /// \param[in] endianness File endianness.
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
-            /// \param[in] allocator_
-            /// \param[in] registry_
+            /// \param[in] allocator
+            /// \param[in] registry
             TransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
                 const std::string &path = std::string (),
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr regitry_ = nullptr);
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr registry = nullptr);
             /// \brief
             /// ctor. Open or create the file.
             /// \param[in] endianness File endianness.
@@ -489,8 +484,8 @@ namespace thekogans {
                 i32 flags = O_RDWR | O_CREAT,
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr registry_ = nullptr);
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr registry = nullptr);
             /// \brief
             /// dtor.
             virtual ~TransactedFile ();
@@ -522,8 +517,8 @@ namespace thekogans {
                 i32 flags = O_RDWR,
                 i32 mode = S_IRUSR | S_IWUSR,
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr registry_ = nullptr);
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr registry = nullptr);
 
             /// \brief
             /// Flush dirty pages and delete the cache.
