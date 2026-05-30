@@ -237,7 +237,11 @@ namespace thekogans {
                     while (count > 0 && offset < size) {
                         Buffer::SharedPtr buffer_ = GetBufferHelper (offset);
                         std::size_t bufferOffset = offset - buffer_->offset;
-                        std::size_t countToRead = MIN (MIN (Buffer::SIZE - bufferOffset, count), size - buffer_->offset);
+                        std::size_t countToRead = MIN (
+                            // Calculate the amount we can read from this buffer...
+                            MIN (Buffer::SIZE - bufferOffset, count),
+                            // ...and clamp that to the amount left to read in the file.
+                            size - buffer_->offset);
                         std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
@@ -468,11 +472,13 @@ namespace thekogans {
                     {
                         // ...extract the original SerializableHeader...
                         BlockRange range (*this, Allocator::Block::HEADER_SIZE);
+                        // skip over magic.
                         range.Seek (UI32_SIZE, SEEK_CUR);
                         range >> allocatorHeader;
                     }
                     {
                         BlockRange range (*this, Allocator::Block::HEADER_SIZE, false);
+                        // skip over magic and serializable header.
                         range.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
                         // ...and force the allocator to write that particular
                         // version of itself so as not to overflow the first block.
@@ -514,8 +520,8 @@ namespace thekogans {
                         // And thats not what we want!
                         TenantFile file (endianness, handle, path);
                         root.Flush (file, size);
-                        File::SetSize (size);
-                        File::Flush ();
+                        file.SetSize (size);
+                        file.Flush ();
                     }
                     SetDirty (false);
                 }
