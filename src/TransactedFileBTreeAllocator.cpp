@@ -127,7 +127,7 @@ namespace thekogans {
                     // Calculate the remainder left in the last page.
                     ui64 remainder =
                         TransactedFile::Buffer::SIZE -
-                        (file.GetSize () & ~(TransactedFile::Buffer::SIZE - 1));
+                        (file->GetSize () & ~(TransactedFile::Buffer::SIZE - 1));
                     // Carefull to not underflow.
                     if (remainder >= Block::SIZE) {
                         remainder -= Block::SIZE;

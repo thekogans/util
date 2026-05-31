@@ -204,6 +204,7 @@ namespace thekogans {
             /// Synchronization lock.
             SpinLock spinLock;
 
+        public:
             /// \struct TransactedFile::Buffer TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
@@ -260,6 +261,7 @@ namespace thekogans {
                     dirty (false) {}
             };
 
+        private:
             /// \struct TransactedFile::Node TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
