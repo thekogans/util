@@ -148,7 +148,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Allocator::Read (
-                const SerializableHeader &header_,
+            const SerializableHeader & /*header_*/,
                 Serializer &serializer) {
             ui32 magic;
             serializer >> magic;

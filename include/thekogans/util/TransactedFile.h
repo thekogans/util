@@ -280,7 +280,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete the dirty buffers.
-                virtual bool Clear () = 0;
+                virtual bool Clear (bool all = false) = 0;
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
@@ -330,7 +330,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete dirty buffers.
-                virtual bool Clear () override;
+                virtual bool Clear (bool all = false) override;
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
@@ -379,12 +379,10 @@ namespace thekogans {
                 Node::SharedPtr nodes[BRANCHING_LEVEL];
 
                 /// \brief
-                /// Delete the node cache.
-                void Delete ();
-
-                /// \brief
                 /// Delete dirty buffers.
-                virtual bool Clear () override;
+                /// \param[in] all true == clear all, false == dirty only.
+                /// \return true ==
+                virtual bool Clear (bool all = false) override;
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.

@@ -39,21 +39,21 @@
         std::atomic<ui64> readingRanges;
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
-        std::atomic<ui64> readingOwnerRanges;
+        std::atomic<ui64> ownerReadingRanges;
         /// \brief
         /// A count of \see{Range} (reading == false) that have been created for this file.
         std::atomic<ui64> writingRanges;
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
-        std::atomic<ui64> writingOwnerRanges;
+        std::atomic<ui64> ownerWritingRanges;
 
         /// \brief
         /// ctor.
         Stats () :
             readingRanges (0),
-            readingOwnerRanges (0),
+            ownerReadingRanges (0),
             writingRanges (0),
-            writingOwnerRanges (0) {}
+            ownerWritingRanges (0) {}
     } stats;
 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
 
@@ -110,9 +110,10 @@ protected:
 public:
     /// \brief
     /// ctor.
-    /// \param[in] file_ \see{TransactedFile} to buffer.
-    /// \param[in] offset_ File offset.
-    /// \param[in] length_ How much of the file we want access too.
+    /// \param[in] file_ Range \see{TransactedFile}.
+    /// \param[in] offset_ Range start.
+    /// \param[in] length_ Range length.
+    /// \param[in] reading_ true == range is for reading, false == range is for writing.
     /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
     Range (
         TransactedFile &file_,
@@ -178,10 +179,11 @@ public:
 /// SafeRange layers bounds checking on top of \see{Range}.
 struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
     /// \brief
-    /// ctor.
-    /// \param[in] file \see{TransactedFile} to buffer.
-    /// \param[in] offset File offset.
-    /// \param[in] length How much of the file we want access too.
+    /// Safe ctor. Clamp the range to file bounds.
+    /// \param[in] file Range \see{TransactedFile}.
+    /// \param[in] offset Range start.
+    /// \param[in] length Range length.
+    /// \param[in] reading true == range is for reading, false == range is for writing.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     SafeRange (
         TransactedFile &file,
@@ -218,10 +220,10 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
 
     // RandomSeekSerializer
     /// \brief
-    /// Reposition the serializer pointer.
+    /// Safe reposition the range pointer. Perform bounds checks on inputs.
     /// \param[in] offset Offset to move relative to fromWhere.
     /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
-    /// \return The new serializer pointer position.
+    /// \return The new range pointer.
     virtual i64 Seek (
         i64 offset,
         i32 fromWhere) override;

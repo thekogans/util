@@ -44,24 +44,24 @@ namespace thekogans {
                 ++file.stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            buffer = file.GetBuffer (offset);
-            std::size_t bufferOffset = offset - buffer->offset;
+            ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
             if (length > Buffer::SIZE - bufferOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
                 if (reading) {
                 #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-                    ++file.stats.readingOwnerRanges;
+                    ++file.stats.ownerReadingRanges;
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                     file.ReadEx (offset, data, length);
                 }
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 else {
-                    ++file.stats.writingOwnerRanges;
+                    ++file.stats.ownerWritingRanges;
                 }
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
             else {
+                buffer = file.GetBuffer (offset);
                 data = buffer->data + bufferOffset;
             }
         }

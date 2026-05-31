@@ -55,11 +55,11 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
 
-        bool TransactedFile::Segment::Clear () {
+        bool TransactedFile::Segment::Clear (bool all) {
             bool clean = false;
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
-                    if (buffers[i]->dirty) {
+                    if (all || buffers[i]->dirty) {
                         buffers[i].Reset ();
                     }
                     else {
@@ -111,17 +111,11 @@ namespace thekogans {
             return true;
         }
 
-        void TransactedFile::Internal::Delete () {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                nodes[i].Reset ();
-            }
-        }
-
-        bool TransactedFile::Internal::Clear () {
+        bool TransactedFile::Internal::Clear (bool all) {
             bool clean = false;
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
-                    if (nodes[i]->Clear ()) {
+                    if (all || nodes[i]->Clear (all)) {
                         nodes[i].Reset ();
                     }
                     else {
@@ -349,7 +343,7 @@ namespace thekogans {
         void TransactedFile::DeleteCache () {
             if (IsOpen ()) {
                 Flush ();
-                root.Delete ();
+                root.Clear (true);
                 currBufferOffset = NOFFS;
                 currBuffer.Reset ();
             }

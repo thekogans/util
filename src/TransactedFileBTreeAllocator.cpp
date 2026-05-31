@@ -105,11 +105,12 @@ namespace thekogans {
                     //
                     // next.offset = result.second + size + Block::SIZE;
                     // next.size = result.first - size - Block::SIZE;
-                    if (result.first - size >= MIN_BLOCK_SIZE) {
+                    ui64 remainder = result.first - size;
+                    if (remainder >= MIN_BLOCK_SIZE) {
                         Block next (
                             result.second + size + Block::SIZE,
                             Block::FLAGS_FREE,
-                            result.first - size - Block::SIZE);
+                            remainder - Block::SIZE);
                         next.Write (*file);
                         btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                     }
@@ -120,6 +121,32 @@ namespace thekogans {
                     }
                 }
                 else {
+                    // Do your best to not straddle a page boundary.
+                    // Ranges that straddle page boundaries incure an
+                    // allocation/copy/deallocation penalty.
+                    // Calculate the remainder left in the last page.
+                    ui64 remainder =
+                        TransactedFile::Buffer::SIZE -
+                        (file.GetSize () & ~(TransactedFile::Buffer::SIZE - 1));
+                    // Carefull to not underflow.
+                    if (remainder >= Block::SIZE) {
+                        remainder -= Block::SIZE;
+                    }
+                    // If we fit in to remainder or, if the remainder
+                    // can be turned in to another block and we fit in
+                    // to one page, all is well. Go ahead and create a
+                    // spacer block and align us with a page boundary.
+                    // Otherwise, because there can be no gaps between
+                    // blocks, we will straddle a page boundary.
+                    if (remainder < size && remainder >= MIN_USER_DATA_SIZE &&
+                            size <= (TransactedFile::Buffer::SIZE - Block::SIZE)) {
+                        Block block (
+                            file->Grow (Block::SIZE + remainder) + Block::HEADER_SIZE,
+                            Block::FLAGS_FREE,
+                            remainder);
+                        block.Write (*file);
+                        btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
+                    }
                     // No free block large enough is found? Grow the file.
                     offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
                 }
