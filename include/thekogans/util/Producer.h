@@ -274,9 +274,10 @@ namespace thekogans {
             void Unsubscribe () {
                 Subscribers subscribers_;
                 {
-                    // Copy the subscribers map in to a local
+                    // Move the subscribers map in to a local
                     // variable before calling OnUnsubscribe in case
-                    // they want to unsubscribe while processing it.
+                    // they want to call back in to the producer while
+                    // processing it.
                     LockGuard<SpinLock> guard (spinLock);
                     subscribers_.swap (subscribers);
                 }
@@ -300,41 +301,18 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Produce an event for subscribers to consume.
-            /// \param[in] event Event to deliver to all registered subscribers.
-            void Produce (const typename EventDeliveryPolicy::Event &event) {
-                using SharedSubscriberInfo = std::pair<
-                    typename Subscriber<T>::SharedPtr,
-                    typename EventDeliveryPolicy::SharedPtr>;
-                // FIXME: Need to profile these two approaches to see which is faster.
-#if 0
-                Subscribers subscribers_;
-                {
-                    // Copy the subscribers map in to a local
-                    // variable before delivering the event in case
-                    // they want to unsubscribe while processing it.
-                    LockGuard<SpinLock> guard (spinLock);
-                    subscribers_ = subscribers;
-                }
-                for (typename Subscribers::iterator
-                        it = subscribers_.begin (),
-                        end = subscribers_.end (); it != end; ++it) {
-                    // NOTE: If we get a NULL pointer here it simply means
-                    // that that particular subscriber is in the porocess
-                    // of deallocating. It just hasn't removed itself from
-                    // our subscriber list (~Subscriber) in time for us to
-                    // include it in subscribers_ above. This race is unavoidable
-                    // but harmless. We want to preserve the right of the
-                    // \see{Subscriber} to be able to call back in to the
-                    // producer while processing a particular event.
-                    typename Subscriber<T>::SharedPtr subscriber =
-                        it->second.first.GetSharedPtr ();
-                    if (subscriber != nullptr) {
-                        it->second.second->DeliverEvent (event, subscriber);
-                    }
-                }
-#else
-                Array<SharedSubscriberInfo> subscribers_;
+            /// Alias for std::pair<typename Subscriber<T>::SharedPtr,
+            /// typename EventDeliveryPolicy::SharedPtr>.
+            using SharedSubscriberInfo = std::pair<
+                typename Subscriber<T>::SharedPtr,
+                typename EventDeliveryPolicy::SharedPtr>;
+
+            /// \brief
+            /// Return an \see{Array} of locked (SharedPtr) subscribers.
+            /// \param[out] subscribers_ \see{Array} of \see{SharedSubscriberInfo} pairs to return.
+            /// \return Number of pairs returned. The reason it might be different then \see{Array::GetCount}
+            /// is because some subscribers might have been in the middle of destruction during their encounter.
+            std::size_t GetSubscribers (Array<SharedSubscriberInfo> &subscribers_) {
                 std::size_t count = 0;
                 {
                     LockGuard<SpinLock> guard (spinLock);
@@ -354,13 +332,43 @@ namespace thekogans {
                             typename Subscriber<T>::SharedPtr subscriber =
                                 it->second.first.GetSharedPtr ();
                             if (subscriber != nullptr) {
-                                subscribers_[count++] = SharedSubscriberInfo (subscriber, it->second.second);
+                                subscribers_[count++] =
+                                    SharedSubscriberInfo (subscriber, it->second.second);
                             }
                         }
                     }
                 }
-                for (std::size_t i = 0; i < count; ++i) {
-                    subscribers_[i].second->DeliverEvent (event, subscribers_[i].first);
+                return count;
+            }
+
+            /// \brief
+            /// Produce an event for subscribers to consume.
+            /// \param[in] event Event to deliver to all registered subscribers.
+            void Produce (const typename EventDeliveryPolicy::Event &event) {
+                // FIXME: Need to profile these two approaches to see which is faster.
+#if 0
+                Subscribers subscribers_;
+                {
+                    // Copy the subscribers map in to a local
+                    // variable before delivering the event in case
+                    // they want to call back in to the producer while
+                    // processing it.
+                    LockGuard<SpinLock> guard (spinLock);
+                    subscribers_ = subscribers;
+                }
+                for (typename Subscribers::iterator
+                        it = subscribers_.begin (),
+                        end = subscribers_.end (); it != end; ++it) {
+                    typename Subscriber<T>::SharedPtr subscriber =
+                        it->second.first.GetSharedPtr ();
+                    if (subscriber != nullptr) {
+                        it->second.second->DeliverEvent (event, subscriber);
+                    }
+                }
+#else
+                Array<SharedSubscriberInfo> subscribers;
+                for (std::size_t i = 0, count = GetSubscribers (subscribers); i < count; ++i) {
+                    subscribers[i].second->DeliverEvent (event, subscribers[i].first);
                 }
 #endif
             }

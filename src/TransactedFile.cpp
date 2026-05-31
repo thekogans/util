@@ -248,7 +248,7 @@ namespace thekogans {
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this buffer...
                             MIN (Buffer::SIZE - bufferOffset, count),
-                            // ...and clamp that to the amount left to read in the file.
+                            // ...and clamp it to the amount left to read in the file.
                             size - buffer_->offset);
                         std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
                         ptr += countToRead;
@@ -317,8 +317,8 @@ namespace thekogans {
                 i32 flags,
                 i32 mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) {
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry) {
         #if defined (TOOLCHAIN_OS_Windows)
             Open (
                 path,
@@ -329,7 +329,7 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             Open (path, flags, mode);
         #endif // defined (TOOLCHAIN_OS_Windows)
-            Init (allocator_, registry_);
+            Init (allocator, registry);
         }
 
         ui32 TransactedFile::Grow (ui64 amount) {
@@ -467,10 +467,11 @@ namespace thekogans {
                 if (registry != nullptr && registry->IsDirty ()) {
                     // Can't have a registry without an allocator.
                     assert (allocator != nullptr);
-                    std::size_t registrySize = UI32_SIZE + registry->GetSize ();
                     allocator->SetRegistryOffset (
-                        allocator->Realloc (allocator->GetRegistryOffset (), registrySize));
-                    Range range (*this, allocator->GetRegistryOffset (), registrySize, false);
+                        allocator->Realloc (
+                            allocator->GetRegistryOffset (),
+                            UI32_SIZE + registry->GetSize ()));
+                    BlockRange range (*this, allocator->GetRegistryOffset (), false);
                     range << MAGIC32 << *registry;
                     registry->SetDirty (false);
                 }
@@ -710,18 +711,26 @@ namespace thekogans {
         void TransactedFile::CommitTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
-                    Produce (
-                        std::bind (
-                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
-                            std::placeholders::_1,
-                            this,
-                            COMMIT_PHASE_1));
-                    Produce (
-                        std::bind (
-                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
-                            std::placeholders::_1,
-                            this,
-                            COMMIT_PHASE_2));
+                    Array<SharedSubscriberInfo> subscribers;
+                    std::size_t count = GetSubscribers (subscribers);
+                    for (std::size_t i = 0; i < count; ++i) {
+                        subscribers[i].second->DeliverEvent (
+                            std::bind (
+                                &TransactedFileEvents::OnTransactedFileTransactionCommit,
+                                std::placeholders::_1,
+                                this,
+                                COMMIT_PHASE_1),
+                            subscribers[i].first);
+                    }
+                    for (std::size_t i = 0; i < count; ++i) {
+                        subscribers[i].second->DeliverEvent (
+                            std::bind (
+                                &TransactedFileEvents::OnTransactedFileTransactionCommit,
+                                std::placeholders::_1,
+                                this,
+                                COMMIT_PHASE_2),
+                            subscribers[i].first);
+                    }
                     Flush ();
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
