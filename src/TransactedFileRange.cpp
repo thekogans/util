@@ -44,7 +44,8 @@ namespace thekogans {
                 ++file.stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
+            buffer = file.GetBuffer (offset);
+            ui64 bufferOffset = offset - buffer->offset;
             if (length > Buffer::SIZE - bufferOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
@@ -61,7 +62,6 @@ namespace thekogans {
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
             else {
-                buffer = file.GetBuffer (offset);
                 data = buffer->data + bufferOffset;
             }
         }
