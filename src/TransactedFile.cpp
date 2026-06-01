@@ -74,6 +74,12 @@ namespace thekogans {
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr && buffers[i]->dirty) {
                     log << buffers[i]->offset;
+                    // NOTE: Here we write the full buffer size (Bufer::SIZE),
+                    // trailing '0' and all. Since Buffer does not maintain
+                    // internal size, all buffers other than possibly the last
+                    // are Buffer::SIZE in lengh, we have no choice but to
+                    // write Buffer::SIZE and have the actual size be adjusted
+                    // upstream (Flush).
                     log.Write (buffers[i]->data, Buffer::SIZE);
                     buffers[i]->dirty = false;
                 }
@@ -778,7 +784,7 @@ namespace thekogans {
                         // if it is dirty, it will be deleted bu root.Clear.
                         if (currBuffer != nullptr && currBuffer->dirty) {
                             currBufferOffset = NOFFS;
-                            currBuffer = nullptr;
+                            currBuffer.Reset ();
                         }
                         root.Clear ();
                         SetDirty (false);

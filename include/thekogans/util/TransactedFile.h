@@ -456,8 +456,8 @@ namespace thekogans {
             /// \param[in] endianness File endianness.
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
-            /// \param[in] allocator
-            /// \param[in] registry
+            /// \param[in] allocator \see{Allocator} to attach to this file.
+            /// \param[in] registry \see{Registry} to attach to this file.
             TransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
@@ -477,8 +477,8 @@ namespace thekogans {
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
         #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] allocator
-            /// \param[in] registry
+            /// \param[in] allocator \see{Allocator} to attach to this file.
+            /// \param[in] registry \see{Registry} to attach to this file.
             TransactedFile (
                 Endianness endianness,
                 const std::string &path,
@@ -494,25 +494,58 @@ namespace thekogans {
                 Allocator::SharedPtr allocator = nullptr,
                 Registry::SharedPtr registry = nullptr);
             /// \brief
-            /// dtor.
+            /// dtor. Close the file.
             virtual ~TransactedFile ();
 
+            /// \brief
+            /// Return the \see{Allocator} attached to thi file.
+            /// \return allocator.
             inline Allocator::SharedPtr GetAllocator () const {
                 return allocator;
             }
+            /// \brief
+            /// Return the \see{Registry} attached to thi file.
+            /// \return registry.
             inline Registry::SharedPtr GetRegistry () const {
                 return registry;
             }
 
+            /// \brief
+            /// Thread safe version of Read.
+            /// \param[in] offset Start of range.
+            /// \param[out] buffer Where to place the bytes.
+            /// \param[in] count Number of bytes to read.
+            /// \return Number of bytes actually read.
             std::size_t ReadEx (
                 ui64 offset,
                 void *buffer,
                 std::size_t count);
+            /// \brief
+            /// Thread safe version of Write.
+            /// \param[in] offset Start of range.
+            /// \param[in] buffer Where bytes come from.
+            /// \param[in] count Number of bytes to write.
+            /// \return Number of bytes actually written.
             std::size_t WriteEx (
                 ui64 offset,
                 const void *buffer,
                 std::size_t count);
 
+            /// \brief
+            /// Open or create the file.
+            /// \param[in] path Path to file to open.
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] dwDesiredAccess Windows CreateFile parameter.
+            /// \param[in] dwShareMode Windows CreateFile parameter.
+            /// \param[in] dwCreationDisposition Windows CreateFile parameter.
+            /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] flags POSIX open parameter.
+            /// \param[in] mode POSIX open parameter.
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] allocator_ \see{Allocator} to attach to this file.
+            /// \param[in] registry_ \see{Registry} to attach to this file.
+            /// NOT thread safe.
             void OpenEx (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -529,12 +562,25 @@ namespace thekogans {
 
             /// \brief
             /// Flush dirty pages and delete the cache.
+            /// NOT thread safe.
             void DeleteCache ();
+            /// \brief
+            /// Grow the file by the given amount.
+            /// Thread safe.
+            /// \param[in] amount Amount to grow the file by.
+            /// \return Old file size.
             ui32 Grow (ui64 amount);
 
             // Serializer
+            /// NOTE: This is a legacy \see{File} api which is inherently NOT thread safe.
+            /// Even if you would make all apis thread safe, the design (shared position)
+            /// is such as to make certain operations (Seek/Read/Write) imposible as they
+            /// would not be atomic. Therefore, I provide the *Ex versions of Read and Write.
+            /// These apis are left as being NOT thread safe.
+
             /// \brief
             /// Read bytes from a file.
+            /// NOT thread safe.
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
@@ -543,6 +589,7 @@ namespace thekogans {
                 std::size_t count) override;
             /// \brief
             /// Write bytes to a file.
+            /// NOT thread safe.
             /// \param[in] buffer Where the bytes come from.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
@@ -553,12 +600,14 @@ namespace thekogans {
             // RandomSeekSerializer
             /// \brief
             /// Return the file pointer position.
+            /// NOT thread safe.
             /// \return The file pointer position.
             virtual i64 Tell () const override {
                 return position;
             }
             /// \brief
             /// Reposition the file pointer.
+            /// NOT thread safe.
             /// \param[in] offset Offset to move relative to fromWhere.
             /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
             /// \return The new file pointer position.
@@ -569,33 +618,40 @@ namespace thekogans {
             // File
             /// \brief
             /// Open the file.
+            /// NOT thread safe.
             /// \param[in] path File path.
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] dwDesiredAccess Windows CreateFile parameter.
+            /// \param[in] dwShareMode Windows CreateFile parameter.
+            /// \param[in] dwCreationDisposition Windows CreateFile parameter.
+            /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] flags POSIX open parameter.
+            /// \param[in] mode POSIX open parameter.
+        #endif // defined (TOOLCHAIN_OS_Windows)
             virtual void Open (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
-                /// \param[in] dwDesiredAccess Windows CreateFile parameter.
-                /// \param[in] dwShareMode Windows CreateFile parameter.
-                /// \param[in] dwCreationDisposition Windows CreateFile parameter.
-                /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
                 DWORD dwCreationDisposition = OPEN_EXISTING,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL) override;
             #else // defined (TOOLCHAIN_OS_Windows)
-                /// \param[in] flags POSIX open parameter.
-                /// \param[in] mode POSIX open parameter.
                 i32 flags = O_RDWR,
                 i32 mode = S_IRUSR | S_IWUSR) override;
             #endif // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// Close the file.
+            /// NOT thread safe.
             virtual void Close () override;
             /// \brief
             /// Flush pending writes to disk.
+            /// NOT thread safe.
             virtual void Flush () override;
 
             /// \brief
             /// Return number of bytes available for reading.
+            /// NOT thread safe.
             /// \return Number of bytes available for reading.
             virtual ui64 GetDataAvailableForReading () const override {
                 return size > (ui64)position ? size - (ui64)position : 0;
@@ -603,12 +659,14 @@ namespace thekogans {
 
             /// \brief
             /// Return file size in bytes.
+            /// NOT thread safe.
             /// \return File size in bytes.
             virtual ui64 GetSize () const override {
                 return size;
             }
             /// \brief
             /// Truncates or expands the file.
+            /// Thread safe.
             /// \param[in] newSize New size to set the file to.
             virtual void SetSize (ui64 newSize) override;
 
@@ -637,6 +695,9 @@ namespace thekogans {
             /// to be structured and the \see{Allocator} and an optional
             /// \see{Registry} will come from the file. If no \see{Allocator}
             /// was provided the file is assumed to be unstrucured.
+            /// \param[in] allocator_ \see{Allocator} to attach to this file.
+            /// \param[in] registry_ \see{Registry} to attach to this file.
+            /// NOT thread safe.
             void Init (
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_);
@@ -648,24 +709,28 @@ namespace thekogans {
 
             /// \brief
             /// Return true if we have unwriten changes in our cache.
-            ///\return true == we have unwriten changes in our cache.
+            /// NOT thread safe.
+            /// \return true == we have unwriten changes in our cache.
             inline bool IsDirty () const {
                 return flags.Test (FLAGS_DIRTY);
             }
             /// \brief
             /// Set/reset the dirty flag.
+            /// NOT thread safe.
             /// \param[in] dirty true == set, false == reset.
             inline void SetDirty (bool dirty) {
                 flags.Set (FLAGS_DIRTY, dirty);
             }
             /// \brief
             /// Return true if we're in the middle of a transaction.
-            ///\return true == we're in the middle of a transaction.
+            /// NOT thread safe.
+            /// \return true == we're in the middle of a transaction.
             inline bool IsTransactionPending () const {
                 return flags.Test (FLAGS_TRANSACTION);
             }
             /// \brief
             /// Set/reset the transaction flag.
+            /// NOT thread safe.
             /// \param[in] transaction true == set, false == reset.
             inline void SetTransactionPending (bool transaction) {
                 flags.Set (FLAGS_TRANSACTION, transaction);
@@ -674,26 +739,36 @@ namespace thekogans {
             /// Start a new transaction.
             /// Used by \see{Transaction} ctor to mark a modify scope.
             /// NOTE: Must only be called after acquiring the lock.
+            /// NOT thread safe.
             void BeginTransaction ();
             /// \brief
             /// Commit the current transaction.
             /// Used by \see{Transaction} to commit the current changes.
+            /// NOT thread safe.
             void CommitTransaction ();
             /// \brief
             /// Abort the current transaction.
             /// Used by \see{Transaction} dtor to abort uncommitted changes.
+            /// NOT thread safe.
             void AbortTransaction ();
 
             /// \brief
-            /// Get the buffer that will cover the neighborhood around the given offset.
+            /// This is a wrapper around GetBufferHelper.
+            /// Thread safe.
             /// \param[in] offset Offset whose buffer to return.
             /// \return Buffer that covers the neighborhood around the given offset.
             Buffer::SharedPtr GetBuffer (ui64 offset);
+            /// \brief
+            /// Get the buffer that will cover the neighborhood around the given offset.
+            /// NOT thread safe.
+            /// \param[in] offset Offset whose buffer to return.
+            /// \return Buffer that covers the neighborhood around the given offset.
             Buffer::SharedPtr GetBufferHelper (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create
             /// a GUID to append to the path to act as the log path.
+            /// Thread safe.
             /// \param[in] path File path to turn in to log path.
             /// \return Log path based on the passed in file path.
             static std::string GetLogPath (const std::string &path);
