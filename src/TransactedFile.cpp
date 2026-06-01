@@ -56,18 +56,18 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
 
         bool TransactedFile::Segment::Clear (bool all) {
-            bool clean = false;
+            bool empty = true;
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (buffers[i] != nullptr) {
                     if (all || buffers[i]->dirty) {
                         buffers[i].Reset ();
                     }
                     else {
-                        clean = true;
+                        empty = false;
                     }
                 }
             }
-            return clean;
+            return empty;
         }
 
         void TransactedFile::Segment::Save (File &log) {
@@ -112,18 +112,18 @@ namespace thekogans {
         }
 
         bool TransactedFile::Internal::Clear (bool all) {
-            bool clean = false;
+            bool empty = true;
             for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
                 if (nodes[i] != nullptr) {
                     if (all || nodes[i]->Clear (all)) {
                         nodes[i].Reset ();
                     }
                     else {
-                        clean = true;
+                        empty = false;
                     }
                 }
             }
-            return clean;
+            return empty;
         }
 
         void TransactedFile::Internal::Save (File &log) {

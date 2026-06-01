@@ -281,7 +281,10 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
                 /// \brief
-                /// Delete the dirty buffers.
+                /// Delete buffers.
+                /// \param[in] all true == clear all, false == dirty only.
+                /// \return true == the node is empty,
+                /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) = 0;
                 /// \brief
                 /// Write dirty buffers to log.
@@ -331,7 +334,10 @@ namespace thekogans {
                 Buffer::SharedPtr buffers[BRANCHING_LEVEL];
 
                 /// \brief
-                /// Delete dirty buffers.
+                /// Delete buffers.
+                /// \param[in] all true == clear all, false == dirty only.
+                /// \return true == the node is empty,
+                /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
                 /// Write dirty buffers to log.
@@ -381,9 +387,10 @@ namespace thekogans {
                 Node::SharedPtr nodes[BRANCHING_LEVEL];
 
                 /// \brief
-                /// Delete dirty buffers.
+                /// Delete buffers.
                 /// \param[in] all true == clear all, false == dirty only.
-                /// \return true ==
+                /// \return true == the node is empty,
+                /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
                 /// Write dirty buffers to log.
