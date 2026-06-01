@@ -569,7 +569,8 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
-            ui32 Grow (ui64 amount);
+            ui64 Grow (ui64 amount);
+            ui64 Shrink (ui64 amount);
 
             // Serializer
             /// NOTE: This is a legacy \see{File} api which is inherently NOT thread safe.

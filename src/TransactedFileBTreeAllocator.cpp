@@ -216,7 +216,7 @@ namespace thekogans {
                     }
                     else {
                         // If we are, truncate the heap.
-                        file->SetSize (block.GetOffset () - Block::HEADER_SIZE);
+                        file->Shrink (Block::SIZE + block.GetSize ());
                     }
                 }
                 else {
@@ -355,7 +355,7 @@ namespace thekogans {
                         SetDirty (true);
                     }
                     else {
-                        file->SetSize (block.GetOffset () - Block::HEADER_SIZE);
+                        file->Shrink (Block::SIZE + block.GetSize ());
                     }
                 }
                 else {

@@ -332,13 +332,39 @@ namespace thekogans {
             Init (allocator, registry);
         }
 
-        ui32 TransactedFile::Grow (ui64 amount) {
+        ui64 TransactedFile::Grow (ui64 amount) {
             if (IsOpen ()) {
                 LockGuard<SpinLock> guard (spinLock);
                 ui32 oldSize = size;
                 size += amount;
                 SetDirty (true);
                 return oldSize;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
+        ui64 TransactedFile::Shrink (ui64 amount) {
+            if (IsOpen ()) {
+                LockGuard<SpinLock> guard (spinLock);
+                if (size >= amount) {
+                    size -= amount;
+                    root.SetSize (size);
+                    // If size is <= current buffer offset, currBuffer
+                    // will have been deleted by root.SetSize.
+                    if (currBufferOffset >= size) {
+                        currBufferOffset = NOFFS;
+                        currBuffer.Reset ();
+                    }
+                    SetDirty (true);
+                    return size;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -543,7 +569,6 @@ namespace thekogans {
 
         void TransactedFile::SetSize (ui64 newSize) {
             if (IsOpen ()) {
-                LockGuard<SpinLock> guard (spinLock);
                 if (size != newSize) {
                     if (size > newSize) {
                         // shrinking
