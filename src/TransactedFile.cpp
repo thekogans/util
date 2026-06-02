@@ -139,13 +139,14 @@ namespace thekogans {
                 Buffer *buffer = new Buffer (bufferIndex, bufferOffset);
                 buffers[bufferIndex].Reset (buffer);
                 ui64 sizeOnDisk = file.GetSize ();
+                ui64 countRead = 0;
                 if (bufferOffset < sizeOnDisk) {
                     file.Seek (bufferOffset, SEEK_SET);
-                    ui64 countRead = file.Read (
+                    countRead = file.Read (
                         buffer->data,
                         MIN (sizeOnDisk - bufferOffset, Buffer::SIZE));
-                    std::memset (buffer->data + countRead, 0, Buffer::SIZE - countRead);
                 }
+                std::memset (buffer->data + countRead, 0, Buffer::SIZE - countRead);
                 // Insert the new buffer in to the ordered (on index) buffer list...
                 if (bufferList.for_each (
                         [this, buffer] (BufferList::Callback::argument_type buffer_) ->
