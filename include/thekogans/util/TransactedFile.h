@@ -28,6 +28,7 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Subscriber.h"
+#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Producer.h"
 #include "thekogans/util/SecureAllocator.h"
 
@@ -205,6 +206,11 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
+            struct Buffer;
+            /// \brief
+            /// Alias for IntrusiveList<Buffer>.
+            using BufferList = IntrusiveList<Buffer>;
+
             /// \struct TransactedFile::Buffer TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
@@ -214,7 +220,9 @@ namespace thekogans {
             /// WARNING: Spent an hour chasing my tail looking for a stack
             /// overflow bug. Long story short, don't allocate buffers on
             /// the stack. They're too big.
-            struct Buffer : public RefCounted {
+            struct Buffer :
+                    public RefCounted,
+                    public BufferList::Node {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Buffer)
@@ -222,9 +230,10 @@ namespace thekogans {
                 /// Buffer has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
+                const std::size_t index;
                 /// \brief
                 /// Buffer offset (multiple of SIZE).
-                ui64 offset;
+                const ui64 offset;
                 /// \brief
                 /// Buffer size. This (and the coresponding
                 /// \see{SHIFT_COUNT} below) is a tuning parameter.
@@ -256,12 +265,19 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] offset_ Buffer offset (multiple of SIZE).
                 Buffer (
-                    ui64 offset_ = 0) :
+                    std::size_t index_,
+                    ui64 offset_) :
+                    index (index_),
                     offset (offset_),
                     dirty (false) {}
             };
 
         private:
+            struct Node;
+            /// \brief
+            /// Alias for IntrusiveList<Buffer>.
+            using NodeList = IntrusiveList<Node>;
+
             /// \struct TransactedFile::Node TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
@@ -275,10 +291,17 @@ namespace thekogans {
             ///   Each index is used to access an internal tree node. (depth = 4).
             /// - The low order 32 bits are split in to a 12 bit index to access one
             ///   of 4K 20 bit, 4GB segment tiles (Buffer). (depth = 5)
-            struct Node : public RefCounted {
+            struct Node :
+                    public RefCounted,
+                    public NodeList::Node {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
+
+                std::size_t index;
+
+                Node (std::size_t index_) :
+                    index (index_) {}
 
                 /// \brief
                 /// Delete buffers.
@@ -301,7 +324,7 @@ namespace thekogans {
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
-                virtual bool SetSize (ui64 newSize) = 0;
+                virtual bool Shrink (ui64 newSize) = 0;
                 /// \brief
                 /// Return either an \see{Internal} scafolding node
                 /// or a \see{Segment} leaf node. Create if null.
@@ -332,6 +355,10 @@ namespace thekogans {
                 /// \brief
                 /// \see{Buffers} tiling the 4GB segment.
                 Buffer::SharedPtr buffers[BRANCHING_LEVEL];
+                BufferList bufferList;
+
+                Segment (std::size_t index) :
+                    Node (index) {}
 
                 /// \brief
                 /// Delete buffers.
@@ -354,7 +381,7 @@ namespace thekogans {
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
-                virtual bool SetSize (ui64 newSize) override;
+                virtual bool Shrink (ui64 newSize) override;
                 /// \brief
                 /// We're a leaf. We don't have any children.
                 virtual Node::SharedPtr GetNode (
@@ -363,6 +390,11 @@ namespace thekogans {
                     assert (0);
                     return nullptr;
                 }
+
+                Buffer::SharedPtr GetBuffer (
+                    ui32 bufferIndex,
+                    ui64 bufferOffset,
+                    File &file);
             };
 
             /// \struct TransactedFile::Internal TransactedFile.h thekogans/util/TransactedFile.h
@@ -385,6 +417,10 @@ namespace thekogans {
                 /// \brief
                 /// These are the internal 4G of 4GB segments.
                 Node::SharedPtr nodes[BRANCHING_LEVEL];
+                NodeList nodeList;
+
+                Internal (std::size_t index) :
+                    Node (index) {}
 
                 /// \brief
                 /// Delete buffers.
@@ -407,7 +443,7 @@ namespace thekogans {
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
-                virtual bool SetSize (ui64 newSize) override;
+                virtual bool Shrink (ui64 newSize) override;
                 /// \brief
                 /// Return either an \see{Internal} scaffolding node
                 /// or a \see{Segment} leaf node. Create if null.
@@ -570,6 +606,11 @@ namespace thekogans {
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
             ui64 Grow (ui64 amount);
+            /// \brief
+            /// Shrink the file by the given amount.
+            /// Thread safe.
+            /// \param[in] amount Amount to shrink the file by.
+            /// \return New file size.
             ui64 Shrink (ui64 amount);
 
             // Serializer
@@ -667,7 +708,7 @@ namespace thekogans {
             }
             /// \brief
             /// Truncates or expands the file.
-            /// Thread safe.
+            /// NOT Thread safe.
             /// \param[in] newSize New size to set the file to.
             virtual void SetSize (ui64 newSize) override;
 

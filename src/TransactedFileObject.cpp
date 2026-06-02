@@ -55,6 +55,16 @@ namespace thekogans {
             return false;
         }
 
+        TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
+            if (IsDirty ()) {
+                Alloc ();
+                Flush ();
+                SetDirty (false);
+                Subscriber<TransactedFileEvents>::Unsubscribe (*file);
+            }
+            return GetOffset ();
+        }
+
         bool TransactedFile::Object::SetDirty (bool dirty) {
             if (TransactionParticipant::SetDirty (dirty)) {
                 Produce (
@@ -104,7 +114,7 @@ namespace thekogans {
         void TransactedFile::Object::Flush () {
             assert (IsDirty ());
             assert (offset != 0);
-            TransactedFile::BlockRange range (*file, offset, false);
+            BlockRange range (*file, offset, false);
             Write (range);
             if (GetAllocator ()->IsSecure ()) {
                 range.Seek (
@@ -115,7 +125,7 @@ namespace thekogans {
 
         void TransactedFile::Object::Reload () {
             if (offset != 0) {
-                TransactedFile::BlockRange range (*file, offset);
+                BlockRange range (*file, offset);
                 Read (range);
             }
         }

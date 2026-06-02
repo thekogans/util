@@ -65,7 +65,7 @@ public:
         return flags.Test (FLAGS_DIRTY);
     }
     /// \brief
-    /// Set the dirty flag, preserving the state of the deleted flag.
+    /// Set the dirty flag.
     /// \param[in] dirty true == dirty, false == clean.
     /// \return true == the state has transitioned from clean to dirty.
     /// IMPORTANT SEMANTICS: SetDirty will return true only on the transition
@@ -194,7 +194,16 @@ public:
         return offset;
     }
 
+    /// \brief
+    /// If the object is dirty, flush it's cache to disk.
+    /// \return GetOffset ().
+    Allocator::PtrType ForceFlush ();
+
     // TransactedFile::TransactionParticipant
+    /// \brief
+    /// Set the dirty flag.
+    /// \param[in] dirty true == dirty, false == clean.
+    /// \return true == the state has transitioned from clean to dirty.
     virtual bool SetDirty (bool dirty) override;
 
     /// \brief

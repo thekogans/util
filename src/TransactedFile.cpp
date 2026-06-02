@@ -56,119 +56,180 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
 
         bool TransactedFile::Segment::Clear (bool all) {
-            bool empty = true;
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr) {
-                    if (all || buffers[i]->dirty) {
-                        buffers[i].Reset ();
+            bufferList.for_each (
+                [this, all] (BufferList::Callback::argument_type buffer) ->
+                        BufferList::Callback::result_type {
+                    if (all || buffer->dirty) {
+                        bufferList.erase (buffer);
+                        buffers[buffer->index].Reset ();
                     }
-                    else {
-                        empty = false;
-                    }
+                    return true;
                 }
-            }
-            return empty;
+            );
+            return bufferList.empty ();
         }
 
         void TransactedFile::Segment::Save (File &log) {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr && buffers[i]->dirty) {
-                    log << buffers[i]->offset;
-                    // NOTE: Here we write the full buffer size (Bufer::SIZE),
-                    // trailing '0' and all. Since Buffer does not maintain
-                    // internal size, all buffers other than possibly the last
-                    // are Buffer::SIZE in lengh, we have no choice but to
-                    // write Buffer::SIZE and have the actual size be adjusted
-                    // upstream (Flush).
-                    log.Write (buffers[i]->data, Buffer::SIZE);
-                    buffers[i]->dirty = false;
+            bufferList.for_each (
+                [&log] (BufferList::Callback::argument_type buffer) ->
+                        BufferList::Callback::result_type {
+                    if (buffer->dirty) {
+                        log << buffer->offset;
+                        // NOTE: Here we write the full buffer size (Bufer::SIZE),
+                        // trailing '0' and all. Since Buffer does not maintain
+                        // internal size, all buffers other than possibly the last
+                        // are Buffer::SIZE in lengh, we have no choice but to
+                        // write Buffer::SIZE and have the actual size be adjusted
+                        // upstream (Flush).
+                        log.Write (buffer->data, Buffer::SIZE);
+                        buffer->dirty = false;
+                    }
+                    return true;
                 }
-            }
+            );
         }
 
         void TransactedFile::Segment::Flush (
                 File &file,
                 ui64 size) {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (buffers[i] != nullptr && buffers[i]->dirty) {
-                    file.Seek (buffers[i]->offset, SEEK_SET);
-                    file.Write (buffers[i]->data, MIN (size - buffers[i]->offset, Buffer::SIZE));
-                    buffers[i]->dirty = false;
+            bufferList.for_each (
+                [&file, size] (BufferList::Callback::argument_type buffer) ->
+                        BufferList::Callback::result_type {
+                    if (buffer->dirty) {
+                        file.Seek (buffer->offset, SEEK_SET);
+                        file.Write (buffer->data, MIN (size - buffer->offset, Buffer::SIZE));
+                        buffer->dirty = false;
+                    }
+                    return true;
                 }
-            }
+            );
         }
 
-        bool TransactedFile::Segment::SetSize (ui64 newSize) {
-            for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
-                if (buffers[i] != nullptr) {
-                    if (buffers[i]->offset >= newSize) {
-                        buffers[i].Reset ();
+        bool TransactedFile::Segment::Shrink (ui64 newSize) {
+            bufferList.for_each (
+                [this, newSize] (BufferList::Callback::argument_type buffer) ->
+                        BufferList::Callback::result_type {
+                    if (buffer->offset >= newSize) {
+                        bufferList.erase (buffer);
+                        buffers[buffer->index].Reset ();
+                        return true;
                     }
                     else {
-                        ui64 consumed = newSize - buffers[i]->offset;
+                        ui64 consumed = newSize - buffer->offset;
                         if (consumed < Buffer::SIZE) {
-                            std::memset (
-                                buffers[i]->data + consumed, 0, Buffer::SIZE - consumed);
+                            // Buffers don't maintain internal lengths. All buffers
+                            // are Buffer::SIZE long (with potentially the last one
+                            // being less). If this is the last buffer, we clear that
+                            // part which falls outside the new file size.
+                            std::memset (buffer->data + consumed, 0, Buffer::SIZE - consumed);
                         }
                         return false;
                     }
+                },
+                true
+            );
+            return bufferList.empty ();
+        }
+
+        TransactedFile::Buffer::SharedPtr TransactedFile::Segment::GetBuffer (
+                ui32 bufferIndex,
+                ui64 bufferOffset,
+                File &file) {
+            if (buffers[bufferIndex] == nullptr) {
+                Buffer *buffer = new Buffer (bufferIndex, bufferOffset);
+                buffers[bufferIndex].Reset (buffer);
+                ui64 sizeOnDisk = file.GetSize ();
+                if (bufferOffset < sizeOnDisk) {
+                    file.Seek (bufferOffset, SEEK_SET);
+                    ui64 countRead = file.Read (
+                        buffer->data,
+                        MIN (sizeOnDisk - bufferOffset, Buffer::SIZE));
+                    std::memset (buffer->data + countRead, 0, Buffer::SIZE - countRead);
+                }
+                // Insert the new buffer in to the ordered (on index) buffer list...
+                if (bufferList.for_each (
+                        [this, buffer] (BufferList::Callback::argument_type buffer_) ->
+                                BufferList::Callback::result_type {
+                            if (buffer_->index > buffer->index) {
+                                bufferList.insert (buffer, buffer_);
+                                return false;
+                            }
+                            return true;
+                        })) {
+                    // ... first or last is the same push_back.
+                    bufferList.push_back (buffer);
                 }
             }
-            return true;
+            return buffers[bufferIndex];
         }
 
         bool TransactedFile::Internal::Clear (bool all) {
-            bool empty = true;
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (nodes[i] != nullptr) {
-                    if (all || nodes[i]->Clear (all)) {
-                        nodes[i].Reset ();
+            nodeList.for_each (
+                [this, all] (NodeList::Callback::argument_type node) ->
+                        NodeList::Callback::result_type {
+                    if (all || node->Clear (all)) {
+                        nodeList.erase (node);
+                        nodes[node->index].Reset ();
                     }
-                    else {
-                        empty = false;
-                    }
+                    return true;
                 }
-            }
-            return empty;
+            );
+            return nodeList.empty ();
         }
 
         void TransactedFile::Internal::Save (File &log) {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (nodes[i] != nullptr) {
-                    nodes[i]->Save (log);
+            nodeList.for_each (
+                [&log] (NodeList::Callback::argument_type node) ->
+                        NodeList::Callback::result_type {
+                    node->Save (log);
+                    return true;
                 }
-            }
+            );
         }
 
         void TransactedFile::Internal::Flush (
                 File &file,
                 ui64 size) {
-            for (std::size_t i = 0; i < BRANCHING_LEVEL; ++i) {
-                if (nodes[i] != nullptr) {
-                    nodes[i]->Flush (file, size);
+            nodeList.for_each (
+                [&file, size] (NodeList::Callback::argument_type node) ->
+                        NodeList::Callback::result_type {
+                    node->Flush (file, size);
+                    return true;
                 }
-            }
+            );
         }
 
-        bool TransactedFile::Internal::SetSize (ui64 newSize) {
-            for (std::size_t i = BRANCHING_LEVEL; i-- != 0;) {
-                if (nodes[i] != nullptr && !nodes[i]->SetSize (newSize)) {
-                    return false;
-                }
-                nodes[i].Reset ();
-            }
-            return true;
+        bool TransactedFile::Internal::Shrink (ui64 newSize) {
+            nodeList.for_each (
+                [this, newSize] (NodeList::Callback::argument_type node) ->
+                        NodeList::Callback::result_type {
+                    if (!node->Shrink (newSize)) {
+                        return false;
+                    }
+                    nodes[node->index].Reset ();
+                    return true;
+                },
+                true
+            );
+            return nodeList.empty ();
         }
 
         TransactedFile::Internal::Node::SharedPtr TransactedFile::Internal::GetNode (
                 ui8 index,
                 bool segment) {
             if (nodes[index] == nullptr) {
-                if (segment) {
-                    nodes[index].Reset (new Segment);
-                }
-                else {
-                    nodes[index].Reset (new Internal);
+                Node *node = segment ? (Node *)new Segment (index) : (Node *)new Internal (index);
+                nodes[index].Reset (node);
+                if (nodeList.for_each (
+                        [this, node] (NodeList::Callback::argument_type node_) ->
+                                NodeList::Callback::result_type {
+                            if (node_->index > node->index) {
+                                nodeList.insert (node, node_);
+                                return false;
+                            }
+                            return true;
+                        })) {
+                    nodeList.push_back (node);
                 }
             }
             return nodes[index];
@@ -184,6 +245,7 @@ namespace thekogans {
                 position (0),
                 size (0),
                 flags (0),
+                root (0),
                 currBufferOffset (NOFFS) {
             if (IsOpen ()) {
                 position = File::Tell ();
@@ -210,6 +272,7 @@ namespace thekogans {
                 position (0),
                 size (0),
                 flags (0),
+                root (0),
                 currBufferOffset (NOFFS) {
             OpenEx (
                 path,
@@ -351,9 +414,9 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 if (size >= amount) {
                     size -= amount;
-                    root.SetSize (size);
+                    root.Shrink (size);
                     // If size is <= current buffer offset, currBuffer
-                    // will have been deleted by root.SetSize.
+                    // will have been deleted by root.Shrink.
                     if (currBufferOffset >= size) {
                         currBufferOffset = NOFFS;
                         currBuffer.Reset ();
@@ -572,7 +635,7 @@ namespace thekogans {
                 if (size != newSize) {
                     if (size > newSize) {
                         // shrinking
-                        root.SetSize (newSize);
+                        root.Shrink (newSize);
                         // If new size is <= current buffer offset,
                         // currBuffer will be deleted by root.SetSize.
                         if (currBufferOffset >= newSize) {
@@ -858,29 +921,22 @@ namespace thekogans {
                 // -- We've just sparsely traversed the first 4
                 // layers of the 5 layer 64 bit index.
                 // --
-                ui32 bufferIndex =
-                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> Buffer::SHIFT_COUNT;
-                if (segment->buffers[bufferIndex] == nullptr) {
-                    segment->buffers[bufferIndex].Reset (new Buffer (bufferOffset));
-                    ui64 sizeOnDisk = File::GetSize ();
-                    if (bufferOffset < sizeOnDisk) {
-                        File::Seek (bufferOffset, SEEK_SET);
-                        ui64 countRead = File::Read (
-                            segment->buffers[bufferIndex]->data,
-                            MIN (sizeOnDisk - bufferOffset, Buffer::SIZE));
-                        std::memset (
-                            segment->buffers[bufferIndex]->data + countRead, 0, Buffer::SIZE - countRead);
-                    }
-                }
-                // -- After potentially creating the buffer above,
+                currBufferOffset = bufferOffset;
+                // Give GetBuffer a \see{TenantFile} as it's interface is that of \see{File}.
+                // If we were to pass *this, GetBuffer call in to our Seek and Read.
+                // And thats not what we want!
+                TenantFile file (endianness, handle, path);
+                currBuffer = segment->GetBuffer (
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> Buffer::SHIFT_COUNT,
+                    bufferOffset,
+                    file);
+                // -- After potentially creating the buffer in Segment::GetBuffer,
                 // we've arrived at the end of the 5 layer deep sparse index.
                 // This mapping is constant (with the create code being amortized
                 // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
                 // We take advantage of locality of reference and cache the last
                 // buffer accessed in the hopes that it will be accessed next and
                 // we can skip the tree walk.
-                currBufferOffset = bufferOffset;
-                currBuffer = segment->buffers[bufferIndex];
             }
             return currBuffer;
         }
