@@ -205,12 +205,14 @@ namespace thekogans {
             /// Synchronization lock.
             SpinLock spinLock;
 
-        public:
+            /// \brief
+            /// Forward declaration of \see{Buffer} needed by \see{BufferList}.
             struct Buffer;
             /// \brief
-            /// Alias for IntrusiveList<Buffer>.
+            /// Alias for \see{IntrusiveList}<Buffer>.
             using BufferList = IntrusiveList<Buffer>;
 
+        public:
             /// \struct TransactedFile::Buffer TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
@@ -230,6 +232,8 @@ namespace thekogans {
                 /// Buffer has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
+                /// \brief
+                /// Buffer index in \see{Segment::buffers}.
                 const std::size_t index;
                 /// \brief
                 /// Buffer offset (multiple of SIZE).
@@ -273,9 +277,11 @@ namespace thekogans {
             };
 
         private:
+            /// \brief
+            /// Forward declaration of \see{Node} needed by NodeList.
             struct Node;
             /// \brief
-            /// Alias for IntrusiveList<Buffer>.
+            /// Alias for \see{IntrusiveList}<Node>.
             using NodeList = IntrusiveList<Node>;
 
             /// \struct TransactedFile::Node TransactedFile.h thekogans/util/TransactedFile.h
@@ -298,8 +304,13 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
+                /// \brief
+                /// Node index in \see{Internal::nodes}.
                 std::size_t index;
 
+                /// \brief
+                /// ctor.
+                /// \param[in] index_ Node index in \see{Internal::nodes}.
                 Node (std::size_t index_) :
                     index (index_) {}
 
@@ -312,7 +323,7 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
-                virtual void Save (File &log) = 0;
+                virtual void Log (File &log) = 0;
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
@@ -325,16 +336,6 @@ namespace thekogans {
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) = 0;
-                /// \brief
-                /// Return either an \see{Internal} scafolding node
-                /// or a \see{Segment} leaf node. Create if null.
-                /// \param[in] index Index of node to return.
-                /// \param[in] segment If null, true == create \see{Segment},
-                /// otherwise create \see{Internal}
-                /// \retrun \see{Segment} or \see{Internal} node at index.
-                virtual Node::SharedPtr GetNode (
-                    ui8 index,
-                    bool segment = false) = 0;
             };
 
             /// \struct TransactedFile::Segment TransactedFile.h thekogans/util/TransactedFile.h
@@ -369,7 +370,7 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
-                virtual void Save (File &log) override;
+                virtual void Log (File &log) override;
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
@@ -382,14 +383,6 @@ namespace thekogans {
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) override;
-                /// \brief
-                /// We're a leaf. We don't have any children.
-                virtual Node::SharedPtr GetNode (
-                        ui8 /*index*/,
-                        bool /*segment*/ = false) override {
-                    assert (0);
-                    return nullptr;
-                }
 
                 Buffer::SharedPtr GetBuffer (
                     ui32 bufferIndex,
@@ -431,7 +424,7 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty buffers to log.
                 /// \param[in] log Log \see{File} to save to.
-                virtual void Save (File &log) override;
+                virtual void Log (File &log) override;
                 /// \brief
                 /// Write dirty buffers to file.
                 /// \param[in] file \see{File} to save to.
@@ -444,6 +437,7 @@ namespace thekogans {
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) override;
+
                 /// \brief
                 /// Return either an \see{Internal} scaffolding node
                 /// or a \see{Segment} leaf node. Create if null.
@@ -451,9 +445,9 @@ namespace thekogans {
                 /// \param[in] segment If null, true == create \see{Segment},
                 /// otherwise create \see{Internal}
                 /// \retrun \see{Segment} or \see{Internal} node at index.
-                virtual Node::SharedPtr GetNode (
+                Node::SharedPtr GetNode (
                     ui8 index,
-                    bool segment = false) override;
+                    bool segment = false);
             } root;
             /// \brief
             /// Current buffer offset.

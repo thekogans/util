@@ -69,7 +69,7 @@ namespace thekogans {
             return bufferList.empty ();
         }
 
-        void TransactedFile::Segment::Save (File &log) {
+        void TransactedFile::Segment::Log (File &log) {
             bufferList.for_each (
                 [&log] (BufferList::Callback::argument_type buffer) ->
                         BufferList::Callback::result_type {
@@ -178,11 +178,11 @@ namespace thekogans {
             return nodeList.empty ();
         }
 
-        void TransactedFile::Internal::Save (File &log) {
+        void TransactedFile::Internal::Log (File &log) {
             nodeList.for_each (
                 [&log] (NodeList::Callback::argument_type node) ->
                         NodeList::Callback::result_type {
-                    node->Save (log);
+                    node->Log (log);
                     return true;
                 }
             );
@@ -611,7 +611,7 @@ namespace thekogans {
                         else {
                             log << MAGIC32 << (ui32)0 << size;
                         }
-                        root.Save (log);
+                        root.Log (log);
                     }
                     else {
                         // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
@@ -910,7 +910,7 @@ namespace thekogans {
             if (currBufferOffset != bufferOffset) {
                 // --
                 ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
-                Node::SharedPtr internal = root.GetNode (
+                Internal::SharedPtr internal = root.GetNode (
                     THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 0));
                 internal = internal->GetNode (
                     THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 1));

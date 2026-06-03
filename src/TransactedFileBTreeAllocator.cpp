@@ -122,28 +122,24 @@ namespace thekogans {
                 }
                 else {
                     // Do your best to not straddle a page boundary.
-                    // Ranges that straddle page boundaries incure an
+                    // Ranges that straddle page boundaries incur an
                     // allocation/copy/deallocation penalty.
                     // Calculate the remainder left in the last page.
                     ui64 remainder =
                         TransactedFile::Buffer::SIZE -
-                        (file->GetSize () & ~(TransactedFile::Buffer::SIZE - 1));
-                    // Carefull to not underflow.
-                    if (remainder >= Block::SIZE) {
-                        remainder -= Block::SIZE;
-                    }
+                        (file->GetSize () & (TransactedFile::Buffer::SIZE - 1));
                     // If we fit in to remainder or, if the remainder
                     // can be turned in to another block and we fit in
                     // to one page, all is well. Go ahead and create a
                     // spacer block and align us with a page boundary.
                     // Otherwise, because there can be no gaps between
                     // blocks, we will straddle a page boundary.
-                    if (remainder < size && remainder >= MIN_USER_DATA_SIZE &&
+                    if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
                             size <= (TransactedFile::Buffer::SIZE - Block::SIZE)) {
                         Block block (
-                            file->Grow (Block::SIZE + remainder) + Block::HEADER_SIZE,
+                            file->Grow (remainder) + Block::HEADER_SIZE,
                             Block::FLAGS_FREE,
-                            remainder);
+                            remainder - Block::SIZE);
                         block.Write (*file);
                         btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
                     }
@@ -253,19 +249,22 @@ namespace thekogans {
                     }
                     Free (block.GetOffset ());
                 }
-                // If the new size leaves room for another block, split existing block.
-                else if (block.GetSize () - size >= MIN_BLOCK_SIZE) {
-                    Block next (
-                        offset + size + Block::SIZE,
-                        Block::FLAGS_FREE,
-                        block.GetSize () - size - Block::SIZE);
-                    next.Write (*file);
-                    {
-                        LockGuard<SpinLock> guard (spinLock);
-                        btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                else {
+                    // If the new size leaves room for another block, split existing block.
+                    ui64 remainder = block.GetSize () - size;
+                    if (remainder >= MIN_BLOCK_SIZE) {
+                        Block next (
+                            offset + size + Block::SIZE,
+                            Block::FLAGS_FREE,
+                            remainder - Block::SIZE);
+                        next.Write (*file);
+                        {
+                            LockGuard<SpinLock> guard (spinLock);
+                            btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        }
+                        block.SetSize (size);
+                        block.Write (*file);
                     }
-                    block.SetSize (size);
-                    block.Write (*file);
                 }
             }
             return offset;

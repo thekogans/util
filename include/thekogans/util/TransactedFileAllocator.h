@@ -111,10 +111,12 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         ///
         /// \brief
         /// Block header preceeds the user data and forms one half of
-        /// it's structure. Block uses the information found in
-        /// header to compare against what's found in footer. If the
-        /// two match, the block is considered intact. If they don't
-        /// an exception is thrown indicating heap corruption.
+        /// it's structure. The other half is found in the second copy
+        /// of the header located after the user data (footer). Block
+        /// uses the information found in header to compare against what's
+        /// found in footer. If the two match, the block is considered
+        /// intact. If they don't an exception is thrown indicating heap
+        /// corruption.
         struct _LIB_THEKOGANS_UTIL_DECL Header {
             /// \brief
             /// Allocator derivatives can use this flag to start their own flag list
