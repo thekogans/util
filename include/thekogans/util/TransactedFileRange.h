@@ -198,7 +198,7 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
         Range (
             file,
             offset,
-            MIN (length, file.GetSize () - offset),
+            ClampLength (file, offset, length),
             reading,
             allocator) {}
 
@@ -231,4 +231,19 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
     virtual i64 Seek (
         i64 offset,
         i32 fromWhere) override;
+
+private:
+    /// \brief
+    /// Clamp the length so that the range lies inside file bounds.
+    /// \param[in] file Range \see{TransactedFile}.
+    /// \param[in] offset Range start.
+    /// \param[in] length Range length.
+    /// \return Clamped length.
+    inline static std::size_t ClampLength (
+            TransactedFile &file,
+            ui64 offset,
+            std::size_t length) {
+        ui64 size = file.GetSize ();
+        return size > offset ? MIN (length, size - offset) : 0;
+    }
 };
