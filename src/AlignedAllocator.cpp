@@ -129,5 +129,23 @@ namespace thekogans {
             return 0;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API TrailingZeroBitCount (
+                std::size_t value) {
+            static const std::size_t trailingZeroBits[] = {
+                4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
+            };
+            std::size_t count = 0;
+            std::size_t mask = 0xf;
+            while (value != 0) {
+                std::size_t nibleCount = trailingZeroBits[value & mask];
+                count += nibleCount;
+                if (nibleCount < 4) {
+                    break;
+                }
+                value >>= 4;
+            }
+            return count;
+        }
+
     } // namespace util
 } // namespace thekogans

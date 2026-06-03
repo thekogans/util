@@ -21,6 +21,7 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
@@ -242,27 +243,22 @@ namespace thekogans {
                 /// Buffer offset (multiple of SIZE).
                 const ui64 offset;
                 /// \brief
-                /// Buffer size. This (and the coresponding
-                /// \see{SHIFT_COUNT} below) is a tuning parameter.
+                /// Buffer size. This is a tuning parameter.
                 /// Set it based on your typical file sizes. Meaning that,
                 /// if your files never go above 100KB then a 1MB SIZE
                 /// is overkill. But if you typically manage multi gigabyte
                 /// (terabyte?) databases you might want to bump this value up.
                 /// The way you do it is by going up or down a power of 2 on
-                /// SIZE and up or down by one on SHIFT_COUNT.
+                /// SIZE.
                 /// Ex: Let's say you wanted 2MB buffers instead of 1MB.
-                /// Then SIZE = 0x00200000, and SHIFT_COUNT = 21.
+                /// Then SIZE = 0x00200000.
                 /// Ex: If you need 16MB buffers,
-                /// Then SIZE = 0x01000000, and SHIFT_COUNT = 24.
+                /// Then SIZE = 0x01000000.
                 /// Ex: If you need 256KB buffers,
-                /// Then SIZE = 0x00040000, and SHIFT_COUNT = 18.
-                static const std::size_t SIZE = 0x00100000;
+                /// Then SIZE = 0x00040000.
+                static constexpr std::size_t SIZE = 0x00100000;
                 /// \brief
-                /// Look at \see{SIZE} above. This number
-                /// represents the trailing zeros in binary.
-                static const std::size_t SHIFT_COUNT = 20;
-                /// \brief
-                /// Buffer.
+                /// Buffer data.
                 ui8 data[SIZE];
                 /// \brief
                 /// true == modified.
@@ -270,6 +266,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
+                /// \param[in] index_ Buffer index in \see{Segment::buffers}.
                 /// \param[in] offset_ Buffer offset (multiple of SIZE).
                 Buffer (
                     std::size_t index_,
@@ -354,13 +351,18 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
-                /// The segment is split in to 4K of 1MB tiles (\see{Buffer}).
-                static const std::size_t BRANCHING_LEVEL = 0x00001000;
+                /// The number of \see{Buffer}s tilling the segments 4GB address space.
+                static const std::size_t BRANCHING_LEVEL = ((std::size_t)1 << 32) / Buffer::SIZE;
                 /// \brief
                 /// \see{Buffers} tiling the 4GB segment.
                 Buffer::SharedPtr buffers[BRANCHING_LEVEL];
+                /// \brief
+                /// \see{IntrusiveList} of linked \see{Buffer}s.
                 BufferList bufferList;
 
+                /// \brief
+                /// cor.
+                /// \param[in] index Segment index.
                 Segment (std::size_t index) :
                     Node (index) {}
 
@@ -387,6 +389,12 @@ namespace thekogans {
                 /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) override;
 
+                /// \brief
+                /// Return the \see{Buffer} @index. Create if null.
+                /// \param[in] bufferIndex
+                /// \param[in] bufferOffset
+                /// \param[in] file
+                /// \return The new buffer.
                 Buffer::SharedPtr GetBuffer (
                     ui32 bufferIndex,
                     ui64 bufferOffset,
@@ -413,8 +421,13 @@ namespace thekogans {
                 /// \brief
                 /// These are the internal 4G of 4GB segments.
                 Node::SharedPtr nodes[BRANCHING_LEVEL];
+                /// \brief
+                /// \see{IntrusiveList} of \see{Node}s.
                 NodeList nodeList;
 
+                /// \brief
+                /// ctor.
+                /// \param[in] index Node index.
                 Internal (std::size_t index) :
                     Node (index) {}
 

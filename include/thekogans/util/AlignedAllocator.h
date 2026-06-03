@@ -164,6 +164,12 @@ namespace thekogans {
         /// \return Value aligned to power of 2 boundary.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API Align (
             std::size_t value);
+        /// \brief
+        /// Return the count of trailing 0 bits.
+        /// \param[in] value Value to check.
+        /// \return Number of trailing bits after the first 1.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API TrailingZeroBitCount (
+            std::size_t value);
 
     } // namespace util
 } // namespace thekogans

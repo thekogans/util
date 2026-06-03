@@ -23,6 +23,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -921,8 +922,9 @@ namespace thekogans {
                 // If we were to pass *this, GetBuffer call in to our Seek and Read.
                 // And thats not what we want!
                 TenantFile file (endianness, handle, path);
+                static const std::size_t SHIFT_COUNT = TrailingZeroBitCount (Buffer::SIZE);
                 currBuffer = segment->GetBuffer (
-                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> Buffer::SHIFT_COUNT,
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> SHIFT_COUNT,
                     bufferOffset,
                     file);
                 // -- After potentially creating the buffer in Segment::GetBuffer,
