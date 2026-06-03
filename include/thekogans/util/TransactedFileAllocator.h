@@ -129,7 +129,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
             /// A combination of FLAGS_FREE and allocator specific flags.
             Flags32 flags;
             /// \brief
-            /// Block size (not including header and footer).
+            /// Block size (not including header and footer). Only user data.
             ui64 size;
 
             /// \brief
@@ -337,7 +337,7 @@ protected:
         /// Contains the offset of the \see{Registry}.
         PtrType registryOffset;
         // NOTE: If you add new fields, adjust the SIZE and increment
-        // the CURRENT_VERSION below and add if statements to operator
+        // the version of your derivative and add if statements to operator
         // << and >> to read and write them. And don't forget to rebuild
         // all dependent allocators as it's likely they will have based
         // their header extensions by deriving from this one.

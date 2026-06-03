@@ -122,6 +122,7 @@ namespace thekogans {
                     }
                 }
                 else {
+                    // If not, we need to grow the file.
                     // Do your best to not straddle a page boundary.
                     // Ranges that straddle page boundaries incur an
                     // allocation/copy/deallocation penalty.

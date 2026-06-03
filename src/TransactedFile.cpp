@@ -122,7 +122,7 @@ namespace thekogans {
                             // are Buffer::SIZE long (with potentially the last one
                             // being less). If this is the last buffer, we clear that
                             // part which falls outside the new file size.
-                            std::memset (buffer->data + consumed, 0, Buffer::SIZE - consumed);
+                            SecureZeroMemory (buffer->data + consumed, Buffer::SIZE - consumed);
                         }
                         return false;
                     }
@@ -141,7 +141,7 @@ namespace thekogans {
                 buffers[bufferIndex].Reset (buffer);
                 file.Seek (bufferOffset, SEEK_SET);
                 ui64 countRead = file.Read (buffer->data, Buffer::SIZE);
-                std::memset (buffer->data + countRead, 0, Buffer::SIZE - countRead);
+                SecureZeroMemory (buffer->data + countRead, Buffer::SIZE - countRead);
                 // Insert the new buffer in to the ordered (on index) buffer list...
                 if (bufferList.empty () || bufferList.tail->index < buffer->index) {
                     // ... first or last is the same push_back.
@@ -221,7 +221,11 @@ namespace thekogans {
             if (nodes[index] == nullptr) {
                 Node *node = segment ? (Node *)new Segment (index) : (Node *)new Internal (index);
                 nodes[index].Reset (node);
-                if (nodeList.for_each (
+                if (nodeList.empty () || nodeList.tail->index < node->index) {
+                    nodeList.push_back (node);
+                }
+                else {
+                    nodeList.for_each (
                         [this, node] (NodeList::Callback::argument_type node_) ->
                                 NodeList::Callback::result_type {
                             if (node_->index > node->index) {
@@ -229,8 +233,8 @@ namespace thekogans {
                                 return false;
                             }
                             return true;
-                        })) {
-                    nodeList.push_back (node);
+                        }
+                    );
                 }
             }
             return nodes[index];
