@@ -171,6 +171,10 @@ public:
     virtual i64 Seek (
         i64 offset,
         i32 fromWhere) override;
+
+    /// \brief
+    /// Range is neither copy constructable, nor assignable.
+    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Range)
 };
 
 /// \struct TransactedFile::SafeRange TransactedFileRange.h thekogans/util/TransactedFileRange.h

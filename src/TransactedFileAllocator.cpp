@@ -73,14 +73,12 @@ namespace thekogans {
         ui64 TransactedFile::Allocator::Block::GetSize (
                 TransactedFile &file,
                 PtrType offset) {
-            Block block (offset);
-            block.Read (file);
+            Block block (file, offset);
+            block.Read ();
             return block.GetSize ();
         }
 
-        bool TransactedFile::Allocator::Block::Prev (
-                TransactedFile &file,
-                Block &prev) const {
+        bool TransactedFile::Allocator::Block::Prev (Block &prev) const {
             if (!IsFirst ()) {
                 Header footer;
                 footer.Read (file, offset - SIZE);
@@ -100,18 +98,16 @@ namespace thekogans {
             return false;
         }
 
-        bool TransactedFile::Allocator::Block::Next (
-                TransactedFile &file,
-                Block &next) const {
-            if (!IsLast (file)) {
+        bool TransactedFile::Allocator::Block::Next (Block &next) const {
+            if (!IsLast ()) {
                 next.offset = offset + header.size + SIZE;
-                next.Read (file);
+                next.Read ();
                 return true;
             }
             return false;
         }
 
-        void TransactedFile::Allocator::Block::Read (TransactedFile &file) {
+        void TransactedFile::Allocator::Block::Read () {
             header.Read (file, offset - HEADER_SIZE);
             Header footer;
             footer.Read (file, offset + header.size);
@@ -126,13 +122,13 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Allocator::Block::Write (TransactedFile &file) const {
+        void TransactedFile::Allocator::Block::Write () const {
             header.Write (file, offset - HEADER_SIZE);
             header.Write (file, offset + header.size);
         }
 
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-        void TransactedFile::Allocator::Block::Invalidate (TransactedFile &file) const {
+        void TransactedFile::Allocator::Block::Invalidate () const {
             Range range (file, offset - HEADER_SIZE, UI32_SIZE, false);
             // Simply stepping on magic will invalidate
             // this block for all future reads.

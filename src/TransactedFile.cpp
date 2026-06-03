@@ -655,9 +655,9 @@ namespace thekogans {
                 if (GetSize () == 0) {
                     // Initialize the first block.
                     Allocator::Block block (
-                        Allocator::Block::HEADER_SIZE, 0, UI32_SIZE + allocator_->GetSize ());
+                        *this, Allocator::Block::HEADER_SIZE, 0, UI32_SIZE + allocator_->GetSize ());
                     SetSize (Allocator::Block::SIZE + block.GetSize ());
-                    block.Write (*this);
+                    block.Write ();
                     BlockRange range (*this, block.GetOffset (), false);
                     range << MAGIC32 << *allocator_;
                 }

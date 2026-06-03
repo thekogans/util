@@ -28,16 +28,16 @@ namespace thekogans {
             TransactedFileBTreeAllocator::SIZE,
             TransactedFile::Allocator::TYPE)
 
-        void TransactedFileBTreeAllocator::Block::Read (TransactedFile &file) {
-            Allocator::Block::Read (file);
+        void TransactedFileBTreeAllocator::Block::Read () {
+            Allocator::Block::Read ();
             if (IsFree () && IsBTreeNode ()) {
                 TransactedFile::Range range (file, offset, PTR_TYPE_SIZE);
                 range >> nextBTreeNodeOffset;
             }
         }
 
-        void TransactedFileBTreeAllocator::Block::Write (TransactedFile &file) const {
-            Allocator::Block::Write (file);
+        void TransactedFileBTreeAllocator::Block::Write () const {
+            Allocator::Block::Write ();
             if (IsFree () && IsBTreeNode ()) {
                 TransactedFile::Range range (file, offset, PTR_TYPE_SIZE, false);
                 range << nextBTreeNodeOffset;
@@ -58,8 +58,8 @@ namespace thekogans {
                 if (size <= btreeNodeFileSize && header.freeBTreeNodeOffset != 0) {
                     result.first = btreeNodeFileSize;
                     result.second = header.freeBTreeNodeOffset;
-                    Block block (header.freeBTreeNodeOffset);
-                    block.Read (*file);
+                    Block block (*file, header.freeBTreeNodeOffset);
+                    block.Read ();
                     if (block.IsFree () && block.IsBTreeNode ()) {
                         header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
                         SetDirty (true);
@@ -108,10 +108,11 @@ namespace thekogans {
                     ui64 remainder = result.first - size;
                     if (remainder >= MIN_BLOCK_SIZE) {
                         Block next (
+                            *file,
                             result.second + size + Block::SIZE,
                             Block::FLAGS_FREE,
                             remainder - Block::SIZE);
-                        next.Write (*file);
+                        next.Write ();
                         btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                     }
                     else {
@@ -137,17 +138,18 @@ namespace thekogans {
                     if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
                             size <= (TransactedFile::Buffer::SIZE - Block::SIZE)) {
                         Block block (
+                            *file,
                             file->Grow (remainder) + Block::HEADER_SIZE,
                             Block::FLAGS_FREE,
                             remainder - Block::SIZE);
-                        block.Write (*file);
+                        block.Write ();
                         btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
                     }
                     // No free block large enough is found? Grow the file.
                     offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
                 }
-                Block block (offset, 0, size);
-                block.Write (*file);
+                Block block (*file, offset, 0, size);
+                block.Write ();
             }
             return offset;
         }
@@ -156,14 +158,14 @@ namespace thekogans {
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
                 LockGuard<SpinLock> guard (spinLock);
-                Block block (offset);
-                block.Read (*file);
+                Block block (*file, offset);
+                block.Read ();
                 if (!block.IsFree ()) {
                     PtrType clearOffset = block.GetOffset ();
                     ui64 clearLength = block.GetSize ();
                     // Consolidate adjacent free non BTree::Node blocks.
-                    Block prev;
-                    if (block.Prev (*file, prev) && prev.IsFree () && !prev.IsBTreeNode ()) {
+                    Block prev (*file);
+                    if (block.Prev (prev) && prev.IsFree () && !prev.IsBTreeNode ()) {
                         btree->Remove (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume prev body is clear.
@@ -174,15 +176,15 @@ namespace thekogans {
                         else {
                             // Since block will grow to occupy prev,
                             // it's offset is no longer valid.
-                            block.Invalidate (*file);
+                            block.Invalidate ();
                         }
                     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Back up to cover the prev.
                         block.SetOffset (block.GetOffset () - Block::SIZE - prev.GetSize ());
                         block.SetSize (block.GetSize () + Block::SIZE + prev.GetSize ());
                     }
-                    Block next;
-                    if (block.Next (*file, next) && next.IsFree () && !next.IsBTreeNode ()) {
+                    Block next (*file);
+                    if (block.Next (next) && next.IsFree () && !next.IsBTreeNode ()) {
                         btree->Remove (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume next body is clear.
@@ -192,18 +194,18 @@ namespace thekogans {
                         else {
                             // Since block will grow to occupy next,
                             // next offset is no longer valid.
-                            next.Invalidate (*file);
+                            next.Invalidate ();
                         }
                     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Expand to swallow the next.
                         block.SetSize (block.GetSize () + Block::SIZE + next.GetSize ());
                     }
                     // If we're not the last block...
-                    if (!block.IsLast (*file)) {
+                    if (!block.IsLast ()) {
                         // ... add it to the free list.
                         btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
-                        block.Write (*file);
+                        block.Write ();
                         if (IsSecure ()) {
                             TransactedFile::Range range (*file, clearOffset, clearLength, false);
                             range.Seek (
@@ -232,8 +234,8 @@ namespace thekogans {
                 offset = Alloc (size);
             }
             else {
-                Block block (offset);
-                block.Read (*file);
+                Block block (*file, offset);
+                block.Read ();
                 if (block.GetSize () < size) {
                     offset = Alloc (size);
                     if (moveData) {
@@ -254,16 +256,17 @@ namespace thekogans {
                     ui64 remainder = block.GetSize () - size;
                     if (remainder >= MIN_BLOCK_SIZE) {
                         Block next (
+                            *file,
                             offset + size + Block::SIZE,
                             Block::FLAGS_FREE,
                             remainder - Block::SIZE);
-                        next.Write (*file);
+                        next.Write ();
                         {
                             LockGuard<SpinLock> guard (spinLock);
                             btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                         }
                         block.SetSize (size);
-                        block.Write (*file);
+                        block.Write ();
                     }
                 }
             }
@@ -320,8 +323,8 @@ namespace thekogans {
             PtrType offset = 0;
             if (header.freeBTreeNodeOffset != 0) {
                 offset = header.freeBTreeNodeOffset;
-                Block block (offset);
-                block.Read (*file);
+                Block block (*file, offset);
+                block.Read ();
                 if (block.IsFree () && block.IsBTreeNode ()) {
                     header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
                     SetDirty (true);
@@ -336,20 +339,20 @@ namespace thekogans {
             else {
                 offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
             }
-            Block block (offset, Block::FLAGS_BTREE_NODE, size);
-            block.Write (*file);
+            Block block (*file, offset, Block::FLAGS_BTREE_NODE, size);
+            block.Write ();
             return offset;
         }
 
         void TransactedFileBTreeAllocator::FreeBTreeNode (PtrType offset) {
             if (offset != 0) {
-                Block block (offset);
-                block.Read (*file);
+                Block block (*file, offset);
+                block.Read ();
                 if (!block.IsFree () && block.IsBTreeNode ()) {
-                    if (!block.IsLast (*file)) {
+                    if (!block.IsLast ()) {
                         block.SetFree (true);
                         block.SetNextBTreeNodeOffset (header.freeBTreeNodeOffset);
-                        block.Write (*file);
+                        block.Write ();
                         header.freeBTreeNodeOffset = offset;
                         SetDirty (true);
                     }

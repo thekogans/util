@@ -104,6 +104,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
     struct _LIB_THEKOGANS_UTIL_DECL Block {
     protected:
         /// \brief
+        /// Block \see{TransactedFile}.
+        TransactedFile &file;
+        /// \brief
         /// Block offset.
         PtrType offset;
         /// \struct TransactedFileAllocator::Block::Header TransactedFileAllocator.h
@@ -190,13 +193,16 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
 
         /// \brief
         /// ctor.
+        /// \param[in] file_ Block \see{TransactedFile}.
         /// \param[in] offset_ Block offset.
         /// \param[in] flags Combination of FLAGS_FREE and allocator specific flags.
         /// \param[in] size Block size (not including the size of the Block itself).
         Block (
+            TransactedFile &file_,
             PtrType offset_ = 0,
             Flags32 flags = 0,
             ui64 size = 0) :
+            file (file_),
             offset (offset_),
             header (flags, size) {}
 
@@ -258,37 +264,31 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// Return true if this is the last block in the heap.
         /// \param[in] file \see{TransactedFile} where the block resides.
         /// \return true == last block in the heap.
-        inline bool IsLast (TransactedFile &file) const {
+        inline bool IsLast () const {
             return GetOffset () + GetSize () + HEADER_SIZE == file.GetSize ();
         }
 
         /// \brief
         /// If not first, return the block right before this one.
-        /// \param[in] file \see{TransactedFile} where the block resides.
         /// \param[out] prev Where to put the previous block.
         /// \return true == prev contains previous block.
         /// false == we're the first block.
-        bool Prev (
-            TransactedFile &file,
-            Block &prev) const;
+        bool Prev (Block &prev) const;
         /// \brief
         /// If not last, return the block right after this one.
-        /// \param[in] file \see{TransactedFile} where the block resides.
         /// \param[out] next Where to put the next block.
         /// \return true == next contains the next block.
         /// false == we're the last block.
-        bool Next (
-            TransactedFile &file,
-            Block &next) const;
+        bool Next (Block &next) const;
 
         /// \brief
         /// Read the block.
         /// \param[in] file \see{TransactedFile} where the block resides.
-        void Read (TransactedFile &file);
+        void Read ();
         /// \brief
         /// Write the block.
         /// \param[in] file \see{TransactedFile} where the block resides.
-        void Write (TransactedFile &file) const;
+        void Write () const;
     #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         /// \brief
         /// If you chose to use magic (a very smart move) to protect
@@ -297,7 +297,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// the next time you access that block you get an exception
         /// instead of corrupted data.
         /// \param[in] file \see{TransactedFile} where the block resides.
-        void Invalidate (TransactedFile &file) const;
+        void Invalidate () const;
     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
         /// \brief
@@ -305,6 +305,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         friend bool operator != (
             const Header &header,
             const Header &footer);
+
+        /// \brief
+        /// Block is neither copy constructable, nor assignable.
+        THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Block)
     };
 
 protected:

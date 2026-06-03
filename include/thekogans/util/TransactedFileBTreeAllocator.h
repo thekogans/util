@@ -69,6 +69,7 @@ namespace thekogans {
             public:
                 /// \brief
                 /// ctor.
+                /// \param[in] file Block \see{TransactedFile}.
                 /// \param[in] offset Offset in the file where the Block resides.
                 /// \param[in] flags Combination of FLAGS_BTREE_NODE and FLAGS_FREE.
                 /// \param[in] size Size of the block (not including the size
@@ -76,11 +77,12 @@ namespace thekogans {
                 /// \param[in] nextBTreeNodeOffset_ If FLAGS_FREE and FLAGS_BTREE_NODE are
                 /// set, this field contains the next free \see{BTree::Node} offset.
                 Block (
+                    TransactedFile &file,
                     PtrType offset = 0,
                     Flags32 flags = 0,
                     ui64 size = 0,
                     PtrType nextBTreeNodeOffset_ = 0) :
-                    Allocator::Block (offset, flags, size),
+                    Allocator::Block (file, offset, flags, size),
                     nextBTreeNodeOffset (nextBTreeNodeOffset_) {}
 
                 /// \brief
@@ -113,12 +115,10 @@ namespace thekogans {
 
                 /// \brief
                 /// Read the block.
-                /// \param[in] file \see{TransactedFile} containing the block.
-                void Read (TransactedFile &file);
+                void Read ();
                 /// \brief
                 /// Write the block.
-                /// \param[in] file \see{TransactedFile} containing the block.
-                void Write (TransactedFile &file) const;
+                void Write () const;
             };
 
         private:
