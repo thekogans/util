@@ -205,9 +205,12 @@ namespace thekogans {
             /// Synchronization lock.
             SpinLock spinLock;
 
+        public:
             /// \brief
             /// Forward declaration of \see{Buffer} needed by \see{BufferList}.
             struct Buffer;
+
+        private:
             /// \brief
             /// Alias for \see{IntrusiveList}<Buffer>.
             using BufferList = IntrusiveList<Buffer>;
