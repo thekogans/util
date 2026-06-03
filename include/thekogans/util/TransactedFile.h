@@ -391,9 +391,9 @@ namespace thekogans {
 
                 /// \brief
                 /// Return the \see{Buffer} @index. Create if null.
-                /// \param[in] bufferIndex
-                /// \param[in] bufferOffset
-                /// \param[in] file
+                /// \param[in] bufferIndex Buffer index in the buffers array.
+                /// \param[in] bufferOffset Buffer offset (multiple of Buffer::SIZE).
+                /// \param[in] file File to read the buffer data from.
                 /// \return The new buffer.
                 Buffer::SharedPtr GetBuffer (
                     ui32 bufferIndex,
@@ -464,6 +464,10 @@ namespace thekogans {
                 Node::SharedPtr GetNode (
                     ui8 index,
                     bool segment = false);
+
+                Buffer::SharedPtr GetBuffer (
+                    File &file,
+                    ui64 offset);
             } root;
             /// \brief
             /// Current buffer offset.

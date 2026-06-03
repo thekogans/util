@@ -135,9 +135,8 @@ namespace thekogans {
                 4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
             };
             std::size_t count = 0;
-            std::size_t mask = 0xf;
             while (value != 0) {
-                std::size_t nibleCount = trailingZeroBits[value & mask];
+                std::size_t nibleCount = trailingZeroBits[value & 0xf];
                 count += nibleCount;
                 if (nibleCount < 4) {
                     break;

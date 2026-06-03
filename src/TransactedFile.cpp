@@ -79,7 +79,7 @@ namespace thekogans {
                         // NOTE: Here we write the full buffer size (Bufer::SIZE),
                         // trailing '0' and all. Since Buffer does not maintain
                         // internal size, all buffers other than possibly the last
-                        // are Buffer::SIZE in lengh, we have no choice but to
+                        // are Buffer::SIZE in length, we have no choice but to
                         // write Buffer::SIZE and have the actual size be adjusted
                         // upstream (Flush).
                         log.Write (buffer->data, Buffer::SIZE);
@@ -143,7 +143,13 @@ namespace thekogans {
                 ui64 countRead = file.Read (buffer->data, Buffer::SIZE);
                 std::memset (buffer->data + countRead, 0, Buffer::SIZE - countRead);
                 // Insert the new buffer in to the ordered (on index) buffer list...
-                if (bufferList.for_each (
+                if (bufferList.empty () || bufferList.tail->index < buffer->index) {
+                    // ... first or last is the same push_back.
+                    bufferList.push_back (buffer);
+                }
+                else {
+                    // ...otherwise the node will go in the middle somewhere.
+                    bufferList.for_each (
                         [this, buffer] (BufferList::Callback::argument_type buffer_) ->
                                 BufferList::Callback::result_type {
                             if (buffer_->index > buffer->index) {
@@ -151,9 +157,8 @@ namespace thekogans {
                                 return false;
                             }
                             return true;
-                        })) {
-                    // ... first or last is the same push_back.
-                    bufferList.push_back (buffer);
+                        }
+                    );
                 }
             }
             return buffers[bufferIndex];
@@ -229,6 +234,34 @@ namespace thekogans {
                 }
             }
             return nodes[index];
+        }
+
+        TransactedFile::Buffer::SharedPtr TransactedFile::Internal::GetBuffer (
+                File &file,
+                ui64 offset) {
+            // --
+            ui32 nodeIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
+            Internal::SharedPtr internal = GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 0));
+            internal = internal->GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 1));
+            internal = internal->GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 2));
+            // Leafs are segments.
+            Segment::SharedPtr segment = internal->GetNode (
+                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 3), true);
+            // -- We've just sparsely traversed the first 4
+            // layers of the 5 layer 64 bit index.
+            // --
+            static const std::size_t SHIFT_COUNT = TrailingZeroBitCount (Buffer::SIZE);
+            return segment->GetBuffer (
+                THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> SHIFT_COUNT,
+                offset & ~(Buffer::SIZE - 1),
+                file);
+            // -- After potentially creating the buffer in Segment::GetBuffer,
+            // we've arrived at the end of the 5 layer deep sparse index.
+            // This mapping is constant (with the create code being amortized
+            // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
         }
 
         TransactedFile::TransactedFile (
@@ -819,6 +852,7 @@ namespace thekogans {
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
                         {
+                            TenantFile file (endianness, handle, path);
                             SimpleFile log (endianness, logPath, SimpleFile::ReadWrite);
                             ui32 magic;
                             log >> magic;
@@ -834,13 +868,13 @@ namespace thekogans {
                                     if (offset < size) {
                                         ui64 available = MIN (size - offset, Buffer::SIZE);
                                         if (available != 0) {
-                                            File::Seek (offset, SEEK_SET);
-                                            File::Write (buffer.GetDataPtr (), available);
+                                            file.Seek (offset, SEEK_SET);
+                                            file.Write (buffer.GetDataPtr (), available);
                                         }
                                     }
                                 }
-                                File::SetSize (size);
-                                File::Flush ();
+                                file.SetSize (size);
+                                file.Flush ();
                             }
                             else {
                                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -903,37 +937,15 @@ namespace thekogans {
         TransactedFile::Buffer::SharedPtr TransactedFile::GetBufferHelper (ui64 offset) {
             ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
             if (currBufferOffset != bufferOffset) {
-                // --
-                ui32 segmentIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
-                Internal::SharedPtr internal = root.GetNode (
-                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 0));
-                internal = internal->GetNode (
-                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 1));
-                internal = internal->GetNode (
-                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 2));
-                // Leafs are segments.
-                Segment::SharedPtr segment = internal->GetNode (
-                    THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (segmentIndex, 3), true);
-                // -- We've just sparsely traversed the first 4
-                // layers of the 5 layer 64 bit index.
-                // --
                 currBufferOffset = bufferOffset;
                 // Give GetBuffer a \see{TenantFile} as it's interface is that of \see{File}.
-                // If we were to pass *this, GetBuffer call in to our Seek and Read.
+                // If we were to pass *this, GetBuffer would call in to our Seek and Read.
                 // And thats not what we want!
                 TenantFile file (endianness, handle, path);
-                static const std::size_t SHIFT_COUNT = TrailingZeroBitCount (Buffer::SIZE);
-                currBuffer = segment->GetBuffer (
-                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> SHIFT_COUNT,
-                    bufferOffset,
-                    file);
-                // -- After potentially creating the buffer in Segment::GetBuffer,
-                // we've arrived at the end of the 5 layer deep sparse index.
-                // This mapping is constant (with the create code being amortized
-                // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
                 // We take advantage of locality of reference and cache the last
                 // buffer accessed in the hopes that it will be accessed next and
                 // we can skip the tree walk.
+                currBuffer = root.GetBuffer (file, offset);
             }
             return currBuffer;
         }
