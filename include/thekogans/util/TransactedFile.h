@@ -327,6 +327,7 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to file.
                 /// \param[in] file \see{File} to save to.
+                /// \param[in] size File size to clip the last page to.
                 virtual void Flush (
                     File &file,
                     ui64 size) = 0;
