@@ -52,38 +52,38 @@ namespace thekogans {
             file->Unsubscribe ();
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Buffer)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Page)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
 
         bool TransactedFile::Segment::Clear (bool all) {
-            bufferList.for_each (
-                [this, all] (BufferList::Callback::argument_type buffer) ->
-                        BufferList::Callback::result_type {
-                    if (all || buffer->dirty) {
-                        bufferList.erase (buffer);
-                        buffers[buffer->index].Reset ();
+            pageList.for_each (
+                [this, all] (PageList::Callback::argument_type page) ->
+                        PageList::Callback::result_type {
+                    if (all || page->dirty) {
+                        pageList.erase (page);
+                        pages[page->index].Reset ();
                     }
                     return true;
                 }
             );
-            return bufferList.empty ();
+            return pageList.empty ();
         }
 
         void TransactedFile::Segment::Log (File &log) {
-            bufferList.for_each (
-                [&log] (BufferList::Callback::argument_type buffer) ->
-                        BufferList::Callback::result_type {
-                    if (buffer->dirty) {
-                        log << buffer->offset;
-                        // NOTE: Here we write the full buffer size (Bufer::SIZE),
-                        // trailing '0' and all. Since Buffer does not maintain
-                        // internal size, all buffers other than possibly the last
-                        // are Buffer::SIZE in length, we have no choice but to
-                        // write Buffer::SIZE and have the actual size be adjusted
+            pageList.for_each (
+                [&log] (PageList::Callback::argument_type page) ->
+                        PageList::Callback::result_type {
+                    if (page->dirty) {
+                        log << page->offset;
+                        // NOTE: Here we write the full page size (Bufer::SIZE),
+                        // trailing '0' and all. Since Page does not maintain
+                        // internal size, all pages other than possibly the last
+                        // are Page::SIZE in length, we have no choice but to
+                        // write Page::SIZE and have the actual size be adjusted
                         // upstream (Flush).
-                        log.Write (buffer->data, Buffer::SIZE);
-                        buffer->dirty = false;
+                        log.Write (page->data, Page::SIZE);
+                        page->dirty = false;
                     }
                     return true;
                 }
@@ -93,13 +93,13 @@ namespace thekogans {
         void TransactedFile::Segment::Flush (
                 File &file,
                 ui64 size) {
-            bufferList.for_each (
-                [&file, size] (BufferList::Callback::argument_type buffer) ->
-                        BufferList::Callback::result_type {
-                    if (buffer->dirty) {
-                        file.Seek (buffer->offset, SEEK_SET);
-                        file.Write (buffer->data, MIN (size - buffer->offset, Buffer::SIZE));
-                        buffer->dirty = false;
+            pageList.for_each (
+                [&file, size] (PageList::Callback::argument_type page) ->
+                        PageList::Callback::result_type {
+                    if (page->dirty) {
+                        file.Seek (page->offset, SEEK_SET);
+                        file.Write (page->data, MIN (size - page->offset, Page::SIZE));
+                        page->dirty = false;
                     }
                     return true;
                 }
@@ -107,53 +107,53 @@ namespace thekogans {
         }
 
         bool TransactedFile::Segment::Shrink (ui64 newSize) {
-            bufferList.for_each (
-                [this, newSize] (BufferList::Callback::argument_type buffer) ->
-                        BufferList::Callback::result_type {
-                    if (buffer->offset >= newSize) {
-                        bufferList.erase (buffer);
-                        buffers[buffer->index].Reset ();
+            pageList.for_each (
+                [this, newSize] (PageList::Callback::argument_type page) ->
+                        PageList::Callback::result_type {
+                    if (page->offset >= newSize) {
+                        pageList.erase (page);
+                        pages[page->index].Reset ();
                         return true;
                     }
                     else {
-                        ui64 consumed = newSize - buffer->offset;
-                        if (consumed < Buffer::SIZE) {
-                            // Buffers don't maintain internal lengths. All buffers
-                            // are Buffer::SIZE long (with potentially the last one
-                            // being less). If this is the last buffer, we clear that
+                        ui64 consumed = newSize - page->offset;
+                        if (consumed < Page::SIZE) {
+                            // Pages don't maintain internal lengths. All pages
+                            // are Page::SIZE long (with potentially the last one
+                            // being less). If this is the last page, we clear that
                             // part which falls outside the new file size.
-                            SecureZeroMemory (buffer->data + consumed, Buffer::SIZE - consumed);
+                            SecureZeroMemory (page->data + consumed, Page::SIZE - consumed);
                         }
                         return false;
                     }
                 },
                 true
             );
-            return bufferList.empty ();
+            return pageList.empty ();
         }
 
-        TransactedFile::Buffer::SharedPtr TransactedFile::Segment::GetBuffer (
-                ui32 bufferIndex,
-                ui64 bufferOffset,
+        TransactedFile::Page::SharedPtr TransactedFile::Segment::GetPage (
+                ui32 pageIndex,
+                ui64 pageOffset,
                 File &file) {
-            if (buffers[bufferIndex] == nullptr) {
-                Buffer *buffer = new Buffer (bufferIndex, bufferOffset);
-                buffers[bufferIndex].Reset (buffer);
-                file.Seek (bufferOffset, SEEK_SET);
-                ui64 countRead = file.Read (buffer->data, Buffer::SIZE);
-                SecureZeroMemory (buffer->data + countRead, Buffer::SIZE - countRead);
-                // Insert the new buffer in to the ordered (on index) buffer list...
-                if (bufferList.empty () || bufferList.tail->index < buffer->index) {
+            if (pages[pageIndex] == nullptr) {
+                Page *page = new Page (pageIndex, pageOffset);
+                pages[pageIndex].Reset (page);
+                file.Seek (pageOffset, SEEK_SET);
+                ui64 countRead = file.Read (page->data, Page::SIZE);
+                SecureZeroMemory (page->data + countRead, Page::SIZE - countRead);
+                // Insert the new page in to the ordered (on index) page list...
+                if (pageList.empty () || pageList.tail->index < page->index) {
                     // ... first or last is the same push_back.
-                    bufferList.push_back (buffer);
+                    pageList.push_back (page);
                 }
                 else {
                     // ...otherwise the node will go in the middle somewhere.
-                    bufferList.for_each (
-                        [this, buffer] (BufferList::Callback::argument_type buffer_) ->
-                                BufferList::Callback::result_type {
-                            if (buffer_->index > buffer->index) {
-                                bufferList.insert (buffer, buffer_);
+                    pageList.for_each (
+                        [this, page] (PageList::Callback::argument_type page_) ->
+                                PageList::Callback::result_type {
+                            if (page_->index > page->index) {
+                                pageList.insert (page, page_);
                                 return false;
                             }
                             return true;
@@ -161,7 +161,7 @@ namespace thekogans {
                     );
                 }
             }
-            return buffers[bufferIndex];
+            return pages[pageIndex];
         }
 
         bool TransactedFile::Internal::Clear (bool all) {
@@ -240,7 +240,7 @@ namespace thekogans {
             return nodes[index];
         }
 
-        TransactedFile::Buffer::SharedPtr TransactedFile::Internal::GetBuffer (
+        TransactedFile::Page::SharedPtr TransactedFile::Internal::GetPage (
                 File &file,
                 ui64 offset) {
             // --
@@ -257,15 +257,15 @@ namespace thekogans {
             // -- We've just sparsely traversed the first 4
             // layers of the 5 layer 64 bit index.
             // --
-            static const std::size_t SHIFT_COUNT = TrailingZeroBitCount (Buffer::SIZE);
-            return segment->GetBuffer (
+            static const std::size_t SHIFT_COUNT = TrailingZeroBitCount (Page::SIZE);
+            return segment->GetPage (
                 THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> SHIFT_COUNT,
-                offset & ~(Buffer::SIZE - 1),
+                offset & ~(Page::SIZE - 1),
                 file);
-            // -- After potentially creating the buffer in Segment::GetBuffer,
+            // -- After potentially creating the page in Segment::GetPage,
             // we've arrived at the end of the 5 layer deep sparse index.
             // This mapping is constant (with the create code being amortized
-            // accross multiple buffer accesses). It's O(c) where c = 5 shifts.
+            // accross multiple page accesses). It's O(c) where c = 5 shifts.
         }
 
         TransactedFile::TransactedFile (
@@ -279,7 +279,7 @@ namespace thekogans {
                 size (0),
                 flags (0),
                 root (0),
-                currBufferOffset (NOFFS) {
+                currPageOffset (NOFFS) {
             if (IsOpen ()) {
                 position = File::Tell ();
                 size = File::GetSize ();
@@ -306,7 +306,7 @@ namespace thekogans {
                 size (0),
                 flags (0),
                 root (0),
-                currBufferOffset (NOFFS) {
+                currPageOffset (NOFFS) {
             OpenEx (
                 path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -339,14 +339,14 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        Buffer::SharedPtr buffer_ = GetBufferHelper (offset);
-                        std::size_t bufferOffset = offset - buffer_->offset;
+                        Page::SharedPtr page_ = GetPageHelper (offset);
+                        std::size_t pageOffset = offset - page_->offset;
                         std::size_t countToRead = MIN (
-                            // Calculate the amount we can read from this buffer...
-                            MIN (Buffer::SIZE - bufferOffset, count),
+                            // Calculate the amount we can read from this page...
+                            MIN (Page::SIZE - pageOffset, count),
                             // ...and clamp it to the amount left to read in the file.
-                            size - buffer_->offset);
-                        std::memcpy (ptr, buffer_->data + bufferOffset, countToRead);
+                            size - page_->offset);
+                        std::memcpy (ptr, page_->data + pageOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         offset += countToRead;
@@ -375,11 +375,11 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        Buffer::SharedPtr buffer_ = GetBufferHelper (offset);
-                        std::size_t bufferOffset = offset - buffer_->offset;
-                        std::size_t countToWrite = MIN (Buffer::SIZE - bufferOffset, count);
-                        std::memcpy (buffer_->data + bufferOffset, ptr, countToWrite);
-                        buffer_->dirty = true;
+                        Page::SharedPtr page_ = GetPageHelper (offset);
+                        std::size_t pageOffset = offset - page_->offset;
+                        std::size_t countToWrite = MIN (Page::SIZE - pageOffset, count);
+                        std::memcpy (page_->data + pageOffset, ptr, countToWrite);
+                        page_->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;
                         offset += countToWrite;
@@ -448,11 +448,11 @@ namespace thekogans {
                 if (size >= amount) {
                     size -= amount;
                     root.Shrink (size);
-                    // If size is <= current buffer offset, currBuffer
+                    // If size is <= current page offset, currPage
                     // will have been deleted by root.Shrink.
-                    if (currBufferOffset >= size) {
-                        currBufferOffset = NOFFS;
-                        currBuffer.Reset ();
+                    if (currPageOffset >= size) {
+                        currPageOffset = NOFFS;
+                        currPage.Reset ();
                     }
                     SetDirty (true);
                     return size;
@@ -472,8 +472,8 @@ namespace thekogans {
             if (IsOpen ()) {
                 Flush ();
                 root.Clear (true);
-                currBufferOffset = NOFFS;
-                currBuffer.Reset ();
+                currPageOffset = NOFFS;
+                currPage.Reset ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -560,8 +560,8 @@ namespace thekogans {
             position = File::Tell ();
             size = File::GetSize ();
             flags = 0;
-            currBufferOffset = NOFFS;
-            currBuffer.Reset ();
+            currPageOffset = NOFFS;
+            currPage.Reset ();
             allocator.Reset ();
             registry.Reset ();
         }
@@ -576,8 +576,8 @@ namespace thekogans {
                 position = 0;
                 size = 0;
                 flags = 0;
-                currBufferOffset = NOFFS;
-                currBuffer.Reset ();
+                currPageOffset = NOFFS;
+                currPage.Reset ();
                 allocator.Reset ();
                 registry.Reset ();
                 File::Close ();
@@ -669,11 +669,11 @@ namespace thekogans {
                     if (size > newSize) {
                         // shrinking
                         root.Shrink (newSize);
-                        // If new size is <= current buffer offset,
-                        // currBuffer will be deleted by root.SetSize.
-                        if (currBufferOffset >= newSize) {
-                            currBufferOffset = NOFFS;
-                            currBuffer.Reset ();
+                        // If new size is <= current page offset,
+                        // currPage will be deleted by root.SetSize.
+                        if (currPageOffset >= newSize) {
+                            currPageOffset = NOFFS;
+                            currPage.Reset ();
                         }
                     }
                     size = newSize;
@@ -786,15 +786,15 @@ namespace thekogans {
                         ui64 size;
                         log >> size;
                         ui64 offset;
-                        HostBuffer buffer (Buffer::SIZE);
+                        HostBuffer page (Page::SIZE);
                         for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
                             log >> offset;
-                            logPosition += UI64_SIZE + log.Read (buffer.GetDataPtr (), Buffer::SIZE);
+                            logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), Page::SIZE);
                             if (offset < size) {
-                                ui64 available = MIN (size - offset, Buffer::SIZE);
+                                ui64 available = MIN (size - offset, Page::SIZE);
                                 if (available != 0) {
                                     file.Seek (offset, SEEK_SET);
-                                    file.Write (buffer.GetDataPtr (), available);
+                                    file.Write (page.GetDataPtr (), available);
                                 }
                             }
                         }
@@ -865,15 +865,15 @@ namespace thekogans {
                                 log << isClean;
                                 log >> size;
                                 ui64 offset;
-                                HostBuffer buffer (Buffer::SIZE);
+                                HostBuffer page (Page::SIZE);
                                 for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
                                     log >> offset;
-                                    logPosition += UI64_SIZE + log.Read (buffer.GetDataPtr (), Buffer::SIZE);
+                                    logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), Page::SIZE);
                                     if (offset < size) {
-                                        ui64 available = MIN (size - offset, Buffer::SIZE);
+                                        ui64 available = MIN (size - offset, Page::SIZE);
                                         if (available != 0) {
                                             file.Seek (offset, SEEK_SET);
-                                            file.Write (buffer.GetDataPtr (), available);
+                                            file.Write (page.GetDataPtr (), available);
                                         }
                                     }
                                 }
@@ -902,11 +902,11 @@ namespace thekogans {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
                         SetSize (File::GetSize ());
-                        // If SetSize did not delete the current buffer and
+                        // If SetSize did not delete the current page and
                         // if it is dirty, it will be deleted bu root.Clear.
-                        if (currBuffer != nullptr && currBuffer->dirty) {
-                            currBufferOffset = NOFFS;
-                            currBuffer.Reset ();
+                        if (currPage != nullptr && currPage->dirty) {
+                            currPageOffset = NOFFS;
+                            currPage.Reset ();
                         }
                         root.Clear ();
                         SetDirty (false);
@@ -933,25 +933,25 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::Buffer::SharedPtr TransactedFile::GetBuffer (ui64 offset) {
+        TransactedFile::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
-            return GetBufferHelper (offset);
+            return GetPageHelper (offset);
         }
 
-        TransactedFile::Buffer::SharedPtr TransactedFile::GetBufferHelper (ui64 offset) {
-            ui64 bufferOffset = offset & ~(Buffer::SIZE - 1);
-            if (currBufferOffset != bufferOffset) {
-                currBufferOffset = bufferOffset;
-                // Give GetBuffer a \see{TenantFile} as it's interface is that of \see{File}.
-                // If we were to pass *this, GetBuffer would call in to our Seek and Read.
+        TransactedFile::Page::SharedPtr TransactedFile::GetPageHelper (ui64 offset) {
+            ui64 pageOffset = offset & ~(Page::SIZE - 1);
+            if (currPageOffset != pageOffset) {
+                currPageOffset = pageOffset;
+                // Give GetPage a \see{TenantFile} as it's interface is that of \see{File}.
+                // If we were to pass *this, GetPage would call in to our Seek and Read.
                 // And thats not what we want!
                 TenantFile file (endianness, handle, path);
                 // We take advantage of locality of reference and cache the last
-                // buffer accessed in the hopes that it will be accessed next and
+                // page accessed in the hopes that it will be accessed next and
                 // we can skip the tree walk.
-                currBuffer = root.GetBuffer (file, offset);
+                currPage = root.GetPage (file, offset);
             }
-            return currBuffer;
+            return currPage;
         }
 
         std::string TransactedFile::GetLogPath (const std::string &path) {

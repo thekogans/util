@@ -128,8 +128,8 @@ namespace thekogans {
                     // allocation/copy/deallocation penalty.
                     // Calculate the remainder left in the last page.
                     ui64 remainder =
-                        TransactedFile::Buffer::SIZE -
-                        (file->GetSize () & (TransactedFile::Buffer::SIZE - 1));
+                        TransactedFile::Page::SIZE -
+                        (file->GetSize () & (TransactedFile::Page::SIZE - 1));
                     // If we fit in to remainder or, if the remainder
                     // can be turned in to another block and we fit in
                     // to one page, all is well. Go ahead and create a
@@ -137,7 +137,7 @@ namespace thekogans {
                     // Otherwise, because there can be no gaps between
                     // blocks, we will straddle a page boundary.
                     if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
-                            size <= (TransactedFile::Buffer::SIZE - Block::SIZE)) {
+                            size <= (TransactedFile::Page::SIZE - Block::SIZE)) {
                         Block block (
                             *file,
                             file->Grow (remainder) + Block::HEADER_SIZE,

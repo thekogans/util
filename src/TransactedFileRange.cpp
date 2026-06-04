@@ -44,8 +44,8 @@ namespace thekogans {
                 ++file.stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ui64 bufferOffset = offset & (Buffer::SIZE - 1);
-            if (length > Buffer::SIZE - bufferOffset) {
+            ui64 pageOffset = offset & (Page::SIZE - 1);
+            if (length > Page::SIZE - pageOffset) {
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
                 if (reading) {
@@ -61,8 +61,8 @@ namespace thekogans {
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
             else {
-                buffer = file.GetBuffer (offset);
-                data = buffer->data + bufferOffset;
+                page = file.GetPage (offset);
+                data = page->data + pageOffset;
             }
         }
 
@@ -72,7 +72,7 @@ namespace thekogans {
                     file.WriteEx (offset, data, position);
                 }
                 else {
-                    buffer->dirty = true;
+                    page->dirty = true;
                     file.SetDirty (true);
                 }
             }

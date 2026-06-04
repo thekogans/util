@@ -89,7 +89,7 @@ namespace thekogans {
         /// Meaning today's (early March 2025) state of the art has some servers
         /// sporting up to 6TB of main memory. All that memory is there for a
         /// reason. You paid good money for it. TransactedFile will use as much
-        /// as you have (give it). By default, TransactedFile uses 1MB tiles (\see{Buffer}).
+        /// as you have (give it). By default, TransactedFile uses 1MB tiles (\see{Page}).
         /// It will load and hold available as much of the file as you have room.
         /// That's where \see{Flush}, \see{Transaction::Commit} and \see{DeleteCache}
         /// come in. As you eventually start to run out of room (even with 6TB it's
@@ -112,7 +112,7 @@ namespace thekogans {
         /// 2. Having a thread complete all it's reads and writes without
         /// interruptions is faster than having different threads contend for the
         /// lock as there is no context switching and less disk head movement.
-        /// This also plays nice with the currBuffer cache as it promotes locality
+        /// This also plays nice with the currPage cache as it promotes locality
         /// of reference.
         /// The one drawback of this design choice is;
         /// The various threads sharing the same TransactedFile have to consciously
@@ -191,7 +191,7 @@ namespace thekogans {
             /// File size.
             ui64 size;
             /// \brief
-            /// Set if the buffer cache is dirty.
+            /// Set if the page cache is dirty.
             static const ui32 FLAGS_DIRTY = 1;
             /// \brief
             /// Set if we're in the middle of a transaction.
@@ -208,57 +208,57 @@ namespace thekogans {
 
         public:
             /// \brief
-            /// Forward declaration of \see{Buffer} needed by \see{BufferList}.
-            struct Buffer;
+            /// Forward declaration of \see{Page} needed by \see{PageList}.
+            struct Page;
 
         private:
             /// \brief
-            /// Alias for \see{IntrusiveList}<Buffer>.
-            using BufferList = IntrusiveList<Buffer>;
+            /// Alias for \see{IntrusiveList}<Page>.
+            using PageList = IntrusiveList<Page>;
 
         public:
-            /// \struct TransactedFile::Buffer TransactedFile.h thekogans/util/TransactedFile.h
+            /// \struct TransactedFile::Page TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
-            /// Buffer tiles the file address space providing incremental,
+            /// Page tiles the file address space providing incremental,
             /// sparse access to the data. Use \see{DeleteCache} to manage
             /// memory usage.
             /// WARNING: Spent an hour chasing my tail looking for a stack
-            /// overflow bug. Long story short, don't allocate buffers on
+            /// overflow bug. Long story short, don't allocate pages on
             /// the stack. They're too big.
-            struct Buffer :
+            struct Page :
                     public RefCounted,
-                    public BufferList::Node {
+                    public PageList::Node {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Buffer)
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Page)
                 /// \brief
-                /// Buffer has a private heap.
+                /// Page has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
-                /// Buffer index in \see{Segment::buffers}.
+                /// Page index in \see{Segment::pages}.
                 const std::size_t index;
                 /// \brief
-                /// Buffer offset (multiple of SIZE).
+                /// Page offset (multiple of SIZE).
                 const ui64 offset;
                 /// \brief
-                /// Buffer size. This is a tuning parameter.
+                /// Page size. This is a tuning parameter.
                 /// Set it based on your typical file sizes. Meaning that,
                 /// if your files never go above 100KB then a 1MB SIZE
                 /// is overkill. But if you typically manage multi gigabyte
                 /// (terabyte?) databases you might want to bump this value up.
                 /// The way you do it is by going up or down a power of 2 on
                 /// SIZE.
-                /// Ex: Let's say you wanted 2MB buffers instead of 1MB.
+                /// Ex: Let's say you wanted 2MB pages instead of 1MB.
                 /// Then SIZE = 0x00200000.
-                /// Ex: If you need 16MB buffers,
+                /// Ex: If you need 16MB pages,
                 /// Then SIZE = 0x01000000.
-                /// Ex: If you need 256KB buffers,
+                /// Ex: If you need 256KB pages,
                 /// Then SIZE = 0x00040000.
                 static constexpr std::size_t SIZE = 0x00100000;
                 /// \brief
-                /// Buffer data.
+                /// Page data.
                 ui8 data[SIZE];
                 /// \brief
                 /// true == modified.
@@ -266,9 +266,9 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] index_ Buffer index in \see{Segment::buffers}.
-                /// \param[in] offset_ Buffer offset (multiple of SIZE).
-                Buffer (
+                /// \param[in] index_ Page index in \see{Segment::pages}.
+                /// \param[in] offset_ Page offset (multiple of SIZE).
+                Page (
                     std::size_t index_,
                     ui64 offset_) :
                     index (index_),
@@ -296,7 +296,7 @@ namespace thekogans {
             /// - The high order 32 bits are split in to 4 8 bit hierarchical indexes.
             ///   Each index is used to access an internal tree node. (depth = 4).
             /// - The low order 32 bits are split in to a 12 bit index to access one
-            ///   of 4K 20 bit, 4GB segment tiles (Buffer). (depth = 5)
+            ///   of 4K 20 bit, 4GB segment tiles (Page). (depth = 5)
             struct Node :
                     public RefCounted,
                     public NodeList::Node {
@@ -315,26 +315,26 @@ namespace thekogans {
                     index (index_) {}
 
                 /// \brief
-                /// Delete buffers.
+                /// Delete pages.
                 /// \param[in] all true == clear all, false == dirty only.
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) = 0;
                 /// \brief
-                /// Write dirty buffers to log.
+                /// Write dirty pages to log.
                 /// \param[in] log Log \see{File} to save to.
                 virtual void Log (File &log) = 0;
                 /// \brief
-                /// Write dirty buffers to file.
+                /// Write dirty pages to file.
                 /// \param[in] file \see{File} to save to.
                 virtual void Flush (
                     File &file,
                     ui64 size) = 0;
                 /// \brief
-                /// Delete all buffers whose offset > newSize.
+                /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
-                /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
+                /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) = 0;
             };
 
@@ -351,14 +351,14 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
                 /// \brief
-                /// The number of \see{Buffer}s tilling the segments 4GB address space.
-                static const std::size_t BRANCHING_LEVEL = ((std::size_t)1 << 32) / Buffer::SIZE;
+                /// The number of \see{Page}s tilling the segments 4GB address space.
+                static const std::size_t BRANCHING_LEVEL = ((std::size_t)1 << 32) / Page::SIZE;
                 /// \brief
-                /// \see{Buffers} tiling the 4GB segment.
-                Buffer::SharedPtr buffers[BRANCHING_LEVEL];
+                /// \see{Pages} tiling the 4GB segment.
+                Page::SharedPtr pages[BRANCHING_LEVEL];
                 /// \brief
-                /// \see{IntrusiveList} of linked \see{Buffer}s.
-                BufferList bufferList;
+                /// \see{IntrusiveList} of linked \see{Page}s.
+                PageList pageList;
 
                 /// \brief
                 /// cor.
@@ -367,37 +367,38 @@ namespace thekogans {
                     Node (index) {}
 
                 /// \brief
-                /// Delete buffers.
+                /// Delete pages.
                 /// \param[in] all true == clear all, false == dirty only.
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
-                /// Write dirty buffers to log.
+                /// Write dirty pages to log.
                 /// \param[in] log Log \see{File} to save to.
                 virtual void Log (File &log) override;
                 /// \brief
-                /// Write dirty buffers to file.
+                /// Write dirty pages to file.
                 /// \param[in] file \see{File} to save to.
+                /// \param[in] size File size to clip the last page to.
                 virtual void Flush (
                     File &file,
                     ui64 size) override;
                 /// \brief
-                /// Delete all buffers whose offset > newSize.
+                /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
-                /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
+                /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) override;
 
                 /// \brief
-                /// Return the \see{Buffer} @index. Create if null.
-                /// \param[in] bufferIndex Buffer index in the buffers array.
-                /// \param[in] bufferOffset Buffer offset (multiple of Buffer::SIZE).
-                /// \param[in] file File to read the buffer data from.
-                /// \return The new buffer.
-                Buffer::SharedPtr GetBuffer (
-                    ui32 bufferIndex,
-                    ui64 bufferOffset,
+                /// Return the \see{Page} @index. Create if null.
+                /// \param[in] pageIndex Page index in the pages array.
+                /// \param[in] pageOffset Page offset (multiple of Page::SIZE).
+                /// \param[in] file File to read the page data from.
+                /// \return The new page.
+                Page::SharedPtr GetPage (
+                    ui32 pageIndex,
+                    ui64 pageOffset,
                     File &file);
             };
 
@@ -432,26 +433,27 @@ namespace thekogans {
                     Node (index) {}
 
                 /// \brief
-                /// Delete buffers.
+                /// Delete pages.
                 /// \param[in] all true == clear all, false == dirty only.
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
-                /// Write dirty buffers to log.
+                /// Write dirty pages to log.
                 /// \param[in] log Log \see{File} to save to.
                 virtual void Log (File &log) override;
                 /// \brief
-                /// Write dirty buffers to file.
+                /// Write dirty pages to file.
                 /// \param[in] file \see{File} to save to.
+                /// \param[in] size File size to clip the last page to.
                 virtual void Flush (
                     File &file,
                     ui64 size) override;
                 /// \brief
-                /// Delete all buffers whose offset > newSize.
+                /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
                 /// \return true == the entire node was clipped, continue iterating.
-                /// false == a buffer was encoutered whose offset was < newSize, stop iterating.
+                /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) override;
 
                 /// \brief
@@ -460,31 +462,36 @@ namespace thekogans {
                 /// \param[in] index Index of node to return.
                 /// \param[in] segment If null, true == create \see{Segment},
                 /// otherwise create \see{Internal}
-                /// \retrun \see{Segment} or \see{Internal} node at index.
+                /// \retrun \see{Segment} or \see{Internal} node @index.
                 Node::SharedPtr GetNode (
                     ui8 index,
                     bool segment = false);
 
-                Buffer::SharedPtr GetBuffer (
+                /// \brief
+                /// Return (posibly creating) the \see{Page} that contains the given offset.
+                /// \param[in] file The file the page will come from.
+                /// \param[in] offset Offset of the page in the file.
+                /// \return \see{Page} that contains the given offset.
+                Page::SharedPtr GetPage (
                     File &file,
                     ui64 offset);
             } root;
             /// \brief
-            /// Current buffer offset.
-            /// This is the buffer offset of the current position. (position & ~(Buffer::SIZE - 1))
-            ui64 currBufferOffset;
+            /// Current page offset.
+            /// This is the page offset of the current position. (position & ~(Page::SIZE - 1))
+            ui64 currPageOffset;
             /// \brief
-            /// Current buffer cache.
-            /// NOTE: The design of GetBuffer is such that it takes ~5 shfts and ~5
+            /// Current page cache.
+            /// NOTE: The design of GetPage is such that it takes ~5 shfts and ~5
             /// ands to do it's job. Unfortunatelly this function is called every time
             /// you call Read or Write. If you're doing a lot of inserting/extracting
             /// of small types, that can add up. That's why this cache exists. If you're
-            /// going to do a lot of 'local' io, GetBuffer will be reduced to a single
+            /// going to do a lot of 'local' io, GetPage will be reduced to a single
             /// and and compare. Keep that in mind when designing your data structures
             /// and access patterns. The less you Seek, the better your performance
             /// will be. To that end, you're highly encouraged to use \see{Allocator}
             /// and \see{Range}.
-            Buffer::SharedPtr currBuffer;
+            Page::SharedPtr currPage;
 
         public:
             #include "thekogans/util/TransactedFileRange.h"
@@ -583,6 +590,7 @@ namespace thekogans {
 
             /// \brief
             /// Open or create the file.
+            /// NOT thread safe.
             /// \param[in] path Path to file to open.
         #if defined (TOOLCHAIN_OS_Windows)
             /// \param[in] dwDesiredAccess Windows CreateFile parameter.
@@ -595,7 +603,6 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \param[in] allocator_ \see{Allocator} to attach to this file.
             /// \param[in] registry_ \see{Registry} to attach to this file.
-            /// NOT thread safe.
             void OpenEx (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -809,17 +816,17 @@ namespace thekogans {
             void AbortTransaction ();
 
             /// \brief
-            /// This is a wrapper around GetBufferHelper.
+            /// This is a wrapper around GetPageHelper.
             /// Thread safe.
-            /// \param[in] offset Offset whose buffer to return.
-            /// \return Buffer that covers the neighborhood around the given offset.
-            Buffer::SharedPtr GetBuffer (ui64 offset);
+            /// \param[in] offset Offset whose page to return.
+            /// \return Page that covers the neighborhood around the given offset.
+            Page::SharedPtr GetPage (ui64 offset);
             /// \brief
-            /// Get the buffer that will cover the neighborhood around the given offset.
+            /// Get the page that will cover the neighborhood around the given offset.
             /// NOT thread safe.
-            /// \param[in] offset Offset whose buffer to return.
-            /// \return Buffer that covers the neighborhood around the given offset.
-            Buffer::SharedPtr GetBufferHelper (ui64 offset);
+            /// \param[in] offset Offset whose page to return.
+            /// \return Page that covers the neighborhood around the given offset.
+            Page::SharedPtr GetPageHelper (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create
