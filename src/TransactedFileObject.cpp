@@ -48,6 +48,7 @@ namespace thekogans {
         }
 
         bool TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
+            // Only subscribe @the transition from clean to dirty.
             if (!flags.Set (FLAGS_DIRTY, dirty) && dirty) {
                 Subscriber<TransactedFileEvents>::Subscribe (*file);
                 return true;
@@ -57,10 +58,10 @@ namespace thekogans {
 
         TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
             if (IsDirty ()) {
+                Subscriber<TransactedFileEvents>::Unsubscribe (*file);
                 Alloc ();
                 Flush ();
                 SetDirty (false);
-                Subscriber<TransactedFileEvents>::Unsubscribe (*file);
             }
             return GetOffset ();
         }

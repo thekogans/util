@@ -45,13 +45,16 @@ namespace thekogans {
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             ui64 pageOffset = offset & (Page::SIZE - 1);
+            // Check to see if the range straddles a page boundary...
             if (length > Page::SIZE - pageOffset) {
+                // ... it does. Allocate a backing buffer.
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
                 if (reading) {
                 #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                     ++file.stats.ownerReadingRanges;
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
+                    // and, if it's a read request, buffer the underlying file range.
                     file.ReadEx (offset, data, length);
                 }
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
@@ -61,6 +64,7 @@ namespace thekogans {
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
             else {
+                // ...otherwise, read/wright directly into/from the page.
                 page = file.GetPage (offset);
                 data = page->data + pageOffset;
             }

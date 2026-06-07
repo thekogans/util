@@ -82,19 +82,37 @@ namespace thekogans {
                 }
                 // If we got a block by the above two methods, see if it's too big.
                 if (result.second != 0) {
-                    offset = result.second;
                     // If the block we got is bigger than we need, split it.
                     //
-                    // we need to go from:
+                    // we need o go from:
                     //
-                    //               |----------- result.first -----------|
-                    // -----+--------+------------------------------------+--------+-----
-                    //      | header |                                    | footer |
-                    // -----+--------+------------------------------------+--------+-----
-                    //               |
-                    //         result.second
+                    //               |--------------------- result.first ---------------------|
+                    // -----+--------+---------------+----------------------------------------+--------+-----
+                    //      | header |               |                                        | footer |
+                    // -----+--------+---------------+----------------------------------------+--------+-----
+                    //               |               |
+                    //         result.second    page boundary
                     //
-                    // to:
+                    // to: Where we do our best to not straddle a page boundary...
+                    //
+                    //               |--------------------- result.first ---------------------|
+                    // -----+--------+------+--------+--------+------+--------+--------+------+--------+-----
+                    //      | header | prev | footer | header | size | footer | header | next | footer |
+                    // -----+--------+------+--------+--------+------+--------+--------+------+--------+-----
+                    //               |-- remainder --|                                 |
+                    //         result.second    page boundary                 optional free block
+                    //           pageOffset
+                    //
+                    // ui64 pageOffset = result.second & (TransactedFile::Page::SIZE - 1);
+                    // ui64 remainder = TransactedFile::Page::SIZE - pageOffset;
+                    // prev.offset = result.second;
+                    // prev.size = remainder - Block::HEADER_SIZE;
+                    // offset = prev.offset + remainder + Block::HEADER_SIZE;
+                    // size = size or result.first - remainder;
+                    // next.offset = offset + Block::SIZE;
+                    // next.size = result.first - Block::SIZE - prev.size - Block::SIZE - size;
+                    //
+                    // or to: ...where we potentially straddle a page boundary.
                     //
                     //               |----------- result.first -----------|
                     // -----+--------+------+--------+--------+-----------+--------+-----
@@ -107,17 +125,45 @@ namespace thekogans {
                     // next.size = result.first - size - Block::SIZE;
                     ui64 remainder = result.first - size;
                     if (remainder >= MIN_BLOCK_SIZE) {
-                        Block next (
-                            *file,
-                            result.second + size + Block::SIZE,
-                            Block::FLAGS_FREE,
-                            remainder - Block::SIZE);
-                        next.Write ();
-                        btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        // Check to see if the block would straddle a page boundary...
+                        ui64 pageOffset = offset & (TransactedFile::Page::SIZE - 1);
+                        if (pageOffset + size + Block::HEADER_SIZE > TransactedFile::Page::SIZE) {
+                            // ...it does. Now check to see if the block would fit aligned...
+                            remainder = TransactedFile::Page::SIZE - pageOffset;
+                            if (remainder >= MIN_USER_DATA_SIZE + Block::HEADER_SIZE &&
+                                result.first > remainder &&
+                                result.first - remainder >= size + Block::HEADER_SIZE) {
+                                // ...it would. Add a filler block.
+                                Block prev (
+                                    *file,
+                                    result.second,
+                                    Block::FLAGS_FREE,
+                                    remainder - Block::HEADER_SIZE);
+                                prev.Write ();
+                                btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                                // Adjust result to account for the filler block so that downstream
+                                // calculations have the right values.
+                                result.first -= remainder + Block::HEADER_SIZE;
+                                result.second += remainder + Block::HEADER_SIZE;
+                            }
+                        }
+                        offset = result.second;
+                        remainder = result.first - size;
+                        if (remainder >= MIN_BLOCK_SIZE) {
+                            Block next (
+                                *file,
+                                result.second + size + Block::SIZE,
+                                Block::FLAGS_FREE,
+                                remainder - Block::SIZE);
+                            next.Write ();
+                            btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        }
+                        else {
+                            size = result.first;
+                        }
                     }
                     else {
-                        // If not, update the requested size so that block.Write
-                        // below can write the proper header/footer.
+                        offset = result.second;
                         size = result.first;
                     }
                 }
@@ -130,25 +176,34 @@ namespace thekogans {
                     ui64 remainder =
                         TransactedFile::Page::SIZE -
                         (file->GetSize () & (TransactedFile::Page::SIZE - 1));
-                    // If we fit in to remainder or, if the remainder
-                    // can be turned in to another block and we fit in
-                    // to one page, all is well. Go ahead and create a
-                    // spacer block and align us with a page boundary.
-                    // Otherwise, because there can be no gaps between
-                    // blocks, we will straddle a page boundary.
+                    // If we don't fit in to remainder and, if the remainder
+                    // can be turned in to another block and we fit into one
+                    // page, all is well. Go ahead and create a spacer block
+                    // and align us with a page boundary. Otherwise, because
+                    // there can be no gaps between blocks, we will straddle
+                    // a page boundary.
                     if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
                             size <= (TransactedFile::Page::SIZE - Block::SIZE)) {
-                        Block block (
+                        Block prev (
                             *file,
                             file->Grow (remainder) + Block::HEADER_SIZE,
                             Block::FLAGS_FREE,
                             remainder - Block::SIZE);
-                        block.Write ();
-                        btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
+                        prev.Write ();
+                        btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                    }
+                    // Otherwise, we fit in the ramainder. Check if what will remain
+                    // after our allocation would be too small for a block and cause
+                    // the next allocation to straddle the page boundry...
+                    else if (remainder - size - Block::SIZE < MIN_BLOCK_SIZE) {
+                        // ...it is. Round up the size request to align the next
+                        // allocation to a page boundary.
+                        size = remainder - Block::SIZE;
                     }
                     // No free block large enough is found? Grow the file.
                     offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
                 }
+                // By now we got our block by either reusing a free one or growing the file.
                 Block block (*file, offset, 0, size);
                 block.Write ();
             }

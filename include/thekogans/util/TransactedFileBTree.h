@@ -411,6 +411,10 @@ namespace thekogans {
                     TransactedFile::Allocator::PtrType offset);
 
                 /// \brief
+                /// Return key at entry index.
+                /// \return \see{Key} at entry index.
+                Key::SharedPtr GetKey (ui32 index);
+                /// \brief
                 /// Return value at entry index.
                 /// \return Value at entry index.
                 Serializable::SharedPtr GetValue (ui32 index);

@@ -464,7 +464,12 @@ namespace thekogans {
                 /// \param[in] segment If null, true == create \see{Segment},
                 /// otherwise create \see{Internal}
                 /// \retrun \see{Segment} or \see{Internal} node @index.
-                Node::SharedPtr GetNode (
+                /// NOTE: Unlike pages which are shared outside the file api,
+                /// nodes are used internally only by GetPage below which
+                /// uses them and lets them go. It's therefore unnecessary
+                /// overhead to return a SharedPtr. A raw pointer will do
+                /// just fine.
+                Node *GetNode (
                     ui8 index,
                     bool segment = false);
 
@@ -639,8 +644,9 @@ namespace thekogans {
             /// NOTE: This is a legacy \see{File} api which is inherently NOT thread safe.
             /// Even if you would make all apis thread safe, the design (shared position)
             /// is such as to make certain operations (Seek/Read/Write) imposible as they
-            /// would not be atomic. Therefore, I provide the *Ex versions of Read and Write.
-            /// These apis are left as being NOT thread safe.
+            /// would not be atomic without locking across multiple system calls. Therefore,
+            /// I provide the *Ex versions of Read and Write. These apis are left as being
+            /// NOT thread safe.
 
             /// \brief
             /// Read bytes from a file.

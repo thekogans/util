@@ -142,13 +142,15 @@ namespace thekogans {
                 file.Seek (pageOffset, SEEK_SET);
                 ui64 countRead = file.Read (page->data, Page::SIZE);
                 SecureZeroMemory (page->data + countRead, Page::SIZE - countRead);
-                // Insert the new page in to the ordered (on index) page list...
+                // Insert the new page in to the ordered (on index) page list.
+                // A quick optimization to check if it's the first or last page
+                // potentially saving us a list walk...
                 if (pageList.empty () || pageList.tail->index < page->index) {
-                    // ... first or last is the same push_back.
+                    // ...it is. First or last is the same push_back.
                     pageList.push_back (page);
                 }
                 else {
-                    // ...otherwise the node will go in the middle somewhere.
+                    // ...otherwise walk the list. The page will go in the middle somewhere.
                     pageList.for_each (
                         [this, page] (PageList::Callback::argument_type page_) ->
                                 PageList::Callback::result_type {
@@ -215,7 +217,7 @@ namespace thekogans {
             return nodeList.empty ();
         }
 
-        TransactedFile::Internal::Node::SharedPtr TransactedFile::Internal::GetNode (
+        TransactedFile::Internal::Node *TransactedFile::Internal::GetNode (
                 ui8 index,
                 bool segment) {
             if (nodes[index] == nullptr) {
@@ -237,7 +239,7 @@ namespace thekogans {
                     );
                 }
             }
-            return nodes[index];
+            return nodes[index].Get ();
         }
 
         TransactedFile::Page::SharedPtr TransactedFile::Internal::GetPage (
@@ -245,14 +247,14 @@ namespace thekogans {
                 ui64 offset) {
             // --
             ui32 nodeIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
-            Internal::SharedPtr internal = GetNode (
+            Internal *internal = (Internal *)GetNode (
                 THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 0));
-            internal = internal->GetNode (
+            internal = (Internal *)internal->GetNode (
                 THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 1));
-            internal = internal->GetNode (
+            internal = (Internal *)internal->GetNode (
                 THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 2));
             // Leafs are segments.
-            Segment::SharedPtr segment = internal->GetNode (
+            Segment *segment = (Segment *)internal->GetNode (
                 THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 3), true);
             // -- We've just sparsely traversed the first 4
             // layers of the 5 layer 64 bit index.
@@ -670,7 +672,7 @@ namespace thekogans {
                         // shrinking
                         root.Shrink (newSize);
                         // If new size is <= current page offset,
-                        // currPage will be deleted by root.SetSize.
+                        // currPage will be deleted by root.Shrink.
                         if (currPageOffset >= newSize) {
                             currPageOffset = NOFFS;
                             currPage.Reset ();
@@ -903,7 +905,7 @@ namespace thekogans {
                     if (IsDirty ()) {
                         SetSize (File::GetSize ());
                         // If SetSize did not delete the current page and
-                        // if it is dirty, it will be deleted bu root.Clear.
+                        // if it is dirty, it will be deleted by root.Clear.
                         if (currPage != nullptr && currPage->dirty) {
                             currPageOffset = NOFFS;
                             currPage.Reset ();

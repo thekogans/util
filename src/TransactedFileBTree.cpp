@@ -95,7 +95,7 @@ namespace thekogans {
         TransactedFileBTree::Key::SharedPtr TransactedFileBTree::Iterator::GetKey () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->entries[node.second].key;
+                return node.first->GetKey (node.second);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -205,6 +205,10 @@ namespace thekogans {
                         offset);
                 }
             }
+        }
+
+        TransactedFileBTree::Key::SharedPtr TransactedFileBTree::Node::GetKey (ui32 index) {
+            return entries[index].key;
         }
 
         Serializable::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
@@ -597,10 +601,12 @@ namespace thekogans {
                 for (ui32 i = 0; i < count; ++i) {
                     keyValueSize += entries[i].key->GetSize (btree.header.keyContext);
                     if (!btree.header.IsValueAsObject ()) {
-                        keyValueSize += entries[i].value->GetSerializable ()->GetSize (btree.header.valueContext);
+                        keyValueSize += entries[i].value->GetSerializable ()->GetSize (
+                            btree.header.valueContext);
                     }
                 }
-                keyValueOffset = GetAllocator ()->Realloc (keyValueOffset, keyValueSize, false);
+                keyValueOffset = GetAllocator ()->Realloc (
+                    keyValueOffset, keyValueSize, false);
                 if (left != nullptr) {
                     leftOffset = left->GetOffset ();
                 }
@@ -611,9 +617,7 @@ namespace thekogans {
                 for (ui32 i = 0; i < count; ++i) {
                     keyValueRange << *entries[i].key;
                     if (btree.header.IsValueAsObject ()) {
-                        if (entries[i].value != nullptr) {
-                            entries[i].valueOffset = entries[i].value->GetOffset ();
-                        }
+                        entries[i].valueOffset = entries[i].value->GetOffset ();
                         serializer << entries[i].valueOffset;
                     }
                     if (entries[i].right != nullptr) {
