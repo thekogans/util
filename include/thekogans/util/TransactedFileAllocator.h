@@ -289,16 +289,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// Write the block.
         /// \param[in] file \see{TransactedFile} where the block resides.
         void Write () const;
-    #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-        /// \brief
-        /// If you chose to use magic (a very smart move) to protect
-        /// the block data, you get an extra layer of dangling pointer
-        /// detection for free. By zeroing out the magic during \see{Free}
-        /// the next time you access that block you get an exception
-        /// instead of corrupted data.
-        /// \param[in] file \see{TransactedFile} where the block resides.
-        void Invalidate () const;
-    #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
 
         /// \brief
         /// Needs access to \see{Header}.
