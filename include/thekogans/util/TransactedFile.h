@@ -81,44 +81,41 @@ namespace thekogans {
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
-        /// TransactedFile is a drop in replacement for \see{File}. TransactedFile
-        /// will accumulate all changes in memory and will commit them all at
-        /// once in \see{Flush} or \see{CommitTransaction}. TransactedFile has
-        /// support for simple, flat (not nested) transactions (see \see{BeginTransaction}).
-        /// TransactedFile design principle is; if you have it, might as well use it.
-        /// Meaning today's (early March 2025) state of the art has some servers
-        /// sporting up to 6TB of main memory. All that memory is there for a
-        /// reason. You paid good money for it. TransactedFile will use as much
-        /// as you have (give it). By default, TransactedFile uses 1MB tiles (\see{Page}).
-        /// It will load and hold available as much of the file as you have room.
-        /// That's where \see{Flush}, \see{Transaction::Commit} and \see{DeleteCache}
-        /// come in. As you eventually start to run out of room (even with 6TB it's
-        /// a drop in the bucket compared to 64 bit address space), call \see{Flush}
-        /// to commit the changes to disk followed by a call to \see{DeleteCache} to
-        /// release the cache. While with proper tuning TransactedFile should work just
-        /// fine for 'small' (under 1MB) files, it's strength lies with it's ability
-        /// to handle multi GB or even TB files with ease. It's hierarchical address
-        /// space partitioning allows for very efficient, sparse file handling.
+        /// TransactedFile is the heart of a structured data management system.
+        /// Together with \see{TransactedFile::Allocator}, \see{TransactedFile::Registry},
+        /// and \see{TransactedFile::Object} they form the core of an OODBMS engine.
+        /// TransactedFile is designed to be used in one of two distinct modes;
+        /// 1. Fully structured, taking advantage of the classes mentioned above
+        /// and 2. As a very powerful and efficient replacement for \see{File} where
+        /// you use the built in page caching machinery to speed up reads and writes
+        /// but is otherwise unstructured.
         /// ************************** PLEASE READ ****************************
-        /// VERY IMPORTANT: TransactedFile is NOT thread safe. I felt introducing
-        /// a lock with every file access would be very costly performance wise.
-        /// Instead, TransactedFile exposes two types of guards; a read only guard
-        /// (\see{LockGuard}<\see{Mutex}>) and a read/write guard (\see{TransactedFile::Transaction}).
-        /// Use the first to gain exclusive read access to the file's data. Use
-        /// the later for exclusive modify access. This design choice has the
-        /// following advantages;
-        /// 1. Use the lock to protect a set of related read/write operations
-        /// instead of the file locking with every call.
-        /// 2. Having a thread complete all it's reads and writes without
-        /// interruptions is faster than having different threads contend for the
-        /// lock as there is no context switching and less disk head movement.
-        /// This also plays nice with the currPage cache as it promotes locality
-        /// of reference.
-        /// The one drawback of this design choice is;
-        /// The various threads sharing the same TransactedFile have to consciously
-        /// cooperate with eachother (by using the provided guards). On the other
-        /// hand, if you only have one thread accessing the file, there's nothing
-        /// to do and no need to pay the cost of a lock.
+        /// VERY IMPORTANT: In general, TransactedFile is NOT thread safe. Specifically
+        /// the legacy \see{File} API is not. I felt introducing a lock with every API
+        /// access would be very costly performance wise. And even if I did, the API
+        /// design is such that certain common operations (Seek/Read, Seek/Write) would
+        /// still not be safe as they would not execute atomicaly. Instead, a higher
+        /// level API (ReadEx, WriteEx, Grow, Shrink) is introduced. Together with
+        /// \see{TransactedFile::Range} and it's derivatives and \see{TransactedFile::Allocator}
+        /// and it's derivatives the following multi-threaded use case is prescribed;
+        ///
+        /// main thread;
+        ///   open/create file.
+        ///   release master threads.
+        ///   close file.
+        ///
+        /// master thread;
+        ///   if writting
+        ///     start transaction. This will lock the file for exclusive access.
+        ///   release worker threads that use \see{TransactedFile::Allocator} to
+        ///     allocate blocs and \see{TransactedFile::Range} to read and write them.
+        ///     It's highly recommended that you use \see{TransactedFile::TransactionParticipant}
+        ///     and \see{TransactedFile::Object}. \see{TransactedFile::Regitry}
+        ///     can also be used to store global heap objects based on \see{Serializable}.
+        ///   wait for workers to enter a barrier (i.e. signal they're done).
+        ///   if writting
+        ///     optionally delete cache.
+        ///     commit transaction.
         /// *******************************************************************
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFile :
                 public File,
@@ -562,12 +559,16 @@ namespace thekogans {
 
             /// \brief
             /// Return the \see{Allocator} attached to thi file.
+            /// Since allocator is constant after Init, this API
+            /// is thread safe.
             /// \return allocator.
             inline Allocator::SharedPtr GetAllocator () const {
                 return allocator;
             }
             /// \brief
             /// Return the \see{Registry} attached to thi file.
+            /// Since registry is constant after Init, this API
+            /// is thread safe.
             /// \return registry.
             inline Registry::SharedPtr GetRegistry () const {
                 return registry;
