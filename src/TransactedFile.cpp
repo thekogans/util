@@ -80,14 +80,14 @@ namespace thekogans {
         }
 
         void TransactedFile::Segment::Flush (
-                File &file,
+                RandomSeekSerializer &serializer,
                 bool log) {
             pageList.for_each (
-                [&file, log] (PageList::Callback::argument_type page) ->
+                [&serializer, log] (PageList::Callback::argument_type page) ->
                         PageList::Callback::result_type {
                     if (page->dirty) {
                         if (log) {
-                            file << page->offset;
+                            serializer << page->offset;
                             // NOTE: Here we write the full page size (Bufer::SIZE),
                             // trailing '0' and all. Since Page does not maintain
                             // internal size, all pages other than possibly the last
@@ -96,9 +96,9 @@ namespace thekogans {
                             // upstream (Flush).
                         }
                         else {
-                            file.Seek (page->offset, SEEK_SET);
+                            serializer.Seek (page->offset, SEEK_SET);
                         }
-                        file.Write (page->data, Page::SIZE);
+                        serializer.Write (page->data, Page::SIZE);
                         page->dirty = false;
                     }
                     return true;
@@ -136,17 +136,17 @@ namespace thekogans {
                 ui32 pageIndex,
                 ui64 pageOffset,
                 util::Allocator &pageAllocator,
-                File &file) {
+                RandomSeekSerializer &serializer) {
             if (pages[pageIndex] == nullptr) {
                 // We don't align the page boundary as it's a fairly complex
                 // structure with internal machinery that's hidden from view
                 // (vptr tables...). Instead we pass a pageAllocator to the
                 // page ctor and have it use that to align it's internal data
-                // buffer.
+                // buffer (which is what actually needs to be aligned).
                 Page *page = new Page (pageIndex, pageOffset, pageAllocator);
                 pages[pageIndex].Reset (page);
-                file.Seek (pageOffset, SEEK_SET);
-                ui64 countRead = file.Read (page->data, Page::SIZE);
+                serializer.Seek (pageOffset, SEEK_SET);
+                ui64 countRead = serializer.Read (page->data, Page::SIZE);
                 SecureZeroMemory (page->data + countRead, Page::SIZE - countRead);
                 // Insert the new page in to the ordered (on index) page list.
                 // A quick optimization to check if it's the first or last page
@@ -187,12 +187,12 @@ namespace thekogans {
         }
 
         void TransactedFile::Internal::Flush (
-                File &file,
+                RandomSeekSerializer &serializer,
                 bool log) {
             nodeList.for_each (
-                [&file, log] (NodeList::Callback::argument_type node) ->
+                [&serializer, log] (NodeList::Callback::argument_type node) ->
                         NodeList::Callback::result_type {
-                    node->Flush (file, log);
+                    node->Flush (serializer, log);
                     return true;
                 }
             );
@@ -213,33 +213,8 @@ namespace thekogans {
             return nodeList.empty ();
         }
 
-        TransactedFile::Internal::Node *TransactedFile::Internal::GetNode (
-                ui8 index,
-                bool segment) {
-            if (nodes[index] == nullptr) {
-                Node *node = segment ? (Node *)new Segment (index) : (Node *)new Internal (index);
-                nodes[index].Reset (node);
-                if (nodeList.empty () || nodeList.tail->index < node->index) {
-                    nodeList.push_back (node);
-                }
-                else {
-                    nodeList.for_each (
-                        [this, node] (NodeList::Callback::argument_type node_) ->
-                                NodeList::Callback::result_type {
-                            if (node_->index > node->index) {
-                                nodeList.insert (node, node_);
-                                return false;
-                            }
-                            return true;
-                        }
-                    );
-                }
-            }
-            return nodes[index].Get ();
-        }
-
         TransactedFile::Page::SharedPtr TransactedFile::Internal::GetPage (
-                File &file,
+                RandomSeekSerializer &serializer,
                 ui64 offset,
                 util::Allocator &pageAllocator) {
             // --
@@ -261,11 +236,36 @@ namespace thekogans {
                 THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> SHIFT_COUNT,
                 offset & ~(Page::SIZE - 1),
                 pageAllocator,
-                file);
+                serializer);
             // -- After potentially creating the page in Segment::GetPage,
             // we've arrived at the end of the 5 layer deep sparse index.
             // This mapping is constant (with the create code being amortized
             // accross multiple page accesses). It's O(c) where c = 5 shifts.
+        }
+
+        TransactedFile::Internal::Node *TransactedFile::Internal::GetNode (
+            std::size_t index,
+                bool segment) {
+            if (nodes[index] == nullptr) {
+                Node *node = segment ? (Node *)new Segment (index) : (Node *)new Internal (index);
+                nodes[index].Reset (node);
+                if (nodeList.empty () || nodeList.tail->index < node->index) {
+                    nodeList.push_back (node);
+                }
+                else {
+                    nodeList.for_each (
+                        [this, node] (NodeList::Callback::argument_type node_) ->
+                                NodeList::Callback::result_type {
+                            if (node_->index > node->index) {
+                                nodeList.insert (node, node_);
+                                return false;
+                            }
+                            return true;
+                        }
+                    );
+                }
+            }
+            return nodes[index].Get ();
         }
 
         TransactedFile::TransactedFile (

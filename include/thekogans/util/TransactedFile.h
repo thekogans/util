@@ -329,14 +329,16 @@ namespace thekogans {
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) = 0;
                 /// \brief
-                /// Write dirty pages to file.
-                /// \param[in] file \see{File} to flush to.
+                /// Write dirty pages to either their source or the log.
+                /// \param[in] serializer \see{RandomSeekSerializer} to flush to.
+                /// \param[in] log true == the serializer is a log and should be treated as such.
+                /// false == the serializer is the destination and should be dealt with accordingly.
                 virtual void Flush (
-                    File &file,
+                    RandomSeekSerializer &serializer,
                     bool log) = 0;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
-                /// \param[in] newSize New size to clip the node to.
+                /// \param[in] newSize New size to clip the address space to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) = 0;
@@ -377,15 +379,15 @@ namespace thekogans {
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
-                /// Write dirty pages to file.
-                /// \param[in] file \see{File} to flush to.
-                /// \param[in] log true == file is a log and should be treated as such.
+                /// Write dirty pages to either their source or the log.
+                /// \param[in] serializer \see{RandomSeekSerializer} to flush to.
+                /// \param[in] log true == serializer is a log and should be treated as such.
                 virtual void Flush (
-                    File &file,
+                    RandomSeekSerializer &serializer,
                     bool log) override;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
-                /// \param[in] newSize New size to clip the node to.
+                /// \param[in] newSize New size to clip the address space to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) override;
@@ -394,13 +396,13 @@ namespace thekogans {
                 /// Return the \see{Page} @index. Create if null.
                 /// \param[in] pageIndex Page index in the pages array.
                 /// \param[in] pageOffset Page offset (multiple of Page::SIZE).
-                /// \param[in] file File to read the page data from.
+                /// \param[in] serializer \see{RandomSeekSerializer} to read the page data from.
                 /// \return The new page.
                 Page::SharedPtr GetPage (
                     ui32 pageIndex,
                     ui64 pageOffset,
                     util::Allocator &pageAllocator,
-                    File &file);
+                    RandomSeekSerializer &serializer);
             };
 
             /// \struct TransactedFile::Internal TransactedFile.h thekogans/util/TransactedFile.h
@@ -440,19 +442,31 @@ namespace thekogans {
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
-                /// Write dirty pages to file.
-                /// \param[in] file \see{File} to flush to.
-                /// \param[in] log true == file is a log and should be treated as such.
+                /// Write dirty pages to either their source or the log.
+                /// \param[in] serializer \see{RandomSeekSerializer} to flush to.
+                /// \param[in] log true == serializer is a log and should be treated as such.
                 virtual void Flush (
-                    File &file,
+                    RandomSeekSerializer &serializer,
                     bool log) override;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
-                /// \param[in] newSize New size to clip the node to.
+                /// \param[in] newSize New size to clip the address space to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (ui64 newSize) override;
 
+                /// \brief
+                /// Return (posibly creating) the \see{Page} that contains the given offset.
+                /// \param[in] serializer \see{RandomSeekSerializer} the pages data will come from.
+                /// \param[in] offset Offset of the page in the file.
+                /// \param[in] pageAllocator \see{util::Allocator} where the page buffer will come from.
+                /// \return \see{Page} that contains the given offset.
+                Page::SharedPtr GetPage (
+                    RandomSeekSerializer &serializer,
+                    ui64 offset,
+                    util::Allocator &pageAllocator);
+
+            private:
                 /// \brief
                 /// Return either an \see{Internal} scaffolding node
                 /// or a \see{Segment} leaf node. Create if null.
@@ -466,26 +480,17 @@ namespace thekogans {
                 /// overhead to return a SharedPtr. A raw pointer will do
                 /// just fine.
                 Node *GetNode (
-                    ui8 index,
+                    std::size_t index,
                     bool segment = false);
-
-                /// \brief
-                /// Return (posibly creating) the \see{Page} that contains the given offset.
-                /// \param[in] file The file the page will come from.
-                /// \param[in] offset Offset of the page in the file.
-                /// \return \see{Page} that contains the given offset.
-                Page::SharedPtr GetPage (
-                    File &file,
-                    ui64 offset,
-                    util::Allocator &pageAllocator);
             } root;
             /// \brief
             /// Current page offset.
-            /// This is the page offset of the current position. (position & ~(Page::SIZE - 1))
+            /// This is the page offset of the last call to \see{GetPage (offset)}.
+            /// (offset & ~(Page::SIZE - 1))
             ui64 currPageOffset;
             /// \brief
             /// Current page cache.
-            /// NOTE: The design of GetPage is such that it takes ~5 shfts and ~5
+            /// NOTE: The design of \see{GetPage} is such that it takes ~5 shfts and ~5
             /// ands to do it's job. Unfortunatelly this function is called every time
             /// you call Read or Write. If you're doing a lot of inserting/extracting
             /// of small types, that can add up. That's why this cache exists. If you're
