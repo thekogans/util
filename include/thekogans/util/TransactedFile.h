@@ -31,6 +31,7 @@
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Producer.h"
+#include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
@@ -239,6 +240,7 @@ namespace thekogans {
                 /// \brief
                 /// Page offset (multiple of SIZE).
                 const ui64 offset;
+                util::Allocator &allocator;
                 /// \brief
                 /// Page size. This is a tuning parameter.
                 /// Set it based on your typical file sizes. Meaning that,
@@ -256,7 +258,7 @@ namespace thekogans {
                 static constexpr std::size_t SIZE = 0x00100000;
                 /// \brief
                 /// Page data.
-                ui8 data[SIZE];
+                ui8 *data;
                 /// \brief
                 /// true == modified.
                 bool dirty;
@@ -265,15 +267,24 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] index_ Page index in \see{Segment::pages}.
                 /// \param[in] offset_ Page offset (multiple of SIZE).
+                /// \param[in] allocator_ \see{AlignedAllocator} to allocate page data.
                 Page (
-                    std::size_t index_,
-                    ui64 offset_) :
-                    index (index_),
-                    offset (offset_),
-                    dirty (false) {}
+                        std::size_t index_,
+                        ui64 offset_,
+                        util::Allocator &allocator_) :
+                        index (index_),
+                        offset (offset_),
+                        allocator (allocator_),
+                        dirty (false) {
+                    data = (ui8 *)allocator.Alloc (SIZE);
+                }
+                ~Page () {
+                    allocator.Free (data, SIZE);
+                }
             };
 
         private:
+            AlignedAllocator pageAllocator;
             /// \brief
             /// Forward declaration of \see{Node} needed by NodeList.
             struct Node;
@@ -318,16 +329,11 @@ namespace thekogans {
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) = 0;
                 /// \brief
-                /// Write dirty pages to log.
-                /// \param[in] log Log \see{File} to save to.
-                virtual void Log (File &log) = 0;
-                /// \brief
                 /// Write dirty pages to file.
-                /// \param[in] file \see{File} to save to.
-                /// \param[in] size File size to clip the last page to.
+                /// \param[in] file \see{File} to flush to.
                 virtual void Flush (
                     File &file,
-                    ui64 size) = 0;
+                    bool log) = 0;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -371,16 +377,12 @@ namespace thekogans {
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
-                /// Write dirty pages to log.
-                /// \param[in] log Log \see{File} to save to.
-                virtual void Log (File &log) override;
-                /// \brief
                 /// Write dirty pages to file.
-                /// \param[in] file \see{File} to save to.
-                /// \param[in] size File size to clip the last page to.
+                /// \param[in] file \see{File} to flush to.
+                /// \param[in] log true == file is a log and should be treated as such.
                 virtual void Flush (
                     File &file,
-                    ui64 size) override;
+                    bool log) override;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -397,6 +399,7 @@ namespace thekogans {
                 Page::SharedPtr GetPage (
                     ui32 pageIndex,
                     ui64 pageOffset,
+                    util::Allocator &pageAllocator,
                     File &file);
             };
 
@@ -437,16 +440,12 @@ namespace thekogans {
                 /// false == the node has clean pages remaining.
                 virtual bool Clear (bool all = false) override;
                 /// \brief
-                /// Write dirty pages to log.
-                /// \param[in] log Log \see{File} to save to.
-                virtual void Log (File &log) override;
-                /// \brief
                 /// Write dirty pages to file.
-                /// \param[in] file \see{File} to save to.
-                /// \param[in] size File size to clip the last page to.
+                /// \param[in] file \see{File} to flush to.
+                /// \param[in] log true == file is a log and should be treated as such.
                 virtual void Flush (
                     File &file,
-                    ui64 size) override;
+                    bool log) override;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the node to.
@@ -477,7 +476,8 @@ namespace thekogans {
                 /// \return \see{Page} that contains the given offset.
                 Page::SharedPtr GetPage (
                     File &file,
-                    ui64 offset);
+                    ui64 offset,
+                    util::Allocator &pageAllocator);
             } root;
             /// \brief
             /// Current page offset.

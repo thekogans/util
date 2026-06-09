@@ -15,6 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Environment.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/os/windows/WindowsHeader.h"
+#else // defined (TOOLCHAIN_OS_Windows)
+    #if defined (TOOLCHAIN_OS_Linux)
+        #define _GNU_SOURCE
+    #endif // defined (TOOLCHAIN_OS_Linux)
+    #include <fcntl.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
 #include "thekogans/util/Heap.h"
@@ -70,35 +79,26 @@ namespace thekogans {
             return pageList.empty ();
         }
 
-        void TransactedFile::Segment::Log (File &log) {
-            pageList.for_each (
-                [&log] (PageList::Callback::argument_type page) ->
-                        PageList::Callback::result_type {
-                    if (page->dirty) {
-                        log << page->offset;
-                        // NOTE: Here we write the full page size (Bufer::SIZE),
-                        // trailing '0' and all. Since Page does not maintain
-                        // internal size, all pages other than possibly the last
-                        // are Page::SIZE in length, we have no choice but to
-                        // write Page::SIZE and have the actual size be adjusted
-                        // upstream (Flush).
-                        log.Write (page->data, Page::SIZE);
-                        page->dirty = false;
-                    }
-                    return true;
-                }
-            );
-        }
-
         void TransactedFile::Segment::Flush (
                 File &file,
-                ui64 size) {
+                bool log) {
             pageList.for_each (
-                [&file, size] (PageList::Callback::argument_type page) ->
+                [&file, log] (PageList::Callback::argument_type page) ->
                         PageList::Callback::result_type {
                     if (page->dirty) {
-                        file.Seek (page->offset, SEEK_SET);
-                        file.Write (page->data, MIN (size - page->offset, Page::SIZE));
+                        if (log) {
+                            file << page->offset;
+                            // NOTE: Here we write the full page size (Bufer::SIZE),
+                            // trailing '0' and all. Since Page does not maintain
+                            // internal size, all pages other than possibly the last
+                            // are Page::SIZE in length, we have no choice but to
+                            // write Page::SIZE and have the actual size be adjusted
+                            // upstream (Flush).
+                        }
+                        else {
+                            file.Seek (page->offset, SEEK_SET);
+                        }
+                        file.Write (page->data, Page::SIZE);
                         page->dirty = false;
                     }
                     return true;
@@ -135,9 +135,15 @@ namespace thekogans {
         TransactedFile::Page::SharedPtr TransactedFile::Segment::GetPage (
                 ui32 pageIndex,
                 ui64 pageOffset,
+                util::Allocator &pageAllocator,
                 File &file) {
             if (pages[pageIndex] == nullptr) {
-                Page *page = new Page (pageIndex, pageOffset);
+                // We don't align the page boundary as it's a fairly complex
+                // structure with internal machinery that's hidden from view
+                // (vptr tables...). Instead we pass a pageAllocator to the
+                // page ctor and have it use that to align it's internal data
+                // buffer.
+                Page *page = new Page (pageIndex, pageOffset, pageAllocator);
                 pages[pageIndex].Reset (page);
                 file.Seek (pageOffset, SEEK_SET);
                 ui64 countRead = file.Read (page->data, Page::SIZE);
@@ -180,23 +186,13 @@ namespace thekogans {
             return nodeList.empty ();
         }
 
-        void TransactedFile::Internal::Log (File &log) {
-            nodeList.for_each (
-                [&log] (NodeList::Callback::argument_type node) ->
-                        NodeList::Callback::result_type {
-                    node->Log (log);
-                    return true;
-                }
-            );
-        }
-
         void TransactedFile::Internal::Flush (
                 File &file,
-                ui64 size) {
+                bool log) {
             nodeList.for_each (
-                [&file, size] (NodeList::Callback::argument_type node) ->
+                [&file, log] (NodeList::Callback::argument_type node) ->
                         NodeList::Callback::result_type {
-                    node->Flush (file, size);
+                    node->Flush (file, log);
                     return true;
                 }
             );
@@ -244,7 +240,8 @@ namespace thekogans {
 
         TransactedFile::Page::SharedPtr TransactedFile::Internal::GetPage (
                 File &file,
-                ui64 offset) {
+                ui64 offset,
+                util::Allocator &pageAllocator) {
             // --
             ui32 nodeIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
             Internal *internal = (Internal *)GetNode (
@@ -263,6 +260,7 @@ namespace thekogans {
             return segment->GetPage (
                 THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> SHIFT_COUNT,
                 offset & ~(Page::SIZE - 1),
+                pageAllocator,
                 file);
             // -- After potentially creating the page in Segment::GetPage,
             // we've arrived at the end of the 5 layer deep sparse index.
@@ -280,6 +278,7 @@ namespace thekogans {
                 position (0),
                 size (0),
                 flags (0),
+                pageAllocator (4096),
                 root (0),
                 currPageOffset (NOFFS) {
             if (IsOpen ()) {
@@ -307,6 +306,7 @@ namespace thekogans {
                 position (0),
                 size (0),
                 flags (0),
+                pageAllocator (4096),
                 root (0),
                 currPageOffset (NOFFS) {
             OpenEx (
@@ -555,9 +555,15 @@ namespace thekogans {
                 dwDesiredAccess,
                 dwShareMode,
                 dwCreationDisposition,
-                dwFlagsAndAttributes);
+                dwFlagsAndAttributes | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
         #else // defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Linux)
+            flags_ |= O_DIRECT;
+        #endif // defined (TOOLCHAIN_OS_Linux)
             File::Open (path, flags_, mode);
+        #if defined (TOOLCHAIN_OS_OSX)
+            fcntl (handle, F_NOCACHE, 1);
+        #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
             position = File::Tell ();
             size = File::GetSize ();
@@ -645,14 +651,14 @@ namespace thekogans {
                         else {
                             log << MAGIC32 << (ui32)0 << size;
                         }
-                        root.Log (log);
+                        root.Flush (log, true);
                     }
                     else {
                         // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
                         // If we were to pass *this, Flush would call in to our Seek and Write.
                         // And thats not what we want!
                         TenantFile file (endianness, handle, path);
-                        root.Flush (file, size);
+                        root.Flush (file, false);
                         file.SetSize (size);
                         file.Flush ();
                     }
@@ -696,6 +702,10 @@ namespace thekogans {
                     // Initialize the first block.
                     Allocator::Block block (
                         *this, Allocator::Block::HEADER_SIZE, 0, UI32_SIZE + allocator_->GetSize ());
+                    // For performance reasons Range assumes that all
+                    // reads and writes are within file bounds. We set
+                    // the file size here so that block.Write and range
+                    // insert below honor that assumption.
                     SetSize (Allocator::Block::SIZE + block.GetSize ());
                     block.Write ();
                     BlockRange range (*this, block.GetOffset (), false);
@@ -951,7 +961,7 @@ namespace thekogans {
                 // We take advantage of locality of reference and cache the last
                 // page accessed in the hopes that it will be accessed next and
                 // we can skip the tree walk.
-                currPage = root.GetPage (file, offset);
+                currPage = root.GetPage (file, offset, pageAllocator);
             }
             return currPage;
         }

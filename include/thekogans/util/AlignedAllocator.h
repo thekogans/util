@@ -166,6 +166,7 @@ namespace thekogans {
             std::size_t value);
         /// \brief
         /// Return the count of trailing 0 bits.
+        /// VERY IMPORTANT: If value == 0, return 0 NOT sizeof (std::size_t) * CHAR_BIT.
         /// \param[in] value Value to check.
         /// \return Number of trailing bits after the first 1.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API TrailingZeroBitCount (
