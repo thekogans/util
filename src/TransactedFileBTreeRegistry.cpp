@@ -96,5 +96,54 @@ namespace thekogans {
             serializer << MAGIC32 << header;
         }
 
+        void TransactedFileBTreeRegistry::OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr file,
+                int phase) noexcept {
+            TransactedFile::Allocator::SharedPtr allocator = file->GetAllocator ();
+            // Can't have a registry without an allocator.
+            assert (allocator != nullptr);
+            if (phase == TransactedFile::COMMIT_PHASE_1) {
+                allocator->SetRegistryOffset (
+                    allocator->Realloc (
+                        allocator->GetRegistryOffset (),
+                        UI32_SIZE + GetSize ()));
+            }
+            else if (phase == TransactedFile::COMMIT_PHASE_2) {
+                BlockRange range (*file, allocator->GetRegistryOffset (), false);
+                range << MAGIC32 << *this;
+                SetDirty (false);
+            }
+        }
+
+        void TransactedFileBTreeRegistry::OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr file) noexcept {
+            BlockRange range (*file, file->GetAllocator ()->GetRegistryOffset ());
+            ui32 magic;
+            range >> magic;
+            if (magic == MAGIC32) {
+                range >> *this;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt TransactedFile file (%s).",
+                    file->GetPath ().c_str ());
+            }
+            SetDirty (false);
+        }
+
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectAlloc (
+                TransactedFile::Object::SharedPtr object) noexcept {
+            LockGuard<SpinLock> guard (spinLock);
+            header.btreeOffset = object->GetOffset ();
+            SetDirty (true);
+        }
+
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectFree (
+                TransactedFile::Object::SharedPtr /*object*/) noexcept {
+            LockGuard<SpinLock> guard (spinLock);
+            header.btreeOffset = 0;
+            SetDirty (true);
+        }
+
     } // namespace util
 } // namespace thekogans

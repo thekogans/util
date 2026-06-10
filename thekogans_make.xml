@@ -136,6 +136,7 @@
     <cpp_header>$(organization)/$(project_directory)/OwnerList.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/OwnerMap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/OwnerVector.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/PageMap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Path.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Pipeline.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/PipelinePool.h</cpp_header>
@@ -697,6 +698,7 @@
     <cpp_source>NullAllocator.cpp</cpp_source>
     <cpp_source>NullLock.cpp</cpp_source>
     <cpp_source>NullLogger.cpp</cpp_source>
+    <cpp_source>PageMap.cpp</cpp_source>
     <cpp_source>Path.cpp</cpp_source>
     <cpp_source>Pipeline.cpp</cpp_source>
     <cpp_source>PipelinePool.cpp</cpp_source>

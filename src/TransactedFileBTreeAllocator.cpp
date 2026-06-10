@@ -346,7 +346,7 @@ namespace thekogans {
                 }
             }
             else {
-                // Realloc (offset, 0, ...) results in block deletion (Free (offset)).
+                // Realloc (offset, 0, ...) results in block deletion.
                 Free (offset);
                 offset = 0;
             }
@@ -397,6 +397,62 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             Allocator::Write (serializer);
             serializer << MAGIC32 << header;
+        }
+
+        void TransactedFileBTreeAllocator::OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr file,
+                int phase) noexcept {
+            if (phase == TransactedFile::COMMIT_PHASE_2) {
+                // Since allocator block is special (it's first and unresizable)...
+                SerializableHeader allocatorHeader;
+                {
+                    // ...extract the original SerializableHeader...
+                    BlockRange range (*file, Allocator::Block::HEADER_SIZE);
+                    // skip over magic.
+                    range.Seek (UI32_SIZE, SEEK_CUR);
+                    range >> allocatorHeader;
+                }
+                {
+                    BlockRange range (*file, Allocator::Block::HEADER_SIZE, false);
+                    // skip over magic and serializable header.
+                    range.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
+                    // ...and force the allocator to write that particular
+                    // version of itself so as not to overflow the first block.
+                    ContextGuard guard (range, allocatorHeader);
+                    range << *this;
+                }
+                SetDirty (false);
+            }
+        }
+
+        void TransactedFileBTreeAllocator::OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr file) noexcept {
+            BlockRange range (*file, Allocator::Block::HEADER_SIZE);
+            ui32 magic;
+            range >> magic;
+            if (magic == MAGIC32) {
+                range >> *this;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt TransactedFile file (%s).",
+                    file->GetPath ().c_str ());
+            }
+            SetDirty (false);
+        }
+
+        void TransactedFileBTreeAllocator::OnTransactedFileObjectAlloc (
+                TransactedFile::Object::SharedPtr object) noexcept {
+            LockGuard<SpinLock> guard (spinLock);
+            header.btreeOffset = object->GetOffset ();
+            SetDirty (true);
+        }
+
+        void TransactedFileBTreeAllocator::OnTransactedFileObjectFree (
+                TransactedFile::Object::SharedPtr /*object*/) noexcept {
+            LockGuard<SpinLock> guard (spinLock);
+            header.btreeOffset = 0;
+            SetDirty (true);
         }
 
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {

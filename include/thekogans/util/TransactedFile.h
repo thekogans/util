@@ -23,6 +23,7 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Flags.h"
+#include "thekogans/util/PageMap.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -197,309 +198,13 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
+            PageMap pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
             /// \brief
             /// Synchronization lock.
             SpinLock spinLock;
-
-        public:
-            /// \brief
-            /// Forward declaration of \see{Page} needed by \see{PageList}.
-            struct Page;
-
-        private:
-            /// \brief
-            /// Alias for \see{IntrusiveList}<Page>.
-            using PageList = IntrusiveList<Page>;
-
-        public:
-            /// \struct TransactedFile::Page TransactedFile.h thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// Page tiles the file address space providing incremental,
-            /// sparse access to the data. Use \see{DeleteCache} to manage
-            /// memory usage.
-            /// WARNING: Spent an hour chasing my tail looking for a stack
-            /// overflow bug. Long story short, don't allocate pages on
-            /// the stack. They're too big.
-            struct Page :
-                    public RefCounted,
-                    public PageList::Node {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Page)
-                /// \brief
-                /// Page has a private heap.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-                /// \brief
-                /// Page index in \see{Segment::pages}.
-                const std::size_t index;
-                /// \brief
-                /// Page offset (multiple of SIZE).
-                const ui64 offset;
-                util::Allocator &allocator;
-                /// \brief
-                /// Page size. This is a tuning parameter.
-                /// Set it based on your typical file sizes. Meaning that,
-                /// if your files never go above 100KB then a 1MB SIZE
-                /// is overkill. But if you typically manage multi gigabyte
-                /// (terabyte?) databases you might want to bump this value up.
-                /// The way you do it is by going up or down a power of 2 on
-                /// SIZE.
-                /// Ex: Let's say you wanted 2MB pages instead of 1MB.
-                /// Then SIZE = 0x00200000.
-                /// Ex: If you need 16MB pages,
-                /// Then SIZE = 0x01000000.
-                /// Ex: If you need 256KB pages,
-                /// Then SIZE = 0x00040000.
-                static constexpr std::size_t SIZE = 0x00100000;
-                /// \brief
-                /// Page data.
-                ui8 *data;
-                /// \brief
-                /// true == modified.
-                bool dirty;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] index_ Page index in \see{Segment::pages}.
-                /// \param[in] offset_ Page offset (multiple of SIZE).
-                /// \param[in] allocator_ \see{AlignedAllocator} to allocate page data.
-                Page (
-                        std::size_t index_,
-                        ui64 offset_,
-                        util::Allocator &allocator_) :
-                        index (index_),
-                        offset (offset_),
-                        allocator (allocator_),
-                        dirty (false) {
-                    data = (ui8 *)allocator.Alloc (SIZE);
-                }
-                ~Page () {
-                    allocator.Free (data, SIZE);
-                }
-            };
-
-        private:
-            AlignedAllocator pageAllocator;
-            /// \brief
-            /// Forward declaration of \see{Node} needed by NodeList.
-            struct Node;
-            /// \brief
-            /// Alias for \see{IntrusiveList}<Node>.
-            using NodeList = IntrusiveList<Node>;
-
-            /// \struct TransactedFile::Node TransactedFile.h thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// The file 64 bit address space is partitioned such that it can be
-            /// represented using a fixed depth multiway tree. The high order 32 bits
-            /// are used to represent 4G of 4GB segments. The low order 32 bits are
-            /// used to represent 4GB segments partitioned in to 4K of 1MB tiles.
-            /// The entire address space is sparse and fits in to a tree of depth 5
-            /// like this;
-            /// - The high order 32 bits are split in to 4 8 bit hierarchical indexes.
-            ///   Each index is used to access an internal tree node. (depth = 4).
-            /// - The low order 32 bits are split in to a 12 bit index to access one
-            ///   of 4K 20 bit, 4GB segment tiles (Page). (depth = 5)
-            struct Node :
-                    public RefCounted,
-                    public NodeList::Node {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
-
-                /// \brief
-                /// Node index in \see{Internal::nodes}.
-                std::size_t index;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] index_ Node index in \see{Internal::nodes}.
-                Node (std::size_t index_) :
-                    index (index_) {}
-
-                /// \brief
-                /// Delete pages.
-                /// \param[in] all true == clear all, false == dirty only.
-                /// \return true == the node is empty,
-                /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) = 0;
-                /// \brief
-                /// Write dirty pages to either their source or the log.
-                /// \param[in] serializer \see{RandomSeekSerializer} to flush to.
-                /// \param[in] log true == the serializer is a log and should be treated as such.
-                /// false == the serializer is the destination and should be dealt with accordingly.
-                virtual void Flush (
-                    RandomSeekSerializer &serializer,
-                    bool log) = 0;
-                /// \brief
-                /// Delete all pages whose offset > newSize.
-                /// \param[in] newSize New size to clip the address space to.
-                /// \return true == the entire node was clipped, continue iterating.
-                /// false == a page was encoutered whose offset was < newSize, stop iterating.
-                virtual bool Shrink (ui64 newSize) = 0;
-            };
-
-            /// \struct TransactedFile::Segment TransactedFile.h thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// Leaf node representing a 4GB chunk of the file.
-            struct Segment : public Node {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Segment)
-                /// \brief
-                /// Segment has a private heap.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-                /// \brief
-                /// The number of \see{Page}s tilling the segments 4GB address space.
-                static const std::size_t BRANCHING_LEVEL = ((std::size_t)1 << 32) / Page::SIZE;
-                /// \brief
-                /// \see{Pages} tiling the 4GB segment.
-                Page::SharedPtr pages[BRANCHING_LEVEL];
-                /// \brief
-                /// \see{IntrusiveList} of linked \see{Page}s.
-                PageList pageList;
-
-                /// \brief
-                /// cor.
-                /// \param[in] index Segment index.
-                Segment (std::size_t index) :
-                    Node (index) {}
-
-                /// \brief
-                /// Delete pages.
-                /// \param[in] all true == clear all, false == dirty only.
-                /// \return true == the node is empty,
-                /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) override;
-                /// \brief
-                /// Write dirty pages to either their source or the log.
-                /// \param[in] serializer \see{RandomSeekSerializer} to flush to.
-                /// \param[in] log true == serializer is a log and should be treated as such.
-                virtual void Flush (
-                    RandomSeekSerializer &serializer,
-                    bool log) override;
-                /// \brief
-                /// Delete all pages whose offset > newSize.
-                /// \param[in] newSize New size to clip the address space to.
-                /// \return true == the entire node was clipped, continue iterating.
-                /// false == a page was encoutered whose offset was < newSize, stop iterating.
-                virtual bool Shrink (ui64 newSize) override;
-
-                /// \brief
-                /// Return the \see{Page} @index. Create if null.
-                /// \param[in] pageIndex Page index in the pages array.
-                /// \param[in] pageOffset Page offset (multiple of Page::SIZE).
-                /// \param[in] serializer \see{RandomSeekSerializer} to read the page data from.
-                /// \return The new page.
-                Page::SharedPtr GetPage (
-                    ui32 pageIndex,
-                    ui64 pageOffset,
-                    util::Allocator &pageAllocator,
-                    RandomSeekSerializer &serializer);
-            };
-
-            /// \struct TransactedFile::Internal TransactedFile.h thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// Internal structure node representing 4G of 4GB segments.
-            struct Internal : public Node {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Internal)
-                /// \brief
-                /// Internal has a private heap.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-                /// \brief
-                /// The upper 32 bits of the 64 bit address is split
-                /// evenly in to 4 8 bit higherarchical indeces. That's
-                /// what makes the first 4 layers of the 5 layer deep tree.
-                static const std::size_t BRANCHING_LEVEL = 0x00000100;
-                /// \brief
-                /// These are the internal 4G of 4GB segments.
-                Node::SharedPtr nodes[BRANCHING_LEVEL];
-                /// \brief
-                /// \see{IntrusiveList} of \see{Node}s.
-                NodeList nodeList;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] index Node index.
-                Internal (std::size_t index) :
-                    Node (index) {}
-
-                /// \brief
-                /// Delete pages.
-                /// \param[in] all true == clear all, false == dirty only.
-                /// \return true == the node is empty,
-                /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) override;
-                /// \brief
-                /// Write dirty pages to either their source or the log.
-                /// \param[in] serializer \see{RandomSeekSerializer} to flush to.
-                /// \param[in] log true == serializer is a log and should be treated as such.
-                virtual void Flush (
-                    RandomSeekSerializer &serializer,
-                    bool log) override;
-                /// \brief
-                /// Delete all pages whose offset > newSize.
-                /// \param[in] newSize New size to clip the address space to.
-                /// \return true == the entire node was clipped, continue iterating.
-                /// false == a page was encoutered whose offset was < newSize, stop iterating.
-                virtual bool Shrink (ui64 newSize) override;
-
-                /// \brief
-                /// Return (posibly creating) the \see{Page} that contains the given offset.
-                /// \param[in] serializer \see{RandomSeekSerializer} the pages data will come from.
-                /// \param[in] offset Offset of the page in the file.
-                /// \param[in] pageAllocator \see{util::Allocator} where the page buffer will come from.
-                /// \return \see{Page} that contains the given offset.
-                Page::SharedPtr GetPage (
-                    RandomSeekSerializer &serializer,
-                    ui64 offset,
-                    util::Allocator &pageAllocator);
-
-            private:
-                /// \brief
-                /// Return either an \see{Internal} scaffolding node
-                /// or a \see{Segment} leaf node. Create if null.
-                /// \param[in] index Index of node to return.
-                /// \param[in] segment If null, true == create \see{Segment},
-                /// otherwise create \see{Internal}
-                /// \retrun \see{Segment} or \see{Internal} node @index.
-                /// NOTE: Unlike pages which are shared outside the file api,
-                /// nodes are used internally only by GetPage below which
-                /// uses them and lets them go. It's therefore unnecessary
-                /// overhead to return a SharedPtr. A raw pointer will do
-                /// just fine.
-                Node *GetNode (
-                    std::size_t index,
-                    bool segment = false);
-            } root;
-            /// \brief
-            /// Current page offset.
-            /// This is the page offset of the last call to \see{GetPage (offset)}.
-            /// (offset & ~(Page::SIZE - 1))
-            ui64 currPageOffset;
-            /// \brief
-            /// Current page cache.
-            /// NOTE: The design of \see{GetPage} is such that it takes ~5 shfts and ~5
-            /// ands to do it's job. Unfortunatelly this function is called every time
-            /// you call Read or Write. If you're doing a lot of inserting/extracting
-            /// of small types, that can add up. That's why this cache exists. If you're
-            /// going to do a lot of 'local' io, GetPage will be reduced to a single
-            /// and and compare. Keep that in mind when designing your data structures
-            /// and access patterns. The less you Seek, the better your performance
-            /// will be. To that end, you're highly encouraged to use \see{Allocator}
-            /// and \see{Range}.
-            Page::SharedPtr currPage;
 
         public:
             #include "thekogans/util/TransactedFileRange.h"
@@ -631,7 +336,7 @@ namespace thekogans {
 
             /// \brief
             /// Flush dirty pages and delete the cache.
-            /// NOT thread safe.
+            /// Thread safe.
             void DeleteCache ();
             /// \brief
             /// Grow the file by the given amount.
@@ -829,17 +534,11 @@ namespace thekogans {
             void AbortTransaction ();
 
             /// \brief
-            /// This is a wrapper around GetPageHelper.
+            /// This is a wrapper around pageMap.GetPage.
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
             Page::SharedPtr GetPage (ui64 offset);
-            /// \brief
-            /// Get the page that will cover the neighborhood around the given offset.
-            /// NOT thread safe.
-            /// \param[in] offset Offset whose page to return.
-            /// \return Page that covers the neighborhood around the given offset.
-            Page::SharedPtr GetPageHelper (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

@@ -42,6 +42,7 @@ namespace thekogans {
         /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
                 public TransactedFile::Allocator,
+                public Subscriber<TransactedFileEvents>,
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// TransactedFileBTreeAllocator is a \see{Serializable}.
@@ -244,25 +245,36 @@ namespace thekogans {
             /// Write the \see{Header} to the file.
             virtual void Write (Serializer &serializer) const override;
 
+            // TransactedFileEvents
+            /// \brief
+            /// Transaction is committing. Depending on the phase do whatever
+            /// is appropriate.
+            /// If your object derives from \see{TransactedFile::TransactionParticipant}
+            /// all this is done under the hood for you. All you will need
+            /// to do is implement Alloc (phase 1) and Flush (phase 2).
+            /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
+            virtual void OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr file,
+                int phase) noexcept override;
+            /// \brief
+            /// Transaction is aborting. Time to reload the object.
+            /// If your object derives from \see{TransactedFile::TransactionParticipant}
+            /// all this is done under the hood for you. All you will need
+            /// to do is implement Reload.
+            virtual void OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr file) noexcept override;
+
             // TransactedFile::ObjectEvents
             /// \brief
             /// \see{Object} allocated a block in the file.
             /// \param[in] object \see{Object} whose offset has become valid.
             virtual void OnTransactedFileObjectAlloc (
-                    TransactedFile::Object::SharedPtr object) noexcept override {
-                LockGuard<SpinLock> guard (spinLock);
-                header.btreeOffset = object->GetOffset ();
-                SetDirty (true);
-            }
+                TransactedFile::Object::SharedPtr object) noexcept override;
             /// \brief
             /// \see{Object} freed its block.
             /// \param[in] object \see{Object} whose offset has become invalid.
             virtual void OnTransactedFileObjectFree (
-                    TransactedFile::Object::SharedPtr /*object*/) noexcept override {
-                LockGuard<SpinLock> guard (spinLock);
-                header.btreeOffset = 0;
-                SetDirty (true);
-            }
+                TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 
             /// \brief
             /// Used to allocate \see{BTree::Node} blocks.

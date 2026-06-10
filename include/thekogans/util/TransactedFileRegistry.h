@@ -36,7 +36,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry : public Serializable {
 
 protected:
     /// \brief
-    /// The \see{TransactedFile} this registry belogs to.
+    /// The \see{TransactedFile} this registry belongs to.
     TransactedFile::SharedPtr file;
 
 public:

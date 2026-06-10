@@ -61,213 +61,6 @@ namespace thekogans {
             file->Unsubscribe ();
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Page)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Segment)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::Internal)
-
-        bool TransactedFile::Segment::Clear (bool all) {
-            pageList.for_each (
-                [this, all] (PageList::Callback::argument_type page) ->
-                        PageList::Callback::result_type {
-                    if (all || page->dirty) {
-                        pageList.erase (page);
-                        pages[page->index].Reset ();
-                    }
-                    return true;
-                }
-            );
-            return pageList.empty ();
-        }
-
-        void TransactedFile::Segment::Flush (
-                RandomSeekSerializer &serializer,
-                bool log) {
-            pageList.for_each (
-                [&serializer, log] (PageList::Callback::argument_type page) ->
-                        PageList::Callback::result_type {
-                    if (page->dirty) {
-                        if (log) {
-                            serializer << page->offset;
-                            // NOTE: Here we write the full page size (Bufer::SIZE),
-                            // trailing '0' and all. Since Page does not maintain
-                            // internal size, all pages other than possibly the last
-                            // are Page::SIZE in length, we have no choice but to
-                            // write Page::SIZE and have the actual size be adjusted
-                            // upstream (Flush).
-                        }
-                        else {
-                            serializer.Seek (page->offset, SEEK_SET);
-                        }
-                        serializer.Write (page->data, Page::SIZE);
-                        page->dirty = false;
-                    }
-                    return true;
-                }
-            );
-        }
-
-        bool TransactedFile::Segment::Shrink (ui64 newSize) {
-            pageList.for_each (
-                [this, newSize] (PageList::Callback::argument_type page) ->
-                        PageList::Callback::result_type {
-                    if (page->offset >= newSize) {
-                        pageList.erase (page);
-                        pages[page->index].Reset ();
-                        return true;
-                    }
-                    else {
-                        ui64 consumed = newSize - page->offset;
-                        if (consumed < Page::SIZE) {
-                            // Pages don't maintain internal lengths. All pages
-                            // are Page::SIZE long (with potentially the last one
-                            // being less). If this is the last page, we clear that
-                            // part which falls outside the new file size.
-                            SecureZeroMemory (page->data + consumed, Page::SIZE - consumed);
-                        }
-                        return false;
-                    }
-                },
-                true
-            );
-            return pageList.empty ();
-        }
-
-        TransactedFile::Page::SharedPtr TransactedFile::Segment::GetPage (
-                ui32 pageIndex,
-                ui64 pageOffset,
-                util::Allocator &pageAllocator,
-                RandomSeekSerializer &serializer) {
-            if (pages[pageIndex] == nullptr) {
-                // We don't align the page boundary as it's a fairly complex
-                // structure with internal machinery that's hidden from view
-                // (vptr tables...). Instead we pass a pageAllocator to the
-                // page ctor and have it use that to align it's internal data
-                // buffer (which is what actually needs to be aligned).
-                Page *page = new Page (pageIndex, pageOffset, pageAllocator);
-                pages[pageIndex].Reset (page);
-                serializer.Seek (pageOffset, SEEK_SET);
-                ui64 countRead = serializer.Read (page->data, Page::SIZE);
-                SecureZeroMemory (page->data + countRead, Page::SIZE - countRead);
-                // Insert the new page in to the ordered (on index) page list.
-                // A quick optimization to check if it's the first or last page
-                // potentially saving us a list walk...
-                if (pageList.empty () || pageList.tail->index < page->index) {
-                    // ...it is. First or last is the same push_back.
-                    pageList.push_back (page);
-                }
-                else {
-                    // ...otherwise walk the list. The page will go in the middle somewhere.
-                    pageList.for_each (
-                        [this, page] (PageList::Callback::argument_type page_) ->
-                                PageList::Callback::result_type {
-                            if (page_->index > page->index) {
-                                pageList.insert (page, page_);
-                                return false;
-                            }
-                            return true;
-                        }
-                    );
-                }
-            }
-            return pages[pageIndex];
-        }
-
-        bool TransactedFile::Internal::Clear (bool all) {
-            nodeList.for_each (
-                [this, all] (NodeList::Callback::argument_type node) ->
-                        NodeList::Callback::result_type {
-                    if (all || node->Clear (all)) {
-                        nodeList.erase (node);
-                        nodes[node->index].Reset ();
-                    }
-                    return true;
-                }
-            );
-            return nodeList.empty ();
-        }
-
-        void TransactedFile::Internal::Flush (
-                RandomSeekSerializer &serializer,
-                bool log) {
-            nodeList.for_each (
-                [&serializer, log] (NodeList::Callback::argument_type node) ->
-                        NodeList::Callback::result_type {
-                    node->Flush (serializer, log);
-                    return true;
-                }
-            );
-        }
-
-        bool TransactedFile::Internal::Shrink (ui64 newSize) {
-            nodeList.for_each (
-                [this, newSize] (NodeList::Callback::argument_type node) ->
-                        NodeList::Callback::result_type {
-                    if (!node->Shrink (newSize)) {
-                        return false;
-                    }
-                    nodes[node->index].Reset ();
-                    return true;
-                },
-                true
-            );
-            return nodeList.empty ();
-        }
-
-        TransactedFile::Page::SharedPtr TransactedFile::Internal::GetPage (
-                RandomSeekSerializer &serializer,
-                ui64 offset,
-                util::Allocator &pageAllocator) {
-            // --
-            ui32 nodeIndex = THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 0);
-            Internal *internal = (Internal *)GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 0));
-            internal = (Internal *)internal->GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 1));
-            internal = (Internal *)internal->GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 2));
-            // Leafs are segments.
-            Segment *segment = (Segment *)internal->GetNode (
-                THEKOGANS_UTIL_UI32_GET_UI8_AT_INDEX (nodeIndex, 3), true);
-            // -- We've just sparsely traversed the first 4
-            // layers of the 5 layer 64 bit index.
-            // --
-            static const std::size_t SHIFT_COUNT = TrailingZeroBitCount (Page::SIZE);
-            return segment->GetPage (
-                THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (offset, 1) >> SHIFT_COUNT,
-                offset & ~(Page::SIZE - 1),
-                pageAllocator,
-                serializer);
-            // -- After potentially creating the page in Segment::GetPage,
-            // we've arrived at the end of the 5 layer deep sparse index.
-            // This mapping is constant (with the create code being amortized
-            // accross multiple page accesses). It's O(c) where c = 5 shifts.
-        }
-
-        TransactedFile::Internal::Node *TransactedFile::Internal::GetNode (
-            std::size_t index,
-                bool segment) {
-            if (nodes[index] == nullptr) {
-                Node *node = segment ? (Node *)new Segment (index) : (Node *)new Internal (index);
-                nodes[index].Reset (node);
-                if (nodeList.empty () || nodeList.tail->index < node->index) {
-                    nodeList.push_back (node);
-                }
-                else {
-                    nodeList.for_each (
-                        [this, node] (NodeList::Callback::argument_type node_) ->
-                                NodeList::Callback::result_type {
-                            if (node_->index > node->index) {
-                                nodeList.insert (node, node_);
-                                return false;
-                            }
-                            return true;
-                        }
-                    );
-                }
-            }
-            return nodes[index].Get ();
-        }
-
         TransactedFile::TransactedFile (
                 Endianness endianness,
                 THEKOGANS_UTIL_HANDLE handle,
@@ -277,10 +70,7 @@ namespace thekogans {
                 File (endianness, handle, path),
                 position (0),
                 size (0),
-                flags (0),
-                pageAllocator (4096),
-                root (0),
-                currPageOffset (NOFFS) {
+                flags (0) {
             if (IsOpen ()) {
                 position = File::Tell ();
                 size = File::GetSize ();
@@ -305,10 +95,7 @@ namespace thekogans {
                 File (endianness),
                 position (0),
                 size (0),
-                flags (0),
-                pageAllocator (4096),
-                root (0),
-                currPageOffset (NOFFS) {
+                flags (0) {
             OpenEx (
                 path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -341,7 +128,7 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        Page::SharedPtr page_ = GetPageHelper (offset);
+                        Page::SharedPtr page_ = pageMap.GetPage (offset);
                         std::size_t pageOffset = offset - page_->offset;
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this page...
@@ -377,7 +164,7 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        Page::SharedPtr page_ = GetPageHelper (offset);
+                        Page::SharedPtr page_ = pageMap.GetPage (offset);
                         std::size_t pageOffset = offset - page_->offset;
                         std::size_t countToWrite = MIN (Page::SIZE - pageOffset, count);
                         std::memcpy (page_->data + pageOffset, ptr, countToWrite);
@@ -430,6 +217,18 @@ namespace thekogans {
             Init (allocator, registry);
         }
 
+        void TransactedFile::DeleteCache () {
+            if (IsOpen ()) {
+                LockGuard<SpinLock> guard (spinLock);
+                Flush ();
+                pageMap.Clear (true);
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+            }
+        }
+
         ui64 TransactedFile::Grow (ui64 amount) {
             if (IsOpen ()) {
                 LockGuard<SpinLock> guard (spinLock);
@@ -449,13 +248,7 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 if (size >= amount) {
                     size -= amount;
-                    root.Shrink (size);
-                    // If size is <= current page offset, currPage
-                    // will have been deleted by root.Shrink.
-                    if (currPageOffset >= size) {
-                        currPageOffset = NOFFS;
-                        currPage.Reset ();
-                    }
+                    pageMap.Shrink (size);
                     SetDirty (true);
                     return size;
                 }
@@ -463,19 +256,6 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        void TransactedFile::DeleteCache () {
-            if (IsOpen ()) {
-                Flush ();
-                root.Clear (true);
-                currPageOffset = NOFFS;
-                currPage.Reset ();
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -568,8 +348,7 @@ namespace thekogans {
             position = File::Tell ();
             size = File::GetSize ();
             flags = 0;
-            currPageOffset = NOFFS;
-            currPage.Reset ();
+            pageMap.ResetCache ();
             allocator.Reset ();
             registry.Reset ();
         }
@@ -584,8 +363,7 @@ namespace thekogans {
                 position = 0;
                 size = 0;
                 flags = 0;
-                currPageOffset = NOFFS;
-                currPage.Reset ();
+                pageMap.ResetCache ();
                 allocator.Reset ();
                 registry.Reset ();
                 File::Close ();
@@ -594,38 +372,6 @@ namespace thekogans {
 
         void TransactedFile::Flush () {
             if (IsOpen ()) {
-                if (registry != nullptr && registry->IsDirty ()) {
-                    // Can't have a registry without an allocator.
-                    assert (allocator != nullptr);
-                    allocator->SetRegistryOffset (
-                        allocator->Realloc (
-                            allocator->GetRegistryOffset (),
-                            UI32_SIZE + registry->GetSize ()));
-                    BlockRange range (*this, allocator->GetRegistryOffset (), false);
-                    range << MAGIC32 << *registry;
-                    registry->SetDirty (false);
-                }
-                if (allocator != nullptr && allocator->IsDirty ()) {
-                    // Since allocator block is special (it's first and unresizable)...
-                    SerializableHeader allocatorHeader;
-                    {
-                        // ...extract the original SerializableHeader...
-                        BlockRange range (*this, Allocator::Block::HEADER_SIZE);
-                        // skip over magic.
-                        range.Seek (UI32_SIZE, SEEK_CUR);
-                        range >> allocatorHeader;
-                    }
-                    {
-                        BlockRange range (*this, Allocator::Block::HEADER_SIZE, false);
-                        // skip over magic and serializable header.
-                        range.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
-                        // ...and force the allocator to write that particular
-                        // version of itself so as not to overflow the first block.
-                        ContextGuard guard (range, allocatorHeader);
-                        range << *allocator;
-                    }
-                    allocator->SetDirty (false);
-                }
                 if (IsDirty ()) {
                     if (IsTransactionPending ()) {
                         std::string logPath = GetLogPath (path);
@@ -651,14 +397,14 @@ namespace thekogans {
                         else {
                             log << MAGIC32 << (ui32)0 << size;
                         }
-                        root.Flush (log, true);
+                        pageMap.Flush (log, true);
                     }
                     else {
                         // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
                         // If we were to pass *this, Flush would call in to our Seek and Write.
                         // And thats not what we want!
                         TenantFile file (endianness, handle, path);
-                        root.Flush (file, false);
+                        pageMap.Flush (file, false);
                         file.SetSize (size);
                         file.Flush ();
                     }
@@ -676,13 +422,7 @@ namespace thekogans {
                 if (size != newSize) {
                     if (size > newSize) {
                         // shrinking
-                        root.Shrink (newSize);
-                        // If new size is <= current page offset,
-                        // currPage will be deleted by root.Shrink.
-                        if (currPageOffset >= newSize) {
-                            currPageOffset = NOFFS;
-                            currPage.Reset ();
-                        }
+                        pageMap.Shrink (newSize);
                     }
                     size = newSize;
                     SetDirty (true);
@@ -914,13 +654,7 @@ namespace thekogans {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
                         SetSize (File::GetSize ());
-                        // If SetSize did not delete the current page and
-                        // if it is dirty, it will be deleted by root.Clear.
-                        if (currPage != nullptr && currPage->dirty) {
-                            currPageOffset = NOFFS;
-                            currPage.Reset ();
-                        }
-                        root.Clear ();
+                        pageMap.Clear ();
                         SetDirty (false);
                     }
                     std::string logPath = GetLogPath (path);
@@ -928,10 +662,6 @@ namespace thekogans {
                         File::Delete (logPath);
                     }
                     SetTransactionPending (false);
-                    if ((allocator != nullptr && allocator->IsDirty ()) ||
-                            (registry != nullptr && registry->IsDirty ())) {
-                        Init (allocator, registry);
-                    }
                     Produce (
                         std::bind (
                             &TransactedFileEvents::OnTransactedFileTransactionAbort,
@@ -947,23 +677,7 @@ namespace thekogans {
 
         TransactedFile::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
-            return GetPageHelper (offset);
-        }
-
-        TransactedFile::Page::SharedPtr TransactedFile::GetPageHelper (ui64 offset) {
-            ui64 pageOffset = offset & ~(Page::SIZE - 1);
-            if (currPageOffset != pageOffset) {
-                currPageOffset = pageOffset;
-                // Give GetPage a \see{TenantFile} as it's interface is that of \see{File}.
-                // If we were to pass *this, GetPage would call in to our Seek and Read.
-                // And thats not what we want!
-                TenantFile file (endianness, handle, path);
-                // We take advantage of locality of reference and cache the last
-                // page accessed in the hopes that it will be accessed next and
-                // we can skip the tree walk.
-                currPage = root.GetPage (file, offset, pageAllocator);
-            }
-            return currPage;
+            return pageMap.GetPage (offset);
         }
 
         std::string TransactedFile::GetLogPath (const std::string &path) {
