@@ -128,11 +128,11 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        Page::SharedPtr page_ = pageMap.GetPage (offset);
+                        PageMap::Page::SharedPtr page_ = pageMap.GetPage (offset);
                         std::size_t pageOffset = offset - page_->offset;
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this page...
-                            MIN (Page::SIZE - pageOffset, count),
+                            MIN (pageMap.pageSize - pageOffset, count),
                             // ...and clamp it to the amount left to read in the file.
                             size - page_->offset);
                         std::memcpy (ptr, page_->data + pageOffset, countToRead);
@@ -164,9 +164,9 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        Page::SharedPtr page_ = pageMap.GetPage (offset);
+                        PageMap::Page::SharedPtr page_ = pageMap.GetPage (offset);
                         std::size_t pageOffset = offset - page_->offset;
-                        std::size_t countToWrite = MIN (Page::SIZE - pageOffset, count);
+                        std::size_t countToWrite = MIN (pageMap.pageSize - pageOffset, count);
                         std::memcpy (page_->data + pageOffset, ptr, countToWrite);
                         page_->dirty = true;
                         ptr += countToWrite;
@@ -348,7 +348,6 @@ namespace thekogans {
             position = File::Tell ();
             size = File::GetSize ();
             flags = 0;
-            pageMap.ResetCache ();
             allocator.Reset ();
             registry.Reset ();
         }
@@ -363,7 +362,6 @@ namespace thekogans {
                 position = 0;
                 size = 0;
                 flags = 0;
-                pageMap.ResetCache ();
                 allocator.Reset ();
                 registry.Reset ();
                 File::Close ();
@@ -395,7 +393,7 @@ namespace thekogans {
                             }
                         }
                         else {
-                            log << MAGIC32 << (ui32)0 << size;
+                            log << MAGIC32 << (ui32)0 << size << (ui64)pageMap.pageSize;
                         }
                         pageMap.Flush (log, true);
                     }
@@ -441,7 +439,10 @@ namespace thekogans {
                 if (GetSize () == 0) {
                     // Initialize the first block.
                     Allocator::Block block (
-                        *this, Allocator::Block::HEADER_SIZE, 0, UI32_SIZE + allocator_->GetSize ());
+                        *this,
+                        Allocator::Block::HEADER_SIZE,
+                        0,
+                        UI32_SIZE + allocator_->GetSize ());
                     // For performance reasons Range assumes that all
                     // reads and writes are within file bounds. We set
                     // the file size here so that block.Write and range
@@ -536,14 +537,15 @@ namespace thekogans {
                     log >> isClean;
                     if (isClean == 1) {
                         ui64 size;
-                        log >> size;
+                        ui64 pageSize;
+                        log >> size >> pageSize;
                         ui64 offset;
-                        HostBuffer page (Page::SIZE);
+                        HostBuffer page (pageSize);
                         for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
                             log >> offset;
-                            logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), Page::SIZE);
+                            logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
                             if (offset < size) {
-                                ui64 available = MIN (size - offset, Page::SIZE);
+                                ui64 available = MIN (size - offset, pageSize);
                                 if (available != 0) {
                                     file.Seek (offset, SEEK_SET);
                                     file.Write (page.GetDataPtr (), available);
@@ -615,14 +617,16 @@ namespace thekogans {
                             if (magic == MAGIC32) {
                                 ui32 isClean = 1;
                                 log << isClean;
-                                log >> size;
+                                ui64 size;
+                                ui64 pageSize;
+                                log >> size >> pageSize;
                                 ui64 offset;
-                                HostBuffer page (Page::SIZE);
+                                HostBuffer page (pageSize);
                                 for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
                                     log >> offset;
-                                    logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), Page::SIZE);
+                                    logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
                                     if (offset < size) {
-                                        ui64 available = MIN (size - offset, Page::SIZE);
+                                        ui64 available = MIN (size - offset, pageMap.pageSize);
                                         if (available != 0) {
                                             file.Seek (offset, SEEK_SET);
                                             file.Write (page.GetDataPtr (), available);
@@ -675,10 +679,27 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
+        PageMap::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap.GetPage (offset);
         }
+
+#if 0
+        void TransactedFile::PutPage (
+                ui64 offset,
+                PageMap::Page::SharedPtr page,
+                std::size_t count) {
+            if (count > 0) {
+                LockGuard<SpinLock> guard (spinLock);
+                page->dirty = true;
+                offset += count;
+                if (size < offset) {
+                    size = offset;
+                }
+                SetDirty (true);
+            }
+        }
+#endif
 
         std::string TransactedFile::GetLogPath (const std::string &path) {
             std::string name = Path (path).GetFullFileName ();

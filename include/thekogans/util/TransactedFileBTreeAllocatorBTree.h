@@ -298,6 +298,10 @@ private:
         /// Write the node.
         /// \param[in] serializer \see{Serializer} to write the node to.
         virtual void Write (Serializer &serializer) override;
+
+        /// \brief
+        /// Node is neither copy constructable, nor assignable.
+        THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Node)
     } *rootNode;
 
 public:

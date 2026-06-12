@@ -109,7 +109,7 @@ namespace thekogans {
                         UI32_SIZE + GetSize ()));
             }
             else if (phase == TransactedFile::COMMIT_PHASE_2) {
-                BlockRange range (*file, allocator->GetRegistryOffset (), false);
+                TransactedFile::BlockRange range (*file, allocator->GetRegistryOffset (), false);
                 range << MAGIC32 << *this;
                 SetDirty (false);
             }
@@ -117,7 +117,7 @@ namespace thekogans {
 
         void TransactedFileBTreeRegistry::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            BlockRange range (*file, file->GetAllocator ()->GetRegistryOffset ());
+            TransactedFile::BlockRange range (*file, file->GetAllocator ()->GetRegistryOffset ());
             ui32 magic;
             range >> magic;
             if (magic == MAGIC32) {

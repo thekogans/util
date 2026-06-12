@@ -37,7 +37,7 @@ namespace thekogans {
         /// TransactedFileBTreeAllocator is a general purpose \see{TransactedFile::Allocator}.
         /// It uses a hand tuned \see{TransactedFileBTreeAllocator::BTree} to manage the free list.
         /// It is specifically tuned and is very sesitive to the fact that blocks that straddle
-        /// page boundaries (see \see{TransactedFile::Page::SIZE} incur a heavy performance penalty
+        /// page boundaries (see \see{PageMap::pageSize} incur a heavy performance penalty
         /// (see \see{TransactedFile::Range}). Every attempt is made to avoid that.
         /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :

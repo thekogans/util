@@ -44,9 +44,9 @@ namespace thekogans {
                 ++file.stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ui64 pageOffset = offset & (Page::SIZE - 1);
+            ui64 pageOffset = offset & (file.GetPageSize () - 1);
             // Check to see if the range straddles a page boundary...
-            if (length > Page::SIZE - pageOffset) {
+            if (length > file.GetPageSize () - pageOffset) {
                 // ... it does. Allocate a backing buffer.
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
@@ -76,6 +76,7 @@ namespace thekogans {
                     file.WriteEx (offset, data, position);
                 }
                 else {
+                    //file.PutPage (offset, page, position);
                     page->dirty = true;
                     file.SetDirty (true);
                 }

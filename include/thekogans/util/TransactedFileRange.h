@@ -30,9 +30,7 @@
     /// page boundary it needs to allocate a local buffer to satisfy the fact
     /// range reads and writes do no boundary checking (hence the performance boost).
     /// If a large percentage of your ranges have to allocate the buffer it means
-    /// that \see{TransactedFile::Page::SIZE} size is not properly tuned for your
-    /// application. Follow the instructions in \see{TransactedFile::Page::SIZE}
-    /// to change the page size.
+    /// that \see{PageMap::bitsPerPage} is not properly tuned for your application.
     struct Stats {
         /// \brief
         /// A count of \see{Range} (reading == true) that have been created for this file.
@@ -67,10 +65,10 @@
 /// the file's 64 bit address space is chunked in to hierarchical pages,
 /// if the requested range straddles a page boundary, a range buffer is
 /// allocated to gurantee sequential access. Use \see{Stats} to tune the
-/// \see{Page::SIZE} and \see{Page::SHIFT_COUNT}. Because range maintains
-/// it's own set of state variables in to the file, if you create nonoveralapping
-/// ranges, you can access the file from multiple threads without the need
-/// for synchronization.
+/// \see{PageMap::bitsPerPage}. Because range maintains it's own set of
+/// state variables in to the file, if you create nonoveralapping ranges,
+/// you can access the file from multiple threads without the need for
+/// synchronization.
 /// IMPORTANT: Range does no bounds checking on it's inputs. That's what
 /// \see{SafeRange} (below) is for.
 struct _LIB_THEKOGANS_UTIL_DECL Range : public RandomSeekSerializer {
@@ -100,7 +98,7 @@ protected:
     std::size_t position;
     /// \brief
     /// \see{TransactedFile::Page} associated with this range.
-    TransactedFile::Page::SharedPtr page;
+    PageMap::Page::SharedPtr page;
     /// \brief
     /// true == We straddle a \see{TransactedFile::Page} page boundary.
     /// We allocated data and need to copy and free it in

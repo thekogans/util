@@ -406,6 +406,15 @@ public:
     inline PtrType GetRegistryOffset () const {
         return header.registryOffset;
     }
+    /// \brief
+    /// Set the header.registryOffset.
+    /// \param[in] registryOffset New registryOffset to set.
+    inline void SetRegistryOffset (PtrType registryOffset) {
+        if (header.registryOffset != registryOffset) {
+            header.registryOffset = registryOffset;
+            SetDirty (true);
+        }
+    }
 
     /// \brief
     /// Alloc a block.
@@ -430,16 +439,6 @@ public:
         bool moveData = true) = 0;
 
 protected:
-    /// \brief
-    /// Set the header.registryOffset.
-    /// \param[in] registryOffset New registryOffset to set.
-    inline void SetRegistryOffset (PtrType registryOffset) {
-        if (header.registryOffset != registryOffset) {
-            header.registryOffset = registryOffset;
-            SetDirty (true);
-        }
-    }
-
     // Serializable
     /// \brief
     /// Read the \see{Header}.

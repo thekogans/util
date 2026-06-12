@@ -105,8 +105,8 @@ namespace thekogans {
                     //               |               |
                     //          result.second  page boundary
                     //
-                    // ui64 pageOffset = result.second & (TransactedFile::Page::SIZE - 1);
-                    // ui64 remainder = TransactedFile::Page::SIZE - pageOffset;
+                    // ui64 pageOffset = result.second & (file->GetPageSize () - 1);
+                    // ui64 remainder = file->GetPageSize () - pageOffset;
                     // prev.offset = result.second;
                     // prev.size = remainder - Block::HEADER_SIZE;
                     //
@@ -125,10 +125,10 @@ namespace thekogans {
                     ui64 remainder = result.first - size;
                     if (remainder >= MIN_BLOCK_SIZE) {
                         // Check to see if the block would straddle a page boundary...
-                        ui64 pageOffset = offset & (TransactedFile::Page::SIZE - 1);
-                        if (pageOffset + size + Block::HEADER_SIZE > TransactedFile::Page::SIZE) {
+                        ui64 pageOffset = offset & (file->GetPageSize () - 1);
+                        if (pageOffset + size + Block::HEADER_SIZE > file->GetPageSize ()) {
                             // ...it would. Now check to see if the block would fit aligned...
-                            remainder = TransactedFile::Page::SIZE - pageOffset;
+                            remainder = file->GetPageSize () - pageOffset;
                             if (remainder >= MIN_USER_DATA_SIZE + Block::HEADER_SIZE &&
                                     result.first >= remainder + size + Block::HEADER_SIZE) {
                                 // ...it would. Add a filler block.
@@ -177,9 +177,7 @@ namespace thekogans {
                     // Ranges that straddle page boundaries incur an
                     // allocation/copy/deallocation penalty.
                     // Calculate the remainder left in the last page.
-                    ui64 remainder =
-                        TransactedFile::Page::SIZE -
-                        (file->GetSize () & (TransactedFile::Page::SIZE - 1));
+                    ui64 remainder = file->GetPageSize () - (file->GetSize () & (file->GetPageSize () - 1));
                     // If we don't fit in to remainder and, if the remainder
                     // can be turned in to another block and we fit into one
                     // page, all is well. Go ahead and create a spacer block
@@ -187,7 +185,7 @@ namespace thekogans {
                     // there can be no gaps between blocks, we will straddle
                     // a page boundary.
                     if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
-                            size <= (TransactedFile::Page::SIZE - Block::SIZE)) {
+                            size <= (file->GetPageSize () - Block::SIZE)) {
                         Block prev (
                             *file,
                             file->Grow (remainder) + Block::HEADER_SIZE,
@@ -407,18 +405,18 @@ namespace thekogans {
                 SerializableHeader allocatorHeader;
                 {
                     // ...extract the original SerializableHeader...
-                    BlockRange range (*file, Allocator::Block::HEADER_SIZE);
+                    TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
                     // skip over magic.
                     range.Seek (UI32_SIZE, SEEK_CUR);
                     range >> allocatorHeader;
                 }
                 {
-                    BlockRange range (*file, Allocator::Block::HEADER_SIZE, false);
+                    TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE, false);
                     // skip over magic and serializable header.
                     range.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
                     // ...and force the allocator to write that particular
                     // version of itself so as not to overflow the first block.
-                    ContextGuard guard (range, allocatorHeader);
+                    Serializer::ContextGuard guard (range, allocatorHeader);
                     range << *this;
                 }
                 SetDirty (false);
@@ -427,7 +425,7 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            BlockRange range (*file, Allocator::Block::HEADER_SIZE);
+            TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
             ui32 magic;
             range >> magic;
             if (magic == MAGIC32) {

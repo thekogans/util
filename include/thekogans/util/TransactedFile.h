@@ -284,6 +284,10 @@ namespace thekogans {
                 return registry;
             }
 
+            inline std::size_t GetPageSize () const {
+                return pageMap.pageSize;
+            }
+
             /// \brief
             /// Thread safe version of Read.
             /// \param[in] offset Start of range.
@@ -538,7 +542,7 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            Page::SharedPtr GetPage (ui64 offset);
+            PageMap::Page::SharedPtr GetPage (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create
