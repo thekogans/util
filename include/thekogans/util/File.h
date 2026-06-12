@@ -51,7 +51,6 @@ namespace thekogans {
         ///
         /// \brief
         /// File is a platform independent file system file.
-
         struct _LIB_THEKOGANS_UTIL_DECL File : public RandomSeekSerializer {
             /// \brief
             /// File participates in the \see{DynamicCreatable}
@@ -290,7 +289,6 @@ namespace thekogans {
         /// mode will be 0644. This is fine for most cases but might not
         /// be appropriate for some. If you need to control the mode of
         /// the created file use File instead.
-
         struct _LIB_THEKOGANS_UTIL_DECL SimpleFile : public File {
             /// \brief
             /// Default ctor.
@@ -350,7 +348,6 @@ namespace thekogans {
         /// \brief
         /// As its name implies, ReadOnlyFile is a convenient
         /// platform independent read only file.
-
         struct _LIB_THEKOGANS_UTIL_DECL ReadOnlyFile : public SimpleFile {
             /// \brief
             /// ctor.
@@ -371,7 +368,6 @@ namespace thekogans {
         /// \brief
         /// TenantFile wraps a raw file handle to provide the features
         /// of File without taking ownership.
-
         struct _LIB_THEKOGANS_UTIL_DECL TenantFile : public File {
             /// \brief
             /// ctor.
@@ -379,9 +375,9 @@ namespace thekogans {
             /// \param[in] handle File handle.
             /// \param[in] path File path.
             TenantFile (
-                Endianness endianness,
-                THEKOGANS_UTIL_HANDLE handle,
-                const std::string &path) :
+                Endianness endianness = HostEndian,
+                THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
+                const std::string &path = std::string ()) :
                 File (endianness, handle, path) {}
             /// \brief
             /// dtor.

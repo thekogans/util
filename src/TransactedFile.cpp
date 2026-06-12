@@ -70,7 +70,8 @@ namespace thekogans {
                 File (endianness, handle, path),
                 position (0),
                 size (0),
-                flags (0) {
+                flags (0),
+                pageMap (proxy) {
             if (IsOpen ()) {
                 position = File::Tell ();
                 size = File::GetSize ();
@@ -95,7 +96,8 @@ namespace thekogans {
                 File (endianness),
                 position (0),
                 size (0),
-                flags (0) {
+                flags (0),
+                pageMap (proxy) {
             OpenEx (
                 path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -348,6 +350,8 @@ namespace thekogans {
             position = File::Tell ();
             size = File::GetSize ();
             flags = 0;
+            proxy.handle = handle;
+            proxy.path = path;
             allocator.Reset ();
             registry.Reset ();
         }
@@ -362,6 +366,8 @@ namespace thekogans {
                 position = 0;
                 size = 0;
                 flags = 0;
+                proxy.handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+                proxy.path.clear ();
                 allocator.Reset ();
                 registry.Reset ();
                 File::Close ();
@@ -395,16 +401,12 @@ namespace thekogans {
                         else {
                             log << MAGIC32 << (ui32)0 << size << (ui64)pageMap.pageSize;
                         }
-                        pageMap.Flush (log, true);
+                        pageMap.Log (log);
                     }
                     else {
-                        // Give Flush a \see{TenantFile} as it's interface is that of \see{File}.
-                        // If we were to pass *this, Flush would call in to our Seek and Write.
-                        // And thats not what we want!
-                        TenantFile file (endianness, handle, path);
-                        pageMap.Flush (file, false);
-                        file.SetSize (size);
-                        file.Flush ();
+                        pageMap.Flush ();
+                        proxy.SetSize (size);
+                        proxy.Flush ();
                     }
                     SetDirty (false);
                 }
@@ -457,10 +459,12 @@ namespace thekogans {
                 range >> magic;
                 if (magic == MAGIC32) {
                     // File is host endian.
+                    proxy.endianness = HostEndian;
                 }
                 else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
                     // File is guest endian.
                     endianness = GuestEndian;
+                    proxy.endianness = GuestEndian;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -610,7 +614,6 @@ namespace thekogans {
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
                         {
-                            TenantFile file (endianness, handle, path);
                             SimpleFile log (endianness, logPath, SimpleFile::ReadWrite);
                             ui32 magic;
                             log >> magic;
@@ -628,13 +631,13 @@ namespace thekogans {
                                     if (offset < size) {
                                         ui64 available = MIN (size - offset, pageMap.pageSize);
                                         if (available != 0) {
-                                            file.Seek (offset, SEEK_SET);
-                                            file.Write (page.GetDataPtr (), available);
+                                            proxy.Seek (offset, SEEK_SET);
+                                            proxy.Write (page.GetDataPtr (), available);
                                         }
                                     }
                                 }
-                                file.SetSize (size);
-                                file.Flush ();
+                                proxy.SetSize (size);
+                                proxy.Flush ();
                             }
                             else {
                                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

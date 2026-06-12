@@ -198,6 +198,7 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
+            TenantFile proxy;
             PageMap pageMap;
             /// \brief
             /// For use by \see{Transaction}.
