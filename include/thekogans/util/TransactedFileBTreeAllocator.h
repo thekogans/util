@@ -42,7 +42,6 @@ namespace thekogans {
         /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
                 public TransactedFile::Allocator,
-                public Subscriber<TransactedFileEvents>,
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// TransactedFileBTreeAllocator is a \see{Serializable}.

@@ -180,8 +180,7 @@ namespace thekogans {
             if (pages[pageIndex] == nullptr) {
                 // We don't align the page boundary as it's a fairly complex
                 // structure with internal machinery that's hidden from view
-                // (vptr tables...). Instead we pass a properly aligned buffer
-                // for it to use.
+                // (vptr tables...).
                 Page *page = new Page (pageMap, pageIndex, pageOffset);
                 pages[pageIndex].Reset (page);
                 // Insert the new page in to the ordered (on index) page list.
@@ -383,6 +382,15 @@ namespace thekogans {
                 lastGetPageOffset = NOFFS;
                 lastGetPage.Reset ();
             }
+        }
+
+        PageMap::BaseType PageMap::BitMask (std::size_t count) {
+            BaseType mask = 0;
+            while (count--) {
+                mask <<= 1;
+                ++mask;
+            }
+            return mask;
         }
 
     } // namespace util

@@ -58,7 +58,9 @@
 /// | ... |
 /// +-----+
 ///   var
-struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
+struct _LIB_THEKOGANS_UTIL_DECL Allocator :
+        public Serializable,
+        public TransactionParticipant {
     /// \brief
     /// Allocator is a \see{util::DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Allocator)
@@ -302,9 +304,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
     };
 
 protected:
-    /// \brief
-    /// \see{TransactedFile} this allocator is servicing.
-    TransactedFile::SharedPtr file;
     /// \struct TransactedFile::Allocator::Header TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
     ///
@@ -374,6 +373,7 @@ public:
     /// ctor.
     /// \param[in] secure true == Clear unused space in blocks.
     Allocator (bool secure = false) :
+        TransactionParticipant (nullptr),
         header (secure ? Header::FLAGS_SECURE : 0) {}
 
     /// \brief
@@ -385,13 +385,6 @@ public:
     /// MIN_USER_DATA_SIZE above means that the smallest block we can
     /// allocate is 64 bytes.
     static const std::size_t MIN_BLOCK_SIZE = Block::SIZE + MIN_USER_DATA_SIZE;
-
-    /// \brief
-    /// Return the \see{TransactedFile}.
-    /// \return \see{TransactedFile}.
-    inline TransactedFile::SharedPtr GetFile () const {
-        return file;
-    }
 
     /// \brief
     /// Return true if secure.

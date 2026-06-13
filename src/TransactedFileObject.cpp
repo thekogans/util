@@ -21,32 +21,6 @@
 namespace thekogans {
     namespace util {
 
-        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr /*file*/,
-                int phase) noexcept {
-            THEKOGANS_UTIL_TRY {
-                assert (IsDirty ());
-                if (phase == COMMIT_PHASE_1) {
-                    Alloc ();
-                }
-                else if (phase == COMMIT_PHASE_2) {
-                    Flush ();
-                    SetDirty (false);
-                }
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        void TransactedFile::TransactionParticipant::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr /*file*/) noexcept {
-            THEKOGANS_UTIL_TRY {
-                assert (IsDirty ());
-                Reload ();
-                SetDirty (false);
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
         bool TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
             // Only subscribe @the transition from clean to dirty.
             if (!flags.Set (FLAGS_DIRTY, dirty) && dirty) {
@@ -129,6 +103,32 @@ namespace thekogans {
                 BlockRange range (*file, offset);
                 Read (range);
             }
+        }
+
+        void TransactedFile::Object::OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr /*file*/,
+                int phase) noexcept {
+            THEKOGANS_UTIL_TRY {
+                assert (IsDirty ());
+                if (phase == COMMIT_PHASE_1) {
+                    Alloc ();
+                }
+                else if (phase == COMMIT_PHASE_2) {
+                    Flush ();
+                    SetDirty (false);
+                }
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void TransactedFile::Object::OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr /*file*/) noexcept {
+            THEKOGANS_UTIL_TRY {
+                assert (IsDirty ());
+                Reload ();
+                SetDirty (false);
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::SerializableObject)

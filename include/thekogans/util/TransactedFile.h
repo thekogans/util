@@ -182,6 +182,71 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
             };
 
+            /// \struct TransactedFile::TransactionParticipant TransactedFile.h
+            /// thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            /// TransactionParticipants are objects that listen to
+            /// \see{TransactedFileEvents} and are able to flush and reload
+            /// themselves to and from a \see{TransactedFile}.
+            struct _LIB_THEKOGANS_UTIL_DECL TransactionParticipant :
+                    public Subscriber<TransactedFileEvents> {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactionParticipant)
+
+            protected:
+                /// \brief
+                /// \see{TransactedFile} whose \see{TransactedFileEvents}
+                /// we're participants of.
+                TransactedFile::SharedPtr file;
+                /// \brief
+                /// Set if the internal cache is dirty.
+                static const ui32 FLAGS_DIRTY = 1;
+                /// \brief
+                /// Combination of the above flags.
+                Flags32 flags;
+
+            public:
+                /// \brief
+                /// ctor.
+                /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
+                TransactionParticipant (TransactedFile::SharedPtr file_) :
+                    file (file_),
+                    flags (0) {}
+                /// \brief
+                /// dtor.
+                virtual ~TransactionParticipant () {}
+
+                /// \brief
+                /// Return the file.
+                /// \return file.
+                inline TransactedFile::SharedPtr GetFile () const {
+                    return file;
+                }
+
+                /// \brief
+                /// Return dirty.
+                /// \return dirty.
+                inline bool IsDirty () const {
+                    return flags.Test (FLAGS_DIRTY);
+                }
+                /// \brief
+                /// Set the dirty flag.
+                /// \param[in] dirty true == dirty, false == clean.
+                /// \return true == the state has transitioned from clean to dirty.
+                /// IMPORTANT SEMANTICS: SetDirty will return true only on the transition
+                /// from !dirty to dirty. Subsequint calls to SetDirty (true) while
+                /// already dirty will return false. This is meant so that derivatives
+                /// of TransactionParticipant can call SetDirty and perform whatever
+                /// one time transition processing they need (See \see{Object} below).
+                virtual bool SetDirty (bool dirty);
+
+                /// \brief
+                /// TransactionParticipant is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
+            };
+
         private:
             /// \brief
             /// File size.

@@ -43,12 +43,13 @@ namespace thekogans {
         /// DEFAULT_BITS_PER_LEVEL = 8
         /// DEFAULT_BITS_PER_PAGE = 20
         ///
+        /// msb                                                                                                      lsb
         /// |------------------------------------------- bitsPerOffset -----------------------------------------------|
         /// |                                                    |------------------ bitsPerSegment ------------------|
         /// +------------+---------------------------------------+-----------------------+----------------------------+
         /// |bitsPerLevel|                                       |                       |-------- bitsPerPage -------|
         /// +------------+---------------------------------------+-----------------------+----------------------------+
-        /// 0            7                                      31                      45                           63
+        /// 63           56                                      31                      19                           0
         ///
         /// This will cover the entire 64 bit address space with 4 levels of 4GB segments, each containing 4K of 1MB pages.
         ///
@@ -64,12 +65,13 @@ namespace thekogans {
         /// DEFAULT_BITS_PER_LEVEL = 12
         /// DEFAULT_BITS_PER_PAGE = 22
         ///
+        /// msb                                                                                                         lsb
         /// |--------------------------------...----------- bitsPerOffset -----------------------------------------------|
         /// |                                                       |------------------ bitsPerSegment ------------------|
         /// +------------+-------------------...--------------------+-----------------------+----------------------------+
         /// |bitsPerLevel|                                          |                       |-------- bitsPerPage -------|
         /// +------------+-------------------...--------------------+-----------------------+----------------------------+
-        /// 0           11                                         95                     105                          127
+        /// 127          116                                        31                      21                           0
         ///
         /// This will cover the entire 128 bit address space with 8 levels of 4GB segments, each containing 1K of 4MB pages.
         ///
@@ -433,14 +435,7 @@ namespace thekogans {
             void Shrink (BaseType newSize);
 
         private:
-            static BaseType BitMask (std::size_t count) {
-                BaseType mask = 0;
-                while (count--) {
-                    mask <<= 1;
-                    ++mask;
-                }
-                return mask;
-            }
+            static BaseType BitMask (std::size_t count);
 
             /// \brief
             /// PageMap is neither copy constructable, nor assignable.

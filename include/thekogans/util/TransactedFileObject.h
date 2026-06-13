@@ -15,103 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-/// \struct TransactedFile::TransactionParticipant TransactedFile.h
-/// thekogans/util/TransactedFile.h
-///
-/// \brief
-/// TransactionParticipants are objects that listen to
-/// \see{TransactedFileEvents} and are able to flush and reload
-/// themselves to and from a \see{TransactedFile}.
-struct _LIB_THEKOGANS_UTIL_DECL TransactionParticipant :
-        public Subscriber<TransactedFileEvents> {
-    /// \brief
-    /// Declare \see{RefCounted} pointers.
-    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactionParticipant)
-
-protected:
-    /// \brief
-    /// \see{TransactedFile} whose \see{TransactedFileEvents}
-    /// we're participants of.
-    TransactedFile::SharedPtr file;
-    /// \brief
-    /// Set if the internal cache is dirty.
-    static const ui32 FLAGS_DIRTY = 1;
-    /// \brief
-    /// Combination of the above flags.
-    Flags32 flags;
-
-public:
-    /// \brief
-    /// ctor.
-    /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
-    TransactionParticipant (TransactedFile::SharedPtr file_) :
-        file (file_),
-        flags (0) {}
-    /// \brief
-    /// dtor.
-    virtual ~TransactionParticipant () {}
-
-    /// \brief
-    /// Return the file.
-    /// \return file.
-    inline TransactedFile::SharedPtr GetFile () const {
-        return file;
-    }
-
-    /// \brief
-    /// Return dirty.
-    /// \return dirty.
-    inline bool IsDirty () const {
-        return flags.Test (FLAGS_DIRTY);
-    }
-    /// \brief
-    /// Set the dirty flag.
-    /// \param[in] dirty true == dirty, false == clean.
-    /// \return true == the state has transitioned from clean to dirty.
-    /// IMPORTANT SEMANTICS: SetDirty will return true only on the transition
-    /// from !dirty to dirty. Subsequint calls to SetDirty (true) while
-    /// already dirty will return false. This is meant so that derivatives
-    /// of TransactionParticipant can call SetDirty and perform whatever
-    /// one time transition processing they need (See \see{Object} below).
-    virtual bool SetDirty (bool dirty);
-
-    // NOTE: The following API abstracts out the protocol called for in
-    // OnTransactedFileTransactionCommit, OnTransactedFileTransactionAbort
-    // and Delete.
-
-    /// \brief
-    /// Allocate space from file.
-    virtual void Alloc () = 0;
-    /// \brief
-    /// Free the on disk image.
-    virtual void Free () = 0;
-    /// \brief
-    /// Flush the internal cache to file.
-    virtual void Flush () = 0;
-    /// \brief
-    /// Reload the internal cache from file.
-    virtual void Reload () = 0;
-
-protected:
-    // TransactedFileEvents
-    /// \brief
-    /// Transaction is commiting. Flush the internal cache to file.
-    /// \param[in] file \see{TransactedFile} commiting the transaction.
-    /// \param[in] phase \see{TransactedFile} implements two phase commit.
-    virtual void OnTransactedFileTransactionCommit (
-        TransactedFile::SharedPtr /*file*/,
-        int phase) noexcept override;
-    /// \brief
-    /// Transaction is aborting. Reload the internal cache from file.
-    /// \param[in] file \see{TransactedFile} aborting the transaction.
-    virtual void OnTransactedFileTransactionAbort (
-        TransactedFile::SharedPtr /*file*/) noexcept override;
-
-    /// \brief
-    /// TransactionParticipant is neither copy constructable, nor assignable.
-    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
-};
-
 /// \brief
 /// Forward declaration of \see{Object} needed by \see{ObjectEvents}.
 struct Object;
@@ -208,21 +111,35 @@ public:
 
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
-    virtual void Alloc () override;
+    virtual void Alloc ();
     /// \brief
     /// Default free implementation for single block objects.
     /// If your objects contain internal pointers to other
     /// blocks you will need to implement this method and
     /// properly free the containing blocks.
-    virtual void Free () override;
+    virtual void Free ();
     /// \brief
     /// Flush the internal cache to file.
-    virtual void Flush () override;
+    virtual void Flush ();
     /// \brief
     /// Reload the internal cache from file.
-    virtual void Reload () override;
+    virtual void Reload ();
 
 protected:
+    // TransactedFileEvents
+    /// \brief
+    /// Transaction is commiting. Flush the internal cache to file.
+    /// \param[in] file \see{TransactedFile} commiting the transaction.
+    /// \param[in] phase \see{TransactedFile} implements two phase commit.
+    virtual void OnTransactedFileTransactionCommit (
+        TransactedFile::SharedPtr /*file*/,
+        int phase) noexcept override;
+    /// \brief
+    /// Transaction is aborting. Reload the internal cache from file.
+    /// \param[in] file \see{TransactedFile} aborting the transaction.
+    virtual void OnTransactedFileTransactionAbort (
+        TransactedFile::SharedPtr /*file*/) noexcept override;
+
     /// \brief
     /// Optimization for Alloc below. If an object declares
     /// itself as fixed size, Alloc will not check the object

@@ -59,31 +59,6 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
-            /// Set if the internal cache is dirty.
-            static const ui32 FLAGS_DIRTY = 1;
-            /// \brief
-            /// Combination of the above flags.
-            Flags32 flags;
-
-            /// \brief
-            /// ctor.
-            Serializable () :
-                flags (0) {}
-
-            /// \brief
-            /// Return true if internal cache is dirty.
-            /// \return true == internal cache is dirty.
-            inline bool IsDirty () const {
-                return flags.Test (FLAGS_DIRTY);
-            }
-            /// \brief
-            /// Set the dirty flag.
-            /// \param[in] dirty true == dirty, false == clean.
-            inline void SetDirty (bool dirty) {
-                flags.Set (FLAGS_DIRTY, dirty);
-            }
-
-            /// \brief
             /// Given a context, return the header needed to insert this
             /// serializable in to a \see{Serializer}.
             /// \param[in] context Partially filled in \see{SerializableHeader}.
