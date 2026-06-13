@@ -184,9 +184,6 @@ namespace thekogans {
 
         private:
             /// \brief
-            /// Current read/write position.
-            i64 position;
-            /// \brief
             /// File size.
             ui64 size;
             /// \brief
@@ -198,7 +195,6 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
-            TenantFile proxy;
             PageMap pageMap;
             /// \brief
             /// For use by \see{Transaction}.
@@ -259,7 +255,7 @@ namespace thekogans {
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
             #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags = O_RDWR | O_CREAT,
+                i32 flags_ = O_RDWR | O_CREAT,
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 Allocator::SharedPtr allocator = nullptr,
@@ -290,6 +286,39 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Open or create the file.
+            /// NOT thread safe.
+            /// \param[in] path Path to file to open.
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] dwDesiredAccess Windows CreateFile parameter.
+            /// \param[in] dwShareMode Windows CreateFile parameter.
+            /// \param[in] dwCreationDisposition Windows CreateFile parameter.
+            /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
+        #else // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] flags_ POSIX open parameter.
+            /// \param[in] mode POSIX open parameter.
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// \param[in] allocator \see{Allocator} to attach to this file.
+            /// \param[in] registry \see{Registry} to attach to this file.
+            void OpenEx (
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
+                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
+                DWORD dwCreationDisposition = OPEN_EXISTING,
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags_ = O_RDWR,
+                i32 mode = S_IRUSR | S_IWUSR,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator = nullptr,
+                Registry::SharedPtr registry = nullptr);
+            /// \brief
+            /// Close the file.
+            /// NOT thread safe.
+            void CloseEx ();
+
+            /// \brief
             /// Thread safe version of Read.
             /// \param[in] offset Start of range.
             /// \param[out] buffer Where to place the bytes.
@@ -311,33 +340,9 @@ namespace thekogans {
                 std::size_t count);
 
             /// \brief
-            /// Open or create the file.
+            /// Flush pending writes to disk.
             /// NOT thread safe.
-            /// \param[in] path Path to file to open.
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] dwDesiredAccess Windows CreateFile parameter.
-            /// \param[in] dwShareMode Windows CreateFile parameter.
-            /// \param[in] dwCreationDisposition Windows CreateFile parameter.
-            /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] flags POSIX open parameter.
-            /// \param[in] mode POSIX open parameter.
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] allocator_ \see{Allocator} to attach to this file.
-            /// \param[in] registry_ \see{Registry} to attach to this file.
-            void OpenEx (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
-                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
-                DWORD dwCreationDisposition = OPEN_EXISTING,
-                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags = O_RDWR,
-                i32 mode = S_IRUSR | S_IWUSR,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr registry = nullptr);
+            void FlushEx ();
 
             /// \brief
             /// Flush dirty pages and delete the cache.
@@ -356,120 +361,14 @@ namespace thekogans {
             /// \return New file size.
             ui64 Shrink (ui64 amount);
 
-            // Serializer
-            /// NOTE: This is a legacy \see{File} api which is inherently NOT thread safe.
-            /// Even if you would make all apis thread safe, the design (shared position)
-            /// is such as to make certain operations (Seek/Read/Write) imposible as they
-            /// would not be atomic without locking across multiple system calls. Therefore,
-            /// I provide the *Ex versions of Read and Write. These apis are left as being
-            /// NOT thread safe.
-
-            /// \brief
-            /// Read bytes from a file.
-            /// NOT thread safe.
-            /// \param[out] buffer Where to place the bytes.
-            /// \param[in] count Number of bytes to read.
-            /// \return Number of bytes actually read.
-            virtual std::size_t Read (
-                void *buffer,
-                std::size_t count) override;
-            /// \brief
-            /// Write bytes to a file.
-            /// NOT thread safe.
-            /// \param[in] buffer Where the bytes come from.
-            /// \param[in] count Number of bytes to write.
-            /// \return Number of bytes actually written.
-            virtual std::size_t Write (
-                const void *buffer,
-                std::size_t count) override;
-
-            // RandomSeekSerializer
-            /// \brief
-            /// Return the file pointer position.
-            /// NOT thread safe.
-            /// \return The file pointer position.
-            virtual i64 Tell () const override {
-                return position;
-            }
-            /// \brief
-            /// Reposition the file pointer.
-            /// NOT thread safe.
-            /// \param[in] offset Offset to move relative to fromWhere.
-            /// \param[in] fromWhere SEEK_SET, SEEK_CUR or SEEK_END.
-            /// \return The new file pointer position.
-            virtual i64 Seek (
-                i64 offset,
-                i32 fromWhere) override;
-
             // File
-            /// \brief
-            /// Open the file.
-            /// NOT thread safe.
-            /// \param[in] path File path.
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] dwDesiredAccess Windows CreateFile parameter.
-            /// \param[in] dwShareMode Windows CreateFile parameter.
-            /// \param[in] dwCreationDisposition Windows CreateFile parameter.
-            /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] flags POSIX open parameter.
-            /// \param[in] mode POSIX open parameter.
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            virtual void Open (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
-                DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
-                DWORD dwCreationDisposition = OPEN_EXISTING,
-                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL) override;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags = O_RDWR,
-                i32 mode = S_IRUSR | S_IWUSR) override;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Close the file.
-            /// NOT thread safe.
-            virtual void Close () override;
-            /// \brief
-            /// Flush pending writes to disk.
-            /// NOT thread safe.
-            virtual void Flush () override;
-
-            /// \brief
-            /// Return number of bytes available for reading.
-            /// NOT thread safe.
-            /// \return Number of bytes available for reading.
-            virtual ui64 GetDataAvailableForReading () const override {
-                return size > (ui64)position ? size - (ui64)position : 0;
-            }
-
             /// \brief
             /// Return file size in bytes.
             /// NOT thread safe.
             /// \return File size in bytes.
-            virtual ui64 GetSize () const override {
+            inline ui64 GetSizeEx () const {
                 return size;
             }
-            /// \brief
-            /// Truncates or expands the file.
-            /// NOT Thread safe.
-            /// \param[in] newSize New size to set the file to.
-            virtual void SetSize (ui64 newSize) override;
-
-            /// \brief
-            /// Lock a range of bytes in the file.
-            /// Since there's no direct access to the file,
-            /// TransactedFile does not support region locking.
-            /// \region[in] region region to lock.
-            /// \region[in] exclusive lock for exclusive access.
-            virtual void LockRegion (
-                const Region & /*region*/,
-                bool /*exclusive*/) override {}
-            /// \brief
-            /// Unlock a range of bytes in the file.
-            /// See comment above LockRegion.
-            /// \region[in] region region to unlock.
-            virtual void UnlockRegion (const Region & /*region*/) override {}
 
         private:
             /// \brief

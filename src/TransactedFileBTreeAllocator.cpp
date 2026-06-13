@@ -177,7 +177,7 @@ namespace thekogans {
                     // Ranges that straddle page boundaries incur an
                     // allocation/copy/deallocation penalty.
                     // Calculate the remainder left in the last page.
-                    ui64 remainder = file->GetPageSize () - (file->GetSize () & (file->GetPageSize () - 1));
+                    ui64 remainder = file->GetPageSize () - (file->GetSizeEx () & (file->GetPageSize () - 1));
                     // If we don't fit in to remainder and, if the remainder
                     // can be turned in to another block and we fit into one
                     // page, all is well. Go ahead and create a spacer block

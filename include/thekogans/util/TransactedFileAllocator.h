@@ -265,7 +265,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public Serializable {
         /// \param[in] file \see{TransactedFile} where the block resides.
         /// \return true == last block in the heap.
         inline bool IsLast () const {
-            return GetOffset () + GetSize () + HEADER_SIZE == file.GetSize ();
+            return GetOffset () + GetSize () + HEADER_SIZE == file.GetSizeEx ();
         }
 
         /// \brief

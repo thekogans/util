@@ -68,13 +68,11 @@ namespace thekogans {
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry) :
                 File (endianness, handle, path),
-                position (0),
                 size (0),
                 flags (0),
-                pageMap (proxy) {
+                pageMap (*this) {
             if (IsOpen ()) {
-                position = File::Tell ();
-                size = File::GetSize ();
+                size = GetSize ();
                 Init (allocator, registry);
             }
         }
@@ -88,16 +86,15 @@ namespace thekogans {
                 DWORD dwCreationDisposition,
                 DWORD dwFlagsAndAttributes,
             #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
+                i32 flags_,
                 i32 mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry) :
                 File (endianness),
-                position (0),
                 size (0),
                 flags (0),
-                pageMap (proxy) {
+                pageMap (*this) {
             OpenEx (
                 path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -106,7 +103,7 @@ namespace thekogans {
                 dwCreationDisposition,
                 dwFlagsAndAttributes,
             #else // defined (TOOLCHAIN_OS_Windows)
-                flags,
+                flags_,
                 mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 allocator,
@@ -115,9 +112,60 @@ namespace thekogans {
 
         TransactedFile::~TransactedFile () {
             THEKOGANS_UTIL_TRY {
-                Close ();
+                CloseEx ();
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void TransactedFile::OpenEx (
+                const std::string &path,
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD dwDesiredAccess,
+                DWORD dwShareMode,
+                DWORD dwCreationDisposition,
+                DWORD dwFlagsAndAttributes,
+            #else // defined (TOOLCHAIN_OS_Windows)
+                i32 flags_,
+                i32 mode,
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry) {
+            CommitLog (path);
+            CloseEx ();
+        #if defined (TOOLCHAIN_OS_Windows)
+            Open (
+                path,
+                dwDesiredAccess,
+                dwShareMode,
+                dwCreationDisposition,
+                dwFlagsAndAttributes | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
+        #else // defined (TOOLCHAIN_OS_Windows)
+        #if defined (TOOLCHAIN_OS_Linux)
+            flags_ |= O_DIRECT;
+        #endif // defined (TOOLCHAIN_OS_Linux)
+            Open (path, flags_, mode);
+        #if defined (TOOLCHAIN_OS_OSX)
+            fcntl (handle, F_NOCACHE, 1);
+        #endif // defined (TOOLCHAIN_OS_OSX)
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            size = GetSize ();
+            flags = 0;
+            Init (allocator, registry);
+        }
+
+        void TransactedFile::CloseEx () {
+            if (IsOpen ()) {
+                // All transactions must be commited before file close.
+                // On the other hand dirty pages get flushed out to disk
+                // to mimic what File would do.
+                AbortTransaction ();
+                DeleteCache ();
+                size = 0;
+                flags = 0;
+                allocator.Reset ();
+                registry.Reset ();
+                Close ();
+            }
         }
 
         std::size_t TransactedFile::ReadEx (
@@ -130,14 +178,14 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        PageMap::Page::SharedPtr page_ = pageMap.GetPage (offset);
-                        std::size_t pageOffset = offset - page_->offset;
+                        PageMap::Page::SharedPtr page = pageMap.GetPage (offset);
+                        std::size_t pageOffset = offset - page->offset;
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this page...
                             MIN (pageMap.pageSize - pageOffset, count),
                             // ...and clamp it to the amount left to read in the file.
-                            size - page_->offset);
-                        std::memcpy (ptr, page_->data + pageOffset, countToRead);
+                            size - page->offset);
+                        std::memcpy (ptr, page->data + pageOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         offset += countToRead;
@@ -163,24 +211,30 @@ namespace thekogans {
             if (buffer != nullptr && count > 0) {
                 if (IsOpen ()) {
                     LockGuard<SpinLock> guard (spinLock);
-                    std::size_t countWritten = 0;
-                    ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0) {
-                        PageMap::Page::SharedPtr page_ = pageMap.GetPage (offset);
-                        std::size_t pageOffset = offset - page_->offset;
-                        std::size_t countToWrite = MIN (pageMap.pageSize - pageOffset, count);
-                        std::memcpy (page_->data + pageOffset, ptr, countToWrite);
-                        page_->dirty = true;
-                        ptr += countToWrite;
-                        countWritten += countToWrite;
-                        offset += countToWrite;
-                        count -= countToWrite;
+                    if (IsTransactionPending ()) {
+                        std::size_t countWritten = 0;
+                        ui8 *ptr = (ui8 *)buffer;
+                        while (count > 0) {
+                            PageMap::Page::SharedPtr page = pageMap.GetPage (offset);
+                            std::size_t pageOffset = offset - page->offset;
+                            std::size_t countToWrite = MIN (pageMap.pageSize - pageOffset, count);
+                            std::memcpy (page->data + pageOffset, ptr, countToWrite);
+                            page->dirty = true;
+                            ptr += countToWrite;
+                            countWritten += countToWrite;
+                            offset += countToWrite;
+                            count -= countToWrite;
+                        }
+                        if (size < offset) {
+                            size = offset;
+                        }
+                        SetDirty (true);
+                        return countWritten;
                     }
-                    if (size < offset) {
-                        size = offset;
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
                     }
-                    SetDirty (true);
-                    return countWritten;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -193,37 +247,35 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::OpenEx (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
-                i32 mode,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            Open (
-                path,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            Open (path, flags, mode);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            Init (allocator, registry);
-        }
-
-        void TransactedFile::DeleteCache () {
+        void TransactedFile::FlushEx () {
             if (IsOpen ()) {
-                LockGuard<SpinLock> guard (spinLock);
-                Flush ();
-                pageMap.Clear (true);
+                if (IsDirty ()) {
+                    std::string logPath = GetLogPath (path);
+                    SimpleFile log (
+                        endianness,
+                        logPath,
+                        SimpleFile::ReadWrite | SimpleFile::Create);
+                    if (log.GetSize () > 0) {
+                        ui32 magic;
+                        log >> magic;
+                        if (magic == MAGIC32) {
+                            ui32 isClean;
+                            log >> isClean;
+                            log << size;
+                            log.Seek (0, SEEK_END);
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Corrupt log %s",
+                                logPath.c_str ());
+                        }
+                    }
+                    else {
+                        log << MAGIC32 << (ui32)0 << size << (ui64)pageMap.pageSize;
+                    }
+                    pageMap.Log (log);
+                    SetDirty (false);
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -234,10 +286,12 @@ namespace thekogans {
         ui64 TransactedFile::Grow (ui64 amount) {
             if (IsOpen ()) {
                 LockGuard<SpinLock> guard (spinLock);
-                ui32 oldSize = size;
-                size += amount;
-                SetDirty (true);
-                return oldSize;
+                if (IsTransactionPending ()) {
+                    ui32 oldSize = size;
+                    size += amount;
+                    SetDirty (true);
+                    return oldSize;
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -247,168 +301,18 @@ namespace thekogans {
 
         ui64 TransactedFile::Shrink (ui64 amount) {
             if (IsOpen ()) {
-                LockGuard<SpinLock> guard (spinLock);
-                if (size >= amount) {
-                    size -= amount;
-                    pageMap.Shrink (size);
-                    SetDirty (true);
-                    return size;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        std::size_t TransactedFile::Read (
-                void *buffer,
-                std::size_t count) {
-            std::size_t countRead = ReadEx (position, buffer, count);
-            position += countRead;
-            return countRead;
-        }
-
-        std::size_t TransactedFile::Write (
-                const void *buffer,
-                std::size_t count) {
-            std::size_t countWritten = WriteEx (position, buffer, count);
-            position += countWritten;
-            return countWritten;
-        }
-
-        i64 TransactedFile::Seek (
-                i64 offset,
-                i32 fromWhere) {
-            if (IsOpen ()) {
-                switch (fromWhere) {
-                    case SEEK_SET:
-                        if (offset < 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
-                        }
-                        position = offset;
-                        break;
-                    case SEEK_CUR:
-                        if (position + offset < 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
-                        }
-                        position += offset;
-                        break;
-                    case SEEK_END:
-                        if ((i64)size + offset < 0) {
-                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                                THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
-                        }
-                        position = (i64)size + offset;
-                        break;
-                    default:
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-                return position;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        void TransactedFile::Open (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes) {
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags_,
-                i32 mode) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            CommitLog (path);
-        #if defined (TOOLCHAIN_OS_Windows)
-            File::Open (
-                path,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
-        #else // defined (TOOLCHAIN_OS_Windows)
-        #if defined (TOOLCHAIN_OS_Linux)
-            flags_ |= O_DIRECT;
-        #endif // defined (TOOLCHAIN_OS_Linux)
-            File::Open (path, flags_, mode);
-        #if defined (TOOLCHAIN_OS_OSX)
-            fcntl (handle, F_NOCACHE, 1);
-        #endif // defined (TOOLCHAIN_OS_OSX)
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            position = File::Tell ();
-            size = File::GetSize ();
-            flags = 0;
-            proxy.handle = handle;
-            proxy.path = path;
-            allocator.Reset ();
-            registry.Reset ();
-        }
-
-        void TransactedFile::Close () {
-            if (IsOpen ()) {
-                // All transactions must be commited before file close.
-                // On the other hand dirty pages get flushed out to disk
-                // to mimic what File would do.
-                AbortTransaction ();
-                DeleteCache ();
-                position = 0;
-                size = 0;
-                flags = 0;
-                proxy.handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                proxy.path.clear ();
-                allocator.Reset ();
-                registry.Reset ();
-                File::Close ();
-            }
-        }
-
-        void TransactedFile::Flush () {
-            if (IsOpen ()) {
-                if (IsDirty ()) {
-                    if (IsTransactionPending ()) {
-                        std::string logPath = GetLogPath (path);
-                        SimpleFile log (
-                            endianness,
-                            logPath,
-                            SimpleFile::ReadWrite | SimpleFile::Create);
-                        if (log.GetSize () > 0) {
-                            ui32 magic;
-                            log >> magic;
-                            if (magic == MAGIC32) {
-                                ui32 isClean;
-                                log >> isClean;
-                                log << size;
-                                log.Seek (0, SEEK_END);
-                            }
-                            else {
-                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                    "Corrupt log %s",
-                                    logPath.c_str ());
-                            }
-                        }
-                        else {
-                            log << MAGIC32 << (ui32)0 << size << (ui64)pageMap.pageSize;
-                        }
-                        pageMap.Log (log);
+                if (IsTransactionPending ()) {
+                    LockGuard<SpinLock> guard (spinLock);
+                    if (size >= amount) {
+                        size -= amount;
+                        pageMap.Shrink (size);
+                        SetDirty (true);
+                        return size;
                     }
                     else {
-                        pageMap.Flush ();
-                        proxy.SetSize (size);
-                        proxy.Flush ();
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }
-                    SetDirty (false);
                 }
             }
             else {
@@ -417,16 +321,11 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::SetSize (ui64 newSize) {
+        void TransactedFile::DeleteCache () {
             if (IsOpen ()) {
-                if (size != newSize) {
-                    if (size > newSize) {
-                        // shrinking
-                        pageMap.Shrink (newSize);
-                    }
-                    size = newSize;
-                    SetDirty (true);
-                }
+                LockGuard<SpinLock> guard (spinLock);
+                FlushEx ();
+                pageMap.Clear (true);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -459,12 +358,10 @@ namespace thekogans {
                 range >> magic;
                 if (magic == MAGIC32) {
                     // File is host endian.
-                    proxy.endianness = HostEndian;
                 }
                 else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
                     // File is guest endian.
                     endianness = GuestEndian;
-                    proxy.endianness = GuestEndian;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -572,7 +469,7 @@ namespace thekogans {
         void TransactedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!IsTransactionPending ()) {
-                    Flush ();
+                    FlushEx ();
                     SetTransactionPending (true);
                     Produce (
                         std::bind (
@@ -610,7 +507,7 @@ namespace thekogans {
                                 COMMIT_PHASE_2),
                             subscribers[i].first);
                     }
-                    Flush ();
+                    FlushEx ();
                     std::string logPath = GetLogPath (path);
                     if (Path (logPath).Exists ()) {
                         {
@@ -631,13 +528,13 @@ namespace thekogans {
                                     if (offset < size) {
                                         ui64 available = MIN (size - offset, pageMap.pageSize);
                                         if (available != 0) {
-                                            proxy.Seek (offset, SEEK_SET);
-                                            proxy.Write (page.GetDataPtr (), available);
+                                            Seek (offset, SEEK_SET);
+                                            Write (page.GetDataPtr (), available);
                                         }
                                     }
                                 }
-                                proxy.SetSize (size);
-                                proxy.Flush ();
+                                SetSize (size);
+                                Flush ();
                             }
                             else {
                                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -660,7 +557,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
-                        SetSize (File::GetSize ());
+                        size = GetSize ();
                         pageMap.Clear ();
                         SetDirty (false);
                     }
@@ -686,23 +583,6 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap.GetPage (offset);
         }
-
-#if 0
-        void TransactedFile::PutPage (
-                ui64 offset,
-                PageMap::Page::SharedPtr page,
-                std::size_t count) {
-            if (count > 0) {
-                LockGuard<SpinLock> guard (spinLock);
-                page->dirty = true;
-                offset += count;
-                if (size < offset) {
-                    size = offset;
-                }
-                SetDirty (true);
-            }
-        }
-#endif
 
         std::string TransactedFile::GetLogPath (const std::string &path) {
             std::string name = Path (path).GetFullFileName ();
