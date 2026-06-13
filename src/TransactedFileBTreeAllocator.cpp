@@ -425,18 +425,21 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
-            ui32 magic;
-            range >> magic;
-            if (magic == MAGIC32) {
-                range >> *this;
+            THEKOGANS_UTIL_TRY {
+                TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
+                ui32 magic;
+                range >> magic;
+                if (magic == MAGIC32) {
+                    range >> *this;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt TransactedFile file (%s).",
+                        file->GetPath ().c_str ());
+                }
+                SetDirty (false);
             }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFile file (%s).",
-                    file->GetPath ().c_str ());
-            }
-            SetDirty (false);
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         void TransactedFileBTreeAllocator::OnTransactedFileObjectAlloc (
