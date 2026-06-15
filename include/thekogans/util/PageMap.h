@@ -125,6 +125,7 @@ namespace thekogans {
             /// \brief
             /// Alias for \see{IntrusiveList}<Page>.
             using PageList = IntrusiveList<Page>;
+            struct Segment;
 
         public:
             /// \struct PageMap::Page PageMap.h thekogans/util/PageMap.h
@@ -169,6 +170,7 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Page ();
 
+            private:
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
@@ -182,6 +184,8 @@ namespace thekogans {
                 /// \return true == the page was completely clipped.
                 /// false == the page was partially clipped.
                 bool Shrink (ui64 newSize);
+
+                friend struct Segment;
 
                 /// \brief
                 /// Page is neither copy constructable, nor assignable.
