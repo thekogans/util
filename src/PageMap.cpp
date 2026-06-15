@@ -15,25 +15,12 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/os/windows/WindowsHeader.h"
-#else // defined (TOOLCHAIN_OS_Windows)
-    #if defined (TOOLCHAIN_OS_Linux)
-        #define _GNU_SOURCE
-    #endif // defined (TOOLCHAIN_OS_Linux)
-    #include <fcntl.h>
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
-#include <string>
 #include "thekogans/util/Heap.h"
-#include "thekogans/util/Path.h"
-#include "thekogans/util/GUID.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/AlignedAllocator.h"
-#include "thekogans/util/TransactedFile.h"
+#include "thekogans/util/PageMap.h"
 
 namespace thekogans {
     namespace util {
@@ -73,8 +60,8 @@ namespace thekogans {
                 offset (offset_),
                 data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
                 dirty (false) {
-            pageMap.serializer.Seek (offset, SEEK_SET);
-            ui64 countRead = pageMap.serializer.Read (data, pageMap.pageSize);
+            pageMap.bitSource.Seek (offset, SEEK_SET);
+            ui64 countRead = pageMap.bitSource.Read (data, pageMap.pageSize);
             SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
         }
 
@@ -92,10 +79,26 @@ namespace thekogans {
 
         void PageMap::Page::Flush () {
             if (dirty) {
-                pageMap.serializer.Seek (offset, SEEK_SET);
-                pageMap.serializer.Write (data, pageMap.pageSize);
+                pageMap.bitSource.Seek (offset, SEEK_SET);
+                pageMap.bitSource.Write (data, pageMap.pageSize);
                 dirty = false;
             }
+        }
+
+        bool PageMap::Page::Shrink (ui64 newSize) {
+            if (offset < newSize) {
+                BaseType consumed = newSize - offset;
+                if (consumed < pageMap.pageSize) {
+                    // Pages don't maintain internal lengths. All pages are
+                    // pageMap.pageSize long (with potentially the last one
+                    // being less). If this is the last page, we clear that
+                    // part which falls outside the new address space size.
+                    SecureZeroMemory (data + consumed, pageMap.pageSize - consumed);
+                    dirty = true;
+                }
+                return false;
+            }
+            return true;
         }
 
         PageMap::Segment::Segment (
@@ -152,22 +155,12 @@ namespace thekogans {
             pageList.for_each (
                 [this, newSize] (PageList::Callback::argument_type page) ->
                         PageList::Callback::result_type {
-                    if (page->offset >= newSize) {
+                    if (page->Shrink (newSize)) {
                         pageList.erase (page);
                         pages[page->index].Reset ();
                         return true;
                     }
-                    else {
-                        BaseType consumed = newSize - page->offset;
-                        if (consumed < pageMap.pageSize) {
-                            // Pages don't maintain internal lengths. All pages are
-                            // pageMap.pageSize long (with potentially the last one
-                            // being less). If this is the last page, we clear that
-                            // part which falls outside the new address space size.
-                            SecureZeroMemory (page->data + consumed, pageMap.pageSize - consumed);
-                        }
-                        return false;
-                    }
+                    return false;
                 },
                 true
             );
@@ -366,8 +359,8 @@ namespace thekogans {
             }
         }
 
-        void PageMap::Log (RandomSeekSerializer &serializer) {
-            root.Log (serializer);
+        void PageMap::Log (RandomSeekSerializer &log) {
+            root.Log (log);
         }
 
         void PageMap::Flush () {

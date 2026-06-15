@@ -104,11 +104,13 @@ int main (
     }
     else {
         THEKOGANS_UTIL_TRY {
-            Roots::SharedPtr roots = Database::Instance ()->GetRegistry ()->GetValue ("roots");
+            Roots::SharedPtr roots =
+                Database::Instance ()->GetRegistry ()->GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots);
             }
-            IgnoreList::SharedPtr ignoreList = Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
+            IgnoreList::SharedPtr ignoreList =
+                Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
             if (ignoreList == nullptr) {
                 ignoreList.Reset (new IgnoreList);
             }

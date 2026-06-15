@@ -100,6 +100,7 @@ target_sources(${PROJECT_NAME}
         src/NullAllocator.cpp
         src/NullLock.cpp
         src/NullLogger.cpp
+        src/PageMap.cpp
         src/Path.cpp
         src/Pipeline.cpp
         src/PipelinePool.cpp

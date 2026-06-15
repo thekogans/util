@@ -22,7 +22,9 @@
 /// Registry provides global associative storage for \see{TransactedFile}
 /// clients. Use it to store and retrieve practically any value derived
 /// from \see{Serializable}. The key type is std::string.
-struct _LIB_THEKOGANS_UTIL_DECL Registry : public Serializable {
+struct _LIB_THEKOGANS_UTIL_DECL Registry :
+        public Serializable,
+        public TransactionParticipant {
     /// \brief
     /// Registry is a \see{DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Registry)
@@ -34,22 +36,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry : public Serializable {
     static void StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-protected:
-    /// \brief
-    /// The \see{TransactedFile} this registry belongs to.
-    TransactedFile::SharedPtr file;
-
-public:
     /// \brief
     /// ctor.
-    Registry () {}
-
-    /// \brief
-    /// Return the file.
-    /// \return file.
-    inline TransactedFile::SharedPtr GetFile () const {
-        return file;
-    }
+    Registry () :
+        TransactionParticipant (nullptr) {}
 
     /// \brief
     /// Given a key, retrieve the associated value. If key is not found,

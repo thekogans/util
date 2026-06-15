@@ -45,20 +45,35 @@ namespace thekogans {
         const int TransactedFile::COMMIT_PHASE_1 = 1;
         const int TransactedFile::COMMIT_PHASE_2 = 2;
 
-        TransactedFile::Transaction::Transaction (TransactedFile::SharedPtr file_) :
+        TransactedFile::Transaction::Transaction (TransactedFile &file_) :
                 file (file_),
-                guard (file->mutex) {
-            file->BeginTransaction ();
+                guard (file.mutex) {
+            file.BeginTransaction ();
         }
 
         TransactedFile::Transaction::~Transaction () {
-            file->AbortTransaction ();
-            file->Unsubscribe ();
+            file.AbortTransaction ();
+            file.Unsubscribe ();
         }
 
         void TransactedFile::Transaction::Commit () {
-            file->CommitTransaction ();
-            file->Unsubscribe ();
+            file.CommitTransaction ();
+            file.Unsubscribe ();
+        }
+
+        bool TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
+            // Only subscribe @the transition from clean to dirty.
+            if (!flags.Set (FLAGS_DIRTY, dirty) && dirty) {
+                if (file->IsTransactionPending ()) {
+                    Subscriber<TransactedFileEvents>::Subscribe (*file);
+                    return true;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "No pending transaction.");
+                }
+            }
+            return false;
         }
 
         TransactedFile::TransactedFile (
@@ -154,14 +169,15 @@ namespace thekogans {
         }
 
         void TransactedFile::CloseEx () {
+            LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 // All transactions must be commited before file close.
                 // On the other hand dirty pages get flushed out to disk
                 // to mimic what File would do.
                 AbortTransaction ();
-                DeleteCache ();
                 size = 0;
                 flags = 0;
+                pageMap.Clear (true);
                 allocator.Reset ();
                 registry.Reset ();
                 Close ();
@@ -173,8 +189,8 @@ namespace thekogans {
                 void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
+                LockGuard<SpinLock> guard (spinLock);
                 if (IsOpen ()) {
-                    LockGuard<SpinLock> guard (spinLock);
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
@@ -209,8 +225,8 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
+                LockGuard<SpinLock> guard (spinLock);
                 if (IsOpen ()) {
-                    LockGuard<SpinLock> guard (spinLock);
                     if (IsTransactionPending ()) {
                         std::size_t countWritten = 0;
                         ui8 *ptr = (ui8 *)buffer;
@@ -232,8 +248,8 @@ namespace thekogans {
                         return countWritten;
                     }
                     else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "No pending transaction.");
                     }
                 }
                 else {
@@ -247,45 +263,9 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::FlushEx () {
-            if (IsOpen ()) {
-                if (IsDirty ()) {
-                    std::string logPath = GetLogPath (path);
-                    SimpleFile log (
-                        endianness,
-                        logPath,
-                        SimpleFile::ReadWrite | SimpleFile::Create);
-                    if (log.GetSize () > 0) {
-                        ui32 magic;
-                        log >> magic;
-                        if (magic == MAGIC32) {
-                            ui32 isClean;
-                            log >> isClean;
-                            log << size;
-                            log.Seek (0, SEEK_END);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Corrupt log %s",
-                                logPath.c_str ());
-                        }
-                    }
-                    else {
-                        log << MAGIC32 << (ui32)0 << size << (ui64)pageMap.pageSize;
-                    }
-                    pageMap.Log (log);
-                    SetDirty (false);
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
         ui64 TransactedFile::Grow (ui64 amount) {
+            LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
-                LockGuard<SpinLock> guard (spinLock);
                 if (IsTransactionPending ()) {
                     ui32 oldSize = size;
                     size += amount;
@@ -293,8 +273,8 @@ namespace thekogans {
                     return oldSize;
                 }
                 else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "No pending transaction.");
                 }
             }
             else {
@@ -304,9 +284,9 @@ namespace thekogans {
         }
 
         ui64 TransactedFile::Shrink (ui64 amount) {
+            LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
-                    LockGuard<SpinLock> guard (spinLock);
                     if (size >= amount) {
                         size -= amount;
                         pageMap.Shrink (size);
@@ -314,26 +294,14 @@ namespace thekogans {
                         return size;
                     }
                     else {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "No pending transaction.");
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        void TransactedFile::DeleteCache () {
-            if (IsOpen ()) {
-                LockGuard<SpinLock> guard (spinLock);
-                FlushEx ();
-                pageMap.Clear (true);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -345,6 +313,7 @@ namespace thekogans {
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_) {
             if (allocator_ != nullptr) {
+                Transaction transaction (*this);
                 if (GetSize () == 0) {
                     // Initialize the first block.
                     Allocator::Block block (
@@ -413,6 +382,7 @@ namespace thekogans {
                             GetPath ().c_str ());
                     }
                 }
+                transaction.Commit ();
             }
         }
 
@@ -442,33 +412,19 @@ namespace thekogans {
                             "Corrupt log %s",
                             logPath.c_str ());
                     }
-                    ui32 isClean;
-                    log >> isClean;
-                    if (isClean == 1) {
-                        ui64 size;
-                        ui64 pageSize;
-                        log >> size >> pageSize;
-                        ui64 offset;
-                        HostBuffer page (pageSize);
-                        for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
-                            log >> offset;
-                            logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
-                            if (offset < size) {
-                                ui64 available = MIN (size - offset, pageSize);
-                                if (available != 0) {
-                                    file.Seek (offset, SEEK_SET);
-                                    file.Write (page.GetDataPtr (), available);
-                                }
-                            }
-                        }
-                        file.SetSize (size);
-                        file.Flush ();
+                    ui64 size;
+                    ui64 pageSize;
+                    log >> size >> pageSize;
+                    ui64 offset;
+                    HostBuffer page (pageSize);
+                    for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
+                        log >> offset;
+                        logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
+                        file.Seek (offset, SEEK_SET);
+                        file.Write (page.GetDataPtr (), pageSize);
                     }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Log is not clean %s",
-                            logPath.c_str ());
-                    }
+                    file.SetSize (size);
+                    file.Flush ();
                 }
                 File::Delete (logPath);
             }
@@ -477,7 +433,6 @@ namespace thekogans {
         void TransactedFile::BeginTransaction () {
             if (IsOpen ()) {
                 if (!IsTransactionPending ()) {
-                    FlushEx ();
                     SetTransactionPending (true);
                     Produce (
                         std::bind (
@@ -515,40 +470,32 @@ namespace thekogans {
                                 COMMIT_PHASE_2),
                             subscribers[i].first);
                     }
-                    FlushEx ();
-                    std::string logPath = GetLogPath (path);
-                    if (Path (logPath).Exists ()) {
+                    if (IsDirty ()) {
+                        std::string logPath = GetLogPath (path);
                         {
-                            SimpleFile log (endianness, logPath, SimpleFile::ReadWrite);
-                            ui32 magic;
-                            log >> magic;
-                            if (magic == MAGIC32) {
-                                ui32 isClean = 1;
-                                log << isClean;
-                                ui64 size;
-                                ui64 pageSize;
-                                log >> size >> pageSize;
-                                ui64 offset;
-                                HostBuffer page (pageSize);
-                                for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
-                                    log >> offset;
-                                    logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
-                                    if (offset < size) {
-                                        ui64 available = MIN (size - offset, pageMap.pageSize);
-                                        if (available != 0) {
-                                            Seek (offset, SEEK_SET);
-                                            Write (page.GetDataPtr (), available);
-                                        }
-                                    }
-                                }
-                                SetSize (size);
-                                Flush ();
+                            SimpleFile log (
+                                endianness,
+                                logPath,
+                                SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
+                            log << (ui32)0 << size << (ui64)pageMap.pageSize;
+                            pageMap.Log (log);
+                            log.Seek (0, SEEK_SET);
+                            log << MAGIC32;
+                            log.Flush ();
+                            SetDirty (false);
+                            ui64 size;
+                            ui64 pageSize;
+                            log >> size >> pageSize;
+                            ui64 offset;
+                            HostBuffer page (pageSize);
+                            for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
+                                log >> offset;
+                                logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
+                                Seek (offset, SEEK_SET);
+                                Write (page.GetDataPtr (), pageSize);
                             }
-                            else {
-                                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                    "Corrupt log %s",
-                                    logPath.c_str ());
-                            }
+                            SetSize (size);
+                            Flush ();
                         }
                         File::Delete (logPath);
                     }

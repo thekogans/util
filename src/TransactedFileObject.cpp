@@ -21,15 +21,6 @@
 namespace thekogans {
     namespace util {
 
-        bool TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
-            // Only subscribe @the transition from clean to dirty.
-            if (!flags.Set (FLAGS_DIRTY, dirty) && dirty) {
-                Subscriber<TransactedFileEvents>::Subscribe (*file);
-                return true;
-            }
-            return false;
-        }
-
         TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
             if (IsDirty ()) {
                 Subscriber<TransactedFileEvents>::Unsubscribe (*file);
@@ -38,18 +29,6 @@ namespace thekogans {
                 SetDirty (false);
             }
             return GetOffset ();
-        }
-
-        bool TransactedFile::Object::SetDirty (bool dirty) {
-            if (TransactionParticipant::SetDirty (dirty)) {
-                Produce (
-                    std::bind (
-                        &ObjectEvents::OnTransactedFileObjectDirty,
-                        std::placeholders::_1,
-                        this));
-                return true;
-            }
-            return false;
         }
 
         void TransactedFile::Object::Alloc () {
@@ -103,6 +82,18 @@ namespace thekogans {
                 BlockRange range (*file, offset);
                 Read (range);
             }
+        }
+
+        bool TransactedFile::Object::SetDirty (bool dirty) {
+            if (TransactionParticipant::SetDirty (dirty)) {
+                Produce (
+                    std::bind (
+                        &ObjectEvents::OnTransactedFileObjectDirty,
+                        std::placeholders::_1,
+                        this));
+                return true;
+            }
+            return false;
         }
 
         void TransactedFile::Object::OnTransactedFileTransactionCommit (

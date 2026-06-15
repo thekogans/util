@@ -40,7 +40,6 @@ namespace thekogans {
         /// The key type is std::string. TransactedFileBTreeRegistry is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
                 public TransactedFile::Registry,
-                public Subscriber<TransactedFileEvents>,
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.

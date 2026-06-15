@@ -20,14 +20,10 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Constants.h"
-#include "thekogans/util/Flags.h"
-#include "thekogans/util/Exception.h"
 #include "thekogans/util/RandomSeekSerializer.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/AlignedAllocator.h"
-#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -35,13 +31,31 @@ namespace thekogans {
         /// \struct PageMap PageMap.h thekogans/util/PageMap.h
         ///
         /// \brief
+        /// PageMap gives you the ability to work with virtual address spacess, potentialy
+        /// astronomical (10^19, 10^38...) in size, given the somewhat limited resources
+        /// of today's and tomorrow's hosts. PageMap divides the given address space in to
+        /// sequential, continuous, nonoverlapping pages. The pages are maintained in groups
+        /// called segments. And segments are organized in a fixed depth, mutiway tree.
+        /// Given a particular parameterization of an address space, PageMap will calculate
+        /// all the other parameters needed for efficient tree traversal. PageMap's entire
+        /// reason for being, as far as the user is concerned, is to provide on demand access
+        /// to pages given any valid address space address (GetPage). It does this by lazily
+        /// wiring in pages as the need arises. Given an address, PageMap walks the tree looking
+        /// for the correponding page. That tree walk is constant for every page and is dependent
+        /// on the particular parameterization of the address space. As pages accumulate,
+        /// eventually memory will become an issue. PageMap provides API to maintain internal
+        /// page cache (Clear). PageMap maintains a cache of last accessed page, promoting
+        /// locality of refernce by optimizing away tree walks for requests for sufficiently
+        /// close addresses. Pages maintain a dirty flag which is used by the Log and Flush
+        /// methods to move pages back to the bitSource. Finally, use Shrink to clip the pages
+        /// outide the new size of the address space.
         ///
         /// Ex:
         ///
-        /// DEFAULT_BITS_PER_OFFSET = 64
-        /// DEFAULT_BITS_PER_SEGMENT = 32
-        /// DEFAULT_BITS_PER_LEVEL = 8
-        /// DEFAULT_BITS_PER_PAGE = 20
+        /// bitsPerOffset = 64
+        /// bitsPerSegment = 32
+        /// bitsPerLevel = 8
+        /// bitsPerPage = 20
         ///
         /// msb                                                                                                      lsb
         /// |------------------------------------------- bitsPerOffset -----------------------------------------------|
@@ -60,10 +74,10 @@ namespace thekogans {
         ///
         /// Ex:
         ///
-        /// DEFAULT_BITS_PER_OFFSET = 128
-        /// DEFAULT_BITS_PER_SEGMENT = 32
-        /// DEFAULT_BITS_PER_LEVEL = 12
-        /// DEFAULT_BITS_PER_PAGE = 22
+        /// bitsPerOffset = 128
+        /// bitsPerSegment = 32
+        /// bitsPerLevel = 12
+        /// bitsPerPage = 22
         ///
         /// msb                                                                                                         lsb
         /// |--------------------------------...----------- bitsPerOffset -----------------------------------------------|
@@ -82,7 +96,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL PageMap {
             using BaseType = ui64;
 
-            RandomSeekSerializer &serializer;
+            RandomSeekSerializer &bitSource;
             const std::size_t bitsPerOffset;
             const std::size_t bitsPerSegment;
             const std::size_t bitsPerLevel;
@@ -162,6 +176,12 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to their source.
                 void Flush ();
+                /// \brief
+                /// Clip the page to the new size.
+                /// \param[in] newize Size to clip the page to.
+                /// \return true == the page was completely clipped.
+                /// false == the page was partially clipped.
+                bool Shrink (ui64 newSize);
 
                 /// \brief
                 /// Page is neither copy constructable, nor assignable.
@@ -384,15 +404,20 @@ namespace thekogans {
             static const std::size_t DEFAULT_BITS_PER_LEVEL = 8;
             static const std::size_t DEFAULT_BITS_PER_PAGE = 20;
             static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
+            static const std::size_t DEFAULT_INTERNAL_NODES_PER_PAGE = 16;
+            static const std::size_t DEFAULT_SEGMENT_NODES_PER_PAGE = 8;
 
             PageMap (
-                RandomSeekSerializer &serializer_,
+                RandomSeekSerializer &bitSource_,
                 std::size_t bitsPerOffset_ = DEFAULT_BITS_PER_OFFSET,
                 std::size_t bitsPerSegment_ = DEFAULT_BITS_PER_SEGMENT,
                 std::size_t bitsPerLevel_ = DEFAULT_BITS_PER_LEVEL,
                 std::size_t bitsPerPage_ = DEFAULT_BITS_PER_PAGE,
-                std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT) :
-                serializer (serializer_),
+                std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT,
+                std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
+                std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
+                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                bitSource (bitSource_),
                 bitsPerOffset (bitsPerOffset_),
                 bitsPerSegment (bitsPerSegment_),
                 bitsPerLevel (bitsPerLevel_),
@@ -406,9 +431,9 @@ namespace thekogans {
                 segmentMask (BitMask (bitsPerSegment)),
                 internalSize (Internal::Size (nodesPerInternal)),
                 segmentSize (Segment::Size (pagesPerSegment)),
-                internalAllocator (internalSize),
-                segmentAllocator (segmentSize),
-                pageAllocator (pageAlignment),
+                internalAllocator (internalSize, internalNodesPerPage, allocator),
+                segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
+                pageAllocator (pageAlignment, allocator),
                 root (*this, 0),
                 lastGetPageOffset (NOFFS) {}
 
@@ -417,7 +442,6 @@ namespace thekogans {
             /// \param[in] offset Offset whose page to return.
             /// \return \see{Page} that contains the given offset.
             Page::SharedPtr GetPage (BaseType offset);
-
             /// \brief
             /// Delete pages.
             /// \param[in] all true == clear all, false == dirty only.

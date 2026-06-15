@@ -241,7 +241,7 @@ private:
             TransactedFile &file,
             ui64 offset,
             std::size_t length) {
-        ui64 size = file.GetSize ();
+        ui64 size = file.GetSizeEx ();
         return size > offset ? MIN (length, size - offset) : 0;
     }
 };

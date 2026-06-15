@@ -19,6 +19,7 @@
 #define __thekogans_util_TransactedFile_h
 
 #include <string>
+#include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
@@ -159,7 +160,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Transaction {
             private:
                 /// \see{TransactedFile} we're guarding.
-                TransactedFile::SharedPtr file;
+                TransactedFile &file;
                 /// \brief
                 /// This guard will serialize all transactions.
                 LockGuard<Mutex> guard;
@@ -168,7 +169,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{TransactedFile} to transact.
-                explicit Transaction (TransactedFile::SharedPtr file_);
+                explicit Transaction (TransactedFile &file_);
                 /// \brief
                 /// dtor.
                 ~Transaction ();
@@ -405,15 +406,6 @@ namespace thekogans {
                 std::size_t count);
 
             /// \brief
-            /// Flush pending writes to disk.
-            /// NOT thread safe.
-            void FlushEx ();
-
-            /// \brief
-            /// Flush dirty pages and delete the cache.
-            /// Thread safe.
-            void DeleteCache ();
-            /// \brief
             /// Grow the file by the given amount.
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
@@ -429,9 +421,10 @@ namespace thekogans {
             // File
             /// \brief
             /// Return file size in bytes.
-            /// NOT thread safe.
+            /// Thread safe.
             /// \return File size in bytes.
-            inline ui64 GetSizeEx () const {
+            inline ui64 GetSizeEx () {
+                LockGuard<SpinLock> guard (spinLock);
                 return size;
             }
 

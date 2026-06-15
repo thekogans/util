@@ -27,7 +27,7 @@
 /// +---------+-----+---------+
 ///
 /// Block 1 is special. It contains the \see{SerializableHeader} and \see{Allocator::Header}.
-/// This block is maintained in \see{TransactedFile::Init} and \see{TransactedFile::Flush}.
+/// This block is created in \see{TransactedFile::Init}.
 ///
 /// Allocator::Header
 /// +-------+-------+----------------+

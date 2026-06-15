@@ -102,13 +102,6 @@ public:
     /// \return GetOffset ().
     Allocator::PtrType ForceFlush ();
 
-    // TransactedFile::TransactionParticipant
-    /// \brief
-    /// Set the dirty flag.
-    /// \param[in] dirty true == dirty, false == clean.
-    /// \return true == the state has transitioned from clean to dirty.
-    virtual bool SetDirty (bool dirty) override;
-
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
     virtual void Alloc ();
@@ -124,6 +117,13 @@ public:
     /// \brief
     /// Reload the internal cache from file.
     virtual void Reload ();
+
+    // TransactedFile::TransactionParticipant
+    /// \brief
+    /// Set the dirty flag.
+    /// \param[in] dirty true == dirty, false == clean.
+    /// \return true == the state has transitioned from clean to dirty.
+    virtual bool SetDirty (bool dirty) override;
 
 protected:
     // TransactedFileEvents
