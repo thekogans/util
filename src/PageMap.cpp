@@ -85,7 +85,7 @@ namespace thekogans {
             }
         }
 
-        bool PageMap::Page::Shrink (ui64 newSize) {
+        bool PageMap::Page::Shrink (BaseType newSize) {
             if (offset < newSize) {
                 BaseType consumed = newSize - offset;
                 if (consumed < pageMap.pageSize) {

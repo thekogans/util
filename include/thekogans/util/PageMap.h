@@ -183,7 +183,7 @@ namespace thekogans {
                 /// \param[in] newize Size to clip the page to.
                 /// \return true == the page was completely clipped.
                 /// false == the page was partially clipped.
-                bool Shrink (ui64 newSize);
+                bool Shrink (BaseType newSize);
 
                 friend struct Segment;
 
@@ -296,7 +296,6 @@ namespace thekogans {
                 /// Return the \see{Page} @index. Create if null.
                 /// \param[in] pageIndex Page index in the pages array.
                 /// \param[in] pageOffset Page offset (multiple of pageSize).
-                /// \param[in] serializer \see{RandomSeekSerializer} to read the page data from.
                 /// \return The new page.
                 Page::SharedPtr GetPage (
                     ui32 pageIndex,
