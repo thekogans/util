@@ -61,7 +61,7 @@ namespace thekogans {
                 data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
                 dirty (false) {
             pageMap.bitSource.Seek (offset, SEEK_SET);
-            ui64 countRead = pageMap.bitSource.Read (data, pageMap.pageSize);
+            std::size_t countRead = pageMap.bitSource.Read (data, pageMap.pageSize);
             SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
         }
 

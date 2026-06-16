@@ -73,7 +73,7 @@ namespace thekogans {
             }
         }
 
-        template <class T>
+        template <typename T>
         struct less_than_comparable {
             friend bool operator > (
                     const T &x,
@@ -92,7 +92,7 @@ namespace thekogans {
             }
         };
 
-        template <class T>
+        template <typename T>
         struct equality_comparable {
             friend bool operator != (
                     const T &x,
@@ -102,9 +102,11 @@ namespace thekogans {
         };
 
         #define THEKOGANS_UTIL_BINARY_OPERATOR(NAME, OP)\
-        template <class T>\
+        template <typename T>\
         struct NAME {\
-            friend T operator OP (const T& lhs, const T& rhs) {\
+            friend T operator OP (\
+                    const T& lhs,\
+                    const T& rhs) {\
                 T nrv (lhs);\
                 nrv OP##= rhs;\
                 return nrv;\
@@ -124,7 +126,7 @@ namespace thekogans {
 
         #undef THEKOGANS_UTIL_BINARY_OPERATOR
 
-        template <class T>
+        template <typename T>
         struct incrementable {
             friend T operator ++ (T &x, int) {
                 T nrv (x);
@@ -133,7 +135,7 @@ namespace thekogans {
             }
         };
 
-        template <class T>
+        template <typename T>
         struct decrementable {
             friend T operator -- (T &x, int) {
                 T nrv (x);
@@ -159,43 +161,42 @@ namespace thekogans {
                 decrementable<ui128> {
             using base_type = unsigned long long;
 
-        public:
             static const std::size_t size = (sizeof (base_type) + sizeof (base_type)) * CHAR_BIT;
 
-        private:
-            base_type lo;
             base_type hi;
+            base_type lo;
 
-        public:
             // constructors for all basic types
-            ui128 () :
-                lo (0),
-                hi (0) {}
+            ui128 (
+                base_type hi_ = 0,
+                base_type lo_ = 0) :
+                hi (hi_),
+                lo (lo_) {}
             ui128 (int value) :
-                    lo (static_cast<base_type> (value)),
-                    hi (0) {
+                    hi (0),
+                    lo (static_cast<base_type> (value)) {
                 if (value < 0) {
                     hi = static_cast<base_type> (-1);
                 }
             }
             ui128 (unsigned int value) :
-                lo (static_cast<base_type> (value)),
-                hi (0) {}
+                hi (0),
+                lo (static_cast<base_type> (value)) {}
             ui128 (float value) :
-                lo (static_cast<base_type> (value)),
-                hi (0) {}
+                hi (0),
+                lo (static_cast<base_type> (value)) {}
             ui128 (double value) :
-                lo (static_cast<base_type> (value)),
-                hi (0) {}
+                hi (0),
+                lo (static_cast<base_type> (value)) {}
             ui128 (const ui128 &value) :
-                lo (value.lo),
-                hi (value.hi) {}
+                hi (value.hi),
+                lo (value.lo) {}
             ui128 (base_type value) :
-                lo (value),
-                hi (0) {}
+                hi (0),
+                lo (value) {}
             ui128 (const std::string &sz) :
-                    lo (0),
-                    hi (0) {
+                    hi (0),
+                    lo (0) {
                 // do we have at least one character?
                 if (!sz.empty ()) {
                     // make some reasonable assumptions
@@ -265,8 +266,8 @@ namespace thekogans {
 
             ui128 &operator = (const ui128 &other) {
                 if (&other != this) {
-                    lo = other.lo;
                     hi = other.hi;
+                    lo = other.lo;
                 }
                 return *this;
             }
@@ -292,8 +293,8 @@ namespace thekogans {
 
             ui128 operator ~ () const {
                 ui128 t (*this);
-                t.lo = ~t.lo;
                 t.hi = ~t.hi;
+                t.lo = ~t.lo;
                 return t;
             }
 
@@ -313,9 +314,9 @@ namespace thekogans {
 
             // basic math operators
             ui128 &operator += (const ui128 &b) {
+                hi += b.hi;
                 const base_type old_lo = lo;
                 lo += b.lo;
-                hi += b.hi;
                 if (lo < old_lo) {
                     ++hi;
                 }
@@ -339,8 +340,8 @@ namespace thekogans {
                     // check we aren't multiplying by 1
                     ui128 a (*this);
                     ui128 t = b;
-                    lo = 0;
                     hi = 0;
+                    lo = 0;
                     for (unsigned int i = 0; i < size; ++i) {
                         if ((t & 1) != 0) {
                             *this += (a << i);

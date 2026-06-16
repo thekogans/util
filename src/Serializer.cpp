@@ -541,6 +541,34 @@ namespace thekogans {
             return *this;
         }
 
+        Serializer &Serializer::operator << (ui128 value) {
+            if (endianness == GuestEndian) {
+                value = ByteSwap<HostEndian, GuestEndian> (value);
+            }
+            if (Write (&value, UI128_SIZE) != UI128_SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Write (&value, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI128_SIZE,
+                    UI128_SIZE);
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (ui128 &value) {
+            if (Read (&value, UI128_SIZE) != UI128_SIZE) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Read (&value, "
+                    THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                    UI128_SIZE,
+                    UI128_SIZE);
+            }
+            if (endianness == GuestEndian) {
+                value = ByteSwap<GuestEndian, HostEndian> (value);
+            }
+            return *this;
+        }
+
         Serializer &Serializer::operator << (f32 value) {
             if (endianness == GuestEndian) {
                 value = ByteSwap<HostEndian, GuestEndian> (value);

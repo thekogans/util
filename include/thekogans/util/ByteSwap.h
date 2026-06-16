@@ -172,6 +172,19 @@ namespace thekogans {
             };
 
             /// \brief
+            /// Swap bytes template specialization for 16 byte ui128.
+            template<>
+            struct SwapBytes<ui128, 16> {
+                /// \brief
+                /// Function call operator to perform the swap.
+                /// \param[in] value Value whose bytes to swap.
+                /// \return Byte swapped value.
+                inline ui128 operator () (ui128 value) {
+                    return ui128 (SwapBytes<ui64, 8> () (value.lo), SwapBytes<ui64, 8> () (value.hi));
+                }
+            };
+
+            /// \brief
             /// Swap bytes template specialization for 8 byte floats.
             template<>
             struct SwapBytes<f64, 8> {
@@ -236,12 +249,13 @@ namespace thekogans {
             Endianness to,
             typename T>
         inline T ByteSwap (T value) {
-            // Ensure value is 1, 2, 4 or 8 bytes.
+            // Ensure value is 1, 2, 4, 8 or 16 bytes.
             static_assert (
                 sizeof (T) == I8_SIZE || sizeof (T) == UI8_SIZE ||
                 sizeof (T) == I16_SIZE || sizeof (T) == UI16_SIZE ||
                 sizeof (T) == I32_SIZE || sizeof (T) == UI32_SIZE ||
                 sizeof (T) == I64_SIZE || sizeof (T) == UI64_SIZE ||
+                                          sizeof (T) == UI128_SIZE ||
                 sizeof (T) == F32_SIZE || sizeof (T) == F64_SIZE,
                 "Template parameter must be the size of an integral type.");
             // Ensure value is an arithmetic type.

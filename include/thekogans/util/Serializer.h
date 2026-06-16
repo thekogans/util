@@ -539,6 +539,27 @@ namespace thekogans {
             Serializer &operator >> (ui64 &value);
 
             /// \brief
+            /// Return serialized size of \see{ui128}.
+            /// \param[in] value \see{ui128} whose size to return.
+            /// \return Serialized size of \see{ui128}.
+            static std::size_t Size (ui128 /*value*/) {
+                return UI128_SIZE;
+            }
+
+            /// \brief
+            /// Serialize an \see{ui128}. endianness is used to properly
+            /// convert between serializer and host byte order.
+            /// \param[in] value \see{ui128} to serialize.
+            /// \return *this.
+            Serializer &operator << (ui128 value);
+            /// \brief
+            /// Extract an \see{ui128}. endianness is used to properly
+            /// convert between serializer and host byte order.
+            /// \param[out] value Where to place the extracted \see{ui128}.
+            /// \return *this.
+            Serializer &operator >> (ui128 &value);
+
+            /// \brief
             /// Return serialized size of \see{f32}.
             /// \param[in] value \see{f32} whose size to return.
             /// \return Serialized size of \see{f32}.
