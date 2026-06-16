@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstdarg>
+#include <type_traits>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/ui128.h"
 

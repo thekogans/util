@@ -465,6 +465,15 @@ namespace thekogans {
             }
         };
 
+        template <typename T>
+        struct is_arithmetic : std::is_arithmetic<T> {};
+
+        template <>
+        struct is_arithmetic<ui128> : std::true_type {};
+
+        template <typename T>
+        inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
+
     } // namespace util
 } // namespace thekogans
 
