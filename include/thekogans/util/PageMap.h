@@ -43,12 +43,12 @@ namespace thekogans {
         /// wiring in pages as the need arises. Given an address, PageMap walks the tree looking
         /// for the correponding page. That tree walk is constant for every page and is dependent
         /// on the particular parameterization of the address space. As pages accumulate,
-        /// eventually memory will become an issue. PageMap provides API to maintain internal
+        /// eventually memory will become an issue. PageMap provides an API to maintain internal
         /// page cache (Clear). PageMap maintains a cache of last accessed page, promoting
         /// locality of refernce by optimizing away tree walks for requests for sufficiently
         /// close addresses. Pages maintain a dirty flag which is used by the Log and Flush
-        /// methods to move pages back to the bitSource. Finally, use Shrink to clip the pages
-        /// outide the new size of the address space.
+        /// methods to move pages back to the bitSource. Finally, Shrink is used to clip pages
+        /// outide the new address space size.
         ///
         /// Ex:
         ///

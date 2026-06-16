@@ -169,7 +169,6 @@ namespace thekogans {
         }
 
         void TransactedFile::CloseEx () {
-            LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 // All transactions must be commited before file close.
                 // On the other hand dirty pages get flushed out to disk

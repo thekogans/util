@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/ui128.h"
 
 /// \brief
 /// For compatibility only.
@@ -121,6 +122,9 @@ namespace thekogans {
         /// Unsigned 64 bit type size.
         const std::size_t UI64_SIZE = sizeof (ui64);
         /// \brief
+        /// Unsigned 128 bit type size.
+        const std::size_t UI128_SIZE = sizeof (ui128);
+        /// \brief
         /// 32 bit float type size.
         const std::size_t F32_SIZE = sizeof (f32);
         /// \brief
@@ -134,6 +138,7 @@ namespace thekogans {
             I16_SIZE == 2 && UI16_SIZE == 2 &&
             I32_SIZE == 4 && UI32_SIZE == 4 &&
             I64_SIZE == 8 && UI64_SIZE == 8 &&
+                             UI128_SIZE == 16 &&
             F32_SIZE == 4 && F64_SIZE == 8,
             "Invalid assumption about integral types sizes.");
 
@@ -147,6 +152,8 @@ namespace thekogans {
         using MachineWord = ui32;
     #elif (TOOLCHAIN_ARCH_WORD_SIZE == 8)
         using MachineWord = ui64;
+    #elif (TOOLCHAIN_ARCH_WORD_SIZE == 16)
+        using MachineWord = ui128;
     #else // (TOOLCHAIN_ARCH_WORD_SIZE == 8)
         #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
     #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
