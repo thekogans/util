@@ -260,7 +260,7 @@ namespace thekogans {
                 "Template parameter must be the size of an integral type.");
             // Ensure value is an arithmetic type.
             static_assert (
-                std::is_arithmetic<T>::value || is_arithmetic<T>::value,
+                std::is_arithmetic<T>::value,
                 "Template parameter must be an arithmetic type.");
             return detail::DoSwapBytes<from, to, T> () (value);
         }

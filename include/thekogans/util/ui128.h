@@ -35,6 +35,7 @@
 #include <stdexcept>
 #include <string>
 #include <climits>
+#include <type_traits>
 
 namespace thekogans {
     namespace util {
@@ -465,16 +466,12 @@ namespace thekogans {
             }
         };
 
-        template <typename T>
-        struct is_arithmetic : std::is_arithmetic<T> {};
-
-        template <>
-        struct is_arithmetic<ui128> : std::true_type {};
-
-        template <typename T>
-        inline constexpr bool is_arithmetic_v = is_arithmetic<T>::value;
-
     } // namespace util
 } // namespace thekogans
+
+namespace std {
+    template<>
+    struct is_arithmetic<thekogans::util::ui128> : true_type {};
+}
 
 #endif // __thekogans_util_ui128_h
