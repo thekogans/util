@@ -587,11 +587,12 @@ namespace thekogans {
                     nodeList.for_each (
                         [this, newSize] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
-                            if (!node->Shrink (newSize)) {
-                                return false;
+                            if (node->Shrink (newSize)) {
+                                nodeList.erase (node);
+                                nodes[node->index].Reset ();
+                                return true;
                             }
-                            nodes[node->index].Reset ();
-                            return true;
+                            return false;
                         },
                         true
                     );
@@ -600,9 +601,9 @@ namespace thekogans {
 
                 /// \brief
                 /// Return (posibly creating) the \see{Page} that contains the given offset.
-                /// \param[in] offset Offset of the page in the file.
+                /// \param[in] pageOffset Offset of the page in the file.
                 /// \return \see{Page} that contains the given offset.
-                PagePtr GetPage (AddressType offset) {
+                PagePtr GetPage (AddressType pageOffset) {
                     Internal *internal = this;
                     std::size_t levelCount = this->pageMap.levelCount;
                     std::size_t levelShift = this->pageMap.levelShift;
@@ -610,16 +611,16 @@ namespace thekogans {
                     std::size_t bitsPerLevel = this->pageMap.bitsPerLevel;
                     while (--levelCount != 0) {
                         internal = (Internal *)internal->GetNode (
-                            (offset & levelMask) >> levelShift);
+                            (pageOffset & levelMask) >> levelShift);
                         levelShift -= bitsPerLevel;
                         levelMask >>= bitsPerLevel;
                     }
                     // Leafs are segments.
                     Segment *segment = (Segment *)internal->GetNode (
-                        (offset & levelMask) >> levelShift, true);
+                        (pageOffset & levelMask) >> levelShift, true);
                     return segment->GetPage (
-                        (offset & this->pageMap.segmentMask) >> this->pageMap.bitsPerPage,
-                        offset & ~(this->pageMap.pageSize - 1));
+                        (pageOffset & this->pageMap.segmentMask) >> this->pageMap.bitsPerPage,
+                        pageOffset);
                 }
 
                 /// \brief
@@ -739,7 +740,7 @@ namespace thekogans {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
                     lastGetPageOffset = pageOffset;
-                    lastGetPage = root.GetPage (offset);
+                    lastGetPage = root.GetPage (pageOffset);
                 }
                 return lastGetPage;
             }
