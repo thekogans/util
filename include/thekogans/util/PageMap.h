@@ -606,13 +606,15 @@ namespace thekogans {
                 PagePtr GetPage (AddressType offset) {
                     Internal *internal = this;
                     std::size_t i = 0;
-                    for (; i < this->pageMap.levelCount - 1; ++i) {
+                    const AddressType *levelMask = this->pageMap.levelMask.array;
+                    const std::size_t *levelShift = this->pageMap.levelShift.array;
+                    for (std::size_t count = this->pageMap.levelCount - 1; i < count; ++i) {
                         internal = (Internal *)internal->GetNode (
-                            (offset & this->pageMap.levelMask[i]) >> this->pageMap.levelShift[i]);
+                            (offset & levelMask[i]) >> levelShift[i]);
                     }
                     // Leafs are segments.
                     Segment *segment = (Segment *)internal->GetNode (
-                        (offset & this->pageMap.levelMask[i]) >> this->pageMap.levelShift[i], true);
+                        (offset & levelMask[i]) >> levelShift[i], true);
                     return segment->GetPage (
                         (offset & this->pageMap.segmentMask) >> this->pageMap.bitsPerPage,
                         offset & ~(this->pageMap.pageSize - 1));
