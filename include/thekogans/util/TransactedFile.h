@@ -261,7 +261,7 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
-            PageMap64 pageMap;
+            PageMap64::SharedPtr pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
@@ -348,7 +348,7 @@ namespace thekogans {
             }
 
             inline std::size_t GetPageSize () const {
-                return pageMap.GetPageSize ();
+                return pageMap->GetPageSize ();
             }
 
             /// \brief

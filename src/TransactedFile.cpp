@@ -23,6 +23,9 @@
         #define _GNU_SOURCE
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include <fcntl.h>
+    #if defined (TOOLCHAIN_OS_OSX)
+        #include <sys/disk.h>
+    #endif // defined (TOOLCHAIN_OS_OSX)
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
@@ -76,6 +79,33 @@ namespace thekogans {
             return false;
         }
 
+        namespace {
+            std::size_t GetPhysicalSectorSize (THEKOGANS_UTIL_HANDLE handle) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                STORAGE_PROPERTY_QUERY query = {
+                    StorageAccessAlignmentProperty,
+                    PropertyStandardQuery
+                };
+                STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR alignment = {0};
+                DWORD bytesReturned = 0;
+                return DeviceIoControl (
+                    handle,
+                    IOCTL_STORAGE_QUERY_PROPERTY,
+                    &query, sizeof (query),
+                    &alignment, sizeof (alignment),
+                    &bytesReturned,
+                    NULL) ? alignment.BytesPerPhysicalSector : 0;
+            #elif defined (TOOLCHAIN_OS_Linux)
+                unsigned int physicalSectorSize = 0;
+                // BLKPBSZGET returns the physical sector size in bytes
+                return ioctl (handle, BLKPBSZGET, &physicalSectorSize) == 0 ? physicalSectorSize : 0;
+            #elif defined (TOOLCHAIN_OS_OSX)
+                uint32_t physicalBlockSize = 0;
+                return ioctl (handle, DKIOCGETPHYSICALBLOCKSIZE, &physicalBlockSize) == 0 ? physicalBlockSize : 0;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+        }
+
         TransactedFile::TransactedFile (
                 Endianness endianness,
                 THEKOGANS_UTIL_HANDLE handle,
@@ -84,10 +114,10 @@ namespace thekogans {
                 Registry::SharedPtr registry) :
                 File (endianness, handle, path),
                 size (0),
-                flags (0),
-                pageMap (*this, 32, 8, 20) {
+                flags (0) {
             if (IsOpen ()) {
                 size = GetSize ();
+                pageMap.Reset (new PageMap64 (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
                 Init (allocator, registry);
             }
         }
@@ -108,8 +138,7 @@ namespace thekogans {
                 Registry::SharedPtr registry) :
                 File (endianness),
                 size (0),
-                flags (0),
-                pageMap (*this, 32, 8, 20) {
+                flags (0) {
             OpenEx (
                 path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -165,6 +194,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             size = GetSize ();
             flags = 0;
+            pageMap.Reset (new PageMap64 (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
             Init (allocator, registry);
         }
 
@@ -176,7 +206,7 @@ namespace thekogans {
                 AbortTransaction ();
                 size = 0;
                 flags = 0;
-                pageMap.Clear (true);
+                pageMap.Reset ();
                 allocator.Reset ();
                 registry.Reset ();
                 Close ();
@@ -193,11 +223,11 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        PageMap64::Page::SharedPtr page = pageMap.GetPage (offset);
+                        PageMap64::Page::SharedPtr page = pageMap->GetPage (offset);
                         std::size_t pageOffset = offset - page->offset;
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this page...
-                            MIN (pageMap.GetPageSize () - pageOffset, count),
+                            MIN (pageMap->GetPageSize () - pageOffset, count),
                             // ...and clamp it to the amount left to read in the file.
                             size - page->offset);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
@@ -230,9 +260,9 @@ namespace thekogans {
                         std::size_t countWritten = 0;
                         ui8 *ptr = (ui8 *)buffer;
                         while (count > 0) {
-                            PageMap64::Page::SharedPtr page = pageMap.GetPage (offset);
+                            PageMap64::Page::SharedPtr page = pageMap->GetPage (offset);
                             std::size_t pageOffset = offset - page->offset;
-                            std::size_t countToWrite = MIN (pageMap.GetPageSize () - pageOffset, count);
+                            std::size_t countToWrite = MIN (pageMap->GetPageSize () - pageOffset, count);
                             std::memcpy (page->data + pageOffset, ptr, countToWrite);
                             page->dirty = true;
                             ptr += countToWrite;
@@ -288,7 +318,7 @@ namespace thekogans {
                 if (IsTransactionPending ()) {
                     if (size >= amount) {
                         size -= amount;
-                        pageMap.Shrink (size);
+                        pageMap->Shrink (size);
                         SetDirty (true);
                         return size;
                     }
@@ -476,8 +506,8 @@ namespace thekogans {
                                 endianness,
                                 logPath,
                                 SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-                            log << (ui32)0 << size << (ui64)pageMap.GetPageSize ();
-                            pageMap.Log (log);
+                            log << (ui32)0 << size << (ui64)pageMap->GetPageSize ();
+                            pageMap->Log (log);
                             log.Seek (0, SEEK_SET);
                             log << MAGIC32;
                             log.Flush ();
@@ -512,7 +542,7 @@ namespace thekogans {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
                         size = GetSize ();
-                        pageMap.Clear ();
+                        pageMap->Clear ();
                         SetDirty (false);
                     }
                     std::string logPath = GetLogPath (path);
@@ -535,7 +565,7 @@ namespace thekogans {
 
         PageMap64::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
-            return pageMap.GetPage (offset);
+            return pageMap->GetPage (offset);
         }
 
         std::string TransactedFile::GetLogPath (const std::string &path) {

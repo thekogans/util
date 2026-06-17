@@ -151,7 +151,11 @@ namespace thekogans {
         /// This will cover the entire 128 bit address space with 8 levels of 4GB segments,
         /// each containing 1K of 4MB pages.
         template<typename T>
-        struct PageMap {
+        struct PageMap : public RefCounted {
+            /// \brief
+            /// Declare \see{RefCounted} pointers.
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (PageMap)
+
             using AddressType = T;
 
         private:
@@ -568,7 +572,7 @@ namespace thekogans {
                     );
                 }
                 /// \brief
-                /// Write dirty pages to their source.
+                /// Write dirty pages to bitSource.
                 virtual void Flush () override {
                     nodeList.for_each (
                         [] (typename NodeList::Callback::argument_type node) ->

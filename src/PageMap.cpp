@@ -21,30 +21,6 @@
 namespace thekogans {
     namespace util {
 
-#if 0
-        DWORD GetPhysicalSectorSize (HANDLE hFile) {
-            STORAGE_PROPERTY_QUERY query = {
-                StorageAccessAlignmentProperty,
-                PropertyStandardQuery
-            };
-            STORAGE_ACCESS_ALIGNMENT_DESCRIPTOR alignment = {0};
-            DWORD bytesReturned = 0;
-            return DeviceIoControl (
-                hFile,
-                IOCTL_STORAGE_QUERY_PROPERTY,
-                &query, sizeof (query),
-                &alignment, sizeof (alignment),
-                &bytesReturned,
-                NULL) ? alignment.BytesPerPhysicalSector : 0;
-        }
-
-        unsigned int GetPhysicalSectorSize (int fd) {
-            unsigned int physical_sector_size = 0;
-            // BLKPBSZGET returns the physical sector size in bytes
-            return ioctl (fd, BLKPBSZGET, &physical_sector_size) == 0 ? physical_sector_size : 0;
-        }
-#endif
-
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (PageMap32::Page)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (PageMap64::Page)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (PageMap128::Page)
