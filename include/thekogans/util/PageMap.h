@@ -20,6 +20,7 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Array.h"
 #include "thekogans/util/RandomSeekSerializer.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/BlockAllocator.h"
@@ -164,14 +165,14 @@ namespace thekogans {
             const std::size_t nodesPerInternal;
             const std::size_t pageSize;
             const std::size_t pagesPerSegment;
-            const std::size_t levelShift;
-            const AddressType levelMask;
-            const AddressType segmentMask;
             const std::size_t internalSize;
             const std::size_t segmentSize;
+            const AddressType segmentMask;
             BlockAllocator internalAllocator;
             BlockAllocator segmentAllocator;
             AlignedAllocator pageAllocator;
+            Array<std::size_t> levelShift;
+            Array<AddressType> levelMask;
 
         public:
             /// \brief
@@ -240,7 +241,7 @@ namespace thekogans {
 
             private:
                 /// \brief
-                /// Write dirty pages to log.
+                /// If dirty, write page to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
                 void Log (RandomSeekSerializer &log) {
                     if (dirty) {
@@ -250,7 +251,7 @@ namespace thekogans {
                     }
                 }
                 /// \brief
-                /// Write dirty pages to their source.
+                /// If dirty, write page to it's source.
                 void Flush () {
                     if (dirty) {
                         pageMap.bitSource.Seek (offset, SEEK_SET);
@@ -604,15 +605,14 @@ namespace thekogans {
                 /// \return \see{Page} that contains the given offset.
                 PagePtr GetPage (AddressType offset) {
                     Internal *internal = this;
-                    std::size_t levelShift = this->pageMap.levelShift;
-                    AddressType levelMask = this->pageMap.levelMask;
-                    for (std::size_t i = 0; i < this->pageMap.levelCount - 1; ++i) {
-                        internal = (Internal *)internal->GetNode ((offset & levelMask) >> levelShift);
-                        levelShift -= this->pageMap.bitsPerLevel;
-                        levelMask >>= this->pageMap.bitsPerLevel;
+                    std::size_t i = 0;
+                    for (; i < this->pageMap.levelCount - 1; ++i) {
+                        internal = (Internal *)internal->GetNode (
+                            (offset & this->pageMap.levelMask[i]) >> this->pageMap.levelShift[i]);
                     }
                     // Leafs are segments.
-                    Segment *segment = (Segment *)internal->GetNode ((offset & levelMask) >> levelShift, true);
+                    Segment *segment = (Segment *)internal->GetNode (
+                        (offset & this->pageMap.levelMask[i]) >> this->pageMap.levelShift[i], true);
                     return segment->GetPage (
                         (offset & this->pageMap.segmentMask) >> this->pageMap.bitsPerPage,
                         offset & ~(this->pageMap.pageSize - 1));
@@ -692,33 +692,42 @@ namespace thekogans {
             static const std::size_t DEFAULT_SEGMENT_NODES_PER_PAGE = 8;
 
             PageMap (
-                RandomSeekSerializer &bitSource_,
-                std::size_t bitsPerSegment_,
-                std::size_t bitsPerLevel_,
-                std::size_t bitsPerPage_,
-                std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT,
-                std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
-                std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                bitSource (bitSource_),
-                bitsPerAddress (sizeof (AddressType) * CHAR_BIT),
-                bitsPerSegment (bitsPerSegment_),
-                bitsPerLevel (bitsPerLevel_),
-                bitsPerPage (bitsPerPage_),
-                levelCount ((bitsPerAddress - bitsPerSegment) / bitsPerLevel),
-                nodesPerInternal (1 << bitsPerLevel),
-                pageSize (1 << bitsPerPage),
-                pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
-                levelShift (bitsPerAddress - bitsPerLevel),
-                levelMask (BitMask (bitsPerLevel) << levelShift),
-                segmentMask (BitMask (bitsPerSegment)),
-                internalSize (Internal::Size (nodesPerInternal)),
-                segmentSize (Segment::Size (pagesPerSegment)),
-                internalAllocator (internalSize, internalNodesPerPage, allocator),
-                segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
-                pageAllocator (pageAlignment, allocator),
-                root (*this, 0),
-                lastGetPageOffset (NOFFS) {}
+                    RandomSeekSerializer &bitSource_,
+                    std::size_t bitsPerSegment_,
+                    std::size_t bitsPerLevel_,
+                    std::size_t bitsPerPage_,
+                    std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT,
+                    std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
+                    std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    bitSource (bitSource_),
+                    bitsPerAddress (sizeof (AddressType) * CHAR_BIT),
+                    bitsPerSegment (bitsPerSegment_),
+                    bitsPerLevel (bitsPerLevel_),
+                    bitsPerPage (bitsPerPage_),
+                    levelCount ((bitsPerAddress - bitsPerSegment) / bitsPerLevel),
+                    nodesPerInternal (1 << bitsPerLevel),
+                    pageSize (1 << bitsPerPage),
+                    pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
+                    internalSize (Internal::Size (nodesPerInternal)),
+                    segmentSize (Segment::Size (pagesPerSegment)),
+                    segmentMask (BitMask (bitsPerSegment)),
+                    internalAllocator (internalSize, internalNodesPerPage, allocator),
+                    segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
+                    pageAllocator (pageAlignment, allocator),
+                    levelShift (levelCount),
+                    levelMask (levelCount),
+                    root (*this, 0),
+                    lastGetPageOffset (NOFFS) {
+                std::size_t shift = bitsPerAddress - bitsPerLevel;
+                AddressType mask = BitMask (bitsPerLevel) << shift;
+                for (std::size_t i = 0; i < levelCount ; ++i) {
+                    levelShift[i] = shift;
+                    shift -= bitsPerLevel;
+                    levelMask[i] = mask;
+                    mask >>= bitsPerLevel;
+                }
+            }
 
             inline std::size_t GetPageSize () const {
                 return pageSize;
