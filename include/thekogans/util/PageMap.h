@@ -50,10 +50,10 @@ namespace thekogans {
         /// page (lastGetPage), promoting locality of reference by optimizing away tree walks
         /// for requests with sufficiently close addresses. Pages maintain a dirty flag which
         /// is used by the Log and Flush methods to move pages back and forth to and from the
-        /// bitSource. Finally, Shrink is used to clip pages outide the new address space size.
+        /// bitSource. Finally, Shrink is used to clip pages outside the new address space size.
         /// With just three simple knobs (bitsPerSegment, bitsPerLevel and bitsPerPage) you
         /// can tune a given address space very precisely. Specifying exactly how many levels
-        /// deep to make the multiway tree, Which directly affects tree walk performance,
+        /// deep to make the multiway tree, which directly affects tree walk performance,
         /// and by extension GetPage performance.
         ///
         /// Ex:
@@ -91,10 +91,10 @@ namespace thekogans {
         /// msb                                                                                                      lsb
         /// |------------------------------------------- bitsPerAddress ----------------------------------------------|
         /// |                                                    |------------------ bitsPerSegment ------------------|
-        /// +------------+---------------------------------------+-----------------------+----------------------------+
-        /// |bitsPerLevel|                                       |                       |-------- bitsPerPage -------|
-        /// +------------+---------------------------------------+-----------------------+----------------------------+
-        /// 63           56                                      31                      19                           0
+        /// +------------+---------------------------------------+---------------------+------------------------------+
+        /// |bitsPerLevel|                                       |                     |--------- bitsPerPage --------|
+        /// +------------+---------------------------------------+---------------------+------------------------------+
+        /// 63           56                                      31                    19                             0
         ///
         /// levelCount = (bitsPerAddress - bitsPerSegment) / bitsPerLevel; (64 - 32) / 8 = 4
         /// nodesPerInternal = 1 << bitsPerLevel; 1 << 8 = 256
@@ -114,11 +114,11 @@ namespace thekogans {
         ///
         /// msb                                                                                                      lsb
         /// |------------------------------------------- bitsPerAddress ----------------------------------------------|
-        /// |                                                    |------------------ bitsPerSegment ------------------|
-        /// +------------+---------------------------------------+-----------------------+----------------------------+
-        /// |bitsPerLevel|                                       |                       |-------- bitsPerPage -------|
-        /// +------------+---------------------------------------+-----------------------+----------------------------+
-        /// 63           54                                      33                      21                           0
+        /// |                                                |-------------------- bitsPerSegment --------------------|
+        /// +------------+-----------------------------------+---------------------+----------------------------------+
+        /// |bitsPerLevel|                                   |                     |----------- bitsPerPage ----------|
+        /// +------------+-----------------------------------+---------------------+----------------------------------+
+        /// 63           54                                  33                    21                                 0
         ///
         /// levelCount = (bitsPerAddress - bitsPerSegment) / bitsPerLevel; (64 - 34) / 10 = 3
         /// nodesPerInternal = 1 << bitsPerLevel; 1 << 10 = 1K
@@ -139,10 +139,10 @@ namespace thekogans {
         /// msb                                                                                                         lsb
         /// |--------------------------------...----------- bitsPerAddress ----------------------------------------------|
         /// |                                                       |------------------ bitsPerSegment ------------------|
-        /// +------------+-------------------...--------------------+-----------------------+----------------------------+
-        /// |bitsPerLevel|                                          |                       |-------- bitsPerPage -------|
-        /// +------------+-------------------...--------------------+-----------------------+----------------------------+
-        /// 127          116                                        31                      21                           0
+        /// +------------+-------------------...--------------------+------------------+---------------------------------+
+        /// |bitsPerLevel|                                          |                  |---------- bitsPerPage ----------|
+        /// +------------+-------------------...--------------------+------------------+---------------------------------+
+        /// 127          116                                        31                 21                                0
         ///
         /// levelCount = (bitsPerAddress - bitsPerSegment) / bitsPerLevel; (128 - 32) / 12 = 8
         /// nodesPerInternal = 1 << bitsPerLevel; 1 << 12 = 4K
