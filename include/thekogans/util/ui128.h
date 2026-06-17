@@ -164,40 +164,43 @@ namespace thekogans {
 
             static const std::size_t size = (sizeof (base_type) + sizeof (base_type)) * CHAR_BIT;
 
-            base_type hi;
             base_type lo;
+            base_type hi;
 
             // constructors for all basic types
+            ui128 () :
+                lo (0),
+                hi (0) {}
             ui128 (
-                base_type hi_ = 0,
-                base_type lo_ = 0) :
-                hi (hi_),
-                lo (lo_) {}
+                base_type lo_,
+                base_type hi_) :
+                lo (lo_),
+                hi (lo_) {}
             ui128 (int value) :
-                    hi (0),
-                    lo (static_cast<base_type> (value)) {
+                    lo (static_cast<base_type> (value)),
+                    hi (0) {
                 if (value < 0) {
                     hi = static_cast<base_type> (-1);
                 }
             }
             ui128 (unsigned int value) :
-                hi (0),
-                lo (static_cast<base_type> (value)) {}
+                lo (static_cast<base_type> (value)),
+                hi (0) {}
             ui128 (float value) :
-                hi (0),
-                lo (static_cast<base_type> (value)) {}
+                lo (static_cast<base_type> (value)),
+                hi (0) {}
             ui128 (double value) :
-                hi (0),
-                lo (static_cast<base_type> (value)) {}
+                lo (static_cast<base_type> (value)),
+                hi (0) {}
             ui128 (const ui128 &value) :
-                hi (value.hi),
-                lo (value.lo) {}
+                lo (value.lo),
+                hi (value.hi) {}
             ui128 (base_type value) :
-                hi (0),
-                lo (value) {}
+                lo (value),
+                hi (0) {}
             ui128 (const std::string &sz) :
-                    hi (0),
-                    lo (0) {
+                    lo (0),
+                    hi (0) {
                 // do we have at least one character?
                 if (!sz.empty ()) {
                     // make some reasonable assumptions
@@ -250,7 +253,7 @@ namespace thekogans {
                                 }
                             }
                             else {
-                                /* completely invalid character */
+                                // completely invalid character
                                 break;
                             }
                             (*this) *= radix;
@@ -267,15 +270,15 @@ namespace thekogans {
 
             ui128 &operator = (const ui128 &other) {
                 if (&other != this) {
-                    hi = other.hi;
                     lo = other.lo;
+                    hi = other.hi;
                 }
                 return *this;
             }
 
             // comparison operators
             bool operator == (const ui128 &o) const {
-                return hi == o.hi && lo == o.lo;
+                return lo == o.lo && hi == o.hi;
             }
 
             bool operator < (const ui128 &o) const {
@@ -284,7 +287,7 @@ namespace thekogans {
 
             // unary operators
             bool operator ! () const {
-                return !(hi != 0 || lo != 0);
+                return !(lo != 0 || hi != 0);
             }
 
             ui128 operator - () const {
@@ -294,8 +297,8 @@ namespace thekogans {
 
             ui128 operator ~ () const {
                 ui128 t (*this);
-                t.hi = ~t.hi;
                 t.lo = ~t.lo;
+                t.hi = ~t.hi;
                 return t;
             }
 
@@ -315,9 +318,9 @@ namespace thekogans {
 
             // basic math operators
             ui128 &operator += (const ui128 &b) {
-                hi += b.hi;
                 const base_type old_lo = lo;
                 lo += b.lo;
+                hi += b.hi;
                 if (lo < old_lo) {
                     ++hi;
                 }
@@ -334,15 +337,15 @@ namespace thekogans {
                 // check for multiply by 0
                 // result is always 0 :-P
                 if (b == 0) {
-                    hi = 0;
                     lo = 0;
+                    hi = 0;
                 }
                 else if (b != 1) {
                     // check we aren't multiplying by 1
                     ui128 a (*this);
                     ui128 t = b;
-                    hi = 0;
                     lo = 0;
+                    hi = 0;
                     for (unsigned int i = 0; i < size; ++i) {
                         if ((t & 1) != 0) {
                             *this += (a << i);
@@ -354,20 +357,20 @@ namespace thekogans {
             }
 
             ui128 &operator |= (const ui128 &b) {
-                hi |= b.hi;
                 lo |= b.lo;
+                hi |= b.hi;
                 return *this;
             }
 
             ui128 &operator &= (const ui128 &b) {
-                hi &= b.hi;
                 lo &= b.lo;
+                hi &= b.hi;
                 return *this;
             }
 
             ui128 &operator ^= (const ui128 &b) {
-                hi ^= b.hi;
                 lo ^= b.lo;
+                hi ^= b.hi;
                 return *this;
             }
 
@@ -386,15 +389,15 @@ namespace thekogans {
             ui128 &operator <<= (const ui128 &rhs) {
                 unsigned int n = rhs.to_integer ();
                 if (n >= size) {
-                    hi = 0;
                     lo = 0;
+                    hi = 0;
                 }
                 else {
                     const unsigned int halfsize = size / 2;
                     if (n >= halfsize) {
                         n -= halfsize;
-                        hi = lo;
                         lo = 0;
+                        hi = lo;
                     }
                     if (n != 0) {
                         // shift high half
@@ -412,8 +415,8 @@ namespace thekogans {
             ui128 &operator >>= (const ui128 &rhs) {
                 unsigned int n = rhs.to_integer ();
                 if (n >= size) {
-                    hi = 0;
                     lo = 0;
+                    hi = 0;
                 }
                 else {
                     const unsigned int halfsize = size / 2;
@@ -453,7 +456,7 @@ namespace thekogans {
                 }
                 // at worst it will be size digits (base 2) so make our buffer
                 // that plus room for null terminator
-                static char sz [size + 1];
+                char sz[size + 1];
                 sz[sizeof (sz) - 1] = '\0';
                 ui128 ii (*this);
                 int i = size - 1;
@@ -466,10 +469,14 @@ namespace thekogans {
             }
         };
 
+        #define UI128_C(s) thekogans::util::ui128 (#s)
+
     } // namespace util
 } // namespace thekogans
 
 namespace std {
+    template<>
+    struct is_integral<thekogans::util::ui128> : true_type {};
     template<>
     struct is_arithmetic<thekogans::util::ui128> : true_type {};
 }

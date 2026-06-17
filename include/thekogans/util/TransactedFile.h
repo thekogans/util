@@ -261,7 +261,7 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
-            PageMap pageMap;
+            PageMap64 pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
@@ -348,7 +348,7 @@ namespace thekogans {
             }
 
             inline std::size_t GetPageSize () const {
-                return pageMap.pageSize;
+                return pageMap.GetPageSize ();
             }
 
             /// \brief
@@ -500,7 +500,7 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            PageMap::Page::SharedPtr GetPage (ui64 offset);
+            PageMap64::Page::SharedPtr GetPage (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

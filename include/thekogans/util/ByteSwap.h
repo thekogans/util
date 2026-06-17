@@ -180,7 +180,7 @@ namespace thekogans {
                 /// \param[in] value Value whose bytes to swap.
                 /// \return Byte swapped value.
                 inline ui128 operator () (ui128 value) {
-                    return ui128 (SwapBytes<ui64, 8> () (value.lo), SwapBytes<ui64, 8> () (value.hi));
+                    return ui128 (SwapBytes<ui64, 8> () (value.hi), SwapBytes<ui64, 8> () (value.lo));
                 }
             };
 

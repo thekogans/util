@@ -85,7 +85,7 @@ namespace thekogans {
                 File (endianness, handle, path),
                 size (0),
                 flags (0),
-                pageMap (*this) {
+                pageMap (*this, 32, 8, 20) {
             if (IsOpen ()) {
                 size = GetSize ();
                 Init (allocator, registry);
@@ -109,7 +109,7 @@ namespace thekogans {
                 File (endianness),
                 size (0),
                 flags (0),
-                pageMap (*this) {
+                pageMap (*this, 32, 8, 20) {
             OpenEx (
                 path,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -193,11 +193,11 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        PageMap::Page::SharedPtr page = pageMap.GetPage (offset);
+                        PageMap64::Page::SharedPtr page = pageMap.GetPage (offset);
                         std::size_t pageOffset = offset - page->offset;
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this page...
-                            MIN (pageMap.pageSize - pageOffset, count),
+                            MIN (pageMap.GetPageSize () - pageOffset, count),
                             // ...and clamp it to the amount left to read in the file.
                             size - page->offset);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
@@ -230,9 +230,9 @@ namespace thekogans {
                         std::size_t countWritten = 0;
                         ui8 *ptr = (ui8 *)buffer;
                         while (count > 0) {
-                            PageMap::Page::SharedPtr page = pageMap.GetPage (offset);
+                            PageMap64::Page::SharedPtr page = pageMap.GetPage (offset);
                             std::size_t pageOffset = offset - page->offset;
-                            std::size_t countToWrite = MIN (pageMap.pageSize - pageOffset, count);
+                            std::size_t countToWrite = MIN (pageMap.GetPageSize () - pageOffset, count);
                             std::memcpy (page->data + pageOffset, ptr, countToWrite);
                             page->dirty = true;
                             ptr += countToWrite;
@@ -476,7 +476,7 @@ namespace thekogans {
                                 endianness,
                                 logPath,
                                 SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-                            log << (ui32)0 << size << (ui64)pageMap.pageSize;
+                            log << (ui32)0 << size << (ui64)pageMap.GetPageSize ();
                             pageMap.Log (log);
                             log.Seek (0, SEEK_SET);
                             log << MAGIC32;
@@ -533,7 +533,7 @@ namespace thekogans {
             }
         }
 
-        PageMap::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
+        PageMap64::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap.GetPage (offset);
         }

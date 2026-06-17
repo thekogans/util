@@ -98,7 +98,7 @@ protected:
     std::size_t position;
     /// \brief
     /// \see{TransactedFile::Page} associated with this range.
-    PageMap::Page::SharedPtr page;
+    PageMap64::Page::SharedPtr page;
     /// \brief
     /// true == We straddle a \see{TransactedFile::Page} page boundary.
     /// We allocated data and need to copy and free it in

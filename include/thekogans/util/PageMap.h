@@ -24,6 +24,7 @@
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/BlockAllocator.h"
 #include "thekogans/util/AlignedAllocator.h"
+#include "thekogans/util/Exception.h"
 
 namespace thekogans {
     namespace util {
@@ -44,11 +45,33 @@ namespace thekogans {
         /// for the correponding page. That tree walk is constant for every page and is dependent
         /// on the particular parameterization of the address space. As pages accumulate,
         /// eventually memory will become an issue. PageMap provides an API to maintain internal
-        /// page cache (Clear). PageMap maintains a cache of last accessed page, promoting
-        /// locality of refernce by optimizing away tree walks for requests for sufficiently
-        /// close addresses. Pages maintain a dirty flag which is used by the Log and Flush
-        /// methods to move pages back to the bitSource. Finally, Shrink is used to clip pages
-        /// outide the new address space size.
+        /// page cache (Clear). PageMap maintains a cache of last accessed page (lastGetPage),
+        /// promoting locality of refernce by optimizing away tree walks for requests with
+        /// sufficiently close addresses. Pages maintain a dirty flag which is used by the
+        /// Log and Flush methods to move pages back and forth to the bitSource. Finally,
+        /// Shrink is used to clip pages outide the new address space size.
+        ///
+        /// Ex:
+        ///
+        /// bitsPerOffset = 32
+        /// bitsPerSegment = 20
+        /// bitsPerLevel = 6
+        /// bitsPerPage = 16
+        ///
+        /// msb                                                                        lsb
+        /// |----------------------------- bitsPerOffset -------------------------------|
+        /// |                         |----------------- bitsPerSegment ----------------|
+        /// +------------+------------+-----------+-------------------------------------+
+        /// |bitsPerLevel|            |           |------------- bitsPerPage -----------|
+        /// +------------+------------+-----------+-------------------------------------+
+        /// 31           26           19          15                                    0
+        ///
+        /// This will cover the entire 32 bit address space with 2 levels of 1MB segments, each containing 16 of 64KB pages.
+        ///
+        /// levelCount = (bitsPerOffset - bitsPerSegment) / bitsPerLevel; (32 - 20) / 6 = 2
+        /// nodesPerInternal = 1 << bitsPerLevel; 1 << 6 = 64
+        /// pageSize = 1 << bitsPerPage; 1 << 16 = 64KB
+        /// pagesPerSegment = 1 << (bitsPerSegment - bitsPerPage); 1 << (20 - 16) = 16
         ///
         /// Ex:
         ///
@@ -93,9 +116,11 @@ namespace thekogans {
         /// nodesPerInternal = 1 << bitsPerLevel; 1 << 12 = 4K
         /// pageSize = 1 << bitsPerPage; 1 << 22 = 4MB
         /// pagesPerSegment = 1 << (bitsPerSegment - bitsPerPage); 1 << (32 - 22) = 1K
-        struct _LIB_THEKOGANS_UTIL_DECL PageMap {
-            using BaseType = ui64;
+        template<typename T>
+        struct PageMap {
+            using BaseType = T;
 
+        private:
             RandomSeekSerializer &bitSource;
             const std::size_t bitsPerOffset;
             const std::size_t bitsPerSegment;
@@ -105,8 +130,6 @@ namespace thekogans {
             const std::size_t nodesPerInternal;
             const std::size_t pageSize;
             const std::size_t pagesPerSegment;
-
-        private:
             const std::size_t levelShift;
             const BaseType levelMask;
             const BaseType segmentMask;
@@ -163,27 +186,64 @@ namespace thekogans {
                 /// \param[in] index_ Page index in \see{Segment::pages}.
                 /// \param[in] offset_ Page offset.
                 Page (
-                    PageMap &pageMap_,
-                    std::size_t index_,
-                    BaseType offset_);
+                        PageMap &pageMap_,
+                        std::size_t index_,
+                        BaseType offset_) :
+                        pageMap (pageMap_),
+                        index (index_),
+                        offset (offset_),
+                        data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
+                        dirty (false) {
+                    pageMap.bitSource.Seek (offset, SEEK_SET);
+                    std::size_t countRead = pageMap.bitSource.Read (data, pageMap.pageSize);
+                    SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
+                }
                 /// \brief
                 /// dtor.
-                virtual ~Page ();
+                virtual ~Page () {
+                    pageMap.pageAllocator.Free (data, pageMap.pageSize);
+                }
 
             private:
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                void Log (RandomSeekSerializer &log);
+                void Log (RandomSeekSerializer &log) {
+                    if (dirty) {
+                        log << offset;
+                        log.Write (data, pageMap.pageSize);
+                        dirty = false;
+                    }
+                }
                 /// \brief
                 /// Write dirty pages to their source.
-                void Flush ();
+                void Flush () {
+                    if (dirty) {
+                        pageMap.bitSource.Seek (offset, SEEK_SET);
+                        pageMap.bitSource.Write (data, pageMap.pageSize);
+                        dirty = false;
+                    }
+                }
                 /// \brief
                 /// Clip the page to the new size.
                 /// \param[in] newize Size to clip the page to.
                 /// \return true == the page was completely clipped.
                 /// false == the page was partially clipped.
-                bool Shrink (BaseType newSize);
+                bool Shrink (BaseType newSize) {
+                    if (offset < newSize) {
+                        BaseType consumed = newSize - offset;
+                        if (consumed < pageMap.pageSize) {
+                            // Pages don't maintain internal lengths. All pages are
+                            // pageMap.pageSize long (with potentially the last one
+                            // being less). If this is the last page, we clear that
+                            // part which falls outside the new address space size.
+                            SecureZeroMemory (data + consumed, pageMap.pageSize - consumed);
+                            dirty = true;
+                        }
+                        return false;
+                    }
+                    return true;
+                }
 
                 friend struct Segment;
 
@@ -254,9 +314,11 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Segment)
 
+                using PagePtr = typename Page::SharedPtr;
+
                 /// \brief
                 /// \see{Pages} tilling the segment.
-                Page::SharedPtr *pages;
+                PagePtr *pages;
                 /// \brief
                 /// \see{IntrusiveList} of linked \see{Page}s.
                 PageList pageList;
@@ -266,47 +328,137 @@ namespace thekogans {
                 /// \param[in] pageMap
                 /// \param[in] index Segment index in \see{Internal::nodes}.
                 Segment (
-                    PageMap &pageMap,
-                    std::size_t index);
+                        PageMap &pageMap,
+                        std::size_t index) :
+                        Node (pageMap, index),
+                        pages ((PagePtr *)(this + 1)) {
+                    for (std::size_t i = 0; i < pageMap.pagesPerSegment; ++i) {
+                        new (&pages[i]) PagePtr ();
+                    }
+                }
                 /// \brief
                 /// dtor.
-                virtual ~Segment ();
+                virtual ~Segment () {
+                    for (std::size_t i = 0; i < this->pageMap.pagesPerSegment; ++i) {
+                        pages[i].~PagePtr ();
+                    }
+                }
 
                 /// \brief
                 /// Delete pages.
                 /// \param[in] all true == clear all, false == dirty only.
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) override;
+                virtual bool Clear (bool all = false) override {
+                    pageList.for_each (
+                        [this, all] (typename PageList::Callback::argument_type page) ->
+                                typename PageList::Callback::result_type {
+                            if (all || page->dirty) {
+                                pageList.erase (page);
+                                pages[page->index].Reset ();
+                            }
+                            return true;
+                        }
+                    );
+                    return pageList.empty ();
+                }
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (RandomSeekSerializer &log) override;
+                virtual void Log (RandomSeekSerializer &log) override {
+                    pageList.for_each (
+                        [&log] (typename PageList::Callback::argument_type page) ->
+                                typename PageList::Callback::result_type {
+                            page->Log (log);
+                            return true;
+                        }
+                    );
+                }
                 /// \brief
                 /// Write dirty pages to their source.
-                virtual void Flush () override;
+                virtual void Flush () override {
+                    pageList.for_each (
+                        [] (typename PageList::Callback::argument_type page) ->
+                                typename PageList::Callback::result_type {
+                            page->Flush ();
+                            return true;
+                        }
+                    );
+                }
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a page was encoutered whose offset was < newSize, stop iterating.
-                virtual bool Shrink (BaseType newSize) override;
+                virtual bool Shrink (BaseType newSize) override {
+                    pageList.for_each (
+                        [this, newSize] (typename PageList::Callback::argument_type page) ->
+                                typename PageList::Callback::result_type {
+                            if (page->Shrink (newSize)) {
+                                pageList.erase (page);
+                                pages[page->index].Reset ();
+                                return true;
+                            }
+                            return false;
+                        },
+                        true
+                    );
+                    return pageList.empty ();
+                }
 
                 /// \brief
                 /// Return the \see{Page} @index. Create if null.
                 /// \param[in] pageIndex Page index in the pages array.
                 /// \param[in] pageOffset Page offset (multiple of pageSize).
                 /// \return The new page.
-                Page::SharedPtr GetPage (
-                    ui32 pageIndex,
-                    BaseType pageOffset);
+                typename Page::SharedPtr GetPage (
+                        ui32 pageIndex,
+                        BaseType pageOffset) {
+                    if (pages[pageIndex] == nullptr) {
+                        // We don't align the page boundary as it's a fairly complex
+                        // structure with internal machinery that's hidden from view
+                        // (vptr tables...).
+                        Page *page = new Page (this->pageMap, pageIndex, pageOffset);
+                        pages[pageIndex].Reset (page);
+                        // Insert the new page in to the ordered (on index) page list.
+                        // A quick optimization to check if it's the first or last page
+                        // potentially saving us a list walk...
+                        if (pageList.empty () || pageList.tail->index < page->index) {
+                            // ...it is. First or last is the same push_back.
+                            pageList.push_back (page);
+                        }
+                        else {
+                            // ...otherwise walk the list. The page will go in the middle somewhere.
+                            pageList.for_each (
+                                [this, page] (typename PageList::Callback::argument_type page_) ->
+                                        typename PageList::Callback::result_type {
+                                    if (page_->index > page->index) {
+                                        pageList.insert (page, page_);
+                                        return false;
+                                    }
+                                    return true;
+                                }
+                            );
+                        }
+                    }
+                    return pages[pageIndex];
+                }
 
-                virtual void Harakiri () override;
+                virtual void Harakiri () override {
+                    this->~Segment ();
+                    this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
+                }
 
-                static std::size_t Size (std::size_t pagesPerSegment);
+                static std::size_t Size (std::size_t pagesPerSegment) {
+                    return sizeof (Segment) + pagesPerSegment * sizeof (typename Page::SharedPtr);
+                }
                 static Node *Alloc (
-                    PageMap &pageMap,
-                    std::size_t index);
+                        PageMap &pageMap,
+                        std::size_t index) {
+                    return new (
+                        pageMap.segmentAllocator.Alloc (
+                            pageMap.segmentSize)) Segment (pageMap, index);
+                }
 
                 /// \brief
                 /// Segment is neither copy constructable, nor assignable.
@@ -322,9 +474,11 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Internal)
 
+                using NodePtr = typename Node::SharedPtr;
+
                 /// \brief
                 /// These are the internal 4G of 4GB segments.
-                Node::SharedPtr *nodes;
+                NodePtr *nodes;
                 /// \brief
                 /// \see{IntrusiveList} of \see{Node}s.
                 NodeList nodeList;
@@ -333,37 +487,102 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] index Internal index in nodes.
                 Internal (
-                    PageMap &pageMap,
-                    std::size_t index);
+                        PageMap &pageMap,
+                        std::size_t index) :
+                        Node (pageMap, index),
+                        nodes ((NodePtr *)(this + 1)) {
+                    for (std::size_t i = 0; i < pageMap.nodesPerInternal; ++i) {
+                        new (&nodes[i]) NodePtr ();
+                    }
+                }
                 /// \brief
                 /// dtor.
-                virtual ~Internal ();
+                virtual ~Internal () {
+                    for (std::size_t i = 0; i < this->pageMap.nodesPerInternal; ++i) {
+                        nodes[i].~NodePtr ();
+                    }
+                }
 
                 /// \brief
                 /// Delete pages.
                 /// \param[in] all true == clear all, false == dirty only.
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) override;
+                virtual bool Clear (bool all = false) override {
+                    nodeList.for_each (
+                        [this, all] (typename NodeList::Callback::argument_type node) ->
+                                typename NodeList::Callback::result_type {
+                            if (all || node->Clear (all)) {
+                                nodeList.erase (node);
+                                nodes[node->index].Reset ();
+                            }
+                            return true;
+                        }
+                    );
+                    return nodeList.empty ();
+                }
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (RandomSeekSerializer &log) override;
+                virtual void Log (RandomSeekSerializer &log) override {
+                    nodeList.for_each (
+                        [&log] (typename NodeList::Callback::argument_type node) ->
+                                typename NodeList::Callback::result_type {
+                            node->Log (log);
+                            return true;
+                        }
+                    );
+                }
                 /// \brief
                 /// Write dirty pages to their source.
-                virtual void Flush () override;
+                virtual void Flush () override {
+                    nodeList.for_each (
+                        [] (typename NodeList::Callback::argument_type node) ->
+                                typename NodeList::Callback::result_type {
+                            node->Flush ();
+                            return true;
+                        }
+                    );
+                }
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a page was encoutered whose offset was < newSize, stop iterating.
-                virtual bool Shrink (BaseType newSize) override;
+                virtual bool Shrink (BaseType newSize) override {
+                    nodeList.for_each (
+                        [this, newSize] (typename NodeList::Callback::argument_type node) ->
+                                typename NodeList::Callback::result_type {
+                            if (!node->Shrink (newSize)) {
+                                return false;
+                            }
+                            nodes[node->index].Reset ();
+                            return true;
+                        },
+                        true
+                    );
+                    return nodeList.empty ();
+                }
 
                 /// \brief
                 /// Return (posibly creating) the \see{Page} that contains the given offset.
                 /// \param[in] offset Offset of the page in the file.
                 /// \return \see{Page} that contains the given offset.
-                Page::SharedPtr GetPage (BaseType offset);
+                typename Page::SharedPtr GetPage (BaseType offset) {
+                    Internal *internal = this;
+                    std::size_t levelShift = this->pageMap.levelShift;
+                    BaseType levelMask = this->pageMap.levelMask;
+                    for (std::size_t i = 0; i < this->pageMap.levelCount - 1; ++i) {
+                        internal = (Internal *)internal->GetNode ((offset & levelMask) >> levelShift);
+                        levelShift -= this->pageMap.bitsPerLevel;
+                        levelMask >>= this->pageMap.bitsPerLevel;
+                    }
+                    // Leafs are segments.
+                    Segment *segment = (Segment *)internal->GetNode ((offset & levelMask) >> levelShift, true);
+                    return segment->GetPage (
+                        (offset & this->pageMap.segmentMask) >> this->pageMap.bitsPerPage,
+                        offset & ~(this->pageMap.pageSize - 1));
+                }
 
                 /// \brief
                 /// Return either an \see{Internal} scaffolding node
@@ -378,15 +597,47 @@ namespace thekogans {
                 /// overhead to return a SharedPtr. A raw pointer will do
                 /// just fine.
                 Node *GetNode (
-                    std::size_t index,
-                    bool segment = false);
+                        std::size_t index,
+                        bool segment = false) {
+                    if (nodes[index] == nullptr) {
+                        Node *node = segment ?
+                            Segment::Alloc (this->pageMap, index) :
+                            Internal::Alloc (this->pageMap, index);
+                        nodes[index].Reset (node);
+                        if (nodeList.empty () || nodeList.tail->index < node->index) {
+                            nodeList.push_back (node);
+                        }
+                        else {
+                            nodeList.for_each (
+                                [this, node] (typename NodeList::Callback::argument_type node_) ->
+                                        typename NodeList::Callback::result_type {
+                                    if (node_->index > node->index) {
+                                        nodeList.insert (node, node_);
+                                        return false;
+                                    }
+                                    return true;
+                                }
+                            );
+                        }
+                    }
+                    return nodes[index].Get ();
+                }
 
-                virtual void Harakiri () override;
+                virtual void Harakiri () override {
+                    this->~Internal ();
+                    this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
+                }
 
-                static std::size_t Size (std::size_t nodesPerInternal);
+                static std::size_t Size (std::size_t nodesPerInternal) {
+                    return sizeof (Internal) + nodesPerInternal * sizeof (typename Node::SharedPtr);
+                }
                 static Node *Alloc (
-                    PageMap &pageMap,
-                    std::size_t index);
+                        PageMap &pageMap,
+                        std::size_t index) {
+                    return new (
+                        pageMap.segmentAllocator.Alloc (
+                            pageMap.internalSize)) Internal (pageMap, index);
+                }
 
                 /// \brief
                 /// Internal is neither copy constructable, nor assignable.
@@ -399,29 +650,24 @@ namespace thekogans {
             BaseType lastGetPageOffset;
             /// \brief
             /// Last accessed page cache promoting locality of refernce.
-            Page::SharedPtr lastGetPage;
+            typename Page::SharedPtr lastGetPage;
 
         public:
-            static const std::size_t DEFAULT_BITS_PER_OFFSET = 64;
-            static const std::size_t DEFAULT_BITS_PER_SEGMENT = 32;
-            static const std::size_t DEFAULT_BITS_PER_LEVEL = 8;
-            static const std::size_t DEFAULT_BITS_PER_PAGE = 20;
             static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
             static const std::size_t DEFAULT_INTERNAL_NODES_PER_PAGE = 16;
             static const std::size_t DEFAULT_SEGMENT_NODES_PER_PAGE = 8;
 
             PageMap (
                 RandomSeekSerializer &bitSource_,
-                std::size_t bitsPerOffset_ = DEFAULT_BITS_PER_OFFSET,
-                std::size_t bitsPerSegment_ = DEFAULT_BITS_PER_SEGMENT,
-                std::size_t bitsPerLevel_ = DEFAULT_BITS_PER_LEVEL,
-                std::size_t bitsPerPage_ = DEFAULT_BITS_PER_PAGE,
+                std::size_t bitsPerSegment_,
+                std::size_t bitsPerLevel_,
+                std::size_t bitsPerPage_,
                 std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT,
                 std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
                 std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
                 util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
                 bitSource (bitSource_),
-                bitsPerOffset (bitsPerOffset_),
+                bitsPerOffset (sizeof (BaseType) * CHAR_BIT),
                 bitsPerSegment (bitsPerSegment_),
                 bitsPerLevel (bitsPerLevel_),
                 bitsPerPage (bitsPerPage_),
@@ -440,34 +686,74 @@ namespace thekogans {
                 root (*this, 0),
                 lastGetPageOffset (NOFFS) {}
 
+            inline std::size_t GetPageSize () const {
+                return pageSize;
+            }
+
             /// \brief
             /// Return the \see{Page} that contains the given offset.
             /// \param[in] offset Offset whose page to return.
             /// \return \see{Page} that contains the given offset.
-            Page::SharedPtr GetPage (BaseType offset);
+            typename Page::SharedPtr GetPage (BaseType offset) {
+                BaseType pageOffset = offset & ~(pageSize - 1);
+                if (lastGetPageOffset != pageOffset) {
+                    lastGetPageOffset = pageOffset;
+                    lastGetPage = root.GetPage (offset);
+                }
+                return lastGetPage;
+            }
             /// \brief
             /// Delete pages.
             /// \param[in] all true == clear all, false == dirty only.
-            void Clear (bool all = false);
+            void Clear (bool all = false) {
+                root.Clear (all);
+                if (all || (lastGetPage != nullptr && lastGetPage->dirty)) {
+                    lastGetPageOffset = NOFFS;
+                    lastGetPage.Reset ();
+                }
+            }
             /// \brief
             /// Write dirty pages to log.
             /// \param[in] log \see{RandomSeekSerializer} to write to.
-            void Log (RandomSeekSerializer &log);
+            void Log (RandomSeekSerializer &log) {
+                root.Log (log);
+            }
             /// \brief
             /// Write dirty pages to their source.
-            void Flush ();
+            void Flush () {
+                root.Flush ();
+            }
             /// \brief
             /// Delete all pages whose offset > newSize.
             /// \param[in] newSize New size to clip the address space to.
-            void Shrink (BaseType newSize);
+            void Shrink (BaseType newSize) {
+                root.Shrink (newSize);
+                // If newSize is <= lastGetPageOffset, lastGetPage
+                // will have been deleted by root.Shrink.
+                if (lastGetPageOffset >= newSize) {
+                    lastGetPageOffset = NOFFS;
+                    lastGetPage.Reset ();
+                }
+            }
 
         private:
-            static BaseType BitMask (std::size_t count);
+            static BaseType BitMask (std::size_t count) {
+                BaseType mask = 0;
+                while (count--) {
+                    mask <<= 1;
+                    ++mask;
+                }
+                return mask;
+            }
 
             /// \brief
             /// PageMap is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (PageMap)
         };
+
+        using PageMap32 = PageMap<ui32>;
+        using PageMap64 = PageMap<ui64>;
+        using PageMap128 = PageMap<ui128>;
 
     } // namespace util
 } // namespace thekogans
