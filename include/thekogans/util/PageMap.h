@@ -605,10 +605,10 @@ namespace thekogans {
                 /// \return \see{Page} that contains the given offset.
                 PagePtr GetPage (AddressType offset) {
                     Internal *internal = this;
-                    std::size_t i = 0;
+                    std::size_t i = this->pageMap.levelCount;
                     const AddressType *levelMask = this->pageMap.levelMask.array;
                     const std::size_t *levelShift = this->pageMap.levelShift.array;
-                    for (std::size_t count = this->pageMap.levelCount - 1; i < count; ++i) {
+                    while (--i != 0) {
                         internal = (Internal *)internal->GetNode (
                             (offset & levelMask[i]) >> levelShift[i]);
                     }
@@ -723,7 +723,7 @@ namespace thekogans {
                     lastGetPageOffset (NOFFS) {
                 std::size_t shift = bitsPerAddress - bitsPerLevel;
                 AddressType mask = BitMask (bitsPerLevel) << shift;
-                for (std::size_t i = 0; i < levelCount ; ++i) {
+                for (std::size_t i = levelCount; i--;) {
                     levelShift[i] = shift;
                     shift -= bitsPerLevel;
                     levelMask[i] = mask;
