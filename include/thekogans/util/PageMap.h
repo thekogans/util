@@ -48,11 +48,12 @@ namespace thekogans {
         /// page cache (Clear). PageMap maintains a cache of last accessed page (lastGetPage),
         /// promoting locality of refernce by optimizing away tree walks for requests with
         /// sufficiently close addresses. Pages maintain a dirty flag which is used by the
-        /// Log and Flush methods to move pages back and forth to the bitSource. Finally,
-        /// Shrink is used to clip pages outide the new address space size.
+        /// Log and Flush methods to move pages back and forth to and from the bitSource.
+        /// Finally, Shrink is used to clip pages outide the new address space size.
         ///
         /// Ex:
         ///
+        /// T = ui32
         /// bitsPerOffset = 32
         /// bitsPerSegment = 20
         /// bitsPerLevel = 6
@@ -75,6 +76,7 @@ namespace thekogans {
         ///
         /// Ex:
         ///
+        /// T = ui64
         /// bitsPerOffset = 64
         /// bitsPerSegment = 32
         /// bitsPerLevel = 8
@@ -97,6 +99,7 @@ namespace thekogans {
         ///
         /// Ex:
         ///
+        /// T = ui128
         /// bitsPerOffset = 128
         /// bitsPerSegment = 32
         /// bitsPerLevel = 12
@@ -450,7 +453,7 @@ namespace thekogans {
                 }
 
                 static std::size_t Size (std::size_t pagesPerSegment) {
-                    return sizeof (Segment) + pagesPerSegment * sizeof (typename Page::SharedPtr);
+                    return sizeof (Segment) + pagesPerSegment * sizeof (PagePtr);
                 }
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -629,7 +632,7 @@ namespace thekogans {
                 }
 
                 static std::size_t Size (std::size_t nodesPerInternal) {
-                    return sizeof (Internal) + nodesPerInternal * sizeof (typename Node::SharedPtr);
+                    return sizeof (Internal) + nodesPerInternal * sizeof (NodePtr);
                 }
                 static Node *Alloc (
                         PageMap &pageMap,
