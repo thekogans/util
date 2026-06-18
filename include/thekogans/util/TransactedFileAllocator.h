@@ -264,7 +264,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         }
         /// \brief
         /// Return true if this is the last block in the heap.
-        /// \param[in] file \see{TransactedFile} where the block resides.
         /// \return true == last block in the heap.
         inline bool IsLast () const {
             return GetOffset () + GetSize () + HEADER_SIZE == file.GetSizeEx ();
@@ -285,12 +284,13 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
 
         /// \brief
         /// Read the block.
-        /// \param[in] file \see{TransactedFile} where the block resides.
         void Read ();
         /// \brief
         /// Write the block.
-        /// \param[in] file \see{TransactedFile} where the block resides.
         void Write () const;
+        /// \brief
+        /// Zero out the block (both header and footer).
+        void Clear () const;
 
         /// \brief
         /// Needs access to \see{Header}.

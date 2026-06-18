@@ -61,6 +61,10 @@ namespace thekogans {
                     Block block (*file, header.freeBTreeNodeOffset);
                     block.Read ();
                     if (block.IsFree () && block.IsBTreeNode ()) {
+                        // Don't leak anything, including internal structure info.
+                        TransactedFile::Range range (*file, block.GetOffset (), PTR_TYPE_SIZE, false);
+                        range.Seek (
+                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
                         SetDirty (true);
                     }
@@ -94,7 +98,7 @@ namespace thekogans {
                     //         result.second         |
                     //                         page boundary
                     //
-                    // to: Where we avoid straddleing a page boundary...
+                    // to: Where we avoid straddling a page boundary...
                     //
                     //               |--------------------- result.first ---------------------|
                     // -----+--------+------+--------+--------+------+--------+--------+------+--------+-----
@@ -204,6 +208,8 @@ namespace thekogans {
                     }
                     // No free block large enough is found? Grow the file.
                     offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
+                    // Most file systems will fill the new space with '0' bytes
+                    // but we can't take a chance and do it ourselves.
                     if (IsSecure ()) {
                         TransactedFile::Range range (*file, offset, size, false);
                         range.Seek (
@@ -240,7 +246,7 @@ namespace thekogans {
                             // Since block will grow to occupy prev,
                             // it's offset is no longer valid.
                             Block oldBlock (*file, block.GetOffset ());
-                            oldBlock.Write ();
+                            oldBlock.Clear ();
                         }
                     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Back up to cover the prev.
@@ -259,7 +265,7 @@ namespace thekogans {
                             // Since block will grow to occupy next,
                             // next offset is no longer valid.
                             Block oldNext (*file, next.GetOffset ());
-                            oldNext.Write ();
+                            oldNext.Clear ();
                         }
                     #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                         // Expand to swallow the next.
@@ -313,7 +319,7 @@ namespace thekogans {
                         TransactedFile::Range range (*file, offset, size, false);
                         range.Seek (
                             oldRange.Read (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
-                        // Asume that Alloc always gives back clean blocks.
+                        // Assume that Alloc always gives back clean blocks.
                         // No need to manually clear the rest of range.
                     }
                     Free (block.GetOffset ());
@@ -457,12 +463,20 @@ namespace thekogans {
         }
 
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {
+            // FIXME: See if there's a way to not straddle page boundaries.
+            // Somehow we will need to wire filler blocks in to the btree
+            // without using the btree.
+            LockGuard<SpinLock> guard (spinLock);
             PtrType offset = 0;
             if (header.freeBTreeNodeOffset != 0) {
                 offset = header.freeBTreeNodeOffset;
                 Block block (*file, offset);
                 block.Read ();
                 if (block.IsFree () && block.IsBTreeNode ()) {
+                    // Don't leak anything, including internal structure info.
+                    TransactedFile::Range range (*file, block.GetOffset (), PTR_TYPE_SIZE, false);
+                    range.Seek (
+                        SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                     header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
                     SetDirty (true);
                 }
@@ -488,6 +502,7 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::FreeBTreeNode (PtrType offset) {
             if (offset != 0) {
+                LockGuard<SpinLock> guard (spinLock);
                 Block block (*file, offset);
                 block.Read ();
                 if (!block.IsFree () && block.IsBTreeNode ()) {

@@ -59,8 +59,7 @@ namespace thekogans {
                 PtrType offset) const {
             Range range (file, offset, SIZE, false);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            ui32 magic = size > 0 ? MAGIC32 : 0;
-            range << magic;
+            range << MAGIC32;
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             range << flags << size;
         }
@@ -126,6 +125,17 @@ namespace thekogans {
         void TransactedFile::Allocator::Block::Write () const {
             header.Write (file, offset - HEADER_SIZE);
             header.Write (file, offset + header.size);
+        }
+
+        void TransactedFile::Allocator::Block::Clear () const {
+            {
+                Range range (file, offset - HEADER_SIZE, HEADER_SIZE, false);
+                range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+            }
+            {
+                Range range (file, offset + header.size, HEADER_SIZE, false);
+                range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+            }
         }
 
         inline Serializer &operator >> (
