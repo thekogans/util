@@ -472,26 +472,18 @@ namespace thekogans {
         void TransactedFile::CommitTransaction () {
             if (IsOpen ()) {
                 if (IsTransactionPending ()) {
-                    Array<SharedSubscriberInfo> subscribers;
-                    std::size_t count = GetSubscribers (subscribers);
-                    for (std::size_t i = 0; i < count; ++i) {
-                        subscribers[i].second->DeliverEvent (
-                            std::bind (
-                                &TransactedFileEvents::OnTransactedFileTransactionCommit,
-                                std::placeholders::_1,
-                                this,
-                                COMMIT_PHASE_1),
-                            subscribers[i].first);
-                    }
-                    for (std::size_t i = 0; i < count; ++i) {
-                        subscribers[i].second->DeliverEvent (
-                            std::bind (
-                                &TransactedFileEvents::OnTransactedFileTransactionCommit,
-                                std::placeholders::_1,
-                                this,
-                                COMMIT_PHASE_2),
-                            subscribers[i].first);
-                    }
+                    Produce (
+                        std::bind (
+                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
+                            std::placeholders::_1,
+                            this,
+                            COMMIT_PHASE_1));
+                    Produce (
+                        std::bind (
+                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
+                            std::placeholders::_1,
+                            this,
+                            COMMIT_PHASE_2));
                     if (IsDirty ()) {
                         std::string logPath = GetLogPath (path);
                         {
