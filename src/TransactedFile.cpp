@@ -347,9 +347,9 @@ namespace thekogans {
                     // reads and writes are within file bounds. We set
                     // the file size here so that block.Write and range
                     // insert below honor that assumption.
-                    SetSize (Allocator::Block::SIZE + block.GetSize ());
+                    Grow (Allocator::Block::SIZE + block.GetSize ());
                     block.Write ();
-                    BlockRange range (*this, block.GetOffset (), false);
+                    Range range (*this, block.GetOffset (), block.GetSize (), false);
                     range << MAGIC32 << *allocator_;
                 }
                 BlockRange range (*this, Allocator::Block::HEADER_SIZE);
