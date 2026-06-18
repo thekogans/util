@@ -292,6 +292,9 @@ namespace thekogans {
 
             using PagePtr = typename Page::SharedPtr;
 
+            static const std::size_t FLAGS_CLEAR_DIRTY = 1;
+            static const std::size_t FLAGS_CLEAR_CLEAN = 2;
+
         private:
             /// \brief
             /// Forward declaration of \see{Node} needed by NodeList.
@@ -326,10 +329,10 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] all true == clear all, false == dirty only.
+                /// \param[in] flags
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) = 0;
+                virtual bool Clear (std::size_t flags) = 0;
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
@@ -350,7 +353,7 @@ namespace thekogans {
             /// \struct PageMap::Segment PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
-            /// Leaf node representing a 4GB chunk of the file.
+            /// Leaf node organizing address space \see{Page}s.
             struct Segment : public Node {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
@@ -386,14 +389,15 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] all true == clear all, false == dirty only.
+                /// \param[in] flags
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) override {
+                virtual bool Clear (std::size_t flags) override {
                     pageList.for_each (
-                        [this, all] (typename PageList::Callback::argument_type page) ->
+                        [this, flags] (typename PageList::Callback::argument_type page) ->
                                 typename PageList::Callback::result_type {
-                            if (all || page->dirty) {
+                            if (((flags & FLAGS_CLEAR_DIRTY) && page->dirty) ||
+                                    ((flags & FLAGS_CLEAR_CLEAN) && !page->dirty)) {
                                 pageList.erase (page);
                                 pages[page->index].Reset ();
                             }
@@ -508,14 +512,14 @@ namespace thekogans {
             /// \struct PageMap::Internal PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
-            /// Internal structure node representing 4G of 4GB segments.
+            /// Internal structure node.
             struct Internal : public Node {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Internal)
 
                 /// \brief
-                /// These are the internal 4G of 4GB segments.
+                /// Child nodes.
                 NodePtr *nodes;
                 /// \brief
                 /// \see{IntrusiveList} of \see{Node}s.
@@ -543,14 +547,14 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] all true == clear all, false == dirty only.
+                /// \param[in] flags
                 /// \return true == the node is empty,
                 /// false == the node has clean pages remaining.
-                virtual bool Clear (bool all = false) override {
+                virtual bool Clear (std::size_t flags) override {
                     nodeList.for_each (
-                        [this, all] (typename NodeList::Callback::argument_type node) ->
+                        [this, flags] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
-                            if (node->Clear (all)) {
+                            if (node->Clear (flags)) {
                                 nodeList.erase (node);
                                 nodes[node->index].Reset ();
                             }
@@ -601,30 +605,6 @@ namespace thekogans {
                         true
                     );
                     return nodeList.empty ();
-                }
-
-                /// \brief
-                /// Return (posibly creating) the \see{Page} that contains the given offset.
-                /// \param[in] pageOffset Offset of the page in the file.
-                /// \return \see{Page} that contains the given offset.
-                PagePtr GetPage (AddressType pageOffset) {
-                    Internal *internal = this;
-                    std::size_t levelCount = this->pageMap.levelCount;
-                    std::size_t levelShift = this->pageMap.levelShift;
-                    AddressType levelMask = this->pageMap.levelMask;
-                    std::size_t bitsPerLevel = this->pageMap.bitsPerLevel;
-                    while (--levelCount != 0) {
-                        internal = (Internal *)internal->GetNode (
-                            (pageOffset & levelMask) >> levelShift);
-                        levelShift -= bitsPerLevel;
-                        levelMask >>= bitsPerLevel;
-                    }
-                    // Leafs are segments.
-                    Segment *segment = (Segment *)internal->GetNode (
-                        (pageOffset & levelMask) >> levelShift, true);
-                    return segment->GetPage (
-                        (pageOffset & this->pageMap.segmentMask) >> this->pageMap.bitsPerPage,
-                        pageOffset);
                 }
 
                 /// \brief
@@ -744,16 +724,33 @@ namespace thekogans {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
                     lastGetPageOffset = pageOffset;
-                    lastGetPage = root.GetPage (pageOffset);
+                    Internal *internal = &root;
+                    // Begging the compiler to put these in to registers.
+                    std::size_t levelCount_ = levelCount;
+                    std::size_t levelShift_ = levelShift;
+                    AddressType levelMask_ = levelMask;
+                    while (--levelCount_ != 0) {
+                        internal = (Internal *)internal->GetNode (
+                            (pageOffset & levelMask_) >> levelShift_);
+                        levelShift_ -= bitsPerLevel;
+                        levelMask_ >>= bitsPerLevel;
+                    }
+                    // Leafs are segments.
+                    Segment *segment = (Segment *)internal->GetNode (
+                        (pageOffset & levelMask_) >> levelShift_, true);
+                    lastGetPage = segment->GetPage (
+                        (pageOffset & segmentMask) >> bitsPerPage, pageOffset);
                 }
                 return lastGetPage;
             }
             /// \brief
             /// Delete pages.
             /// \param[in] all true == clear all, false == dirty only.
-            void Clear (bool all = false) {
-                root.Clear (all);
-                if (all || (lastGetPage != nullptr && lastGetPage->dirty)) {
+            void Clear (std::size_t flags) {
+                root.Clear (flags);
+                if (lastGetPage != nullptr &&
+                        (((flags & FLAGS_CLEAR_DIRTY) && lastGetPage->dirty) ||
+                            ((flags & FLAGS_CLEAR_CLEAN) && !lastGetPage->dirty))) {
                     lastGetPageOffset = NOFFS;
                     lastGetPage.Reset ();
                 }

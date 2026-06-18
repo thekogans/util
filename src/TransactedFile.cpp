@@ -542,7 +542,7 @@ namespace thekogans {
                 if (IsTransactionPending ()) {
                     if (IsDirty ()) {
                         size = GetSize ();
-                        pageMap->Clear ();
+                        pageMap->Clear (PageMap64::FLAGS_CLEAR_DIRTY);
                         SetDirty (false);
                     }
                     std::string logPath = GetLogPath (path);
