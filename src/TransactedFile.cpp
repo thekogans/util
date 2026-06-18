@@ -194,8 +194,6 @@ namespace thekogans {
         void TransactedFile::CloseEx () {
             if (IsOpen ()) {
                 // All transactions must be commited before file close.
-                // On the other hand dirty pages get flushed out to disk
-                // to mimic what File would do.
                 AbortTransaction ();
                 size = 0;
                 flags = 0;
@@ -530,16 +528,12 @@ namespace thekogans {
                         pageMap->Clear (PageMap64::FLAGS_CLEAR_DIRTY);
                         SetDirty (false);
                     }
-                    std::string logPath = GetLogPath (path);
-                    if (Path (logPath).Exists ()) {
-                        File::Delete (logPath);
-                    }
-                    SetTransactionPending (false);
                     Produce (
                         std::bind (
                             &TransactedFileEvents::OnTransactedFileTransactionAbort,
                             std::placeholders::_1,
                             this));
+                    SetTransactionPending (false);
                 }
             }
             else {
