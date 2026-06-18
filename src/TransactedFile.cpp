@@ -23,9 +23,6 @@
         #define _GNU_SOURCE
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include <fcntl.h>
-    #if defined (TOOLCHAIN_OS_OSX)
-        #include <sys/disk.h>
-    #endif // defined (TOOLCHAIN_OS_OSX)
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
@@ -95,13 +92,9 @@ namespace thekogans {
                     &alignment, sizeof (alignment),
                     &bytesReturned,
                     NULL) ? alignment.BytesPerPhysicalSector : 0;
-            #elif defined (TOOLCHAIN_OS_Linux)
-                unsigned int physicalSectorSize = 0;
-                // BLKPBSZGET returns the physical sector size in bytes
-                return ioctl (handle, BLKPBSZGET, &physicalSectorSize) == 0 ? physicalSectorSize : 0;
-            #elif defined (TOOLCHAIN_OS_OSX)
-                uint32_t physicalBlockSize = 0;
-                return ioctl (handle, DKIOCGETPHYSICALBLOCKSIZE, &physicalBlockSize) == 0 ? physicalBlockSize : 0;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                STAT_STRUCT buf;
+                return FSTAT_FUNC (handle, &buf) == 0 ? buf.st_blksize : 0;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
         }

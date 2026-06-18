@@ -665,7 +665,8 @@ namespace thekogans {
                 /// \brief
                 /// Internal is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Internal)
-            } root;
+            };
+            typename Internal::SharedPtr root;
             /// \brief
             /// Last accessed page offset.
             /// This is the page offset of the last call to \see{GetPage (offset)}.
@@ -706,7 +707,7 @@ namespace thekogans {
                 internalAllocator (internalSize, internalNodesPerPage, allocator),
                 segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
                 pageAllocator (pageAlignment, allocator),
-                root (*this, 0),
+                root ((Internal *)Internal::Alloc (*this, 0)),
                 lastGetPageOffset (NOFFS) {}
 
             /// \brief
@@ -724,7 +725,7 @@ namespace thekogans {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
                     lastGetPageOffset = pageOffset;
-                    Internal *internal = &root;
+                    Internal *internal = root.Get ();
                     // Begging the compiler to put these in to registers.
                     std::size_t levelCount_ = levelCount;
                     std::size_t levelShift_ = levelShift;
@@ -747,7 +748,7 @@ namespace thekogans {
             /// Delete pages.
             /// \param[in] all true == clear all, false == dirty only.
             void Clear (std::size_t flags) {
-                root.Clear (flags);
+                root->Clear (flags);
                 if (lastGetPage != nullptr &&
                         (((flags & FLAGS_CLEAR_DIRTY) && lastGetPage->dirty) ||
                             ((flags & FLAGS_CLEAR_CLEAN) && !lastGetPage->dirty))) {
@@ -759,20 +760,20 @@ namespace thekogans {
             /// Write dirty pages to log.
             /// \param[in] log \see{RandomSeekSerializer} to write to.
             void Log (RandomSeekSerializer &log) {
-                root.Log (log);
+                root->Log (log);
             }
             /// \brief
             /// Write dirty pages to their source.
             void Flush () {
-                root.Flush ();
+                root->Flush ();
             }
             /// \brief
             /// Delete all pages whose offset > newSize.
             /// \param[in] newSize New size to clip the address space to.
             void Shrink (AddressType newSize) {
-                root.Shrink (newSize);
+                root->Shrink (newSize);
                 // If newSize is <= lastGetPageOffset, lastGetPage
-                // will have been deleted by root.Shrink.
+                // will have been deleted by root->Shrink.
                 if (lastGetPageOffset >= newSize) {
                     lastGetPageOffset = NOFFS;
                     lastGetPage.Reset ();
