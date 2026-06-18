@@ -121,7 +121,7 @@ namespace thekogans {
         ///     commit transaction.
         /// *******************************************************************
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFile :
-                public File,
+                private File,
                 public Producer<TransactedFileEvents> {
             /// \brief
             /// TransactedFile participates in the \see{DynamicCreatable}
@@ -329,6 +329,13 @@ namespace thekogans {
             /// \brief
             /// dtor. Close the file.
             virtual ~TransactedFile ();
+
+            /// \brief
+            /// Return the file path.
+            /// \return File path.
+            inline const std::string &GetPath () const {
+                return path;
+            }
 
             /// \brief
             /// Return the \see{Allocator} attached to thi file.

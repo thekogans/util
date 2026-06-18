@@ -167,8 +167,8 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry) {
-            CommitLog (path);
             CloseEx ();
+            CommitLog (path);
         #if defined (TOOLCHAIN_OS_Windows)
             Open (
                 path,

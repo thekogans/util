@@ -228,7 +228,7 @@ namespace thekogans {
             /// \brief
             /// Return the file path.
             /// \return File path.
-            inline std::string GetPath () const {
+            inline const std::string &GetPath () const {
                 return path;
             }
 
