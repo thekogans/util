@@ -403,9 +403,7 @@ namespace thekogans {
                                 typename PageList::Callback::result_type {
                             if (((flags & FLAGS_CLEAR_DIRTY) && page->dirty) ||
                                     ((flags & FLAGS_CLEAR_CLEAN) && !page->dirty)) {
-                                pageList.erase (page);
-                                pages[page->index] = nullptr;
-                                page->Release ();
+                                DeletePage (page);
                             }
                             return true;
                         }
@@ -445,9 +443,7 @@ namespace thekogans {
                         [this, newSize] (typename PageList::Callback::argument_type page) ->
                                 typename PageList::Callback::result_type {
                             if (page->Shrink (newSize)) {
-                                pageList.erase (page);
-                                pages[page->index] = nullptr;
-                                page->Release ();
+                                DeletePage (page);
                                 return true;
                             }
                             return false;
@@ -512,6 +508,13 @@ namespace thekogans {
                             pageMap.segmentSize)) Segment (pageMap, index);
                 }
 
+            private:
+                void DeletePage (Page *page) {
+                    pages[page->index] = nullptr;
+                    pageList.erase (page);
+                    page->Release ();
+                }
+
                 /// \brief
                 /// Segment is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Segment)
@@ -565,9 +568,7 @@ namespace thekogans {
                         [this, flags] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
                             if (node->Clear (flags)) {
-                                nodeList.erase (node);
-                                nodes[node->index] = nullptr;
-                                node->Release ();
+                                DeleteNode (node);
                             }
                             return true;
                         }
@@ -607,9 +608,7 @@ namespace thekogans {
                         [this, newSize] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
                             if (node->Shrink (newSize)) {
-                                nodeList.erase (node);
-                                nodes[node->index] = nullptr;
-                                node->Release ();
+                                DeleteNode (node);
                                 return true;
                             }
                             return false;
@@ -673,6 +672,13 @@ namespace thekogans {
                     return new (
                         pageMap.segmentAllocator.Alloc (
                             pageMap.internalSize)) Internal (pageMap, index);
+                }
+
+            private:
+                void DeleteNode (Node *node) {
+                    nodes[node->index] = nullptr;
+                    nodeList.erase (node);
+                    node->Release ();
                 }
 
                 /// \brief

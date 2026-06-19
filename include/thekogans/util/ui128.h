@@ -160,7 +160,7 @@ namespace thekogans {
                 right_shiftable<ui128>,
                 incrementable<ui128>,
                 decrementable<ui128> {
-            using BaseType = unsigned long long;
+            using BaseType = ui64;
 
             static const std::size_t BIT_COUNT = (sizeof (BaseType) + sizeof (BaseType)) * CHAR_BIT;
 

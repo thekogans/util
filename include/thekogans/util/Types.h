@@ -27,7 +27,6 @@
 #include <cstdlib>
 #include <cstdarg>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/ui128.h"
 
 /// \brief
 /// For compatibility only.
@@ -93,6 +92,14 @@ namespace thekogans {
         /// \brief
         /// 64 bit float type.
         using f64 = double;
+
+    } // namespace util
+} // namespace thekogans
+
+#include "thekogans/util/ui128.h"
+
+namespace thekogans {
+    namespace util {
 
         /// \brief
         /// bool type size.
