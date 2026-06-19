@@ -811,8 +811,14 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (PageMap)
         };
 
+        /// \brief
+        /// Alias for PageMap<ui32>.
         using PageMap32 = PageMap<ui32>;
+        /// \brief
+        /// Alias for PageMap<ui64>.
         using PageMap64 = PageMap<ui64>;
+        /// \brief
+        /// Alias for PageMap<ui128>.
         using PageMap128 = PageMap<ui128>;
 
     } // namespace util

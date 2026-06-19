@@ -160,42 +160,42 @@ namespace thekogans {
                 right_shiftable<ui128>,
                 incrementable<ui128>,
                 decrementable<ui128> {
-            using base_type = unsigned long long;
+            using BaseType = unsigned long long;
 
-            static const std::size_t size = (sizeof (base_type) + sizeof (base_type)) * CHAR_BIT;
+            static const std::size_t BIT_COUNT = (sizeof (BaseType) + sizeof (BaseType)) * CHAR_BIT;
 
-            base_type lo;
-            base_type hi;
+            BaseType lo;
+            BaseType hi;
 
             // constructors for all basic types
             ui128 () :
                 lo (0),
                 hi (0) {}
             ui128 (
-                base_type lo_,
-                base_type hi_) :
+                BaseType lo_,
+                BaseType hi_) :
                 lo (lo_),
                 hi (lo_) {}
             ui128 (int value) :
-                    lo (static_cast<base_type> (value)),
+                    lo (static_cast<BaseType> (value)),
                     hi (0) {
                 if (value < 0) {
-                    hi = static_cast<base_type> (-1);
+                    hi = static_cast<BaseType> (-1);
                 }
             }
             ui128 (unsigned int value) :
-                lo (static_cast<base_type> (value)),
+                lo (static_cast<BaseType> (value)),
                 hi (0) {}
             ui128 (float value) :
-                lo (static_cast<base_type> (value)),
+                lo (static_cast<BaseType> (value)),
                 hi (0) {}
             ui128 (double value) :
-                lo (static_cast<base_type> (value)),
+                lo (static_cast<BaseType> (value)),
                 hi (0) {}
             ui128 (const ui128 &value) :
                 lo (value.lo),
                 hi (value.hi) {}
-            ui128 (base_type value) :
+            ui128 (BaseType value) :
                 lo (value),
                 hi (0) {}
             ui128 (const std::string &sz) :
@@ -318,7 +318,7 @@ namespace thekogans {
 
             // basic math operators
             ui128 &operator += (const ui128 &b) {
-                const base_type old_lo = lo;
+                const BaseType old_lo = lo;
                 lo += b.lo;
                 hi += b.hi;
                 if (lo < old_lo) {
@@ -346,7 +346,7 @@ namespace thekogans {
                     ui128 t = b;
                     lo = 0;
                     hi = 0;
-                    for (unsigned int i = 0; i < size; ++i) {
+                    for (unsigned int i = 0; i < BIT_COUNT; ++i) {
                         if ((t & 1) != 0) {
                             *this += (a << i);
                         }
@@ -387,24 +387,24 @@ namespace thekogans {
             }
 
             ui128 &operator <<= (const ui128 &rhs) {
-                unsigned int n = rhs.to_integer ();
-                if (n >= size) {
+                unsigned int n = rhs.ToInteger ();
+                if (n >= BIT_COUNT) {
                     lo = 0;
                     hi = 0;
                 }
                 else {
-                    const unsigned int halfsize = size / 2;
-                    if (n >= halfsize) {
-                        n -= halfsize;
+                    const unsigned int halfSize = BIT_COUNT / 2;
+                    if (n >= halfSize) {
+                        n -= halfSize;
                         lo = 0;
                         hi = lo;
                     }
                     if (n != 0) {
                         // shift high half
                         hi <<= n;
-                        const base_type mask (~(base_type (-1) >> n));
+                        const BaseType mask (~(BaseType (-1) >> n));
                         // and add them to high half
-                        hi |= (lo & mask) >> (halfsize - n);
+                        hi |= (lo & mask) >> (halfSize - n);
                         // and finally shift also low half
                         lo <<= n;
                     }
@@ -413,15 +413,15 @@ namespace thekogans {
             }
 
             ui128 &operator >>= (const ui128 &rhs) {
-                unsigned int n = rhs.to_integer ();
-                if (n >= size) {
+                unsigned int n = rhs.ToInteger ();
+                if (n >= BIT_COUNT) {
                     lo = 0;
                     hi = 0;
                 }
                 else {
-                    const unsigned int halfsize = size / 2;
-                    if (n >= halfsize) {
-                        n -= halfsize;
+                    const unsigned int halfSize = BIT_COUNT / 2;
+                    if (n >= halfSize) {
+                        n -= halfSize;
                         lo = hi;
                         hi = 0;
                     }
@@ -429,9 +429,9 @@ namespace thekogans {
                         // shift low half
                         lo >>= n;
                         // get lower N bits of high half
-                        const base_type mask(~(base_type(-1) << n));
+                        const BaseType mask (~(BaseType (-1) << n));
                         // and add them to low qword
-                        lo |= (hi & mask) << (halfsize - n);
+                        lo |= (hi & mask) << (halfSize - n);
                         // and finally shift also high half
                         hi >>= n;
                     }
@@ -439,31 +439,31 @@ namespace thekogans {
                 return *this;
             }
 
-            int to_integer () const {
+            int ToInteger () const {
                 return static_cast<int> (lo);
             }
 
-            base_type to_base_type () const {
+            BaseType ToBaseType () const {
                 return lo;
             }
 
-            std::string to_string (unsigned int radix = 10) const {
+            std::string ToString (unsigned int radix = 10) const {
                 if (*this == 0) {
                     return "0";
                 }
                 if (radix < 2 || radix > 37) {
                     return "(invalid radix)";
                 }
-                // at worst it will be size digits (base 2) so make our buffer
+                // at worst it will be BIT_COUNT digits (base 2) so make our buffer
                 // that plus room for null terminator
-                char sz[size + 1];
+                char sz[BIT_COUNT + 1];
                 sz[sizeof (sz) - 1] = '\0';
                 ui128 ii (*this);
-                int i = size - 1;
+                int i = BIT_COUNT - 1;
                 while (ii != 0 && i) {
                     ui128 remainder;
                     divide (ii, ui128 (radix), ii, remainder);
-                    sz [--i] = "0123456789abcdefghijklmnopqrstuvwxyz"[remainder.to_integer ()];
+                    sz[--i] = "0123456789abcdefghijklmnopqrstuvwxyz"[remainder.ToInteger ()];
                 }
                 return &sz[i];
             }
