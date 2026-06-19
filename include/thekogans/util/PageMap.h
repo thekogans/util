@@ -46,12 +46,12 @@ namespace thekogans {
         /// and is dependent on the particular parameterization of the address space. As pages
         /// accumulate, eventually memory will become an issue. PageMap provides an API to
         /// maintain internal page cache (Clear). PageMap maintains a cache of last accessed
-        /// page (lastGetPagePage), promoting locality of reference by optimizing away tree walks
-        /// for requests with sufficiently close addresses. Pages maintain a dirty flag which
-        /// is used by the Log and Flush methods to move pages back and forth to and from the
-        /// bitSource. Finally, Shrink is used to clip pages outside the new address space size.
-        /// With just three simple knobs (bitsPerSegment, bitsPerLevel and bitsPerPage) you
-        /// can tune a given address space very precisely given your particular performance
+        /// page (lastGetPagePage), promoting locality of reference by optimizing away tree
+        /// walks for requests with sufficiently close addresses. Pages maintain a dirty flag
+        /// which is used by the Log and Flush methods to move pages back and forth to and from
+        /// the bitSource. Finally, Shrink is used to clip pages outside the new address space
+        /// size. With just three simple knobs (bitsPerSegment, bitsPerLevel and bitsPerPage)
+        /// you can tune the address space very precisely given your particular performance
         /// requirements. Specifying exactly how many levels deep to make the multiway tree,
         /// which directly affects tree walk performance, and by extension GetPage performance.
         ///
@@ -77,7 +77,7 @@ namespace thekogans {
         /// pagesPerSegment = 1 << (bitsPerSegment - bitsPerPage); 1 << (20 - 16) = 16
         ///
         /// This will cover the entire 32 bit address space with 2 levels of 1MB segments,
-        /// each containing 16 of 64KB pages.
+        /// each containing 16 64KB pages.
         ///
         /// Ex:
         ///
@@ -285,6 +285,8 @@ namespace thekogans {
                     return true;
                 }
 
+                /// \brief
+                /// Needs access to private methods.
                 friend struct Segment;
 
                 /// \brief
@@ -313,6 +315,8 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
 
+                /// \brief
+                /// \see{PageMap} this node belongs to.
                 PageMap &pageMap;
                 /// \brief
                 /// Node index in \see{Internal::nodes}.
@@ -320,6 +324,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
+                /// \param[in] pageMap_ \see{PageMap} this node belongs to.
                 /// \param[in] index_ Node index in \see{Internal::nodes}.
                 Node (
                     PageMap &pageMap_,
@@ -358,7 +363,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Segment)
 
                 /// \brief
-                /// \see{Pages} tilling the segment.
+                /// An array of \see{Page}s tilling the segment.
                 Page **pages;
                 /// \brief
                 /// \see{IntrusiveList} of linked \see{Page}s.
