@@ -204,6 +204,8 @@ namespace thekogans {
                 /// Page has a private heap.
                 THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
+                /// \brief
+                /// PageMap to which this page belongs.
                 PageMap &pageMap;
                 /// \brief
                 /// Page index in \see{Segment::pages}.
@@ -290,8 +292,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
             };
 
-            using PagePtr = typename Page::SharedPtr;
-
             static const std::size_t FLAGS_CLEAR_DIRTY = 1;
             static const std::size_t FLAGS_CLEAR_CLEAN = 2;
 
@@ -348,8 +348,6 @@ namespace thekogans {
                 virtual bool Shrink (AddressType newSize) = 0;
             };
 
-            using NodePtr = typename Node::SharedPtr;
-
             /// \struct PageMap::Segment PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
@@ -361,7 +359,7 @@ namespace thekogans {
 
                 /// \brief
                 /// \see{Pages} tilling the segment.
-                PagePtr *pages;
+                Page **pages;
                 /// \brief
                 /// \see{IntrusiveList} of linked \see{Page}s.
                 PageList pageList;
@@ -374,17 +372,19 @@ namespace thekogans {
                         PageMap &pageMap,
                         std::size_t index) :
                         Node (pageMap, index),
-                        pages ((PagePtr *)(this + 1)) {
-                    for (std::size_t i = 0; i < pageMap.pagesPerSegment; ++i) {
-                        new (&pages[i]) PagePtr ();
-                    }
+                        pages ((Page **)(this + 1)) {
+                    SecureZeroMemory (pages, pageMap.pagesPerSegment * sizeof (Page *));
                 }
                 /// \brief
                 /// dtor.
                 virtual ~Segment () {
-                    for (std::size_t i = 0; i < this->pageMap.pagesPerSegment; ++i) {
-                        pages[i].~PagePtr ();
-                    }
+                    pageList.for_each (
+                        [] (typename PageList::Callback::argument_type page) ->
+                                typename PageList::Callback::result_type {
+                            page->Release ();
+                            return true;
+                        }
+                    );
                 }
 
                 /// \brief
@@ -399,7 +399,8 @@ namespace thekogans {
                             if (((flags & FLAGS_CLEAR_DIRTY) && page->dirty) ||
                                     ((flags & FLAGS_CLEAR_CLEAN) && !page->dirty)) {
                                 pageList.erase (page);
-                                pages[page->index].Reset ();
+                                pages[page->index] = nullptr;
+                                page->Release ();
                             }
                             return true;
                         }
@@ -440,7 +441,8 @@ namespace thekogans {
                                 typename PageList::Callback::result_type {
                             if (page->Shrink (newSize)) {
                                 pageList.erase (page);
-                                pages[page->index].Reset ();
+                                pages[page->index] = nullptr;
+                                page->Release ();
                                 return true;
                             }
                             return false;
@@ -455,7 +457,7 @@ namespace thekogans {
                 /// \param[in] pageIndex Page index in the pages array.
                 /// \param[in] pageOffset Page offset (multiple of pageSize).
                 /// \return The new page.
-                PagePtr GetPage (
+                Page *GetPage (
                         ui32 pageIndex,
                         AddressType pageOffset) {
                     if (pages[pageIndex] == nullptr) {
@@ -463,7 +465,8 @@ namespace thekogans {
                         // structure with internal machinery that's hidden from view
                         // (vptr tables...).
                         Page *page = new Page (this->pageMap, pageIndex, pageOffset);
-                        pages[pageIndex].Reset (page);
+                        page->AddRef ();
+                        pages[pageIndex] = page;
                         // Insert the new page in to the ordered (on index) page list.
                         // A quick optimization to check if it's the first or last page
                         // potentially saving us a list walk...
@@ -494,7 +497,7 @@ namespace thekogans {
                 }
 
                 static std::size_t Size (std::size_t pagesPerSegment) {
-                    return sizeof (Segment) + pagesPerSegment * sizeof (PagePtr);
+                    return sizeof (Segment) + pagesPerSegment * sizeof (Page *);
                 }
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -520,7 +523,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Child nodes.
-                NodePtr *nodes;
+                Node **nodes;
                 /// \brief
                 /// \see{IntrusiveList} of \see{Node}s.
                 NodeList nodeList;
@@ -532,17 +535,19 @@ namespace thekogans {
                         PageMap &pageMap,
                         std::size_t index) :
                         Node (pageMap, index),
-                        nodes ((NodePtr *)(this + 1)) {
-                    for (std::size_t i = 0; i < pageMap.nodesPerInternal; ++i) {
-                        new (&nodes[i]) NodePtr ();
-                    }
+                        nodes ((Node **)(this + 1)) {
+                    SecureZeroMemory (nodes, pageMap.nodesPerInternal * sizeof (Node *));
                 }
                 /// \brief
                 /// dtor.
                 virtual ~Internal () {
-                    for (std::size_t i = 0; i < this->pageMap.nodesPerInternal; ++i) {
-                        nodes[i].~NodePtr ();
-                    }
+                    nodeList.for_each (
+                        [] (typename NodeList::Callback::argument_type node) ->
+                                typename NodeList::Callback::result_type {
+                            node->Release ();
+                            return true;
+                        }
+                    );
                 }
 
                 /// \brief
@@ -556,7 +561,8 @@ namespace thekogans {
                                 typename NodeList::Callback::result_type {
                             if (node->Clear (flags)) {
                                 nodeList.erase (node);
-                                nodes[node->index].Reset ();
+                                nodes[node->index] = nullptr;
+                                node->Release ();
                             }
                             return true;
                         }
@@ -597,7 +603,8 @@ namespace thekogans {
                                 typename NodeList::Callback::result_type {
                             if (node->Shrink (newSize)) {
                                 nodeList.erase (node);
-                                nodes[node->index].Reset ();
+                                nodes[node->index] = nullptr;
+                                node->Release ();
                                 return true;
                             }
                             return false;
@@ -626,7 +633,8 @@ namespace thekogans {
                         Node *node = segment ?
                             Segment::Alloc (this->pageMap, index) :
                             Internal::Alloc (this->pageMap, index);
-                        nodes[index].Reset (node);
+                        node->AddRef ();
+                        nodes[index] = node;
                         if (nodeList.empty () || nodeList.tail->index < node->index) {
                             nodeList.push_back (node);
                         }
@@ -643,7 +651,7 @@ namespace thekogans {
                             );
                         }
                     }
-                    return nodes[index].Get ();
+                    return nodes[index];
                 }
 
                 virtual void Harakiri () override {
@@ -652,7 +660,7 @@ namespace thekogans {
                 }
 
                 static std::size_t Size (std::size_t nodesPerInternal) {
-                    return sizeof (Internal) + nodesPerInternal * sizeof (NodePtr);
+                    return sizeof (Internal) + nodesPerInternal * sizeof (Node *);
                 }
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -674,7 +682,7 @@ namespace thekogans {
             AddressType lastGetPageOffset;
             /// \brief
             /// Last accessed page cache promoting locality of refernce.
-            PagePtr lastGetPagePage;
+            typename Page::SharedPtr lastGetPagePage;
 
         public:
             static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
@@ -721,7 +729,7 @@ namespace thekogans {
             /// Return the \see{Page} that contains the given offset.
             /// \param[in] offset Offset whose page to return.
             /// \return \see{Page} that contains the given offset.
-            PagePtr GetPage (AddressType offset) {
+            typename Page::SharedPtr GetPage (AddressType offset) {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
                     Internal *internal = root.Get ();
@@ -742,8 +750,8 @@ namespace thekogans {
                     // call to GetPage is ufficiently close to this one
                     // (locality of reference).
                     lastGetPageOffset = pageOffset;
-                    lastGetPagePage = segment->GetPage (
-                        (pageOffset & segmentMask) >> bitsPerPage, pageOffset);
+                    lastGetPagePage.Reset (
+                        segment->GetPage ((pageOffset & segmentMask) >> bitsPerPage, pageOffset));
                 }
                 return lastGetPagePage;
             }
