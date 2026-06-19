@@ -750,7 +750,7 @@ namespace thekogans {
                     for (std::size_t levelCount_ = levelCount; levelCount_-- != 0;
                             levelShift_ -= bitsPerLevel, levelMask_ >>= bitsPerLevel) {
                         node = ((Internal *)node)->GetNode (
-                            (pageOffset & levelMask_) >> levelShift_);
+                            (pageOffset & levelMask_) >> levelShift_, levelCount_ == 0);
                     }
                     // Cache the result so that we can reuse it if the next
                     // call to GetPage is ufficiently close to this one
