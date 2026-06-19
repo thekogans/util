@@ -314,13 +314,13 @@ namespace thekogans {
                         return size;
                     }
                     else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "No pending transaction.");
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }
                 }
                 else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "No pending transaction.");
                 }
             }
             else {

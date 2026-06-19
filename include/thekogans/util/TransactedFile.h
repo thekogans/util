@@ -133,12 +133,12 @@ namespace thekogans {
             /// first phase (usually called the allocation phase)
             /// will have all \see{Object}s allocate the space they
             /// need to commit themselves to disk. The space is
-            /// allocated using ane \see{Allocator}. This is also
+            /// allocated using an \see{Allocator}. This is also
             /// the time when all offset pointers are updated (Again
             /// see \see{Object} and \see{ObjectEvents}). The second
             /// phase (usually called the commit phase) will have
             /// all objects flush themselves to disk. This logic is
-            /// enshrined in \see{TransactionParticipant} below.
+            /// enshrined in \see{Object}.
 
             /// \brief
             /// Commit phase 1 (allocation).
@@ -154,9 +154,7 @@ namespace thekogans {
             /// \see{BeginTransaction} in it's ctor and \see{AbortTransaction}
             /// in it's dtor. Call Commit before the end of the
             /// scope to commit the transaction.
-            /// NOTE: If you're only reading the file, this is
-            /// overkill. Use \see{LockGuard}<{\see{Mutex}> (file->\see{GetLock} ())
-            /// instead.
+            /// NOTE: If you're only reading the file, this is unnecessary.
             struct _LIB_THEKOGANS_UTIL_DECL Transaction {
             private:
                 /// \see{TransactedFile} we're guarding.
@@ -261,6 +259,8 @@ namespace thekogans {
             /// \brief
             /// Combination of the above flags.
             Flags32 flags;
+            /// \brief
+            /// \see{PageMap} used to map file pages.
             PageMap64::SharedPtr pageMap;
             /// \brief
             /// For use by \see{Transaction}.

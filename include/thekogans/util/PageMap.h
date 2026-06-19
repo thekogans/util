@@ -46,7 +46,7 @@ namespace thekogans {
         /// and is dependent on the particular parameterization of the address space. As pages
         /// accumulate, eventually memory will become an issue. PageMap provides an API to
         /// maintain internal page cache (Clear). PageMap maintains a cache of last accessed
-        /// page (lastGetPage), promoting locality of reference by optimizing away tree walks
+        /// page (lastGetPagePage), promoting locality of reference by optimizing away tree walks
         /// for requests with sufficiently close addresses. Pages maintain a dirty flag which
         /// is used by the Log and Flush methods to move pages back and forth to and from the
         /// bitSource. Finally, Shrink is used to clip pages outside the new address space size.
@@ -674,7 +674,7 @@ namespace thekogans {
             AddressType lastGetPageOffset;
             /// \brief
             /// Last accessed page cache promoting locality of refernce.
-            PagePtr lastGetPage;
+            PagePtr lastGetPagePage;
 
         public:
             static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
@@ -724,7 +724,6 @@ namespace thekogans {
             PagePtr GetPage (AddressType offset) {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
-                    lastGetPageOffset = pageOffset;
                     Internal *internal = root.Get ();
                     // Begging the compiler to put these in to registers.
                     std::size_t levelCount_ = levelCount;
@@ -739,21 +738,25 @@ namespace thekogans {
                     // Leafs are segments.
                     Segment *segment = (Segment *)internal->GetNode (
                         (pageOffset & levelMask_) >> levelShift_, true);
-                    lastGetPage = segment->GetPage (
+                    // Cache the result so that we can reuse it if the next
+                    // call to GetPage is ufficiently close to this one
+                    // (locality of reference).
+                    lastGetPageOffset = pageOffset;
+                    lastGetPagePage = segment->GetPage (
                         (pageOffset & segmentMask) >> bitsPerPage, pageOffset);
                 }
-                return lastGetPage;
+                return lastGetPagePage;
             }
             /// \brief
             /// Delete pages.
-            /// \param[in] all true == clear all, false == dirty only.
+            /// \param[in] flags Combination of FLAGS_CLEAR_CLEAN and FLAGS_CLEAR_DIRTY.
             void Clear (std::size_t flags) {
                 root->Clear (flags);
-                if (lastGetPage != nullptr &&
-                        (((flags & FLAGS_CLEAR_DIRTY) && lastGetPage->dirty) ||
-                            ((flags & FLAGS_CLEAR_CLEAN) && !lastGetPage->dirty))) {
+                if (lastGetPagePage != nullptr &&
+                        (((flags & FLAGS_CLEAR_DIRTY) && lastGetPagePage->dirty) ||
+                            ((flags & FLAGS_CLEAR_CLEAN) && !lastGetPagePage->dirty))) {
                     lastGetPageOffset = NOFFS;
-                    lastGetPage.Reset ();
+                    lastGetPagePage.Reset ();
                 }
             }
             /// \brief
@@ -772,11 +775,11 @@ namespace thekogans {
             /// \param[in] newSize New size to clip the address space to.
             void Shrink (AddressType newSize) {
                 root->Shrink (newSize);
-                // If newSize is <= lastGetPageOffset, lastGetPage
+                // If newSize is <= lastGetPageOffset, lastGetPagePage
                 // will have been deleted by root->Shrink.
                 if (lastGetPageOffset >= newSize) {
                     lastGetPageOffset = NOFFS;
-                    lastGetPage.Reset ();
+                    lastGetPagePage.Reset ();
                 }
             }
 
