@@ -76,9 +76,7 @@ namespace thekogans {
                     file.WriteEx (offset, data, position);
                 }
                 else {
-                    //file.PutPage (offset, page, position);
                     page->dirty = true;
-                    file.SetDirty (true);
                 }
             }
             if (owner) {

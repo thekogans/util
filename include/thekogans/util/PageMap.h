@@ -743,26 +743,22 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (AddressType offset) {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
-                    Internal *internal = root.Get ();
+                    Node *node = root.Get ();
                     // Begging the compiler to put these in to registers.
-                    std::size_t levelCount_ = levelCount;
                     std::size_t levelShift_ = levelShift;
                     AddressType levelMask_ = levelMask;
-                    while (--levelCount_ != 0) {
-                        internal = (Internal *)internal->GetNode (
+                    for (std::size_t levelCount_ = levelCount; levelCount_-- != 0;
+                            levelShift_ -= bitsPerLevel, levelMask_ >>= bitsPerLevel) {
+                        node = ((Internal *)node)->GetNode (
                             (pageOffset & levelMask_) >> levelShift_);
-                        levelShift_ -= bitsPerLevel;
-                        levelMask_ >>= bitsPerLevel;
                     }
-                    // Leafs are segments.
-                    Segment *segment = (Segment *)internal->GetNode (
-                        (pageOffset & levelMask_) >> levelShift_, true);
                     // Cache the result so that we can reuse it if the next
                     // call to GetPage is ufficiently close to this one
                     // (locality of reference).
                     lastGetPageOffset = pageOffset;
                     lastGetPagePage.Reset (
-                        segment->GetPage ((pageOffset & segmentMask) >> bitsPerPage, pageOffset));
+                        ((Segment *)node)->GetPage (
+                            (pageOffset & segmentMask) >> bitsPerPage, pageOffset));
                 }
                 return lastGetPagePage;
             }

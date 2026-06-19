@@ -251,15 +251,6 @@ namespace thekogans {
             /// File size.
             ui64 size;
             /// \brief
-            /// Set if the page cache is dirty.
-            static const ui32 FLAGS_DIRTY = 1;
-            /// \brief
-            /// Set if we're in the middle of a transaction.
-            static const ui32 FLAGS_TRANSACTION = 2;
-            /// \brief
-            /// Combination of the above flags.
-            Flags32 flags;
-            /// \brief
             /// \see{PageMap} used to map file pages.
             PageMap64::SharedPtr pageMap;
             /// \brief
@@ -321,7 +312,7 @@ namespace thekogans {
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
             #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags_ = O_RDWR | O_CREAT,
+                i32 flags = O_RDWR | O_CREAT,
                 i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 Allocator::SharedPtr allocator = nullptr,
@@ -368,7 +359,7 @@ namespace thekogans {
             /// \param[in] dwCreationDisposition Windows CreateFile parameter.
             /// \param[in] dwFlagsAndAttributes Windows CreateFile parameter.
         #else // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] flags_ POSIX open parameter.
+            /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
         #endif // defined (TOOLCHAIN_OS_Windows)
             /// \param[in] allocator \see{Allocator} to attach to this file.
@@ -381,14 +372,14 @@ namespace thekogans {
                 DWORD dwCreationDisposition = OPEN_EXISTING,
                 DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
             #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags_ = O_RDWR,
+                i32 flags = O_RDWR,
                 i32 mode = S_IRUSR | S_IWUSR,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 Allocator::SharedPtr allocator = nullptr,
                 Registry::SharedPtr registry = nullptr);
             /// \brief
             /// Close the file.
-            /// NOT thread safe.
+            /// Thread safe.
             void CloseEx ();
 
             /// \brief
@@ -451,56 +442,16 @@ namespace thekogans {
             void Init (
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_);
-
-            /// \brief
-            /// Used by Open to apply the log before opening the file.
-            /// \path path File path.
-            static void CommitLog (const std::string &path);
-
-            /// \brief
-            /// Return true if we have unwriten changes in our cache.
-            /// NOT thread safe.
-            /// \return true == we have unwriten changes in our cache.
-            inline bool IsDirty () const {
-                return flags.Test (FLAGS_DIRTY);
-            }
-            /// \brief
-            /// Set/reset the dirty flag.
-            /// NOT thread safe.
-            /// \param[in] dirty true == set, false == reset.
-            inline void SetDirty (bool dirty) {
-                flags.Set (FLAGS_DIRTY, dirty);
-            }
-            /// \brief
-            /// Return true if we're in the middle of a transaction.
-            /// NOT thread safe.
-            /// \return true == we're in the middle of a transaction.
-            inline bool IsTransactionPending () const {
-                return flags.Test (FLAGS_TRANSACTION);
-            }
-            /// \brief
-            /// Set/reset the transaction flag.
-            /// NOT thread safe.
-            /// \param[in] transaction true == set, false == reset.
-            inline void SetTransactionPending (bool transaction) {
-                flags.Set (FLAGS_TRANSACTION, transaction);
-            }
-            /// \brief
-            /// Start a new transaction.
-            /// Used by \see{Transaction} ctor to mark a modify scope.
-            /// NOTE: Must only be called after acquiring the lock.
-            /// NOT thread safe.
-            void BeginTransaction ();
             /// \brief
             /// Commit the current transaction.
             /// Used by \see{Transaction} to commit the current changes.
             /// NOT thread safe.
-            void CommitTransaction ();
+            void Commit ();
             /// \brief
             /// Abort the current transaction.
             /// Used by \see{Transaction} dtor to abort uncommitted changes.
             /// NOT thread safe.
-            void AbortTransaction ();
+            void Abort ();
 
             /// \brief
             /// This is a wrapper around pageMap.GetPage.
