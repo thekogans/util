@@ -61,8 +61,8 @@ namespace thekogans {
                 std::bind (
                     &TransactedFileEvents::OnTransactedFileTransactionAbort,
                     std::placeholders::_1,
-                    &file));
-            file.Unsubscribe ();
+                    &file),
+                true);
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {

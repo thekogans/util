@@ -355,7 +355,9 @@ namespace thekogans {
             /// \brief
             /// Produce an event for subscribers to consume.
             /// \param[in] event Event to deliver to all registered subscribers.
-            void Produce (const typename EventDeliveryPolicy::Event &event) {
+            void Produce (
+                    const typename EventDeliveryPolicy::Event &event,
+                    bool unsubscribe = false) {
                 // FIXME: Need to profile these two approaches to see which is faster.
 #if 0
                 Subscribers subscribers_;
@@ -378,7 +380,7 @@ namespace thekogans {
                 }
 #else
                 Array<SharedSubscriberInfo> subscribers;
-                for (std::size_t i = 0, count = GetSubscribers (subscribers); i < count; ++i) {
+                for (std::size_t i = 0, count = GetSubscribers (subscribers, unsubscribe); i < count; ++i) {
                     subscribers[i].second->DeliverEvent (event, subscribers[i].first);
                 }
 #endif
