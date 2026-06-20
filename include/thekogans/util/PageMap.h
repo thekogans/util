@@ -341,10 +341,12 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (RandomSeekSerializer &log) = 0;
+                virtual void Log (
+                    RandomSeekSerializer &log,
+                    bool clearCache = false) = 0;
                 /// \brief
                 /// Write dirty pages to their source.
-                virtual void Flush () = 0;
+                virtual void Flush (bool clearCache = false) = 0;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
@@ -413,22 +415,30 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (RandomSeekSerializer &log) override {
+                virtual void Log (
+                        RandomSeekSerializer &log,
+                        bool clearCache = false) override {
                     pageList.for_each (
-                        [&log] (typename PageList::Callback::argument_type page) ->
+                        [this, &log, clearCache] (typename PageList::Callback::argument_type page) ->
                                 typename PageList::Callback::result_type {
                             page->Log (log);
+                            if (clearCache) {
+                                DeletePage (page);
+                            }
                             return true;
                         }
                     );
                 }
                 /// \brief
                 /// Write dirty pages to their source.
-                virtual void Flush () override {
+                virtual void Flush (bool clearCache = false) override {
                     pageList.for_each (
-                        [] (typename PageList::Callback::argument_type page) ->
+                        [this, clearCache] (typename PageList::Callback::argument_type page) ->
                                 typename PageList::Callback::result_type {
                             page->Flush ();
+                            if (clearCache) {
+                                DeletePage (page);
+                            }
                             return true;
                         }
                     );
@@ -578,22 +588,32 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (RandomSeekSerializer &log) override {
+                /// \param[in] clearCache true == Delete the page cache after.
+                virtual void Log (
+                        RandomSeekSerializer &log,
+                        bool clearCache = false) override {
                     nodeList.for_each (
-                        [&log] (typename NodeList::Callback::argument_type node) ->
+                        [this, &log, clearCache] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
-                            node->Log (log);
+                            node->Log (log, clearCache);
+                            if (clearCache) {
+                                DeleteNode (node);
+                            }
                             return true;
                         }
                     );
                 }
                 /// \brief
                 /// Write dirty pages to bitSource.
-                virtual void Flush () override {
+                /// \param[in] clearCache true == Delete the page cache after.
+                virtual void Flush (bool clearCache = false) override {
                     nodeList.for_each (
-                        [] (typename NodeList::Callback::argument_type node) ->
+                        [this, clearCache] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
-                            node->Flush ();
+                            node->Flush (clearCache);
+                            if (clearCache) {
+                                DeleteNode (node);
+                            }
                             return true;
                         }
                     );
@@ -721,8 +741,8 @@ namespace thekogans {
                 internalSize (Internal::Size (nodesPerInternal)),
                 segmentSize (Segment::Size (pagesPerSegment)),
                 levelShift (bitsPerAddress - bitsPerLevel),
-                levelMask (BitMask (bitsPerLevel) << levelShift),
-                segmentMask (BitMask (bitsPerSegment)),
+                levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
+                segmentMask (((AddressType)1 << bitsPerSegment) - 1),
                 internalAllocator (internalSize, internalNodesPerPage, allocator),
                 segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
                 pageAllocator (pageAlignment, allocator),
@@ -775,15 +795,19 @@ namespace thekogans {
                 }
             }
             /// \brief
-            /// Write dirty pages to log.
+            /// Write dirty pages to log and optionaly clear the page cache.
             /// \param[in] log \see{RandomSeekSerializer} to write to.
-            void Log (RandomSeekSerializer &log) {
-                root->Log (log);
+            /// \param[in] clearCache true == Delete the page cache after.
+            void Log (
+                    RandomSeekSerializer &log,
+                    bool clearCache = false) {
+                root->Log (log, clearCache);
             }
             /// \brief
-            /// Write dirty pages to their source.
-            void Flush () {
-                root->Flush ();
+            /// Write dirty pages to their source and optionaly clear the page cache.
+            /// \param[in] clearCache true == Delete the page cache after.
+            void Flush (bool clearCache = false) {
+                root->Flush (clearCache);
             }
             /// \brief
             /// Delete all pages whose offset > newSize.
@@ -796,16 +820,6 @@ namespace thekogans {
                     lastGetPageOffset = NOFFS;
                     lastGetPagePage.Reset ();
                 }
-            }
-
-        private:
-            static AddressType BitMask (std::size_t count) {
-                AddressType mask = 0;
-                while (count--) {
-                    mask <<= 1;
-                    ++mask;
-                }
-                return mask;
             }
 
             /// \brief

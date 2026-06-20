@@ -65,7 +65,7 @@ namespace thekogans {
             file.Unsubscribe ();
         }
 
-        void TransactedFile::Transaction::Commit () {
+        void TransactedFile::Transaction::Commit (bool clearCache) {
             file.Produce (
                 std::bind (
                     &TransactedFileEvents::OnTransactedFileTransactionCommit,
@@ -79,7 +79,7 @@ namespace thekogans {
                     &file,
                     COMMIT_PHASE_2));
             file.Unsubscribe ();
-            file.Commit ();
+            file.Commit (clearCache);
         }
 
         bool TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
@@ -391,7 +391,7 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Commit () {
+        void TransactedFile::Commit (bool clearCache) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 std::string logPath = GetLogPath (path);
@@ -401,7 +401,7 @@ namespace thekogans {
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
                     log << (ui32)0 << size << (ui64)pageMap->GetPageSize ();
-                    pageMap->Log (log);
+                    pageMap->Log (log, clearCache);
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32;
                     log.Flush ();

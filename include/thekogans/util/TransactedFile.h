@@ -174,7 +174,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Commit the transaction before the dtor aborts it.
-                void Commit ();
+                void Commit (bool clearCache = false);
 
                 /// \brief
                 /// Transaction is neither copy constructable, nor assignable.
@@ -445,12 +445,12 @@ namespace thekogans {
             /// \brief
             /// Commit the current transaction.
             /// Used by \see{Transaction} to commit the current changes.
-            /// NOT thread safe.
-            void Commit ();
+            /// Thread safe.
+            void Commit (bool clearCache = false);
             /// \brief
             /// Abort the current transaction.
             /// Used by \see{Transaction} dtor to abort uncommitted changes.
-            /// NOT thread safe.
+            /// Thread safe.
             void Abort ();
 
             /// \brief
