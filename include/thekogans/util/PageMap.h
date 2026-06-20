@@ -308,13 +308,7 @@ namespace thekogans {
             /// \struct PageMap::Node PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
-            struct Node :
-                    public RefCounted,
-                    public NodeList::Node {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Node)
-
+            struct Node : public NodeList::Node {
                 /// \brief
                 /// \see{PageMap} this node belongs to.
                 PageMap &pageMap;
@@ -353,6 +347,8 @@ namespace thekogans {
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (AddressType newSize) = 0;
+
+                virtual void Harakiri () = 0;
             };
 
             /// \struct PageMap::Segment PageMap.h thekogans/util/PageMap.h
@@ -360,10 +356,6 @@ namespace thekogans {
             /// \brief
             /// Leaf node organizing address space \see{Page}s.
             struct Segment : public Node {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Segment)
-
                 /// \brief
                 /// An array of \see{Page}s tilling the segment.
                 Page **pages;
@@ -463,6 +455,11 @@ namespace thekogans {
                     return pageList.empty ();
                 }
 
+                virtual void Harakiri () override {
+                    this->~Segment ();
+                    this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
+                }
+
                 /// \brief
                 /// Return the \see{Page} @index. Create if null.
                 /// \param[in] pageIndex Page index in the pages array.
@@ -502,11 +499,6 @@ namespace thekogans {
                     return pages[pageIndex];
                 }
 
-                virtual void Harakiri () override {
-                    this->~Segment ();
-                    this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
-                }
-
                 static std::size_t Size (std::size_t pagesPerSegment) {
                     return sizeof (Segment) + pagesPerSegment * sizeof (Page *);
                 }
@@ -536,10 +528,6 @@ namespace thekogans {
             /// Internal structure node.
             struct Internal : public Node {
                 /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Internal)
-
-                /// \brief
                 /// Child nodes.
                 Node **nodes;
                 /// \brief
@@ -562,7 +550,7 @@ namespace thekogans {
                     nodeList.for_each (
                         [] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
-                            node->Release ();
+                            node->Harakiri ();
                             return true;
                         }
                     );
@@ -638,6 +626,11 @@ namespace thekogans {
                     return nodeList.empty ();
                 }
 
+                virtual void Harakiri () override {
+                    this->~Internal ();
+                    this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
+                }
+
                 /// \brief
                 /// Return either an \see{Internal} scaffolding node
                 /// or a \see{Segment} leaf node. Create if null.
@@ -657,7 +650,6 @@ namespace thekogans {
                         Node *node = segment ?
                             Segment::Alloc (this->pageMap, index) :
                             Internal::Alloc (this->pageMap, index);
-                        node->AddRef ();
                         nodes[index] = node;
                         if (nodeList.empty () || nodeList.tail->index < node->index) {
                             nodeList.push_back (node);
@@ -678,11 +670,6 @@ namespace thekogans {
                     return nodes[index];
                 }
 
-                virtual void Harakiri () override {
-                    this->~Internal ();
-                    this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
-                }
-
                 static std::size_t Size (std::size_t nodesPerInternal) {
                     return sizeof (Internal) + nodesPerInternal * sizeof (Node *);
                 }
@@ -698,14 +685,13 @@ namespace thekogans {
                 void DeleteNode (Node *node) {
                     nodes[node->index] = nullptr;
                     nodeList.erase (node);
-                    node->Release ();
+                    node->Harakiri ();
                 }
 
                 /// \brief
                 /// Internal is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Internal)
-            };
-            typename Internal::SharedPtr root;
+            } *root;
             /// \brief
             /// Last accessed page offset.
             /// This is the page offset of the last call to \see{GetPage (offset)}.
@@ -748,6 +734,9 @@ namespace thekogans {
                 pageAllocator (pageAlignment, allocator),
                 root ((Internal *)Internal::Alloc (*this, 0)),
                 lastGetPageOffset (NOFFS) {}
+            ~PageMap () {
+                root->Harakiri ();
+            }
 
             /// \brief
             /// Return the page size.
@@ -763,7 +752,7 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (AddressType offset) {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
-                    Node *node = root.Get ();
+                    Node *node = root;
                     // Begging the compiler to put these in to registers.
                     std::size_t levelShift_ = levelShift;
                     AddressType levelMask_ = levelMask;
@@ -773,7 +762,7 @@ namespace thekogans {
                             (pageOffset & levelMask_) >> levelShift_, levelCount_ == 0);
                     }
                     // Cache the result so that we can reuse it if the next
-                    // call to GetPage is ufficiently close to this one
+                    // call to GetPage is sufficiently close to this one
                     // (locality of reference).
                     lastGetPageOffset = pageOffset;
                     lastGetPagePage.Reset (
@@ -802,12 +791,20 @@ namespace thekogans {
                     RandomSeekSerializer &log,
                     bool clearCache = false) {
                 root->Log (log, clearCache);
+                if (clearCache) {
+                    lastGetPageOffset = NOFFS;
+                    lastGetPagePage.Reset ();
+                }
             }
             /// \brief
             /// Write dirty pages to their source and optionaly clear the page cache.
             /// \param[in] clearCache true == Delete the page cache after.
             void Flush (bool clearCache = false) {
                 root->Flush (clearCache);
+                if (clearCache) {
+                    lastGetPageOffset = NOFFS;
+                    lastGetPagePage.Reset ();
+                }
             }
             /// \brief
             /// Delete all pages whose offset > newSize.

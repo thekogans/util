@@ -150,9 +150,8 @@ namespace thekogans {
             /// \struct TransactedFile::Transaction TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
-            /// A very simple transaction scope guard. Will call
-            /// \see{BeginTransaction} in it's ctor and \see{AbortTransaction}
-            /// in it's dtor. Call Commit before the end of the
+            /// A very simple transaction scope guard.
+            /// Call Commit before the end of the
             /// scope to commit the transaction.
             /// NOTE: If you're only reading the file, this is unnecessary.
             struct _LIB_THEKOGANS_UTIL_DECL Transaction {

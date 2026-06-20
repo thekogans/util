@@ -99,6 +99,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     /// 2. Ability to navigate the heap in linear order. This
     /// property is used in Free to help coalesce adjecent free
     /// blocks.
+    /// TODO: In the future this same ability to navigate the heap
+    /// forwards and backwards in list like linear order can be
+    /// used to perform heap checks and potential corruption recovery.
     /// The drawback of this design is that every allocation has
     /// 32 bytes of overhead. Keep that in mind when designing
     /// your objects as this design favors fewer larger objects

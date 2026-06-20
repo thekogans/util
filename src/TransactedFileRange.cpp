@@ -45,6 +45,34 @@ namespace thekogans {
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             ui64 pageOffset = offset & (file.GetPageSize () - 1);
+            ////////////////////////////////////////////////////////////////////
+            // The two designs considered for range were:
+            // 1. Have range implement something simmilar to TransactedFile::ReadEx
+            // and TransactedFile::WriteEx where it would check the page boundary
+            // with every read and write or,
+            // 2. Have range assume contiguity and eschew all bounds checking. And
+            // if it happens to fall on a page boudary, allocate a backing buffer
+            // to guarantee that assumption (with all of its inherent performance
+            // penalties of alloc/[read|write]/free).
+            // I chose to go with the approach #2 for the following reasons;
+            // 1. Performance. The massive performace boost we get by removing
+            // all obstacles from the critical path is impressive. By having
+            // the critical path (read/write) move bits without constant checking
+            // saves a lot of needless cycles.
+            // 2. Use patterns and tunability. Range is specifically designed
+            // to work with PageMap::Page and it's size. That size is parameterized
+            // by bitsPerPage ctor value. You therefore have a lot of power to tune
+            // the underlying PageMap to minimize boudary crossings. At the same
+            // time range is designed to work with TransactedFile::Allocator::Block
+            // (BlockRange). That means that most of range parameters will come from
+            // block offset and size. And to that end...
+            // 3. ...TransactedFileBTreeAllocator. TransactedFileBTreeAllocator
+            // bends over backward to try and reduce the number of page boundary
+            // crossing blocks it allocates.
+            // All these things considered I made the calculated decision that page
+            // boundary crossings will be so rare as to be negligible. And to devote
+            // critical path code to deal with it would be the wrong way to go.
+            ////////////////////////////////////////////////////////////////////
             // Check to see if the range straddles a page boundary...
             if (length > file.GetPageSize () - pageOffset) {
                 // ... it does. Allocate a backing buffer.
