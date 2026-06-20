@@ -66,35 +66,28 @@ namespace thekogans {
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {
-            // We must account for objects that allocate other objects during phase 1.
-            // We loop collecting new ones after every call to commit.
-            std::vector<SharedSubscriberInfo> subscribers;
+            // We must account for objects that allocate other objects during commit.
             while (file.GetSubscriberCount () != 0) {
-                std::vector<SharedSubscriberInfo> subscribers_;
-                file.GetSubscribers (subscribers_, true);
-                for (std::size_t i = 0, count = subscribers_.size (); i < count; ++i) {
-                    subscribers_[i].second->DeliverEvent (
+                std::vector<SharedSubscriberInfo> subscribers;
+                file.GetSubscribers (subscribers, true);
+                for (std::size_t i = 0, count = subscribers.size (); i < count; ++i) {
+                    subscribers[i].second->DeliverEvent (
                         std::bind (
                             &TransactedFileEvents::OnTransactedFileTransactionCommit,
                             std::placeholders::_1,
                             &file,
                             COMMIT_PHASE_1),
-                        subscribers_[i].first);
+                        subscribers[i].first);
                 }
-                subscribers.reserve (subscribers.size () + subscribers_.size ());
-                subscribers.insert (
-                    subscribers.end (),
-                    std::make_move_iterator (subscribers_.begin ()),
-                    std::make_move_iterator (subscribers_.end ()));
-            }
-            for (std::size_t i = 0, count = subscribers.size (); i < count; ++i) {
-                subscribers[i].second->DeliverEvent (
-                    std::bind (
-                        &TransactedFileEvents::OnTransactedFileTransactionCommit,
-                        std::placeholders::_1,
-                        &file,
-                        COMMIT_PHASE_2),
-                    subscribers[i].first);
+                for (std::size_t i = 0, count = subscribers.size (); i < count; ++i) {
+                    subscribers[i].second->DeliverEvent (
+                        std::bind (
+                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
+                            std::placeholders::_1,
+                            &file,
+                            COMMIT_PHASE_2),
+                        subscribers[i].first);
+                }
             }
             file.Commit (clearCache);
         }
