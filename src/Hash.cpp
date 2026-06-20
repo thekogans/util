@@ -16,8 +16,8 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cassert>
+#include <vector>
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/Array.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/RandomSource.h"
@@ -105,10 +105,10 @@ namespace thekogans {
             if (file.GetSize () > 0) {
                 Init (digestSize);
                 static const std::size_t BUFFER_CAPACITY = 4096;
-                Array<ui8> buffer (BUFFER_CAPACITY);
+                std::vector<ui8> buffer (BUFFER_CAPACITY);
                 std::size_t size;
-                while ((size = file.Read (buffer, BUFFER_CAPACITY)) != 0) {
-                    Update (buffer, size);
+                while ((size = file.Read (buffer.data (), BUFFER_CAPACITY)) != 0) {
+                    Update (buffer.data (), size);
                 }
                 Final (digest);
             }

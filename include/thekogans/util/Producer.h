@@ -19,9 +19,9 @@
 #define __thekogans_util_Producer_h
 
 #include <functional>
+#include <vector>
 #include <unordered_map>
 #include "thekogans/util/RefCounted.h"
-#include "thekogans/util/Array.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/RunLoop.h"
@@ -308,18 +308,15 @@ namespace thekogans {
                 typename EventDeliveryPolicy::SharedPtr>;
 
             /// \brief
-            /// Return an \see{Array} of locked (SharedPtr) subscribers.
-            /// \param[out] subscribers_ \see{Array} of \see{SharedSubscriberInfo} pairs to return.
-            /// \return Number of pairs returned. The reason it might be different then \see{Array::GetCount}
-            /// is because some subscribers might have been in the middle of destruction during their encounter.
-            std::size_t GetSubscribers (
-                    Array<SharedSubscriberInfo> &subscribers_,
+            /// Return a vector of locked (SharedPtr) subscribers.
+            /// \param[out] subscribers_ std::vector of \see{SharedSubscriberInfo} pairs to return.
+            void GetSubscribers (
+                    std::vector<SharedSubscriberInfo> &subscribers_,
                     bool unsubscribe = false) {
-                std::size_t count = 0;
                 {
                     LockGuard<SpinLock> guard (spinLock);
                     if (!subscribers.empty ()) {
-                        subscribers_.Resize (subscribers.size ());
+                        subscribers_.reserve (subscribers.size ());
                         for (typename Subscribers::iterator
                                 it = subscribers.begin (),
                                 end = subscribers.end (); it != end; ++it) {
@@ -334,8 +331,8 @@ namespace thekogans {
                             typename Subscriber<T>::SharedPtr subscriber =
                                 it->second.first.GetSharedPtr ();
                             if (subscriber != nullptr) {
-                                subscribers_[count++] =
-                                    SharedSubscriberInfo (subscriber, it->second.second);
+                                subscribers_.push_back (
+                                    SharedSubscriberInfo (subscriber, it->second.second));
                             }
                         }
                         if (unsubscribe) {
@@ -345,11 +342,10 @@ namespace thekogans {
                     }
                 }
                 if (unsubscribe) {
-                    for (std::size_t i = 0; i < count; ++i) {
+                    for (std::size_t i = 0, count = subscribers_.size (); i < count; ++i) {
                         OnUnsubscribe (*subscribers_[i].first);
                     }
                 }
-                return count;
             }
 
             /// \brief
@@ -379,8 +375,9 @@ namespace thekogans {
                     }
                 }
 #else
-                Array<SharedSubscriberInfo> subscribers;
-                for (std::size_t i = 0, count = GetSubscribers (subscribers, unsubscribe); i < count; ++i) {
+                std::vector<SharedSubscriberInfo> subscribers;
+                GetSubscribers (subscribers, unsubscribe);
+                for (std::size_t i = 0, count = subscribers.size (); i < count; ++i) {
                     subscribers[i].second->DeliverEvent (event, subscribers[i].first);
                 }
 #endif

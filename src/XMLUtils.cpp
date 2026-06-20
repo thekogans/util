@@ -20,7 +20,6 @@
 #include <sstream>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Array.h"
 #include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
@@ -126,8 +125,8 @@ namespace thekogans {
                 /* F */ false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
             };
             static const char *hexTable = "0123456789ABCDEF";
-            Array<ui8> encodedUri (uri.size () * 3);
-            ui8 *ptr = encodedUri;
+            std::vector<ui8> encodedUri (uri.size () * 3);
+            ui8 *ptr = encodedUri.data ();
             for (const ui8 *start = (const ui8 *)uri.c_str (),
                      *end = start + uri.size (); start < end; ++start) {
                 if (safeChar[*start]) {
@@ -140,7 +139,7 @@ namespace thekogans {
                     *ptr++ = hexTable[*start & 0x0f];
                 }
             }
-            return std::string ((char *)(ui8 *)encodedUri, (char *)ptr);
+            return std::string ((char *)(ui8 *)encodedUri.data (), (char *)ptr);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API DecodeURI (
@@ -164,8 +163,8 @@ namespace thekogans {
                 /* E */ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
                 /* F */ 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff
             };
-            Array<ui8> decodedUri (uri.size ());
-            ui8 *ptr = decodedUri;
+            std::vector<ui8> decodedUri (uri.size ());
+            ui8 *ptr = decodedUri.data ();
             // IMPORTANT NOTE FROM RFC1630:
             // "Sequences which start with a percent sign but
             // are not followed by two hexadecimal characters
@@ -184,7 +183,7 @@ namespace thekogans {
                     *ptr++ = *start++;
                 }
             }
-            return std::string ((char *)(ui8 *)decodedUri, (char *)ptr);
+            return std::string ((char *)(ui8 *)decodedUri.data (), (char *)ptr);
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API Encodestring (

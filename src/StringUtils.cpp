@@ -26,7 +26,6 @@
 #include <algorithm>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/Array.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -907,10 +906,10 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 // Windows limit on value length.
                 static const std::size_t MAX_VALUE_LENGTH = 32767;
-                Array<wchar_t> value (MAX_VALUE_LENGTH);
+                std::vector<wchar_t> value (MAX_VALUE_LENGTH);
                 std::size_t length = ::GetEnvironmentVariableW (
                     os::windows::UTF8ToUTF16 (name).c_str (),
-                    value,
+                    value.data (),
                     MAX_VALUE_LENGTH);
                 if (length > 0) {
                     return os::windows::UTF16ToUTF8 (value, length);

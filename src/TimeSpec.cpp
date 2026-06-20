@@ -36,7 +36,6 @@ namespace thekogans {
     namespace util {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::TimeSpec, 1, TimeSpec::SIZE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (thekogans::util::TimeSpecArray, 1, 0)
 
         TimeSpec::TimeSpec (
                 i64 seconds_,

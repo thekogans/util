@@ -33,6 +33,7 @@
 #include <sys/types.h>
 #include <cctype>
 #include <cassert>
+#include <vector>
 #include <algorithm>
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/StringUtils.h"
@@ -40,11 +41,9 @@
 #elif defined (TOOLCHAIN_OS_Linux)
     #include "thekogans/util/os/linux/LinuxUtils.h"
 #elif defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/Array.h"
     #include "thekogans/util/os/osx/OSXUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Directory.h"
-#include "thekogans/util/Array.h"
 #include "thekogans/util/File.h"
 #include "thekogans/util/Path.h"
 
@@ -92,8 +91,8 @@ namespace thekogans {
 
         std::string Path::GetTempDirectory () {
         #if defined (TOOLCHAIN_OS_Windows)
-            Array<wchar_t> tempDirectory (MAX_PATH + 1);
-            DWORD length = GetTempPathW (MAX_PATH, tempDirectory);
+            std::vector<wchar_t> tempDirectory (MAX_PATH + 1);
+            DWORD length = GetTempPathW (MAX_PATH, tempDirectory.data ());
             if (length != 0) {
                 return os::windows::UTF16ToUTF8 (tempDirectory, length, WC_ERR_INVALID_CHARS);
             }
@@ -333,9 +332,9 @@ namespace thekogans {
 
         std::string Path::MakeAbsolute () const {
         #if defined (TOOLCHAIN_OS_Windows)
-            Array<wchar_t> fullPath (32767);
+            std::vector<wchar_t> fullPath (32767);
             std::size_t length = GetFullPathNameW (
-                os::windows::UTF8ToUTF16 (path).c_str (), 32767, fullPath, 0);
+                os::windows::UTF8ToUTF16 (path).c_str (), 32767, fullPath.data (), 0);
             if (length > 0) {
                 std::string utf8Path = os::windows::UTF16ToUTF8 (fullPath, length);
                 // On POSIX realpath will return an ENOENT if the resulting

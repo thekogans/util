@@ -85,7 +85,6 @@
                install = "yes">
     <cpp_header>$(organization)/$(project_directory)/AlignedAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Allocator.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Array.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Barrier.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Base64.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/BitSet.h</cpp_header>
@@ -157,7 +156,6 @@
     <cpp_header>$(organization)/$(project_directory)/SecureAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Semaphore.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializable.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/SerializableArray.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableHeader.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableString.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableValues.h</cpp_header>
