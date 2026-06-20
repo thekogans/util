@@ -507,8 +507,11 @@ namespace thekogans {
                     prev.Write ();
                     // As weird as it looks, this is actually as designed.
                     // This method is used only by BTree::Node::Alloc and
-                    // it's only called by Object::Alloc. There's no recursion
-                    // here.
+                    // is only called by Object::Alloc in response to commit.
+                    // There's no recursion here as nodes are not allocated
+                    // during Insert. While there's a possibility a new node
+                    // will be created during Insert, it will be taken care
+                    // of by TransactedFile::Transaction::Commit.
                     btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
                 }
                 // Otherwise, we fit in the ramainder. Check if what will remain
