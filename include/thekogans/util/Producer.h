@@ -312,7 +312,9 @@ namespace thekogans {
             /// \param[out] subscribers_ \see{Array} of \see{SharedSubscriberInfo} pairs to return.
             /// \return Number of pairs returned. The reason it might be different then \see{Array::GetCount}
             /// is because some subscribers might have been in the middle of destruction during their encounter.
-            std::size_t GetSubscribers (Array<SharedSubscriberInfo> &subscribers_) {
+            std::size_t GetSubscribers (
+                    Array<SharedSubscriberInfo> &subscribers_,
+                    bool unsubscribe = false) {
                 std::size_t count = 0;
                 {
                     LockGuard<SpinLock> guard (spinLock);
@@ -336,6 +338,15 @@ namespace thekogans {
                                     SharedSubscriberInfo (subscriber, it->second.second);
                             }
                         }
+                        if (unsubscribe) {
+                            Subscribers temp;
+                            temp.swap (subscribers);
+                        }
+                    }
+                }
+                if (unsubscribe) {
+                    for (std::size_t i = 0; i < count; ++i) {
+                        OnUnsubscribe (*subscribers_[i].first);
                     }
                 }
                 return count;

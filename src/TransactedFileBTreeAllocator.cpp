@@ -463,9 +463,6 @@ namespace thekogans {
         }
 
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {
-            // FIXME: See if there's a way to not straddle page boundaries.
-            // Somehow we will need to wire filler blocks in to the btree
-            // without using the btree.
             LockGuard<SpinLock> guard (spinLock);
             PtrType offset = 0;
             if (header.freeBTreeNodeOffset != 0) {
@@ -488,7 +485,44 @@ namespace thekogans {
                 }
             }
             else {
+                // If not, we need to grow the file.
+                // Do your best to not straddle a page boundary.
+                // Ranges that straddle page boundaries incur an
+                // allocation/copy/deallocation penalty.
+                // Calculate the remainder left in the last page.
+                ui64 remainder = file->GetPageSize () - (file->GetSizeEx () & (file->GetPageSize () - 1));
+                // If we don't fit in to remainder and, if the remainder
+                // can be turned in to another block and we fit into one
+                // page, all is well. Go ahead and create a spacer block
+                // and align us with a page boundary. Otherwise, because
+                // there can be no gaps between blocks, we will straddle
+                // a page boundary.
+                if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
+                        size <= (file->GetPageSize () - Block::SIZE)) {
+                    Block prev (
+                        *file,
+                        file->Grow (remainder) + Block::HEADER_SIZE,
+                        Block::FLAGS_FREE,
+                        remainder - Block::SIZE);
+                    prev.Write ();
+                    // As weird as it looks, this is actually as designed.
+                    // This method is used only by BTree::Node::Alloc and
+                    // it's only called by Object::Alloc. There's no recursion
+                    // here.
+                    btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                }
+                // Otherwise, we fit in the ramainder. Check if what will remain
+                // after our allocation would be too small for a block and cause
+                // the next allocation to straddle the page boundry...
+                else if (remainder - size - Block::SIZE < MIN_BLOCK_SIZE) {
+                    // ...it is. Round up the size request to align the next
+                    // allocation to a page boundary.
+                    size = remainder - Block::SIZE;
+                }
+                // No free block large enough is found? Grow the file.
                 offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
+                // Most file systems will fill the new space with '0' bytes
+                // but we can't take a chance and do it ourselves.
                 if (IsSecure ()) {
                     TransactedFile::Range range (*file, offset, size, false);
                     range.Seek (

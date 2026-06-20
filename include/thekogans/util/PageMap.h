@@ -36,7 +36,7 @@ namespace thekogans {
         /// astronomical (10^19, 10^38...) in size, given the somewhat limited resources
         /// of today's and tomorrow's hosts. PageMap divides the given address space in to
         /// sequential, contiguous, nonoverlapping pages. The pages are maintained in groups
-        /// called segments. Segments are organized as leaf nodes in a fixed depth, mutiway
+        /// called segments. Segments are organized as leaf nodes in a fixed depth, multiway
         /// tree. Given a particular parameterization of an address space, PageMap will
         /// calculate all other parameters needed for efficient tree traversal. PageMap's
         /// entire reason for being, as far as the user is concerned, is to provide on demand
