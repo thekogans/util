@@ -384,7 +384,7 @@ namespace thekogans {
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
                     log << (ui32)0 << size << (ui64)pageMap->GetPageSize ();
-                    pageMap->Log (log, false);
+                    pageMap->Log (log);
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32;
                 }

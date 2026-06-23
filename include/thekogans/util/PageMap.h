@@ -256,6 +256,7 @@ namespace thekogans {
                     if (dirty) {
                         log << offset;
                         log.Write (data, pageMap.pageSize);
+                        // NOTE: We don't set dirty = false here.
                     }
                 }
                 /// \brief
@@ -340,19 +341,21 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (
-                    RandomSeekSerializer &log,
-                    bool clearCache = false) = 0;
+                virtual void Log (RandomSeekSerializer &log) = 0;
                 /// \brief
                 /// Write dirty pages to their source.
                 virtual void Flush (bool clearCache = false) = 0;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
-                /// \return true == the entire node was clipped, continue iterating.
-                /// false == a page was encoutered whose offset was < newSize, stop iterating.
+                /// \return true == node was completely clipped (it's empty).
+                /// false == node was partialy clipped (it has pages).
                 virtual bool Shrink (AddressType newSize) = 0;
 
+                /// \brief
+                /// Kill yourself. Since different node types come from differernt
+                /// custom \see{BlockAllocator}s, each node type will know which
+                /// allocator to use for it's own demise.
                 virtual void Harakiri () = 0;
             };
 
@@ -416,16 +419,11 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (
-                        RandomSeekSerializer &log,
-                        bool clearCache = false) override {
+                virtual void Log (RandomSeekSerializer &log) override {
                     pageList.for_each (
-                        [this, &log, clearCache] (typename PageList::Callback::argument_type page) ->
+                        [&log] (typename PageList::Callback::argument_type page) ->
                                 typename PageList::Callback::result_type {
                             page->Log (log);
-                            if (clearCache) {
-                                DeletePage (page);
-                            }
                             return true;
                         }
                     );
@@ -589,17 +587,11 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
-                /// \param[in] clearCache true == Delete the page cache after.
-                virtual void Log (
-                        RandomSeekSerializer &log,
-                        bool clearCache = false) override {
+                virtual void Log (RandomSeekSerializer &log) override {
                     nodeList.for_each (
-                        [this, &log, clearCache] (typename NodeList::Callback::argument_type node) ->
+                        [&log] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
-                            node->Log (log, clearCache);
-                            if (clearCache) {
-                                DeleteNode (node);
-                            }
+                            node->Log (log);
                             return true;
                         }
                     );
@@ -808,20 +800,12 @@ namespace thekogans {
                 }
             }
             /// \brief
-            /// Write dirty pages to log and optionaly clear the page cache.
-            /// \param[in] log \see{RandomSeekSerializer} to write to.
-            /// \param[in] clearCache true == Delete the page cache after.
-            void Log (
-                    RandomSeekSerializer &log,
-                    bool clearCache = false) {
+            /// Write dirty pages to log.
+            /// \param[in] log \see{RandomSeekSerializer} to write dirty pages to.
+            void Log (RandomSeekSerializer &log) {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
-                    root->Log (log, clearCache);
-                    if (clearCache) {
-                        lastGetPageOffset = NOFFS;
-                        lastGetPagePage.Reset ();
-                    }
-                    DeleteRoot ();
+                    root->Log (log);
                 }
             }
             /// \brief
