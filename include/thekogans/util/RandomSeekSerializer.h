@@ -19,6 +19,7 @@
 #define __thekogans_util_RandomSeekSerializer_h
 
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Types.h"
 #include "thekogans/util/Serializer.h"
 
 namespace thekogans {
@@ -63,6 +64,14 @@ namespace thekogans {
             virtual i64 Seek (
                 i64 offset,
                 i32 fromWhere) = 0;
+
+            /// \brief
+            /// Given that random seek means that I can seek to the end of the serializer,
+            /// it also means that we can calculate it's size. The default implementation
+            /// does it naively by calling Seek (0, SEEK_END), but derivatives are free
+            /// to optimize their implementations.
+            /// \return Size of the serializer.
+            virtual ui64 GetSize ();
         };
 
     } // namespace util

@@ -33,6 +33,8 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/AlignedAllocator.h"
+#include "thekogans/util/TransactedFileBTreeAllocator.h"
+#include "thekogans/util/TransactedFileBTreeRegistry.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -45,17 +47,7 @@ namespace thekogans {
         const int TransactedFile::COMMIT_PHASE_1 = 1;
         const int TransactedFile::COMMIT_PHASE_2 = 2;
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFile::TFPageMap::Page)
-
-        TransactedFile::Transaction::Transaction (TransactedFile &file_) :
-                file (file_),
-                guard (file.mutex) {
-            file.Produce (
-                std::bind (
-                    &TransactedFileEvents::OnTransactedFileTransactionBegin,
-                    std::placeholders::_1,
-                    &file));
-        }
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFile::PageMapType::Page)
 
         TransactedFile::Transaction::~Transaction () {
             file.Abort ();
@@ -99,9 +91,6 @@ namespace thekogans {
             if (dirty) {
                 Subscriber<TransactedFileEvents>::Subscribe (*file);
             }
-            else {
-                Subscriber<TransactedFileEvents>::Unsubscribe (*file);
-            }
         }
 
         namespace {
@@ -138,7 +127,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 size = GetSize ();
                 pageMap.Reset (
-                    new TFPageMap (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
+                    new PageMapType (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
                 Init (allocator, registry);
             }
         }
@@ -213,7 +202,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             size = GetSize ();
             pageMap.Reset (
-                new TFPageMap (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
+                new PageMapType (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
             Init (allocator, registry);
         }
 
@@ -238,7 +227,7 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        PageMap64::Page::SharedPtr page = pageMap->GetPage (offset);
+                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset);
                         std::size_t pageOffset = offset - page->offset;
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this page...
@@ -274,7 +263,7 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        PageMap64::Page::SharedPtr page = pageMap->GetPage (offset);
+                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset);
                         std::size_t pageOffset = offset - page->offset;
                         std::size_t countToWrite = MIN (pageMap->GetPageSize () - pageOffset, count);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
@@ -316,10 +305,7 @@ namespace thekogans {
         ui64 TransactedFile::Shrink (ui64 amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
-                if (amount > size) {
-                    amount = size;
-                }
-                size -= amount;
+                size -= MIN (amount, size);
                 pageMap->Shrink (size);
                 return size;
             }
@@ -332,58 +318,60 @@ namespace thekogans {
         void TransactedFile::Init (
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_) {
-            if (allocator_ != nullptr) {
-                Transaction transaction (*this);
-                if (GetSize () == 0) {
-                    // Initialize the first block.
-                    Allocator::Block block (
-                        *this,
-                        Allocator::Block::HEADER_SIZE,
-                        0,
-                        allocator_->GetSize ());
-                    // For performance reasons Range assumes that all
-                    // reads and writes are within file bounds. We set
-                    // the file size here so that block.Write and range
-                    // insert below honor that assumption.
-                    Grow (Allocator::Block::SIZE + block.GetSize ());
-                    block.Write ();
-                    Range range (*this, block.GetOffset (), block.GetSize (), false);
-                    range << *allocator_;
+            Transaction transaction (*this);
+            if (GetSize () == 0) {
+                if (allocator_ != nullptr) {
+                    allocator_.Reset (new TransactedFileBTreeAllocator);
                 }
-                BlockRange range (*this, Allocator::Block::HEADER_SIZE);
-                {
-                    ContextGuard guard (range, SerializableHeader (), nullptr,
-                        [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
-                            Allocator::SharedPtr allocator = dynamicCreatable;
-                            if (allocator != nullptr) {
-                                allocator->file = this;
-                            }
-                        }
-                    );
-                    range >> allocator;
-                }
-                if (allocator->GetRegistryOffset () == 0 && registry_ != nullptr) {
-                    allocator->SetRegistryOffset (
-                        allocator->Alloc (registry_->GetSize ()));
-                    BlockRange range (*this, allocator->GetRegistryOffset (), false);
-                    range << *registry_;
-                }
-                if (allocator->GetRegistryOffset () != 0) {
-                    BlockRange range (*this, allocator->GetRegistryOffset ());
-                    {
-                        ContextGuard guard (range, SerializableHeader (), nullptr,
-                            [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
-                                Registry::SharedPtr registry = dynamicCreatable;
-                                if (registry != nullptr) {
-                                    registry->file = this;
-                                }
-                            }
-                        );
-                        range >> registry;
-                    }
-                }
-                transaction.Commit ();
+                // Initialize the first block.
+                Allocator::Block block (
+                    *this,
+                    Allocator::Block::HEADER_SIZE,
+                    0,
+                    allocator_->GetSize ());
+                // For performance reasons Range assumes that all
+                // reads and writes are within file bounds. We set
+                // the file size here so that block.Write and range
+                // insert below honor that assumption.
+                Grow (Allocator::Block::SIZE + block.GetSize ());
+                block.Write ();
+                Range range (*this, block.GetOffset (), block.GetSize (), false);
+                range << *allocator_;
             }
+            {
+                BlockRange range (*this, Allocator::Block::HEADER_SIZE);
+                ContextGuard guard (range, SerializableHeader (), nullptr,
+                    [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                        Allocator::SharedPtr allocator = dynamicCreatable;
+                        if (allocator != nullptr) {
+                            allocator->file = this;
+                        }
+                    }
+                );
+                range >> allocator;
+            }
+            if (allocator->GetRegistryOffset () == 0) {
+                if (registry_ != nullptr) {
+                    registry_.Reset (new TransactedFileBTreeRegistry);
+                }
+                allocator->SetRegistryOffset (
+                    allocator->Alloc (registry_->GetSize ()));
+                BlockRange range (*this, allocator->GetRegistryOffset (), false);
+                range << *registry_;
+            }
+            {
+                BlockRange range (*this, allocator->GetRegistryOffset ());
+                ContextGuard guard (range, SerializableHeader (), nullptr,
+                    [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                        Registry::SharedPtr registry = dynamicCreatable;
+                        if (registry != nullptr) {
+                            registry->file = this;
+                        }
+                    }
+                );
+                range >> registry;
+            }
+            transaction.Commit ();
         }
 
         void TransactedFile::Commit (bool clearCache) {
@@ -415,7 +403,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size = GetSize ();
-                pageMap->Clear (PageMap64::FLAGS_CLEAR_DIRTY);
+                pageMap->Clear (PageMapType::FLAGS_CLEAR_DIRTY);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -423,7 +411,7 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::TFPageMap::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
+        TransactedFile::PageMapType::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap->GetPage (offset);
         }

@@ -57,10 +57,6 @@ namespace thekogans {
             virtual ~TransactedFileEvents () {}
 
             /// \brief
-            /// Transaction is beginning.
-            virtual void OnTransactedFileTransactionBegin (
-                RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
-            /// \brief
             /// Transaction is committing. Depending on the phase do whatever
             /// is appropriate.
             /// If your object derives from \see{TransactedFile::TransactionParticipant}
@@ -161,7 +157,9 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{TransactedFile} to transact.
-                explicit Transaction (TransactedFile &file_);
+                explicit Transaction (TransactedFile &file_) :
+                    file (file_),
+                    guard (file.mutex) {}
                 /// \brief
                 /// dtor.
                 ~Transaction ();
@@ -234,7 +232,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
             };
 
-            using TFPageMap = PageMap<ui64, NullLock>;
+            using PageMapType = PageMap<ui64, NullLock>;
 
         private:
             /// \brief
@@ -242,7 +240,7 @@ namespace thekogans {
             ui64 size;
             /// \brief
             /// \see{PageMap} used to map file pages.
-            TFPageMap::SharedPtr pageMap;
+            PageMapType::SharedPtr pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
@@ -448,7 +446,7 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            TFPageMap::Page::SharedPtr GetPage (ui64 offset);
+            PageMapType::Page::SharedPtr GetPage (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

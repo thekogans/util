@@ -34,5 +34,12 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
+        ui64 RandomSeekSerializer::GetSize () {
+            ui64 position = Seek (0, SEEK_CUR);
+            ui64 size = Seek (0, SEEK_END);
+            Seek (position, SEEK_SET);
+            return size;
+        }
+
     } // namespace util
 } // namespace thekogans

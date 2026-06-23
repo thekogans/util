@@ -141,6 +141,15 @@ namespace thekogans {
                 i32 fromWhere) override;
 
             /// \brief
+            /// Return file size in bytes.
+            /// \return File size in bytes.
+            virtual ui64 GetSize () override;
+            /// \brief
+            /// Truncates or expands the file.
+            /// \param[in] newSize New size to set the file to.
+            virtual void SetSize (ui64 newSize);
+
+            /// \brief
             /// Return true if file is open.
             /// \return true == file is open.
             inline bool IsOpen () const {
@@ -181,16 +190,7 @@ namespace thekogans {
             /// \brief
             /// Return number of bytes available for reading.
             /// \return Number of bytes available for reading.
-            virtual ui64 GetDataAvailableForReading () const;
-
-            /// \brief
-            /// Return file size in bytes.
-            /// \return File size in bytes.
-            virtual ui64 GetSize () const;
-            /// \brief
-            /// Truncates or expands the file.
-            /// \param[in] newSize New size to set the file to.
-            virtual void SetSize (ui64 newSize);
+            virtual ui64 GetDataAvailableForReading ();
 
             /// \struct File::Region File.h thekogans/util/File.h
             ///

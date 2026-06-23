@@ -256,7 +256,6 @@ namespace thekogans {
                     if (dirty) {
                         log << offset;
                         log.Write (data, pageMap.pageSize);
-                        dirty = false;
                     }
                 }
                 /// \brief

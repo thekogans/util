@@ -166,6 +166,45 @@ namespace thekogans {
             return PlatformSeek (offset, fromWhere);
         }
 
+        ui64 File::GetSize () {
+            ui64 size = 0;
+        #if defined (TOOLCHAIN_OS_Windows)
+            ULARGE_INTEGER uli;
+            uli.LowPart = GetFileSize (handle, &uli.HighPart);
+            if (uli.LowPart != 0xffffffff ||
+                    THEKOGANS_UTIL_OS_ERROR_CODE == NO_ERROR) {
+                size = uli.QuadPart;
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            ui64 position = PlatformSeek (0, SEEK_CUR);
+            size = PlatformSeek (0, SEEK_END);
+            PlatformSeek (position, SEEK_SET);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            return size;
+        }
+
+        void File::SetSize (ui64 newSize) {
+        #if defined (TOOLCHAIN_OS_Windows)
+            ui64 position = PlatformSeek (0, SEEK_CUR);
+            PlatformSeek (newSize, SEEK_SET);
+            if (!SetEndOfFile (handle)) {
+        #else // defined (TOOLCHAIN_OS_Windows)
+            int rc;
+            do {
+                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                rc = ftruncate (handle, newSize);
+                if (rc < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                }
+        #if defined (TOOLCHAIN_OS_Windows)
+            PlatformSeek (position, SEEK_SET);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            } while (rc < 0);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
         void File::Open (
                 const std::string &path_,
             #if defined (TOOLCHAIN_OS_Windows)
@@ -237,47 +276,8 @@ namespace thekogans {
         #endif // !defined (TOOLCHAIN_OS_Windows)
         }
 
-        ui64 File::GetDataAvailableForReading () const {
+        ui64 File::GetDataAvailableForReading () {
             return GetSize () - Tell ();
-        }
-
-        ui64 File::GetSize () const {
-            ui64 size = 0;
-        #if defined (TOOLCHAIN_OS_Windows)
-            ULARGE_INTEGER uli;
-            uli.LowPart = GetFileSize (handle, &uli.HighPart);
-            if (uli.LowPart != 0xffffffff ||
-                    THEKOGANS_UTIL_OS_ERROR_CODE == NO_ERROR) {
-                size = uli.QuadPart;
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            ui64 position = PlatformSeek (0, SEEK_CUR);
-            size = PlatformSeek (0, SEEK_END);
-            PlatformSeek (position, SEEK_SET);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            return size;
-        }
-
-        void File::SetSize (ui64 newSize) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            ui64 position = PlatformSeek (0, SEEK_CUR);
-            PlatformSeek (newSize, SEEK_SET);
-            if (!SetEndOfFile (handle)) {
-        #else // defined (TOOLCHAIN_OS_Windows)
-            int rc;
-            do {
-                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
-                rc = ftruncate (handle, newSize);
-                if (rc < 0 && THEKOGANS_UTIL_OS_ERROR_CODE != EINTR) {
-        #endif // defined (TOOLCHAIN_OS_Windows)
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
-                }
-        #if defined (TOOLCHAIN_OS_Windows)
-            PlatformSeek (position, SEEK_SET);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            } while (rc < 0);
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
