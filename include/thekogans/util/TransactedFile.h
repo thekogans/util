@@ -25,6 +25,7 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/PageMap.h"
+#include "thekogans/util/NullLock.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
@@ -233,13 +234,15 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
             };
 
+            using TFPageMap = PageMap<ui64, NullLock>;
+
         private:
             /// \brief
             /// File size.
             ui64 size;
             /// \brief
             /// \see{PageMap} used to map file pages.
-            PageMap64::SharedPtr pageMap;
+            TFPageMap::SharedPtr pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
@@ -445,7 +448,7 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            PageMap64::Page::SharedPtr GetPage (ui64 offset);
+            TFPageMap::Page::SharedPtr GetPage (ui64 offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

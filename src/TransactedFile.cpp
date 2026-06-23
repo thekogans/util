@@ -45,6 +45,8 @@ namespace thekogans {
         const int TransactedFile::COMMIT_PHASE_1 = 1;
         const int TransactedFile::COMMIT_PHASE_2 = 2;
 
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFile::TFPageMap::Page)
+
         TransactedFile::Transaction::Transaction (TransactedFile &file_) :
                 file (file_),
                 guard (file.mutex) {
@@ -135,7 +137,8 @@ namespace thekogans {
                 size (0) {
             if (IsOpen ()) {
                 size = GetSize ();
-                pageMap.Reset (new PageMap64 (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
+                pageMap.Reset (
+                    new TFPageMap (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
                 Init (allocator, registry);
             }
         }
@@ -209,7 +212,8 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
             size = GetSize ();
-            pageMap.Reset (new PageMap64 (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
+            pageMap.Reset (
+                new TFPageMap (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
             Init (allocator, registry);
         }
 
@@ -392,25 +396,14 @@ namespace thekogans {
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
                     log << (ui32)0 << size << (ui64)pageMap->GetPageSize ();
-                    pageMap->Log (log, clearCache);
+                    pageMap->Log (log, false);
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32;
-                    log.Flush ();
-                    ui64 size;
-                    ui64 pageSize;
-                    log >> size >> pageSize;
-                    ui64 offset;
-                    HostBuffer page (pageSize);
-                    for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
-                        log >> offset;
-                        logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
-                        Seek (offset, SEEK_SET);
-                        Write (page.GetDataPtr (), pageSize);
-                    }
-                    SetSize (size);
-                    Flush ();
                 }
-                File::Delete (logPath);
+                pageMap->Flush (clearCache);
+                SetSize (size);
+                Flush ();
+                Delete (logPath);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -430,7 +423,7 @@ namespace thekogans {
             }
         }
 
-        PageMap64::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
+        TransactedFile::TFPageMap::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap->GetPage (offset);
         }

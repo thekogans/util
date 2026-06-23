@@ -20,6 +20,8 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/RandomSeekSerializer.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/BlockAllocator.h"
@@ -150,7 +152,9 @@ namespace thekogans {
         ///
         /// This will cover the entire 128 bit address space with 8 levels of 4GB segments,
         /// each containing 1K of 4MB pages.
-        template<typename T>
+        template<
+            typename T,
+            typename Lock = SpinLock>
         struct PageMap : public RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -711,6 +715,9 @@ namespace thekogans {
             /// \brief
             /// Last accessed page cache promoting locality of refernce.
             typename Page::SharedPtr lastGetPagePage;
+            /// \brief
+            /// Synchronization lock.
+            Lock lock;
 
         public:
             static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
@@ -763,6 +770,7 @@ namespace thekogans {
             /// \param[in] offset Offset whose page to return.
             /// \return \see{Page} that contains the given offset.
             typename Page::SharedPtr GetPage (AddressType offset) {
+                LockGuard<Lock> guard (lock);
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
                     Node *node = GetRoot ();
@@ -788,6 +796,7 @@ namespace thekogans {
             /// Delete pages.
             /// \param[in] flags Combination of FLAGS_CLEAR_CLEAN and FLAGS_CLEAR_DIRTY.
             void Clear (std::size_t flags) {
+                LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Clear (flags);
                     if (lastGetPagePage != nullptr &&
@@ -806,6 +815,7 @@ namespace thekogans {
             void Log (
                     RandomSeekSerializer &log,
                     bool clearCache = false) {
+                LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Log (log, clearCache);
                     if (clearCache) {
@@ -819,6 +829,7 @@ namespace thekogans {
             /// Write dirty pages to their source and optionaly clear the page cache.
             /// \param[in] clearCache true == Delete the page cache after.
             void Flush (bool clearCache = false) {
+                LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Flush (clearCache);
                     if (clearCache) {
@@ -832,6 +843,7 @@ namespace thekogans {
             /// Delete all pages whose offset > newSize.
             /// \param[in] newSize New size to clip the address space to.
             void Shrink (AddressType newSize) {
+                LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Shrink (newSize);
                     // If newSize is <= lastGetPageOffset, lastGetPagePage
