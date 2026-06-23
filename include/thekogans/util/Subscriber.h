@@ -96,7 +96,7 @@ namespace thekogans {
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
                             new typename Producer<T>::ImmediateEventDeliveryPolicy)) {
                 LockGuard<SpinLock> guard (spinLock);
-                if (producer.Subscribe (*this, eventDeliveryPolicy)) {
+                if (producer.SubscribeSubscriber (*this, eventDeliveryPolicy)) {
                     producers.insert (
                         typename Producers::value_type (
                             &producer,
@@ -114,7 +114,7 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Producers::iterator it = producers.find (&producer);
                 if (it != producers.end ()) {
-                    producer.Unsubscribe (*this);
+                    producer.UnsubscribeSubscriber (*this);
                     producers.erase (it);
                     return true;
                 }
@@ -130,11 +130,32 @@ namespace thekogans {
                         end = producers.end (); it != end; ++it) {
                     typename Producer<T>::SharedPtr producer = it->second.GetSharedPtr ();
                     if (producer != nullptr) {
-                        producer->Unsubscribe (*this);
+                        producer->UnsubscribeSubscriber (*this);
                     }
                 }
                 producers.clear ();
             }
+
+        private:
+            bool SubscribeProducer (Producer<T> &producer) {
+                LockGuard<SpinLock> guard (spinLock);
+                return producers.insert (
+                    typename Producers::value_type (
+                        &producer,
+                        typename Producer<T>::WeakPtr (&producer))).second;
+            }
+
+            bool UnsubscribeProducer (Producer<T> &producer) {
+                LockGuard<SpinLock> guard (spinLock);
+                typename Producers::iterator it = producers.find (&producer);
+                if (it != producers.end ()) {
+                    producers.erase (it);
+                    return true;
+                }
+                return false;
+            }
+
+            friend struct Producer<T>;
         };
 
     } // namespace util

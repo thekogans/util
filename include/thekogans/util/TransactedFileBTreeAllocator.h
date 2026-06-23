@@ -47,83 +47,6 @@ namespace thekogans {
             /// TransactedFileBTreeAllocator is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeAllocator)
 
-            /// \struct TransactedFileBTreeAllocator::Block TransactedFileBTreeAllocator.h
-            /// thekogans/util/TransactedFileBTreeAllocator.h
-            ///
-            /// \brief
-            /// Extends the \see{TransactedFile::Allocator::Header} to provide a singly linked list
-            /// of blocks. These are special blocks allocated and freed by \see{AllocBTreeNode} and
-            /// \see{FreeBTreeNode}. Used by \see{TransactedFileBTreeAllocator::Btree} to allocate
-            /// and free \see{TransactedFileBTreeAllocator::Btree::Node}.
-            struct _LIB_THEKOGANS_UTIL_DECL Block : public Allocator::Block {
-                /// \brief
-                /// If this flag is set the block is \see{BTree::Node}. Otherwise it's random size.
-                static const ui32 FLAGS_BTREE_NODE =
-                    TransactedFile::Allocator::Block::Header::FLAGS_FIRST_ALLOCATOR_FLAG;
-
-            private:
-                /// \brief
-                /// If FLAGS_BTREE_NODE and FLAGS_FREE are set this offset
-                /// will point to the next \see{BTree::Node} offset in the free list.
-                /// Otherwise this field is ignored. This is the only
-                /// difference between header and footer.
-                PtrType nextBTreeNodeOffset;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] file Block \see{TransactedFile}.
-                /// \param[in] offset Offset in the file where the Block resides.
-                /// \param[in] flags Combination of FLAGS_BTREE_NODE and FLAGS_FREE.
-                /// \param[in] size Size of the block (not including the size
-                /// of the Block itself).
-                /// \param[in] nextBTreeNodeOffset_ If FLAGS_FREE and FLAGS_BTREE_NODE are
-                /// set, this field contains the next free \see{BTree::Node} offset.
-                Block (
-                    TransactedFile &file,
-                    PtrType offset = 0,
-                    Flags32 flags = 0,
-                    ui64 size = 0,
-                    PtrType nextBTreeNodeOffset_ = 0) :
-                    Allocator::Block (file, offset, flags, size),
-                    nextBTreeNodeOffset (nextBTreeNodeOffset_) {}
-
-                /// \brief
-                /// Return true if FLAGS_BTREE_NODE set.
-                /// \return true == FLAGS_BTREE_NODE set.
-                inline bool IsBTreeNode () const {
-                    return header.flags.Test (FLAGS_BTREE_NODE);
-                }
-                /// \brief
-                /// Set/clear the FLAGS_BTREE_NODE flag.
-                /// \param[in] free true == set, false == clear
-                inline void SetBTreeNode (bool btreeNode) {
-                    header.flags.Set (FLAGS_BTREE_NODE, btreeNode);
-                }
-
-                /// \brief
-                /// Return the next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
-                /// \return Next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
-                inline PtrType GetNextBTreeNodeOffset () const {
-                    return nextBTreeNodeOffset;
-                }
-                /// \brief
-                /// Set the next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
-                /// This will chain the free \see{TransactedFileBTreeAllocator::BTree::Node}
-                /// blocks in to a singly linked list.
-                /// \param[in] nextBTreeNodeOffset Next free \see{TransactedFileBTreeAllocator::BTree::Node} offset.
-                inline void SetNextBTreeNodeOffset (PtrType nextBTreeNodeOffset_) {
-                    nextBTreeNodeOffset = nextBTreeNodeOffset_;
-                }
-
-                /// \brief
-                /// Read the block.
-                void Read ();
-                /// \brief
-                /// Write the block.
-                void Write () const;
-            };
-
         private:
             /// \brief
             /// Number of entries per \see{BTree::Node}.
@@ -143,22 +66,17 @@ namespace thekogans {
                 /// \brief
                 /// Contains the offset of the \see{BTree::Header}.
                 PtrType btreeOffset;
-                /// \brief
-                /// Contains the head of the free \see{BTree::Node} list.
-                PtrType freeBTreeNodeOffset;
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
                     UI32_SIZE +     // magic
-                    PTR_TYPE_SIZE + // btreeOffset
-                    PTR_TYPE_SIZE;  // freeBTreeNodeOffset
+                    PTR_TYPE_SIZE;  // btreeOffset
 
                 /// \brief
                 /// ctor.
                 Header () :
-                    btreeOffset (0),
-                    freeBTreeNodeOffset (0) {}
+                    btreeOffset (0) {}
             } header;
             /// \brief
             /// Include the \see{BTree} header.
@@ -274,16 +192,6 @@ namespace thekogans {
             /// \param[in] object \see{Object} whose offset has become invalid.
             virtual void OnTransactedFileObjectFree (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept override;
-
-            /// \brief
-            /// Used to allocate \see{BTree::Node} blocks.
-            /// This method is used by the \see{BTree::Node}.
-            /// \return Offset of allocated block.
-            PtrType AllocBTreeNode (std::size_t size);
-            /// \brief
-            /// Used to free blocks prviously allocated with AllocBTreeNode.
-            /// \param[in] offset Offset of \see{BTree::Node} to free.
-            void FreeBTreeNode (PtrType offset);
 
             /// \brief
             /// Needs access to private members.

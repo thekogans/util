@@ -103,35 +103,20 @@ namespace thekogans {
             // Can't have a registry without an allocator.
             assert (allocator != nullptr);
             if (phase == TransactedFile::COMMIT_PHASE_1) {
-                allocator->SetRegistryOffset (
-                    allocator->Realloc (
-                        allocator->GetRegistryOffset (),
-                        UI32_SIZE + GetSize ()));
+                allocator->SetRegistryOffset (allocator->Realloc (allocator->GetRegistryOffset (), GetSize ()));
             }
-            else if (phase == TransactedFile::COMMIT_PHASE_2) {
+            else {
                 TransactedFile::BlockRange range (*file, allocator->GetRegistryOffset (), false);
-                range << MAGIC32 << *this;
+                range << *this;
                 SetDirty (false);
             }
         }
 
         void TransactedFileBTreeRegistry::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            THEKOGANS_UTIL_TRY {
-                TransactedFile::BlockRange range (*file, file->GetAllocator ()->GetRegistryOffset ());
-                ui32 magic;
-                range >> magic;
-                if (magic == MAGIC32) {
-                    range >> *this;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFile file (%s).",
-                        file->GetPath ().c_str ());
-                }
-                SetDirty (false);
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+            TransactedFile::BlockRange range (*file, file->GetAllocator ()->GetRegistryOffset ());
+            range >> *this;
+            SetDirty (false);
         }
 
         void TransactedFileBTreeRegistry::OnTransactedFileObjectAlloc (

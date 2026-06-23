@@ -28,22 +28,6 @@ namespace thekogans {
             TransactedFileBTreeAllocator::SIZE,
             TransactedFile::Allocator::TYPE)
 
-        void TransactedFileBTreeAllocator::Block::Read () {
-            Allocator::Block::Read ();
-            if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::Range range (file, offset, PTR_TYPE_SIZE);
-                range >> nextBTreeNodeOffset;
-            }
-        }
-
-        void TransactedFileBTreeAllocator::Block::Write () const {
-            Allocator::Block::Write ();
-            if (IsFree () && IsBTreeNode ()) {
-                TransactedFile::Range range (file, offset, PTR_TYPE_SIZE, false);
-                range << nextBTreeNodeOffset;
-            }
-        }
-
         TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::Alloc (std::size_t size) {
             PtrType offset = 0;
             if (size > 0) {
@@ -51,41 +35,12 @@ namespace thekogans {
                     size = MIN_USER_DATA_SIZE;
                 }
                 LockGuard<SpinLock> guard (spinLock);
-                BTree::KeyType result;
-                // If an allocation request is <= BTree::Node::FileSize and the BTree::Node
-                // cache is not empty, reuse the first free block. This optimization allows
-                // us to reclaim the node blocks to be used for general purpose allocations.
-                if (size <= btreeNodeFileSize && header.freeBTreeNodeOffset != 0) {
-                    result.first = btreeNodeFileSize;
-                    result.second = header.freeBTreeNodeOffset;
-                    Block block (*file, header.freeBTreeNodeOffset);
-                    block.Read ();
-                    if (block.IsFree () && block.IsBTreeNode ()) {
-                        // Don't leak anything, including internal structure info.
-                        TransactedFile::Range range (*file, block.GetOffset (), PTR_TYPE_SIZE, false);
-                        range.Seek (
-                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
-                        header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
-                        SetDirty (true);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
-                            ", expecting a free BTree::Node block.",
-                            header.freeBTreeNodeOffset);
-                    }
-                }
-                else {
-                    // Else look for a free block large enough to satisfy the request.
-                    result = btree->Find (BTree::KeyType (size, 0));
-                    if (result.second != 0) {
-                        // Got it!
-                        assert (result.first >= size);
-                        btree->Remove (result);
-                    }
-                }
-                // If we got a block by the above two methods, see if it's too big.
+                BTree::KeyType result = btree->Find (BTree::KeyType (size, 0));
+                // If we got a block see if it's too big.
                 if (result.second != 0) {
+                    // Got it!
+                    assert (result.first >= size);
+                    btree->Remove (result);
                     // If the block we got is bigger than we need, split it.
                     //
                     // we need to go from:
@@ -234,7 +189,7 @@ namespace thekogans {
                     ui64 clearLength = block.GetSize ();
                     // Consolidate adjacent free non BTree::Node blocks.
                     Block prev (*file);
-                    if (block.Prev (prev) && prev.IsFree () && !prev.IsBTreeNode ()) {
+                    if (block.Prev (prev) && prev.IsFree ()) {
                         btree->Remove (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume prev body is clear.
@@ -254,7 +209,7 @@ namespace thekogans {
                         block.SetSize (block.GetSize () + Block::SIZE + prev.GetSize ());
                     }
                     Block next (*file);
-                    if (block.Next (next) && next.IsFree () && !next.IsBTreeNode ()) {
+                    if (block.Next (next) && next.IsFree ()) {
                         btree->Remove (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume next body is clear.
@@ -360,7 +315,7 @@ namespace thekogans {
         inline Serializer &operator >> (
                 Serializer &serializer,
                 TransactedFileBTreeAllocator::Header &header) {
-            serializer >> header.btreeOffset >> header.freeBTreeNodeOffset;
+            serializer >> header.btreeOffset;
             return serializer;
         }
 
@@ -393,7 +348,7 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const TransactedFileBTreeAllocator::Header &header) {
-            serializer << header.btreeOffset << header.freeBTreeNodeOffset;
+            serializer << header.btreeOffset;
             return serializer;
         }
 
@@ -412,14 +367,12 @@ namespace thekogans {
                 {
                     // ...extract the original SerializableHeader...
                     TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
-                    // skip over magic.
-                    range.Seek (UI32_SIZE, SEEK_CUR);
                     range >> allocatorHeader;
                 }
                 {
                     TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE, false);
-                    // skip over magic and serializable header.
-                    range.Seek (UI32_SIZE + allocatorHeader.Size (), SEEK_CUR);
+                    // skip over serializable header.
+                    range.Seek (allocatorHeader.Size (), SEEK_CUR);
                     // ...and force the allocator to write that particular
                     // version of itself so as not to overflow the first block.
                     Serializer::ContextGuard guard (range, allocatorHeader);
@@ -431,21 +384,9 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            THEKOGANS_UTIL_TRY {
-                TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
-                ui32 magic;
-                range >> magic;
-                if (magic == MAGIC32) {
-                    range >> *this;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFile file (%s).",
-                        file->GetPath ().c_str ());
-                }
-                SetDirty (false);
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+            TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
+            range >> *this;
+            SetDirty (false);
         }
 
         void TransactedFileBTreeAllocator::OnTransactedFileObjectAlloc (
@@ -460,114 +401,6 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = 0;
             SetDirty (true);
-        }
-
-        TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::AllocBTreeNode (std::size_t size) {
-            LockGuard<SpinLock> guard (spinLock);
-            PtrType offset = 0;
-            if (header.freeBTreeNodeOffset != 0) {
-                offset = header.freeBTreeNodeOffset;
-                Block block (*file, offset);
-                block.Read ();
-                if (block.IsFree () && block.IsBTreeNode ()) {
-                    // Don't leak anything, including internal structure info.
-                    TransactedFile::Range range (*file, block.GetOffset (), PTR_TYPE_SIZE, false);
-                    range.Seek (
-                        SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
-                    header.freeBTreeNodeOffset = block.GetNextBTreeNodeOffset ();
-                    SetDirty (true);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
-                        ", expecting a free BTree::Node block.",
-                        offset);
-                }
-            }
-            else {
-                // If not, we need to grow the file.
-                // Do your best to not straddle a page boundary.
-                // Ranges that straddle page boundaries incur an
-                // allocation/copy/deallocation penalty.
-                // Calculate the remainder left in the last page.
-                ui64 remainder = file->GetPageSize () - (file->GetSizeEx () & (file->GetPageSize () - 1));
-                // If we don't fit in to remainder and, if the remainder
-                // can be turned in to another block and we fit into one
-                // page, all is well. Go ahead and create a spacer block
-                // and align us with a page boundary. Otherwise, because
-                // there can be no gaps between blocks, we will straddle
-                // a page boundary.
-                if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
-                        size <= (file->GetPageSize () - Block::SIZE)) {
-                    Block prev (
-                        *file,
-                        file->Grow (remainder) + Block::HEADER_SIZE,
-                        Block::FLAGS_FREE,
-                        remainder - Block::SIZE);
-                    prev.Write ();
-                    // As weird as it looks, this is actually as designed.
-                    // This method is used only by BTree::Node::Alloc and
-                    // is only called by Object::Alloc in response to commit.
-                    // There's no recursion here as nodes are not allocated
-                    // during Insert. While there's a possibility a new node
-                    // will be created during Insert, it will be taken care
-                    // of by TransactedFile::Transaction::Commit.
-                    btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
-                }
-                // Otherwise, we fit in the ramainder. Check if what will remain
-                // after our allocation would be too small for a block and cause
-                // the next allocation to straddle the page boundry...
-                else if (remainder - size - Block::SIZE < MIN_BLOCK_SIZE) {
-                    // ...it is. Round up the size request to align the next
-                    // allocation to a page boundary.
-                    size = remainder - Block::SIZE;
-                }
-                // No free block large enough is found? Grow the file.
-                offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
-                // Most file systems will fill the new space with '0' bytes
-                // but we can't take a chance and do it ourselves.
-                if (IsSecure ()) {
-                    TransactedFile::Range range (*file, offset, size, false);
-                    range.Seek (
-                        SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
-                }
-            }
-            Block block (*file, offset, Block::FLAGS_BTREE_NODE, size);
-            block.Write ();
-            return offset;
-        }
-
-        void TransactedFileBTreeAllocator::FreeBTreeNode (PtrType offset) {
-            if (offset != 0) {
-                LockGuard<SpinLock> guard (spinLock);
-                Block block (*file, offset);
-                block.Read ();
-                if (!block.IsFree () && block.IsBTreeNode ()) {
-                    if (!block.IsLast ()) {
-                        block.SetFree (true);
-                        block.SetNextBTreeNodeOffset (header.freeBTreeNodeOffset);
-                        block.Write ();
-                        if (IsSecure ()) {
-                            TransactedFile::Range range (*file, block.GetOffset (), block.GetSize (), false);
-                            range.Seek (
-                                SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
-                        }
-                        header.freeBTreeNodeOffset = offset;
-                        SetDirty (true);
-                    }
-                    else {
-                        file->Shrink (Block::SIZE + block.GetSize ());
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
         }
 
     } // namespace util

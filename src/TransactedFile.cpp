@@ -92,13 +92,14 @@ namespace thekogans {
             file.Commit (clearCache);
         }
 
-        bool TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
-            // Only subscribe @the transition from clean to dirty.
-            if (!flags.Set (FLAGS_DIRTY, dirty) && dirty) {
+        void TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
+            flags.Set (FLAGS_DIRTY, dirty);
+            if (dirty) {
                 Subscriber<TransactedFileEvents>::Subscribe (*file);
-                return true;
             }
-            return false;
+            else {
+                Subscriber<TransactedFileEvents>::Unsubscribe (*file);
+            }
         }
 
         namespace {
@@ -335,7 +336,7 @@ namespace thekogans {
                         *this,
                         Allocator::Block::HEADER_SIZE,
                         0,
-                        UI32_SIZE + allocator_->GetSize ());
+                        allocator_->GetSize ());
                     // For performance reasons Range assumes that all
                     // reads and writes are within file bounds. We set
                     // the file size here so that block.Write and range
@@ -343,23 +344,9 @@ namespace thekogans {
                     Grow (Allocator::Block::SIZE + block.GetSize ());
                     block.Write ();
                     Range range (*this, block.GetOffset (), block.GetSize (), false);
-                    range << MAGIC32 << *allocator_;
+                    range << *allocator_;
                 }
                 BlockRange range (*this, Allocator::Block::HEADER_SIZE);
-                ui32 magic;
-                range >> magic;
-                if (magic == MAGIC32) {
-                    // File is host endian.
-                }
-                else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
-                    // File is guest endian.
-                    endianness = GuestEndian;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFile file (%s).",
-                        GetPath ().c_str ());
-                }
                 {
                     ContextGuard guard (range, SerializableHeader (), nullptr,
                         [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
@@ -373,14 +360,13 @@ namespace thekogans {
                 }
                 if (allocator->GetRegistryOffset () == 0 && registry_ != nullptr) {
                     allocator->SetRegistryOffset (
-                        allocator->Alloc (UI32_SIZE + registry_->GetSize ()));
+                        allocator->Alloc (registry_->GetSize ()));
                     BlockRange range (*this, allocator->GetRegistryOffset (), false);
-                    range << MAGIC32 << *registry_;
+                    range << *registry_;
                 }
                 if (allocator->GetRegistryOffset () != 0) {
                     BlockRange range (*this, allocator->GetRegistryOffset ());
-                    range >> magic;
-                    if (magic == MAGIC32) {
+                    {
                         ContextGuard guard (range, SerializableHeader (), nullptr,
                             [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
                                 Registry::SharedPtr registry = dynamicCreatable;
@@ -390,11 +376,6 @@ namespace thekogans {
                             }
                         );
                         range >> registry;
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt TransactedFile file (%s).",
-                            GetPath ().c_str ());
                     }
                 }
                 transaction.Commit ();

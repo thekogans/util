@@ -123,14 +123,13 @@ public:
     /// Set the dirty flag.
     /// \param[in] dirty true == dirty, false == clean.
     /// \return true == the state has transitioned from clean to dirty.
-    virtual bool SetDirty (bool dirty) override;
+    virtual void SetDirty (bool dirty) override;
 
 protected:
     // TransactedFileEvents
     /// \brief
     /// Transaction is commiting. Flush the internal cache to file.
     /// \param[in] file \see{TransactedFile} commiting the transaction.
-    /// \param[in] phase \see{TransactedFile} implements two phase commit.
     virtual void OnTransactedFileTransactionCommit (
         TransactedFile::SharedPtr /*file*/,
         int phase) noexcept override;

@@ -267,15 +267,6 @@ private:
             btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
         }
 
-    public:
-        // TransactedFile::TransactionParticipant
-        /// \brief
-        /// Allocae the node using \see{TransactedFileBTreeAllocator::AllocBTreeNode}.
-        virtual void Alloc () override;
-        /// \brief
-        /// Free the node using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
-        virtual void Free () override;
-
     protected:
         // TransactedFile::Object
         /// \brief
@@ -348,16 +339,12 @@ public:
     bool Remove (const KeyType &key);
 
 protected:
-    // TransactedFile::TransactionParticipant
-    /// \brief
-    /// Allocate block for \see{Header} using \see{TransactedFileBTreeAllocator::AllocBTreeNode}.
-    virtual void Alloc () override;
+    // TransactedFile::Object
     /// \brief
     /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
     /// Also free the \see{Node} hierarchy @root.
     virtual void Free () override;
 
-    // TransactedFile::Object
     /// \brief
     /// Node is fixed size.
     /// \return true.

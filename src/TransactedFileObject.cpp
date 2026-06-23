@@ -84,16 +84,15 @@ namespace thekogans {
             }
         }
 
-        bool TransactedFile::Object::SetDirty (bool dirty) {
-            if (TransactionParticipant::SetDirty (dirty)) {
+        void TransactedFile::Object::SetDirty (bool dirty) {
+            TransactionParticipant::SetDirty (dirty);
+            if (dirty) {
                 Produce (
                     std::bind (
                         &ObjectEvents::OnTransactedFileObjectDirty,
                         std::placeholders::_1,
                         this));
-                return true;
             }
-            return false;
         }
 
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
@@ -101,10 +100,10 @@ namespace thekogans {
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 assert (IsDirty ());
-                if (phase == COMMIT_PHASE_1) {
+                if (phase == TransactedFile::COMMIT_PHASE_1) {
                     Alloc ();
                 }
-                else if (phase == COMMIT_PHASE_2) {
+                else if (phase == TransactedFile::COMMIT_PHASE_2) {
                     Flush ();
                     SetDirty (false);
                 }

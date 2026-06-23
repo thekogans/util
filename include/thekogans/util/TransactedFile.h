@@ -56,10 +56,7 @@ namespace thekogans {
             virtual ~TransactedFileEvents () {}
 
             /// \brief
-            /// Transaction is beginning. Time to flush the internal cache.
-            /// If your object derives from \see{TransactedFile::TransactionParticipant}
-            /// all this is done under the hood for you. All you will need
-            /// to do is implement Flush.
+            /// Transaction is beginning.
             virtual void OnTransactedFileTransactionBegin (
                 RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
             /// \brief
@@ -73,10 +70,7 @@ namespace thekogans {
                 RefCounted::SharedPtr<TransactedFile> /*file*/,
                 int phase) noexcept {}
             /// \brief
-            /// Transaction is aborting. Time to reload the object.
-            /// If your object derives from \see{TransactedFile::TransactionParticipant}
-            /// all this is done under the hood for you. All you will need
-            /// to do is implement Reload.
+            /// Transaction is aborting.
             virtual void OnTransactedFileTransactionAbort (
                 RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
         };
@@ -232,13 +226,7 @@ namespace thekogans {
                 /// \brief
                 /// Set the dirty flag.
                 /// \param[in] dirty true == dirty, false == clean.
-                /// \return true == the state has transitioned from clean to dirty.
-                /// IMPORTANT SEMANTICS: SetDirty will return true only on the transition
-                /// from !dirty to dirty. Subsequint calls to SetDirty (true) while
-                /// already dirty will return false. This is meant so that derivatives
-                /// of TransactionParticipant can call SetDirty and perform whatever
-                /// one time transition processing they need (See \see{Object} below).
-                virtual bool SetDirty (bool dirty);
+                virtual void SetDirty (bool dirty);
 
                 /// \brief
                 /// TransactionParticipant is neither copy constructable, nor assignable.

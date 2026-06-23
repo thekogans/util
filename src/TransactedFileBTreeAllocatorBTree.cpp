@@ -112,7 +112,7 @@ namespace thekogans {
                             FreeSubtree (btree, rightOffset);
                         }
                     }
-                    btree.allocator.FreeBTreeNode (offset);
+                    btree.allocator.Free (offset);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -368,31 +368,6 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::BTree::Node::Alloc () {
-            if (offset == 0) {
-                offset = btree.allocator.AllocBTreeNode (
-                    btree.allocator.btreeNodeFileSize);
-                Produce (
-                    std::bind (
-                        &TransactedFile::ObjectEvents::OnTransactedFileObjectAlloc,
-                        std::placeholders::_1,
-                        this));
-            }
-        }
-
-        void TransactedFileBTreeAllocator::BTree::Node::Free () {
-            if (offset != 0) {
-                btree.allocator.FreeBTreeNode (offset);
-                Produce (
-                    std::bind (
-                        &TransactedFile::ObjectEvents::OnTransactedFileObjectFree,
-                        std::placeholders::_1,
-                        this));
-                offset = 0;
-                Release ();
-            }
-        }
-
         void TransactedFileBTreeAllocator::BTree::Node::Read (Serializer &serializer) {
             Reset ();
             ui32 magic;
@@ -504,31 +479,12 @@ namespace thekogans {
             return removed;
         }
 
-        void TransactedFileBTreeAllocator::BTree::Alloc () {
-            if (offset == 0) {
-                offset = allocator.AllocBTreeNode (Header::SIZE);
-                Produce (
-                    std::bind (
-                        &TransactedFile::ObjectEvents::OnTransactedFileObjectAlloc,
-                        std::placeholders::_1,
-                        this));
-            }
-        }
-
         void TransactedFileBTreeAllocator::BTree::Free () {
             if (header.rootOffset != 0) {
                 Node::FreeSubtree (*this, header.rootOffset);
                 header.rootOffset = 0;
             }
-            if (offset != 0) {
-                allocator.FreeBTreeNode (offset);
-                Produce (
-                    std::bind (
-                        &TransactedFile::ObjectEvents::OnTransactedFileObjectFree,
-                        std::placeholders::_1,
-                        this));
-                offset = 0;
-            }
+            Object::Free ();
             rootNode->Release ();
             rootNode = Node::Alloc (*this, header.rootOffset);
         }

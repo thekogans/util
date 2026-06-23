@@ -248,6 +248,7 @@ namespace thekogans {
                                 typename Subscriber<T>::WeakPtr (&subscriber),
                                 eventDeliveryPolicy)));
                 }
+                subscriber.SubscribeProducer (*this);
                 OnSubscribe (subscriber, eventDeliveryPolicy);
                 return true;
             }
@@ -265,6 +266,7 @@ namespace thekogans {
                     }
                     subscribers.erase (it);
                 }
+                subscriber.UnsubscribeProducer (*this);
                 OnUnsubscribe (subscriber);
                 return true;
             }
@@ -295,6 +297,7 @@ namespace thekogans {
                     typename Subscriber<T>::SharedPtr subscriber =
                         it->second.first.GetSharedPtr ();
                     if (subscriber != nullptr) {
+                        subscriber->UnsubscribeProducer (*this);
                         OnUnsubscribe (*subscriber);
                     }
                 }
@@ -343,6 +346,7 @@ namespace thekogans {
                 }
                 if (unsubscribe) {
                     for (std::size_t i = 0, count = subscribers_.size (); i < count; ++i) {
+                        subscribers_[i].first->UnsubscribeProducer (*this);
                         OnUnsubscribe (*subscribers_[i].first);
                     }
                 }
@@ -403,6 +407,40 @@ namespace thekogans {
             /// Override this methid to react to a \see{Subscriber} being removed.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
             virtual void OnUnsubscribe (Subscriber<T> & /*subscriber*/) {}
+
+        private:
+            bool SubscribeSubscriber (
+                    Subscriber<T> &subscriber,
+                    typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
+                        new ImmediateEventDeliveryPolicy) {
+                {
+                    LockGuard<SpinLock> guard (spinLock);
+                    typename Subscribers::iterator it = subscribers.find (&subscriber);
+                    if (it != subscribers.end ()) {
+                        return false;
+                    }
+                    subscribers.insert (
+                        typename Subscribers::value_type (
+                            &subscriber,
+                            SubscriberInfo (
+                                typename Subscriber<T>::WeakPtr (&subscriber),
+                                eventDeliveryPolicy)));
+                }
+                OnSubscribe (subscriber, eventDeliveryPolicy);
+                return true;
+            }
+
+            bool UnsubscribeSubscriber (Subscriber<T> &subscriber) {
+                LockGuard<SpinLock> guard (spinLock);
+                typename Subscribers::iterator it = subscribers.find (&subscriber);
+                if (it != subscribers.end ()) {
+                    subscribers.erase (it);
+                    return true;
+                }
+                return false;
+            }
+
+            friend struct Subscriber<T>;
         };
 
     } // namespace util
