@@ -326,6 +326,8 @@ namespace thekogans {
                     pageMap (pageMap_),
                     index (index_) {}
 
+                virtual bool IsEmpty () const = 0;
+
                 /// \brief
                 /// Delete pages.
                 /// \param[in] flags
@@ -384,6 +386,10 @@ namespace thekogans {
                             return true;
                         }
                     );
+                }
+
+                virtual bool IsEmpty () const override {
+                    return pageList.empty ();
                 }
 
                 /// \brief
@@ -556,6 +562,10 @@ namespace thekogans {
                     );
                 }
 
+                virtual bool IsEmpty () const override {
+                    return nodeList.empty ();
+                }
+
                 /// \brief
                 /// Delete pages.
                 /// \param[in] flags
@@ -691,7 +701,8 @@ namespace thekogans {
                 /// \brief
                 /// Internal is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Internal)
-            } *root;
+            };
+            Node *root;
             /// \brief
             /// Last accessed page offset.
             /// This is the page offset of the last call to \see{GetPage (offset)}.
@@ -732,10 +743,12 @@ namespace thekogans {
                 internalAllocator (internalSize, internalNodesPerPage, allocator),
                 segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
                 pageAllocator (pageAlignment, allocator),
-                root ((Internal *)Internal::Alloc (*this, 0)),
+                root (nullptr),
                 lastGetPageOffset (NOFFS) {}
             ~PageMap () {
-                root->Harakiri ();
+                if (root != nullptr) {
+                    root->Harakiri ();
+                }
             }
 
             /// \brief
@@ -752,7 +765,7 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (AddressType offset) {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
-                    Node *node = root;
+                    Node *node = GetRoot ();
                     // Begging the compiler to put these in to registers.
                     std::size_t levelShift_ = levelShift;
                     AddressType levelMask_ = levelMask;
@@ -775,12 +788,15 @@ namespace thekogans {
             /// Delete pages.
             /// \param[in] flags Combination of FLAGS_CLEAR_CLEAN and FLAGS_CLEAR_DIRTY.
             void Clear (std::size_t flags) {
-                root->Clear (flags);
-                if (lastGetPagePage != nullptr &&
-                        (((flags & FLAGS_CLEAR_DIRTY) && lastGetPagePage->dirty) ||
-                            ((flags & FLAGS_CLEAR_CLEAN) && !lastGetPagePage->dirty))) {
-                    lastGetPageOffset = NOFFS;
-                    lastGetPagePage.Reset ();
+                if (root != nullptr) {
+                    root->Clear (flags);
+                    if (lastGetPagePage != nullptr &&
+                            (((flags & FLAGS_CLEAR_DIRTY) && lastGetPagePage->dirty) ||
+                                ((flags & FLAGS_CLEAR_CLEAN) && !lastGetPagePage->dirty))) {
+                        lastGetPageOffset = NOFFS;
+                        lastGetPagePage.Reset ();
+                    }
+                    DeleteRoot ();
                 }
             }
             /// \brief
@@ -790,32 +806,56 @@ namespace thekogans {
             void Log (
                     RandomSeekSerializer &log,
                     bool clearCache = false) {
-                root->Log (log, clearCache);
-                if (clearCache) {
-                    lastGetPageOffset = NOFFS;
-                    lastGetPagePage.Reset ();
+                if (root != nullptr) {
+                    root->Log (log, clearCache);
+                    if (clearCache) {
+                        lastGetPageOffset = NOFFS;
+                        lastGetPagePage.Reset ();
+                    }
+                    DeleteRoot ();
                 }
             }
             /// \brief
             /// Write dirty pages to their source and optionaly clear the page cache.
             /// \param[in] clearCache true == Delete the page cache after.
             void Flush (bool clearCache = false) {
-                root->Flush (clearCache);
-                if (clearCache) {
-                    lastGetPageOffset = NOFFS;
-                    lastGetPagePage.Reset ();
+                if (root != nullptr) {
+                    root->Flush (clearCache);
+                    if (clearCache) {
+                        lastGetPageOffset = NOFFS;
+                        lastGetPagePage.Reset ();
+                    }
+                    DeleteRoot ();
                 }
             }
             /// \brief
             /// Delete all pages whose offset > newSize.
             /// \param[in] newSize New size to clip the address space to.
             void Shrink (AddressType newSize) {
-                root->Shrink (newSize);
-                // If newSize is <= lastGetPageOffset, lastGetPagePage
-                // will have been deleted by root->Shrink.
-                if (lastGetPageOffset >= newSize) {
-                    lastGetPageOffset = NOFFS;
-                    lastGetPagePage.Reset ();
+                if (root != nullptr) {
+                    root->Shrink (newSize);
+                    // If newSize is <= lastGetPageOffset, lastGetPagePage
+                    // will have been deleted by root->Shrink.
+                    if (lastGetPageOffset >= newSize) {
+                        lastGetPageOffset = NOFFS;
+                        lastGetPagePage.Reset ();
+                    }
+                    DeleteRoot ();
+                }
+            }
+
+        private:
+            Node *GetRoot () {
+                if (root == nullptr) {
+                    root = Internal::Alloc (*this, 0);
+                }
+                return root;
+            }
+
+            void DeleteRoot () {
+                if (root->IsEmpty ()) {
+                    root->Harakiri ();
+                    root = nullptr;
                 }
             }
 
