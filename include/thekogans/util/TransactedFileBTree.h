@@ -603,6 +603,9 @@ namespace thekogans {
 
                 // TransactedFile::Object
                 /// \brief
+                /// We need to free keyValueOffset.
+                virtual void Free () override;
+                /// \brief
                 /// Node is fixed size.
                 /// \return true.
                 virtual bool IsFixedSize () const override {
@@ -630,6 +633,10 @@ namespace thekogans {
                 /// Write the node to the given serializer.
                 /// \param[in] serializer \see{Serializer} to write the node to.
                 virtual void Write (Serializer &serializer) override;
+
+                /// \brief
+                /// Needs access to Free.
+                friend struct TransactedFileBTree;
             } *root;
 
         public:

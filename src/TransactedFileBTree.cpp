@@ -546,6 +546,12 @@ namespace thekogans {
             }
         }
 
+        void TransactedFileBTree::Node::Free () {
+            GetAllocator ()->Free (keyValueOffset);
+            keyValueOffset = 0;
+            Object::Free ();
+        }
+
         void TransactedFileBTree::Node::Read (Serializer &serializer) {
             Reset ();
             ui32 magic;
@@ -823,10 +829,8 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Free () {
-            if (header.rootOffset != 0) {
-                Node::FreeSubtree (*this, header.rootOffset);
-                header.rootOffset = 0;
-            }
+            Node::FreeSubtree (*this, header.rootOffset);
+            header.rootOffset = 0;
             Object::Free ();
             root->Release ();
             root = Node::Alloc (*this, header.rootOffset);
