@@ -137,6 +137,10 @@ namespace thekogans {
             }
 
         private:
+            /// \brief
+            /// Used by \see{Producer::Subscribe} to link the producer back to it's subscriber.
+            /// \param[in] producer \see{Producer} to link to this subscriber.
+            /// \return true == subcribed. false == already subscribed.
             bool SubscribeProducer (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
                 return producers.insert (
@@ -145,6 +149,10 @@ namespace thekogans {
                         typename Producer<T>::WeakPtr (&producer))).second;
             }
 
+            /// \brief
+            /// Used by \see{Producer::Unsubscribe} to unlink the producer from it's subscriber.
+            /// \param[in] producer \see{Producer} to unlink from this subscriber.
+            /// \return true == unsubcribed. false == not subscribed.
             bool UnsubscribeProducer (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
                 typename Producers::iterator it = producers.find (&producer);
@@ -155,6 +163,8 @@ namespace thekogans {
                 return false;
             }
 
+            /// \brief
+            /// Needs access to above two methods.
             friend struct Producer<T>;
         };
 

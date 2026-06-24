@@ -82,7 +82,6 @@ namespace thekogans {
         ///     }
         /// };
         /// \endcode
-
         template <typename T>
         struct Producer : public virtual RefCounted {
             /// \brief
@@ -247,8 +246,8 @@ namespace thekogans {
                             SubscriberInfo (
                                 typename Subscriber<T>::WeakPtr (&subscriber),
                                 eventDeliveryPolicy)));
+                    subscriber.SubscribeProducer (*this);
                 }
-                subscriber.SubscribeProducer (*this);
                 OnSubscribe (subscriber, eventDeliveryPolicy);
                 return true;
             }
@@ -265,8 +264,8 @@ namespace thekogans {
                         return false;
                     }
                     subscribers.erase (it);
+                    subscriber.UnsubscribeProducer (*this);
                 }
-                subscriber.UnsubscribeProducer (*this);
                 OnUnsubscribe (subscriber);
                 return true;
             }
@@ -276,28 +275,24 @@ namespace thekogans {
             void Unsubscribe () {
                 Subscribers subscribers_;
                 {
-                    // Move the subscribers map in to a local
-                    // variable before calling OnUnsubscribe in case
-                    // they want to call back in to the producer while
-                    // processing it.
                     LockGuard<SpinLock> guard (spinLock);
+                    for (typename Subscribers::iterator
+                            it = subscribers.begin (),
+                            end = subscribers.end (); it != end; ++it) {
+                        typename Subscriber<T>::SharedPtr subscriber =
+                            it->second.first.GetSharedPtr ();
+                        if (subscriber != nullptr) {
+                            subscriber->UnsubscribeProducer (*this);
+                        }
+                    }
                     subscribers_.swap (subscribers);
                 }
                 for (typename Subscribers::iterator
                         it = subscribers_.begin (),
                         end = subscribers_.end (); it != end; ++it) {
-                    // NOTE: If we get a NULL pointer here it simply means
-                    // that that particular subscriber is in the porocess
-                    // of deallocating. It just hasn't removed itself from
-                    // our subscriber list (~Subscriber) in time for us to
-                    // include it in subscribers_ above. This race is unavoidable
-                    // but harmless. We want to preserve the right of the
-                    // \see{Subscriber} to be able to call back in to the
-                    // producer while processing a particular event.
                     typename Subscriber<T>::SharedPtr subscriber =
                         it->second.first.GetSharedPtr ();
                     if (subscriber != nullptr) {
-                        subscriber->UnsubscribeProducer (*this);
                         OnUnsubscribe (*subscriber);
                     }
                 }
@@ -313,6 +308,7 @@ namespace thekogans {
             /// \brief
             /// Return a vector of locked (SharedPtr) subscribers.
             /// \param[out] subscribers_ std::vector of \see{SharedSubscriberInfo} pairs to return.
+            /// \param[in] unsubscribe true == unsubscribe all subscribers.
             void GetSubscribers (
                     std::vector<SharedSubscriberInfo> &subscribers_,
                     bool unsubscribe = false) {
@@ -336,6 +332,9 @@ namespace thekogans {
                             if (subscriber != nullptr) {
                                 subscribers_.push_back (
                                     SharedSubscriberInfo (subscriber, it->second.second));
+                                if (unsubscribe) {
+                                    subscriber->UnsubscribeProducer (*this);
+                                }
                             }
                         }
                         if (unsubscribe) {
@@ -346,7 +345,6 @@ namespace thekogans {
                 }
                 if (unsubscribe) {
                     for (std::size_t i = 0, count = subscribers_.size (); i < count; ++i) {
-                        subscribers_[i].first->UnsubscribeProducer (*this);
                         OnUnsubscribe (*subscribers_[i].first);
                     }
                 }
@@ -358,33 +356,11 @@ namespace thekogans {
             void Produce (
                     const typename EventDeliveryPolicy::Event &event,
                     bool unsubscribe = false) {
-                // FIXME: Need to profile these two approaches to see which is faster.
-#if 0
-                Subscribers subscribers_;
-                {
-                    // Copy the subscribers map in to a local
-                    // variable before delivering the event in case
-                    // they want to call back in to the producer while
-                    // processing it.
-                    LockGuard<SpinLock> guard (spinLock);
-                    subscribers_ = subscribers;
-                }
-                for (typename Subscribers::iterator
-                        it = subscribers_.begin (),
-                        end = subscribers_.end (); it != end; ++it) {
-                    typename Subscriber<T>::SharedPtr subscriber =
-                        it->second.first.GetSharedPtr ();
-                    if (subscriber != nullptr) {
-                        it->second.second->DeliverEvent (event, subscriber);
-                    }
-                }
-#else
                 std::vector<SharedSubscriberInfo> subscribers;
                 GetSubscribers (subscribers, unsubscribe);
                 for (std::size_t i = 0, count = subscribers.size (); i < count; ++i) {
                     subscribers[i].second->DeliverEvent (event, subscribers[i].first);
                 }
-#endif
             }
 
             /// \brief
@@ -409,6 +385,11 @@ namespace thekogans {
             virtual void OnUnsubscribe (Subscriber<T> & /*subscriber*/) {}
 
         private:
+            /// \brief
+            /// Used only by \see{Subscriber::Subscribe} to break recursive dependency.
+            /// \param[in] subscriber \see{Subscriber} to link to this producer.
+            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} for this \see{Subscriber}.
+            /// \return true == subscribed. false == already subscribed.
             bool SubscribeSubscriber (
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
@@ -430,16 +411,25 @@ namespace thekogans {
                 return true;
             }
 
+            /// \brief
+            /// Used only by \see{Subscriber::Unsubscribe} to break recursive dependency.
+            /// \param[in] subscriber \see{Subscriber} to unlink from this producer.
+            /// \return true == unsubscribed. false == not subscribed.
             bool UnsubscribeSubscriber (Subscriber<T> &subscriber) {
-                LockGuard<SpinLock> guard (spinLock);
-                typename Subscribers::iterator it = subscribers.find (&subscriber);
-                if (it != subscribers.end ()) {
+                {
+                    LockGuard<SpinLock> guard (spinLock);
+                    typename Subscribers::iterator it = subscribers.find (&subscriber);
+                    if (it == subscribers.end ()) {
+                        return false;
+                    }
                     subscribers.erase (it);
-                    return true;
                 }
-                return false;
+                OnUnsubscribe (subscriber);
+                return true;
             }
 
+            /// \brief
+            /// Needs access to above two methods.
             friend struct Subscriber<T>;
         };
 

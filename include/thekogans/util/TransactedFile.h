@@ -61,13 +61,15 @@ namespace thekogans {
             /// is appropriate.
             /// If your object derives from \see{TransactedFile::Object}
             /// all this is done under the hood for you. All you will need
-            /// to do is implement Alloc (phase 1) and Flush (phase 2).
+            /// to do is implement Size, Read and Write.
+            /// \param[in] file TransactedFile comming the transaction.
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
             virtual void OnTransactedFileTransactionCommit (
                 RefCounted::SharedPtr<TransactedFile> /*file*/,
                 int phase) noexcept {}
             /// \brief
             /// Transaction is aborting.
+            /// \param[in] file TransactedFile abortig the transaction.
             virtual void OnTransactedFileTransactionAbort (
                 RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
         };
