@@ -390,11 +390,14 @@ namespace thekogans {
                     pageMap (pageMap_),
                     index (index_) {}
 
+                /// \brief
+                /// Return true if the node is empty (has no children).
+                /// \return true == the node is empty.
                 virtual bool IsEmpty () const = 0;
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] flags
+                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
                 /// \return true == the node is empty,
                 /// false == the node has pages remaining.
                 virtual bool Clear (std::size_t flags) = 0;
@@ -404,6 +407,7 @@ namespace thekogans {
                 virtual void Log (RandomSeekSerializer &log) = 0;
                 /// \brief
                 /// Write dirty pages to their source.
+                /// \param[in] clearCache true == Delete cache after fluh.
                 virtual void Flush (bool clearCache = false) = 0;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
@@ -433,7 +437,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] pageMap
+                /// \param[in] pageMap \see{PageMap} this segment belongs to.
                 /// \param[in] index Segment index in \see{Internal::nodes}.
                 Segment (
                         PageMap &pageMap,
@@ -454,15 +458,18 @@ namespace thekogans {
                     );
                 }
 
+                /// \brief
+                /// Return true if the segment is empty (has no pages).
+                /// \return true == the segment is empty.
                 virtual bool IsEmpty () const override {
                     return pageList.empty ();
                 }
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] flags
-                /// \return true == the node is empty,
-                /// false == the node has clean pages remaining.
+                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
+                /// \return true == the segment is empty,
+                /// false == the segment has pages remaining.
                 virtual bool Clear (std::size_t flags) override {
                     pageList.for_each (
                         [this, flags] (typename PageList::Callback::argument_type page) ->
@@ -490,6 +497,7 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Write dirty pages to their source.
+                /// \param[in] clearCache true == Delete cache after fluh.
                 virtual void Flush (bool clearCache = false) override {
                     pageList.for_each (
                         [this, clearCache] (typename PageList::Callback::argument_type page) ->
@@ -522,6 +530,8 @@ namespace thekogans {
                     return IsEmpty ();
                 }
 
+                /// \brief
+                /// Kill yourself.
                 virtual void Harakiri () override {
                     this->~Segment ();
                     this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
@@ -566,9 +576,17 @@ namespace thekogans {
                     return pages[pageIndex];
                 }
 
+                /// \brief
+                /// Return the size of the segment node. They're all the same size, hence static.
+                /// \return Size of the segment node.
                 static std::size_t Size (std::size_t pagesPerSegment) {
                     return sizeof (Segment) + pagesPerSegment * sizeof (Page *);
                 }
+                /// \brief
+                /// Allocate a segment using a custom \see{BlockAllocator}.
+                /// \param[in] pageMap \see{PageMap} the segment belongs to.
+                /// \param[in] index Segment index in parent \see{Internal::nodes}.
+                /// \return The new segment node.
                 static Node *Alloc (
                         PageMap &pageMap,
                         std::size_t index) {
@@ -578,6 +596,9 @@ namespace thekogans {
                 }
 
             private:
+                /// \brief
+                /// Delete the given page.
+                /// \param[in] page \see{Page} to delete.
                 void DeletePage (Page *page) {
                     pages[page->index] = nullptr;
                     pageList.erase (page);
@@ -587,6 +608,9 @@ namespace thekogans {
                 /// \brief
                 /// Segment is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Segment)
+                /// \brief
+                /// Segment is neither move constructable, nor move assignable.
+                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Segment)
             };
 
             /// \struct PageMap::Internal PageMap.h thekogans/util/PageMap.h
@@ -603,7 +627,8 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] index Internal index in nodes.
+                /// \param[in] pageMap \see{PageMap} this internal node belongs to.
+                /// \param[in] index Internal node index in nodes.
                 Internal (
                         PageMap &pageMap,
                         std::size_t index) :
@@ -623,15 +648,18 @@ namespace thekogans {
                     );
                 }
 
+                /// \brief
+                /// Return true if the internal node is empty (has no children).
+                /// \return true == the internal node is empty.
                 virtual bool IsEmpty () const override {
                     return nodeList.empty ();
                 }
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] flags
+                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
                 /// \return true == the node is empty,
-                /// false == the node has clean pages remaining.
+                /// false == the node has child nodes remaining.
                 virtual bool Clear (std::size_t flags) override {
                     nodeList.for_each (
                         [this, flags] (typename NodeList::Callback::argument_type node) ->
@@ -691,6 +719,8 @@ namespace thekogans {
                     return IsEmpty ();
                 }
 
+                /// \brief
+                /// Kill yourself.
                 virtual void Harakiri () override {
                     this->~Internal ();
                     this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
@@ -735,9 +765,17 @@ namespace thekogans {
                     return nodes[index];
                 }
 
+                /// \brief
+                /// Return the size of the internal node. They're all the same size, hence static.
+                /// \return Size of the internal node.
                 static std::size_t Size (std::size_t nodesPerInternal) {
                     return sizeof (Internal) + nodesPerInternal * sizeof (Node *);
                 }
+                /// \brief
+                /// Allocate an internl node using a custom \see{BlockAllocator}.
+                /// \param[in] pageMap \see{PageMap} the internal node belongs to.
+                /// \param[in] index Internal node index in parent \see{Internal::nodes}.
+                /// \return The new internal node.
                 static Node *Alloc (
                         PageMap &pageMap,
                         std::size_t index) {
@@ -747,6 +785,9 @@ namespace thekogans {
                 }
 
             private:
+                /// \brief
+                /// Delete the given node.
+                /// \param[in] node \see{Node} to delete.
                 void DeleteNode (Node *node) {
                     nodes[node->index] = nullptr;
                     nodeList.erase (node);
@@ -756,7 +797,12 @@ namespace thekogans {
                 /// \brief
                 /// Internal is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Internal)
+                /// \brief
+                /// Internal is neither move constructable, nor move assignable.
+                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Internal)
             };
+            /// \brief
+            /// The root of the tree.
             Node *root;
             /// \brief
             /// Last accessed page offset.
@@ -771,10 +817,26 @@ namespace thekogans {
             Lock lock;
 
         public:
+            /// \brief
+            /// Default \see{Page} alignment.
             static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
+            /// \brief
+            /// Default number of \see{Internal} nodes per \see{BlockAllocator} page.
             static const std::size_t DEFAULT_INTERNAL_NODES_PER_PAGE = 16;
+            /// \brief
+            /// Default number of \see{Segment} nodes per \see{BlockAllocator} page.
             static const std::size_t DEFAULT_SEGMENT_NODES_PER_PAGE = 8;
 
+            /// \brief
+            /// ctor.
+            /// \param[in] bitSource_ \see{RandomSeekSerializer} where \see{Page} bits come from.
+            /// \param[in] bitsPerSegment_ How many address bits represent a segment.
+            /// \param[in] bitsPerLevel_ How many address bits represent a level.
+            /// \param[in] bitsPerPage_ How many address bits represent a page.
+            /// \param[in] pageAlignment Page alignment.
+            /// \param[in] internalNodesPerPage Number of \see{Internal} nodes per \see{BlockAllocator} page.
+            /// \param[in] segmentNodesPerPage Number of \see{Segment} nodes per \see{BlockAllocator} page.
+            /// \param[in] allocator \see{Allocator} to use to create \see{BlockAllocator} pages.
             PageMap (
                 RandomSeekSerializer &bitSource_,
                 std::size_t bitsPerSegment_,
