@@ -56,6 +56,9 @@ namespace thekogans {
         /// you can tune the address space very precisely given your particular performance
         /// requirements. Specifying exactly how many levels deep to make the multiway tree,
         /// which directly affects tree walk performance, and by extension GetPage performance.
+        /// PageMap is designed to be used either embeded behind an API that controls access
+        /// from multiple threads or as a standalone thread safe object by pasing in different
+        /// types for Lock template parameter.
         ///
         /// Ex:
         ///
@@ -153,32 +156,72 @@ namespace thekogans {
         /// This will cover the entire 128 bit address space with 8 levels of 4GB segments,
         /// each containing 1K of 4MB pages.
         template<
-            typename T,
+            typename AddressType,
             typename Lock = SpinLock>
         struct PageMap : public RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (PageMap)
 
-            using AddressType = T;
-
         private:
+            /// \brief
+            /// \see{Page} bit source and sink.
             RandomSeekSerializer &bitSource;
+            /// \brief
+            /// AddressType size in bits.
             const std::size_t bitsPerAddress;
+            /// \brief
+            /// \see{Segment} size in bits.
             const std::size_t bitsPerSegment;
+            /// \brief
+            /// Number of children per \see{Internal} node in bits.
             const std::size_t bitsPerLevel;
+            /// \brief
+            /// \see{Page} size in bits.
             const std::size_t bitsPerPage;
+            /// \brief
+            /// Tree depth.
             const std::size_t levelCount;
+            /// \brief
+            /// Number of children per \see{Internal} node in bytes.
             const std::size_t nodesPerInternal;
+            /// \brief
+            /// \see{Page} size in bytes.
             const std::size_t pageSize;
+            /// \brief
+            /// Number of \see{Page}s per \see{Segment}.
             const std::size_t pagesPerSegment;
+            /// \brief
+            /// \see{Internal} nodes are allocated from a custom
+            /// \see{BlockAllocator}. Cache it's size to speed up
+            /// allocations.
             const std::size_t internalSize;
+            /// \brief
+            /// \see{Segment} nodes are allocated from a custom
+            /// \see{BlockAllocator}. Cache it's size to speed up
+            /// allocations.
             const std::size_t segmentSize;
+            /// \brief
+            /// Level bit shift count to prime the address
+            /// disassembly engine in preparation for a tree
+            /// walk in \see{GetPage}.
             const std::size_t levelShift;
+            /// \brief
+            /// Level mask to work with the levelShift above.
             const AddressType levelMask;
+            /// \brief
+            /// \see{Segment} mask to use by the address disassembly
+            /// engine as a final \see{Page} address resolution step
+            /// in \see{GetPage}.
             const AddressType segmentMask;
+            /// \brief
+            /// \see{BlockAllocator} for allocating \see{Internal} nodes.
             BlockAllocator internalAllocator;
+            /// \brief
+            /// \see{BlockAllocator} for allocating \see{Segment} nodes.
             BlockAllocator segmentAllocator;
+            /// \brief
+            /// \see{AlignedAllocator} for \see{Page::data}.
             AlignedAllocator pageAllocator;
 
         public:
@@ -190,6 +233,8 @@ namespace thekogans {
             /// \brief
             /// Alias for \see{IntrusiveList}<Page>.
             using PageList = IntrusiveList<Page>;
+            /// \brief
+            /// Forward declaration of \see{Segment} needed by \see{Page}.
             struct Segment;
 
         public:
@@ -260,7 +305,7 @@ namespace thekogans {
                     }
                 }
                 /// \brief
-                /// If dirty, write page to it's source.
+                /// If dirty, write page to it's source and make clean.
                 void Flush () {
                     if (dirty) {
                         pageMap.bitSource.Seek (offset, SEEK_SET);
@@ -298,7 +343,16 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
             };
 
+            /// \brief
+            /// \see{Page} cache management flags.
+            /// If this flag is passed to \see{Clear},
+            /// will result in all \see{Page}s with
+            /// dirty == true, being purged from the cache.
             static const std::size_t FLAGS_CLEAR_DIRTY = 1;
+            /// \brief
+            /// If this flag is passed to \see{Clear},
+            /// will result in all \see{Page}s with
+            /// dirty == false, being purged from the cache.
             static const std::size_t FLAGS_CLEAR_CLEAN = 2;
 
         private:
@@ -312,13 +366,16 @@ namespace thekogans {
             /// \struct PageMap::Node PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
+            /// Base class for \see{Segment} and \see{Internal} classes.
+            /// Defines the API used by PageMap to interact with and
+            /// maintain the \see{Page} tree.
             struct Node : public NodeList::Node {
                 /// \brief
                 /// \see{PageMap} this node belongs to.
                 PageMap &pageMap;
                 /// \brief
                 /// Node index in \see{Internal::nodes}.
-                std::size_t index;
+                const std::size_t index;
 
                 /// \brief
                 /// ctor.
@@ -336,7 +393,7 @@ namespace thekogans {
                 /// Delete pages.
                 /// \param[in] flags
                 /// \return true == the node is empty,
-                /// false == the node has clean pages remaining.
+                /// false == the node has pages remaining.
                 virtual bool Clear (std::size_t flags) = 0;
                 /// \brief
                 /// Write dirty pages to log.
@@ -348,7 +405,7 @@ namespace thekogans {
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
-                /// \return true == node was completely clipped (it's empty).
+                /// \return true == node was completely clipped (it is empty).
                 /// false == node was partialy clipped (it has pages).
                 virtual bool Shrink (AddressType newSize) = 0;
 
@@ -414,7 +471,7 @@ namespace thekogans {
                             return true;
                         }
                     );
-                    return pageList.empty ();
+                    return IsEmpty ();
                 }
                 /// \brief
                 /// Write dirty pages to log.
@@ -459,7 +516,7 @@ namespace thekogans {
                         },
                         true
                     );
-                    return pageList.empty ();
+                    return IsEmpty ();
                 }
 
                 virtual void Harakiri () override {
@@ -473,7 +530,7 @@ namespace thekogans {
                 /// \param[in] pageOffset Page offset (multiple of pageSize).
                 /// \return The new page.
                 Page *GetPage (
-                        ui32 pageIndex,
+                        std::size_t pageIndex,
                         AddressType pageOffset) {
                     if (pages[pageIndex] == nullptr) {
                         // We don't align the page boundary as it's a fairly complex
@@ -582,7 +639,7 @@ namespace thekogans {
                             return true;
                         }
                     );
-                    return nodeList.empty ();
+                    return IsEmpty ();
                 }
                 /// \brief
                 /// Write dirty pages to log.
@@ -628,7 +685,7 @@ namespace thekogans {
                         },
                         true
                     );
-                    return nodeList.empty ();
+                    return IsEmpty ();
                 }
 
                 virtual void Harakiri () override {
@@ -765,9 +822,16 @@ namespace thekogans {
                 AddressType pageOffset = offset & ~(pageSize - 1);
                 if (lastGetPageOffset != pageOffset) {
                     Node *node = GetRoot ();
+                    // This is the address dissassembly engine used to
+                    // break up the address (offset) in service of a virtual
+                    // tree walk.
                     // Begging the compiler to put these in to registers.
                     std::size_t levelShift_ = levelShift;
                     AddressType levelMask_ = levelMask;
+                    // We begin the tree walk with the root node and take a
+                    // bite off the address at every level as we step internal
+                    // scaffolding nodes on our way to visit the final segment
+                    // node that will have our page.
                     for (std::size_t levelCount_ = levelCount; levelCount_-- != 0;
                             levelShift_ -= bitsPerLevel, levelMask_ >>= bitsPerLevel) {
                         node = ((Internal *)node)->GetNode (
@@ -777,6 +841,8 @@ namespace thekogans {
                     // call to GetPage is sufficiently close to this one
                     // (locality of reference).
                     lastGetPageOffset = pageOffset;
+                    // Since tree leafs are segments, ask the one we got for the
+                    // page correponding to the given address.
                     lastGetPagePage.Reset (
                         ((Segment *)node)->GetPage (
                             (pageOffset & segmentMask) >> bitsPerPage, pageOffset));
@@ -785,7 +851,7 @@ namespace thekogans {
             }
             /// \brief
             /// Delete pages.
-            /// \param[in] flags Combination of FLAGS_CLEAR_CLEAN and FLAGS_CLEAR_DIRTY.
+            /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
             void Clear (std::size_t flags) {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
@@ -857,6 +923,9 @@ namespace thekogans {
             /// \brief
             /// PageMap is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (PageMap)
+            /// \brief
+            /// PageMap is neither move constructable, nor move assignable.
+            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (PageMap)
         };
 
         /// \brief
