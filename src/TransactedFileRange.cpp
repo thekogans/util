@@ -54,7 +54,7 @@ namespace thekogans {
             // if it happens to fall on a page boudary, allocate a backing buffer
             // to guarantee that assumption (with all of its inherent performance
             // penalties of alloc/[read|write]/free).
-            // I chose to go with the approach #2 for the following reasons;
+            // I chose to go with approach #2 for the following reasons;
             // 1. Performance. The massive performace boost we get by removing
             // all obstacles from the critical path is impressive. By having
             // the critical path (read/write) move bits without constant checking
@@ -92,7 +92,7 @@ namespace thekogans {
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
             else {
-                // ...otherwise, read/wright directly into/from the page.
+                // ...otherwise, read/write directly from/into the page.
                 page = file.GetPage (offset);
                 data = page->data + pageOffset;
             }

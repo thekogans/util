@@ -59,7 +59,7 @@ namespace thekogans {
             /// \brief
             /// Transaction is committing. Depending on the phase do whatever
             /// is appropriate.
-            /// If your object derives from \see{TransactedFile::TransactionParticipant}
+            /// If your object derives from \see{TransactedFile::Object}
             /// all this is done under the hood for you. All you will need
             /// to do is implement Alloc (phase 1) and Flush (phase 2).
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
@@ -171,6 +171,9 @@ namespace thekogans {
                 /// \brief
                 /// Transaction is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
+                /// \brief
+                /// Transaction is neither move constructable, nor move assignable.
+                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Transaction)
             };
 
             /// \struct TransactedFile::TransactionParticipant TransactedFile.h
@@ -223,15 +226,20 @@ namespace thekogans {
                     return flags.Test (FLAGS_DIRTY);
                 }
                 /// \brief
-                /// Set the dirty flag.
+                /// Set the dirty flag and if true, subscribe to \see{TransactedFileEvents}.
                 /// \param[in] dirty true == dirty, false == clean.
                 virtual void SetDirty (bool dirty);
 
                 /// \brief
                 /// TransactionParticipant is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
+                /// \brief
+                /// TransactionParticipant is neither move constructable, nor move assignable.
+                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (TransactionParticipant)
             };
 
+            /// \brief
+            /// We do our own locking.
             using PageMapType = PageMap<ui64, NullLock>;
 
         private:
@@ -251,8 +259,8 @@ namespace thekogans {
         public:
             #include "thekogans/util/TransactedFileRange.h"
             #include "thekogans/util/TransactedFileAllocator.h"
-            #include "thekogans/util/TransactedFileObject.h"
             #include "thekogans/util/TransactedFileRegistry.h"
+            #include "thekogans/util/TransactedFileObject.h"
 
         private:
             /// \brief
@@ -425,11 +433,17 @@ namespace thekogans {
             /// \see{Registry} will come from the file. If no \see{Allocator}
             /// was provided the file is assumed to be unstrucured.
             /// \param[in] allocator_ \see{Allocator} to attach to this file.
+            /// If nullptr, use \see{TransactedFileBTreeAllocator}.
             /// \param[in] registry_ \see{Registry} to attach to this file.
+            /// If nullptr, use \see{TransactedFileBTreeRegistry}.
             /// NOT thread safe.
             void Init (
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_);
+                Allocator::SharedPtr allocator_ = nullptr,
+                Registry::SharedPtr registry_ = nullptr);
+            /// \brief
+            /// Used by Open to apply the log before opening the file.
+            /// \path path File path.
+            static void CommitLog (const std::string &path);
             /// \brief
             /// Commit the current transaction.
             /// Used by \see{Transaction} to commit the current changes.
@@ -463,6 +477,9 @@ namespace thekogans {
             /// \brief
             /// TransactedFile is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFile)
+            /// \brief
+            /// TransactedFile is neither move constructable, nor move assignable.
+            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (TransactedFile)
         };
 
         /// \brief
@@ -520,6 +537,9 @@ namespace thekogans {
             /// \brief
             /// SimpleTransactedFile is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SimpleTransactedFile)
+            /// \brief
+            /// SimpleTransactedFile is neither move constructable, nor move assignable.
+            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (SimpleTransactedFile)
         };
 
     } // namespace util

@@ -341,6 +341,9 @@ namespace thekogans {
                 /// \brief
                 /// Page is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
+                /// \brief
+                /// Page is neither move constructable, nor move assignable.
+                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Page)
             };
 
             /// \brief
@@ -800,6 +803,8 @@ namespace thekogans {
                 pageAllocator (pageAlignment, allocator),
                 root (nullptr),
                 lastGetPageOffset (NOFFS) {}
+            /// \brief
+            /// dtor.
             ~PageMap () {
                 if (root != nullptr) {
                     root->Harakiri ();
@@ -837,12 +842,12 @@ namespace thekogans {
                         node = ((Internal *)node)->GetNode (
                             (pageOffset & levelMask_) >> levelShift_, levelCount_ == 0);
                     }
-                    // Cache the result so that we can reuse it if the next
-                    // call to GetPage is sufficiently close to this one
-                    // (locality of reference).
                     lastGetPageOffset = pageOffset;
                     // Since tree leafs are segments, ask the one we got for the
                     // page correponding to the given address.
+                    // Cache the result so that we can reuse it if the next
+                    // call to GetPage is sufficiently close to this one
+                    // (locality of reference).
                     lastGetPagePage.Reset (
                         ((Segment *)node)->GetPage (
                             (pageOffset & segmentMask) >> bitsPerPage, pageOffset));
@@ -906,6 +911,13 @@ namespace thekogans {
             }
 
         private:
+            /// \brief
+            /// Helper to recreate the root if it's gone. Depending on the address space
+            /// parameterization, \see{Internal} structure nodes can actually become pretty
+            /// massive (>>1MB). In order to keep our foot print to a minimum if we're asked
+            /// to clear the tree and the root is empty, we will dump it too, regardless.
+            /// This method is used by GetPage above to rebuild it.
+            /// \return root.
             Node *GetRoot () {
                 if (root == nullptr) {
                     root = Internal::Alloc (*this, 0);
@@ -913,6 +925,9 @@ namespace thekogans {
                 return root;
             }
 
+            /// \brief
+            /// Dump the root if it is empty. Used by various methods above after a tree
+            /// prunning.
             void DeleteRoot () {
                 if (root->IsEmpty ()) {
                     root->Harakiri ();

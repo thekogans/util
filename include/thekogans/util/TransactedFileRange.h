@@ -22,9 +22,9 @@
     /// Stats should be used during system integration and tuning. Every time
     /// a \see{Range} is created it bumps up the appropriate (based on reading)
     /// counter in it's ctor. It also bumps up an appropriate *Owner* counter if
-    /// it happens to straddle a \see{TransactedFile::Page} boundary. If the
-    /// ratio of *Owner* counter and range counter approaches 1 then you have some
-    /// tuning to do.
+    /// it happens to straddle a \see{PageMap::Page} boundary. If the ratio of
+    /// *Owner* counter and range counter approaches 1 then you have some tuning
+    /// to do.
     /// In an ideal world, no range would ever cross a page boundary and you would
     /// always have the best performing reads and writes. When a range does cross a
     /// page boundary it needs to allocate a local buffer to satisfy the fact
@@ -58,15 +58,15 @@
 /// \struct TransactedFile::Range TransactedFileRange.h thekogans/util/TransactedFileRange.h
 ///
 /// \brief
-/// Range provides direct access to TransactedFile's underlying \see{Page}.
+/// Range provides direct access to the underlying \see{PageMapType::Page}.
 /// By pairing it with \see{RandomSeekSerializer}, Range provides serialization/
 /// deserialization capabilities without the need to copy chunks of data
 /// in to and out of the pages resulting in better performance. Because
 /// the file's 64 bit address space is chunked in to hierarchical pages,
 /// if the requested range straddles a page boundary, a range buffer is
 /// allocated to gurantee sequential access. Use \see{Stats} to tune the
-/// \see{PageMap::bitsPerPage}. Because range maintains it's own set of
-/// state variables in to the file, if you create nonoveralapping ranges,
+/// \see{PageMapType::bitsPerPage}. Because range maintains it's own set
+/// of state variables in to the file, if you create nonoveralapping ranges,
 /// you can access the file from multiple threads without the need for
 /// synchronization.
 /// IMPORTANT: Range does no bounds checking on it's inputs. That's what
@@ -94,10 +94,10 @@ protected:
     /// allocated range buffer.
     ui8 *data;
     /// \brief
-    /// Mainains current position in the range.
+    /// Maintains current read/write position in the range.
     std::size_t position;
     /// \brief
-    /// \see{TransactedFile::Page} associated with this range.
+    /// \see{PageMapType::Page} associated with this range.
     PageMapType::Page::SharedPtr page;
     /// \brief
     /// true == We straddle a \see{TransactedFile::Page} page boundary.

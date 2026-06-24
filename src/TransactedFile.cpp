@@ -184,6 +184,7 @@ namespace thekogans {
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry) {
             CloseEx ();
+            CommitLog (path);
         #if defined (TOOLCHAIN_OS_Windows)
             Open (
                 path,
@@ -372,6 +373,50 @@ namespace thekogans {
                 range >> registry;
             }
             transaction.Commit ();
+        }
+
+        void TransactedFile::CommitLog (const std::string &path) {
+            std::string logPath = GetLogPath (path);
+            if (Path (path).Exists () && Path (logPath).Exists ()) {
+                {
+                    SimpleFile file (HostEndian, path, SimpleFile::ReadWrite);
+                    ReadOnlyFile log (HostEndian, logPath);
+                    // Magic serves two purposes. Firstly it gives us a quick
+                    // check to make sure we're dealing with a log file and second,
+                    // it allows us to move logs from little to big endian (and
+                    // vise versa) machines for analysis and resolution.
+                    ui32 magic;
+                    log >> magic;
+                    if (magic == MAGIC32) {
+                        // Log is host endian.
+                    }
+                    else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                        // Log is guest endian. File endianness doesn't mater as it is
+                        // just being patched up with dirty tiles. Obviously it is assumed
+                        // to be the same as the log endianness.
+                        log.endianness = GuestEndian;
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt log %s",
+                            logPath.c_str ());
+                    }
+                    ui64 size;
+                    ui64 pageSize;
+                    log >> size >> pageSize;
+                    ui64 offset;
+                    HostBuffer page (pageSize);
+                    for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
+                        log >> offset;
+                        logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
+                        file.Seek (offset, SEEK_SET);
+                        file.Write (page.GetDataPtr (), pageSize);
+                    }
+                    file.SetSize (size);
+                    file.Flush ();
+                }
+                File::Delete (logPath);
+            }
         }
 
         void TransactedFile::Commit (bool clearCache) {

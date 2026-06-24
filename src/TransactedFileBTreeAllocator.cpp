@@ -284,6 +284,7 @@ namespace thekogans {
                     // If the new size leaves room for another block, split existing block.
                     ui64 remainder = block.GetSize () - size;
                     if (remainder >= MIN_BLOCK_SIZE) {
+                        LockGuard<SpinLock> guard (spinLock);
                         Block next (
                             *file,
                             offset + size + Block::SIZE,
@@ -295,10 +296,7 @@ namespace thekogans {
                             range.Seek (
                                 SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         }
-                        {
-                            LockGuard<SpinLock> guard (spinLock);
-                            btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
-                        }
+                        btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
                         block.SetSize (size);
                         block.Write ();
                     }
