@@ -129,7 +129,7 @@ private:
             PtrType offset_ = 0);
         /// \brief
         /// dtor.
-        ~Node ();
+        virtual ~Node ();
 
         /// \brief
         /// Given the number of entries, return the node file size in bytes.
@@ -293,6 +293,9 @@ private:
         /// \brief
         /// Node is neither copy constructable, nor assignable.
         THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Node)
+        /// \brief
+        /// Node is neither move constructable, nor move assignable.
+        THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Node)
     } *rootNode;
 
 public:
@@ -319,7 +322,7 @@ public:
         util::Allocator::SharedPtr allocator__);
     /// \brief
     /// dtor.
-    ~BTree ();
+    virtual ~BTree ();
 
     /// \brief
     /// Find the given key in the btree.
@@ -421,4 +424,7 @@ protected:
     /// \brief
     /// BTree is neither copy constructable, nor assignable.
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
+    /// \brief
+    /// BTree is neither move constructable, nor move assignable.
+    THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (BTree)
 };

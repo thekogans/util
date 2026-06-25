@@ -449,7 +449,7 @@ namespace thekogans {
                 /// \brief
                 /// dtor.
                 virtual ~Segment () {
-                    pageList.for_each (
+                    pageList.clear (
                         [] (typename PageList::Callback::argument_type page) ->
                                 typename PageList::Callback::result_type {
                             page->Release ();
@@ -639,7 +639,7 @@ namespace thekogans {
                 /// \brief
                 /// dtor.
                 virtual ~Internal () {
-                    nodeList.for_each (
+                    nodeList.clear (
                         [] (typename NodeList::Callback::argument_type node) ->
                                 typename NodeList::Callback::result_type {
                             node->Harakiri ();

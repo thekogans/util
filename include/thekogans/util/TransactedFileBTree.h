@@ -37,7 +37,7 @@ namespace thekogans {
         /// container capable of storing practically any key/value type. It's attributes are that
         /// all searches, insertions and deletions take O(H) where H is the height of the tree.
         /// These are TransactedFileBTree's bigest strengths. One of it's biggest weaknesses is
-        /// the fact that iterators don't survive modifications (Insert/Delete). This is why I
+        /// the fact that iterators don't survive modifications (Insert/Remove). This is why I
         /// provide a forward iterator only. Use it to step through a range of nodes collecting
         /// their data. See an example provided with \see{TransactedFileBTree::Iterator}.
         /// TransactedFileBTree uses the full power of \see{DynamicCreatable} and \see{Serializable}
@@ -127,7 +127,7 @@ namespace thekogans {
             /// // the TransactedFileBTree.
             /// Iterator it (some prefix);
             /// for (btree.FindFirst (it); !it.IsFinished (); it.Next ()) {
-            ///     btree.Delete (*it.GetKey ());
+            ///     btree.Remove (*it.GetKey ());
             /// }
             /// \endcode
             ///
@@ -143,7 +143,7 @@ namespace thekogans {
             ///     keys.push_back (it.GetKey ());
             /// }
             /// for (std::size_t i = 0, count = keys.size (); i < count; ++i) {
-            ///     btree.Delete (*keys[i]);
+            ///     btree.Remove (*keys[i]);
             /// }
             /// \endcode
             struct _LIB_THEKOGANS_UTIL_DECL Iterator {
@@ -248,7 +248,7 @@ namespace thekogans {
                 /// Entries per node.
                 /// NOTE: Its type is ui32 because 1. we want something
                 /// fixed size and 2. if you need more than 4G enries in
-                /// one node, you don't need a tree. You need something else.
+                /// one node, you don't need a btree. You need something else.
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.

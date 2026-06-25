@@ -189,6 +189,9 @@ namespace thekogans {
             /// \brief
             /// TransactedFileBTreeRegistry is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFileBTreeRegistry)
+            /// \brief
+            /// TransactedFileBTreeRegistry is neither move constructable, nor move assignable.
+            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (TransactedFileBTreeRegistry)
         };
 
     } // namespace util

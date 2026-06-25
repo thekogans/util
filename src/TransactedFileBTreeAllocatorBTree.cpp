@@ -480,10 +480,8 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::BTree::Free () {
-            if (header.rootOffset != 0) {
-                Node::FreeSubtree (*this, header.rootOffset);
-                header.rootOffset = 0;
-            }
+            Node::FreeSubtree (*this, header.rootOffset);
+            header.rootOffset = 0;
             Object::Free ();
             rootNode->Release ();
             rootNode = Node::Alloc (*this, header.rootOffset);

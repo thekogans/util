@@ -304,6 +304,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \brief
         /// Block is neither copy constructable, nor assignable.
         THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Block)
+        /// \brief
+        /// Block is neither move constructable, nor move assignable.
+        THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Block)
     };
 
 protected:
@@ -466,6 +469,9 @@ protected:
     /// \brief
     /// Allocator is neither copy constructable, nor assignable.
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Allocator)
+    /// \brief
+    /// Allocator is neither move constructable, nor move assignable.
+    THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Allocator)
 };
 
 /// \struct TransactedFile::BlockRange TransactedFileAllocator.h
