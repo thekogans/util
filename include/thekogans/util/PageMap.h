@@ -64,6 +64,29 @@ namespace thekogans {
         ///
         /// AddressType = ui32
         /// bitsPerAddress = 32
+        /// bitsPerSegment = 32
+        /// bitsPerLevel = 0
+        /// bitsPerPage = 16
+        ///
+        /// msb                                                                        lsb
+        /// |----------------------------- bitsPerAddress ------------------------------|
+        /// |----------------------------- bitsPerSegment ------------------------------|
+        /// +-------------------------------------+-------------------------------------+
+        /// |                                     |------------ bitsPerPage ------------|
+        /// +-------------------------------------+-------------------------------------+
+        /// 31                                    15                                    0
+        ///
+        /// levelCount = bitsPerLevel == 0 = 0
+        /// pageSize = 1 << bitsPerPage; 1 << 16 = 64KB
+        /// pagesPerSegment = 1 << (bitsPerSegment - bitsPerPage); 1 << (32 - 16) = 64K
+        ///
+        /// This will cover the entire 32 bit address space with 1 4GB segment,
+        /// containing 64K 64KB pages.
+        ///
+        /// Ex:
+        ///
+        /// AddressType = ui32
+        /// bitsPerAddress = 32
         /// bitsPerSegment = 20
         /// bitsPerLevel = 6
         /// bitsPerPage = 16
@@ -838,33 +861,43 @@ namespace thekogans {
             /// \param[in] segmentNodesPerPage Number of \see{Segment} nodes per \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} to use to create \see{BlockAllocator} pages.
             PageMap (
-                RandomSeekSerializer &bitSource_,
-                std::size_t bitsPerSegment_,
-                std::size_t bitsPerLevel_,
-                std::size_t bitsPerPage_,
-                std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT,
-                std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
-                std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                bitSource (bitSource_),
-                bitsPerAddress (sizeof (AddressType) * CHAR_BIT),
-                bitsPerSegment (bitsPerSegment_),
-                bitsPerLevel (bitsPerLevel_),
-                bitsPerPage (bitsPerPage_),
-                levelCount ((bitsPerAddress - bitsPerSegment) / bitsPerLevel),
-                nodesPerInternal (1 << bitsPerLevel),
-                pageSize (1 << bitsPerPage),
-                pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
-                internalSize (Internal::Size (nodesPerInternal)),
-                segmentSize (Segment::Size (pagesPerSegment)),
-                levelShift (bitsPerAddress - bitsPerLevel),
-                levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
-                segmentMask (((AddressType)1 << bitsPerSegment) - 1),
-                internalAllocator (internalSize, internalNodesPerPage, allocator),
-                segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
-                pageAllocator (pageAlignment, allocator),
-                root (nullptr),
-                lastGetPageOffset (NOFFS) {}
+                    RandomSeekSerializer &bitSource_,
+                    std::size_t bitsPerSegment_,
+                    std::size_t bitsPerLevel_,
+                    std::size_t bitsPerPage_,
+                    std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT,
+                    std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
+                    std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
+                    util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    bitSource (bitSource_),
+                    bitsPerAddress (sizeof (AddressType) * CHAR_BIT),
+                    bitsPerSegment (bitsPerSegment_),
+                    bitsPerLevel (bitsPerLevel_),
+                    bitsPerPage (bitsPerPage_),
+                    // Account for the corner case where one segment covers the entire address space.
+                    levelCount (bitsPerLevel != 0 ? (bitsPerAddress - bitsPerSegment) / bitsPerLevel : 0),
+                    nodesPerInternal (1 << bitsPerLevel),
+                    pageSize (1 << bitsPerPage),
+                    pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
+                    internalSize (Internal::Size (nodesPerInternal)),
+                    segmentSize (Segment::Size (pagesPerSegment)),
+                    levelShift (bitsPerAddress - bitsPerLevel),
+                    levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
+                    segmentMask (((AddressType)1 << bitsPerSegment) - 1),
+                    internalAllocator (internalSize, internalNodesPerPage, allocator),
+                    segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
+                    pageAllocator (pageAlignment, allocator),
+                    root (nullptr),
+                    lastGetPageOffset (NOFFS) {
+                // Validate input.
+                if (bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||
+                        /*bitsPerLevel == 0 ||*/ bitsPerLevel > (bitsPerAddress - bitsPerSegment) ||
+                        bitsPerPage == 0 || bitsPerPage > bitsPerSegment ||
+                        !IsPowerOf2 (pageAlignment)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                }
+            }
             /// \brief
             /// dtor.
             ~PageMap () {
@@ -896,9 +929,13 @@ namespace thekogans {
                     std::size_t levelShift_ = levelShift;
                     AddressType levelMask_ = levelMask;
                     // We begin the tree walk with the root node and take a
-                    // bite off the address at every level as we step internal
-                    // scaffolding nodes on our way to visit the final segment
-                    // node that will have our page.
+                    // bite off the level portion of the address at every loop
+                    // step, as we step internal scaffolding nodes on our way
+                    // to visit the final segment node that will have our page.
+                    // NOTE: This algorithm is sensitive to the corner case
+                    // where one segment covers the entire address space. In
+                    // that case GetRoot above will return that segment and
+                    // this for loop will not be executed.
                     for (std::size_t levelCount_ = levelCount; levelCount_-- != 0;
                             levelShift_ -= bitsPerLevel, levelMask_ >>= bitsPerLevel) {
                         node = ((Internal *)node)->GetNode (
@@ -975,14 +1012,19 @@ namespace thekogans {
         private:
             /// \brief
             /// Helper to recreate the root if it's gone. Depending on the address space
-            /// parameterization, \see{Internal} structure nodes can actually become pretty
+            /// parameterization, \see{Node} derivative nodes can actually become pretty
             /// massive (>>1MB). In order to keep our footprint to a minimum if we're asked
             /// to clear the tree and the root is empty, we will dump it too, regardless.
             /// This method is used by GetPage above to rebuild it.
             /// \return root.
             Node *GetRoot () {
                 if (root == nullptr) {
-                    root = Internal::Alloc (*this, 0);
+                    // levelCount == 0 is a corner case where one segment covers the
+                    // entire address space. In that case root is the one and only
+                    // Segment leaf. Otherwise it's an Internal structure node.
+                    root = levelCount == 0 ?
+                        Segment::Alloc (*this, 0) :
+                        Internal::Alloc (*this, 0);
                 }
                 return root;
             }

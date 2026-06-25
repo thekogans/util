@@ -60,7 +60,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {
-            // We must account for objects that allocate other objects during commit.
+            // We must account for objects that dirty other objects during commit.
             while (file.GetSubscriberCount () != 0) {
                 std::vector<SharedSubscriberInfo> subscribers;
                 file.GetSubscribers (subscribers, true);
@@ -415,7 +415,7 @@ namespace thekogans {
                     file.SetSize (size);
                     file.Flush ();
                 }
-                File::Delete (logPath);
+                Delete (logPath);
             }
         }
 
