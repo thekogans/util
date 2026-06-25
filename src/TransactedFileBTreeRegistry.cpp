@@ -105,7 +105,7 @@ namespace thekogans {
             if (phase == TransactedFile::COMMIT_PHASE_1) {
                 allocator->SetRegistryOffset (allocator->Realloc (allocator->GetRegistryOffset (), GetSize ()));
             }
-            else {
+            else if (phase == TransactedFile::COMMIT_PHASE_2) {
                 TransactedFile::BlockRange range (*file, allocator->GetRegistryOffset (), false);
                 range << *this;
                 SetDirty (false);

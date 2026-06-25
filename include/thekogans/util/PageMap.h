@@ -976,7 +976,7 @@ namespace thekogans {
             /// \brief
             /// Helper to recreate the root if it's gone. Depending on the address space
             /// parameterization, \see{Internal} structure nodes can actually become pretty
-            /// massive (>>1MB). In order to keep our foot print to a minimum if we're asked
+            /// massive (>>1MB). In order to keep our footprint to a minimum if we're asked
             /// to clear the tree and the root is empty, we will dump it too, regardless.
             /// This method is used by GetPage above to rebuild it.
             /// \return root.

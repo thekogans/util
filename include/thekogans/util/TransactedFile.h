@@ -222,8 +222,8 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return dirty.
-                /// \return dirty.
+                /// Return dirty state.
+                /// \return true == dirty.
                 inline bool IsDirty () const {
                     return flags.Test (FLAGS_DIRTY);
                 }
