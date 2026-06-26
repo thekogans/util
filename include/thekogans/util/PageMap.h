@@ -249,127 +249,6 @@ namespace thekogans {
 
         public:
             /// \brief
-            /// Forward declaration of \see{Page} needed by \see{PageList}.
-            struct Page;
-
-        private:
-            /// \brief
-            /// Alias for \see{IntrusiveList}<Page>.
-            using PageList = IntrusiveList<Page>;
-            /// \brief
-            /// Forward declaration of \see{Segment} needed by \see{Page}.
-            struct Segment;
-
-        public:
-            /// \struct PageMap::Page PageMap.h thekogans/util/PageMap.h
-            ///
-            /// \brief
-            /// Page tiles the address space providing incremental, sparse
-            /// access to the data.
-            struct Page :
-                    public RefCounted,
-                    public PageList::Node {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Page)
-                /// \brief
-                /// Page has a private heap.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-                /// \brief
-                /// PageMap to which this page belongs.
-                PageMap &pageMap;
-                /// \brief
-                /// Page index in \see{Segment::pages}.
-                const std::size_t index;
-                /// \brief
-                /// Page offset.
-                const AddressType offset;
-                /// \brief
-                /// Page data.
-                ui8 *data;
-                /// \brief
-                /// true == modified.
-                bool dirty;
-
-                /// \brief
-                /// ctor.
-                /// \param[in] pageMap_ PageMap managing this Page.
-                /// \param[in] index_ Page index in \see{Segment::pages}.
-                /// \param[in] offset_ Page offset.
-                Page (
-                        PageMap &pageMap_,
-                        std::size_t index_,
-                        AddressType offset_) :
-                        pageMap (pageMap_),
-                        index (index_),
-                        offset (offset_),
-                        data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
-                        dirty (false) {
-                    pageMap.bitSource.Seek (offset, SEEK_SET);
-                    std::size_t countRead = pageMap.bitSource.Read (data, pageMap.pageSize);
-                    SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
-                }
-                /// \brief
-                /// dtor.
-                virtual ~Page () {
-                    pageMap.pageAllocator.Free (data, pageMap.pageSize);
-                }
-
-            private:
-                /// \brief
-                /// If dirty, write page to log.
-                /// \param[in] log \see{RandomSeekSerializer} to write to.
-                void Log (RandomSeekSerializer &log) {
-                    if (dirty) {
-                        log << offset;
-                        log.Write (data, pageMap.pageSize);
-                        // NOTE: We don't set dirty = false here.
-                    }
-                }
-                /// \brief
-                /// If dirty, write page to it's source and make clean.
-                void Flush () {
-                    if (dirty) {
-                        pageMap.bitSource.Seek (offset, SEEK_SET);
-                        pageMap.bitSource.Write (data, pageMap.pageSize);
-                        dirty = false;
-                    }
-                }
-                /// \brief
-                /// Clip the page to the new size.
-                /// \param[in] newize Size to clip the page to.
-                /// \return true == the page was completely clipped.
-                /// false == the page was partially clipped.
-                bool Shrink (AddressType newSize) {
-                    if (offset < newSize) {
-                        AddressType consumed = newSize - offset;
-                        if (consumed < pageMap.pageSize) {
-                            // Pages don't maintain internal lengths. All pages are
-                            // pageMap.pageSize long (with potentially the last one
-                            // being less). If this is the last page, we clear that
-                            // part which falls outside the new address space size.
-                            SecureZeroMemory (data + consumed, pageMap.pageSize - consumed);
-                            dirty = true;
-                        }
-                        return false;
-                    }
-                    return true;
-                }
-
-                /// \brief
-                /// Needs access to private methods.
-                friend struct Segment;
-
-                /// \brief
-                /// Page is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
-                /// \brief
-                /// Page is neither move constructable, nor move assignable.
-                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Page)
-            };
-
-            /// \brief
             /// \see{Page} cache management flags.
             /// If this flag is passed to \see{Clear},
             /// will result in all \see{Page}s with
@@ -392,9 +271,10 @@ namespace thekogans {
             /// \struct PageMap::Node PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
-            /// Base class for \see{Segment} and \see{Internal} classes.
-            /// Defines the API used by PageMap to interact with and
-            /// maintain the \see{Page} tree.
+            /// Base class for \see{Page} and \see{Parent} (and by extension
+            /// \see{Segment} and \see{Internal}) classes. Defines the API
+            /// used by PageMap to interact with and maintain the \see{Page}
+            /// tree.
             struct Node : public NodeList::Node {
                 /// \brief
                 /// \see{PageMap} this node belongs to.
@@ -443,63 +323,197 @@ namespace thekogans {
                 /// Kill yourself. Since different node types come from differernt
                 /// custom \see{BlockAllocator}s, each node type will know which
                 /// allocator to use for it's own demise.
-                virtual void Harakiri () = 0;
+                virtual void Release () = 0;
             };
 
-            /// \struct PageMap::Segment PageMap.h thekogans/util/PageMap.h
+        public:
+            /// \struct PageMap::Page PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
-            /// Leaf node organizing address space \see{Page}s.
-            struct Segment : public Node {
+            /// Page tiles the address space providing incremental, sparse
+            /// access to the data.
+            struct Page :
+                    public virtual RefCounted,
+                    public Node {
                 /// \brief
-                /// An array of \see{Page}s tilling the segment.
-                Page **pages;
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Page)
                 /// \brief
-                /// \see{IntrusiveList} of linked \see{Page}s.
-                PageList pageList;
+                /// Page has a private heap.
+                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+
+                /// \brief
+                /// Page offset.
+                const AddressType offset;
+                /// \brief
+                /// Page data.
+                ui8 *data;
+                /// \brief
+                /// true == modified.
+                bool dirty;
 
                 /// \brief
                 /// ctor.
-                /// \param[in] pageMap \see{PageMap} this segment belongs to.
-                /// \param[in] index Segment index in \see{Internal::nodes}.
-                Segment (
+                /// \param[in] pageMap PageMap managing this Page.
+                /// \param[in] index Page index in \see{Segment::pages}.
+                /// \param[in] offset_ Page offset.
+                Page (
                         PageMap &pageMap,
-                        std::size_t index) :
+                        std::size_t index,
+                        AddressType offset_) :
                         Node (pageMap, index),
-                        pages ((Page **)(this + 1)) {
-                    SecureZeroMemory (pages, pageMap.pagesPerSegment * sizeof (Page *));
+                        offset (offset_),
+                        data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
+                        dirty (false) {
+                    pageMap.bitSource.Seek (offset, SEEK_SET);
+                    std::size_t countRead = pageMap.bitSource.Read (data, pageMap.pageSize);
+                    SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
                 }
                 /// \brief
                 /// dtor.
-                virtual ~Segment () {
-                    pageList.clear (
-                        [] (typename PageList::Callback::argument_type page) ->
-                                typename PageList::Callback::result_type {
-                            page->Release ();
+                virtual ~Page () {
+                    this->pageMap.pageAllocator.Free (data, this->pageMap.pageSize);
+                }
+
+                /// \brief
+                /// Return true if the node is empty (has no children).
+                /// \return true == the node is empty.
+                virtual bool IsEmpty () const override {
+                    return false;
+                }
+
+                /// \brief
+                /// Return true if page should be deleted based on the given flags and the dirty state.
+                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
+                /// \return true == page shoul be deleted,
+                /// false == page does not match the give criteria.
+                virtual bool Clear (std::size_t flags) override {
+                    return ((flags & FLAGS_CLEAR_DIRTY) && dirty) || ((flags & FLAGS_CLEAR_CLEAN) && !dirty);
+                }
+                /// \brief
+                /// If dirty, write page to log.
+                /// \param[in] log \see{RandomSeekSerializer} to write to.
+                virtual void Log (RandomSeekSerializer &log) override {
+                    if (dirty) {
+                        log << offset;
+                        log.Write (data, this->pageMap.pageSize);
+                        // NOTE: We don't set dirty = false here.
+                    }
+                }
+                /// \brief
+                /// If dirty, write page to it's source and make clean.
+                virtual void Flush (bool /*clearCache*/ = false) override {
+                    if (dirty) {
+                        this->pageMap.bitSource.Seek (offset, SEEK_SET);
+                        this->pageMap.bitSource.Write (data, this->pageMap.pageSize);
+                        dirty = false;
+                    }
+                }
+                /// \brief
+                /// Clip the page to the new size.
+                /// \param[in] newize Size to clip the page to.
+                /// \return true == the page was completely clipped.
+                /// false == the page was partially clipped.
+                virtual bool Shrink (AddressType newSize) override {
+                    if (offset < newSize) {
+                        AddressType consumed = newSize - offset;
+                        if (consumed < this->pageMap.pageSize) {
+                            // Pages don't maintain internal lengths. All pages are
+                            // pageMap.pageSize long (with potentially the last one
+                            // being less). If this is the last page, we clear that
+                            // part which falls outside the new address space size.
+                            SecureZeroMemory (data + consumed, this->pageMap.pageSize - consumed);
+                            dirty = true;
+                        }
+                        return false;
+                    }
+                    return true;
+                }
+
+                /// \brief
+                /// Kill yourself.
+                virtual void Release () override {
+                    RefCounted::Release ();
+                }
+
+                /// \brief
+                /// Allocate an internl node using a custom \see{BlockAllocator}.
+                /// \param[in] pageMap \see{PageMap} the internal node belongs to.
+                /// \param[in] index Internal node index in parent \see{Internal::nodes}.
+                /// \return The new internal node.
+                static Node *Alloc (
+                        PageMap &pageMap,
+                        std::size_t index,
+                        AddressType offset) {
+                    Page *page =  new Page (pageMap, index, offset);
+                    page->AddRef ();
+                    return page;
+                }
+
+                /// \brief
+                /// Page is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
+                /// \brief
+                /// Page is neither move constructable, nor move assignable.
+                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Page)
+            };
+
+        private:
+            /// \struct PageMap::Parent PageMap.h thekogans/util/PageMap.h
+            ///
+            /// \brief
+            /// Base for \see{Segment} and \see{Internal} nodes. Adstracts out
+            /// all the common code between the two classes.
+            struct Parent : public Node {
+                /// \brief
+                /// Child children.
+                Node **children;
+                /// \brief
+                /// \see{IntrusiveList} of \see{Node}s.
+                NodeList childList;
+
+                /// \brief
+                /// ctor.
+                /// \param[in] pageMap \see{PageMap} this structure node belongs to.
+                /// \param[in] index Parent node index in children.
+                /// \param[in] childCount Number of Node * following this node.
+                Parent (PageMap &pageMap,
+                        std::size_t index,
+                        std::size_t childCount) :
+                        Node (pageMap, index),
+                        children ((Node **)(this + 1)) {
+                    SecureZeroMemory (children, childCount * sizeof (Node *));
+                }
+                /// \brief
+                /// dtor.
+                virtual ~Parent () {
+                    childList.clear (
+                        [] (typename NodeList::Callback::argument_type child) ->
+                                typename NodeList::Callback::result_type {
+                            child->Release ();
                             return true;
                         }
                     );
                 }
 
                 /// \brief
-                /// Return true if the segment is empty (has no pages).
-                /// \return true == the segment is empty.
+                /// Return true if the structure node is empty (has no children).
+                /// \return true == the structure node is empty.
                 virtual bool IsEmpty () const override {
-                    return pageList.empty ();
+                    return childList.empty ();
                 }
 
                 /// \brief
                 /// Delete pages.
                 /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
-                /// \return true == the segment is empty,
-                /// false == the segment has pages remaining.
+                /// \return true == the node is empty,
+                /// false == the node has child nodes remaining.
                 virtual bool Clear (std::size_t flags) override {
-                    pageList.for_each (
-                        [this, flags] (typename PageList::Callback::argument_type page) ->
-                                typename PageList::Callback::result_type {
-                            if (((flags & FLAGS_CLEAR_DIRTY) && page->dirty) ||
-                                    ((flags & FLAGS_CLEAR_CLEAN) && !page->dirty)) {
-                                DeletePage (page);
+                    childList.for_each (
+                        [this, flags] (typename NodeList::Callback::argument_type child) ->
+                                typename NodeList::Callback::result_type {
+                            if (child->Clear (flags)) {
+                                DeleteChild (child);
                             }
                             return true;
                         }
@@ -510,24 +524,24 @@ namespace thekogans {
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
                 virtual void Log (RandomSeekSerializer &log) override {
-                    pageList.for_each (
-                        [&log] (typename PageList::Callback::argument_type page) ->
-                                typename PageList::Callback::result_type {
-                            page->Log (log);
+                    childList.for_each (
+                        [&log] (typename NodeList::Callback::argument_type child) ->
+                                typename NodeList::Callback::result_type {
+                            child->Log (log);
                             return true;
                         }
                     );
                 }
                 /// \brief
-                /// Write dirty pages to their source.
-                /// \param[in] clearCache true == Delete cache after fluh.
+                /// Write dirty pages to bitSource.
+                /// \param[in] clearCache true == Delete the page cache after.
                 virtual void Flush (bool clearCache = false) override {
-                    pageList.for_each (
-                        [this, clearCache] (typename PageList::Callback::argument_type page) ->
-                                typename PageList::Callback::result_type {
-                            page->Flush ();
+                    childList.for_each (
+                        [this, clearCache] (typename NodeList::Callback::argument_type child) ->
+                                typename NodeList::Callback::result_type {
+                            child->Flush (clearCache);
                             if (clearCache) {
-                                DeletePage (page);
+                                DeleteChild (child);
                             }
                             return true;
                         }
@@ -539,11 +553,11 @@ namespace thekogans {
                 /// \return true == the entire node was clipped, continue iterating.
                 /// false == a page was encoutered whose offset was < newSize, stop iterating.
                 virtual bool Shrink (AddressType newSize) override {
-                    pageList.for_each (
-                        [this, newSize] (typename PageList::Callback::argument_type page) ->
-                                typename PageList::Callback::result_type {
-                            if (page->Shrink (newSize)) {
-                                DeletePage (page);
+                    childList.for_each (
+                        [this, newSize] (typename NodeList::Callback::argument_type child) ->
+                                typename NodeList::Callback::result_type {
+                            if (child->Shrink (newSize)) {
+                                DeleteChild (child);
                                 return true;
                             }
                             return false;
@@ -553,50 +567,78 @@ namespace thekogans {
                     return IsEmpty ();
                 }
 
+                void AddChild (
+                        Node *child,
+                        std::size_t index) {
+                    children[index] = child;
+                    if (childList.empty () || childList.tail->index < child->index) {
+                        childList.push_back (child);
+                    }
+                    else {
+                        childList.for_each (
+                            [this, child] (typename NodeList::Callback::argument_type child_) ->
+                            typename NodeList::Callback::result_type {
+                                if (child_->index > child->index) {
+                                    childList.insert (child, child_);
+                                    return false;
+                                }
+                                return true;
+                            }
+                        );
+                    }
+                }
+
+            private:
+                /// \brief
+                /// Delete the given node.
+                /// \param[in] child \see{Node} to delete.
+                void DeleteChild (Node *child) {
+                    children[child->index] = nullptr;
+                    childList.erase (child);
+                    child->Release ();
+                }
+
+                /// \brief
+                /// Parent is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Parent)
+                /// \brief
+                /// Parent is neither move constructable, nor move assignable.
+                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Parent)
+            };
+
+            /// \struct PageMap::Segment PageMap.h thekogans/util/PageMap.h
+            ///
+            /// \brief
+            /// Leaf node organizing address space \see{Page}s.
+            struct Segment : public Parent {
+                /// \brief
+                /// ctor.
+                /// \param[in] pageMap \see{PageMap} this segment belongs to.
+                /// \param[in] index Segment index in \see{Internal::children}.
+                Segment (
+                    PageMap &pageMap,
+                    std::size_t index) :
+                    Parent (pageMap, index, pageMap.pagesPerSegment) {}
+
                 /// \brief
                 /// Kill yourself.
-                virtual void Harakiri () override {
+                virtual void Release () override {
                     this->~Segment ();
                     this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
                 }
 
                 /// \brief
                 /// Return the \see{Page} @index. Create if null.
-                /// \param[in] pageIndex Page index in the pages array.
-                /// \param[in] pageOffset Page offset (multiple of pageSize).
+                /// \param[in] index Page index in the pages array.
+                /// \param[in] offset Page offset (multiple of pageSize).
                 /// \return The new page.
                 Page *GetPage (
-                        std::size_t pageIndex,
-                        AddressType pageOffset) {
-                    if (pages[pageIndex] == nullptr) {
-                        // We don't align the page boundary as it's a fairly complex
-                        // structure with internal machinery that's hidden from view
-                        // (vptr tables...).
-                        Page *page = new Page (this->pageMap, pageIndex, pageOffset);
-                        page->AddRef ();
-                        pages[pageIndex] = page;
-                        // Insert the new page in to the ordered (on index) page list.
-                        // A quick optimization to check if it's the first or last page
-                        // potentially saving us a list walk...
-                        if (pageList.empty () || pageList.tail->index < page->index) {
-                            // ...it is. First or last is the same push_back.
-                            pageList.push_back (page);
-                        }
-                        else {
-                            // ...otherwise walk the list. The page will go in the middle somewhere.
-                            pageList.for_each (
-                                [this, page] (typename PageList::Callback::argument_type page_) ->
-                                        typename PageList::Callback::result_type {
-                                    if (page_->index > page->index) {
-                                        pageList.insert (page, page_);
-                                        return false;
-                                    }
-                                    return true;
-                                }
-                            );
-                        }
+                        std::size_t index,
+                        AddressType offset) {
+                    if (this->children[index] == nullptr) {
+                        this->AddChild (Page::Alloc (this->pageMap, index, offset), index);
                     }
-                    return pages[pageIndex];
+                    return (Page *)this->children[index];
                 }
 
                 /// \brief
@@ -608,7 +650,7 @@ namespace thekogans {
                 /// \brief
                 /// Allocate a segment using a custom \see{BlockAllocator}.
                 /// \param[in] pageMap \see{PageMap} the segment belongs to.
-                /// \param[in] index Segment index in parent \see{Internal::nodes}.
+                /// \param[in] index Segment index in parent \see{Internal::children}.
                 /// \return The new segment node.
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -616,16 +658,6 @@ namespace thekogans {
                     return new (
                         pageMap.segmentAllocator.Alloc (
                             pageMap.segmentSize)) Segment (pageMap, index);
-                }
-
-            private:
-                /// \brief
-                /// Delete the given page.
-                /// \param[in] page \see{Page} to delete.
-                void DeletePage (Page *page) {
-                    pages[page->index] = nullptr;
-                    pageList.erase (page);
-                    page->Release ();
                 }
 
                 /// \brief
@@ -640,111 +672,19 @@ namespace thekogans {
             ///
             /// \brief
             /// Internal structure node.
-            struct Internal : public Node {
-                /// \brief
-                /// Child nodes.
-                Node **nodes;
-                /// \brief
-                /// \see{IntrusiveList} of \see{Node}s.
-                NodeList nodeList;
-
+            struct Internal : public Parent {
                 /// \brief
                 /// ctor.
                 /// \param[in] pageMap \see{PageMap} this internal node belongs to.
-                /// \param[in] index Internal node index in nodes.
+                /// \param[in] index Internal node index in children.
                 Internal (
-                        PageMap &pageMap,
-                        std::size_t index) :
-                        Node (pageMap, index),
-                        nodes ((Node **)(this + 1)) {
-                    SecureZeroMemory (nodes, pageMap.nodesPerInternal * sizeof (Node *));
-                }
-                /// \brief
-                /// dtor.
-                virtual ~Internal () {
-                    nodeList.clear (
-                        [] (typename NodeList::Callback::argument_type node) ->
-                                typename NodeList::Callback::result_type {
-                            node->Harakiri ();
-                            return true;
-                        }
-                    );
-                }
-
-                /// \brief
-                /// Return true if the internal node is empty (has no children).
-                /// \return true == the internal node is empty.
-                virtual bool IsEmpty () const override {
-                    return nodeList.empty ();
-                }
-
-                /// \brief
-                /// Delete pages.
-                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
-                /// \return true == the node is empty,
-                /// false == the node has child nodes remaining.
-                virtual bool Clear (std::size_t flags) override {
-                    nodeList.for_each (
-                        [this, flags] (typename NodeList::Callback::argument_type node) ->
-                                typename NodeList::Callback::result_type {
-                            if (node->Clear (flags)) {
-                                DeleteNode (node);
-                            }
-                            return true;
-                        }
-                    );
-                    return IsEmpty ();
-                }
-                /// \brief
-                /// Write dirty pages to log.
-                /// \param[in] log \see{RandomSeekSerializer} to write to.
-                virtual void Log (RandomSeekSerializer &log) override {
-                    nodeList.for_each (
-                        [&log] (typename NodeList::Callback::argument_type node) ->
-                                typename NodeList::Callback::result_type {
-                            node->Log (log);
-                            return true;
-                        }
-                    );
-                }
-                /// \brief
-                /// Write dirty pages to bitSource.
-                /// \param[in] clearCache true == Delete the page cache after.
-                virtual void Flush (bool clearCache = false) override {
-                    nodeList.for_each (
-                        [this, clearCache] (typename NodeList::Callback::argument_type node) ->
-                                typename NodeList::Callback::result_type {
-                            node->Flush (clearCache);
-                            if (clearCache) {
-                                DeleteNode (node);
-                            }
-                            return true;
-                        }
-                    );
-                }
-                /// \brief
-                /// Delete all pages whose offset > newSize.
-                /// \param[in] newSize New size to clip the address space to.
-                /// \return true == the entire node was clipped, continue iterating.
-                /// false == a page was encoutered whose offset was < newSize, stop iterating.
-                virtual bool Shrink (AddressType newSize) override {
-                    nodeList.for_each (
-                        [this, newSize] (typename NodeList::Callback::argument_type node) ->
-                                typename NodeList::Callback::result_type {
-                            if (node->Shrink (newSize)) {
-                                DeleteNode (node);
-                                return true;
-                            }
-                            return false;
-                        },
-                        true
-                    );
-                    return IsEmpty ();
-                }
+                    PageMap &pageMap,
+                    std::size_t index) :
+                    Parent (pageMap, index, pageMap.nodesPerInternal) {}
 
                 /// \brief
                 /// Kill yourself.
-                virtual void Harakiri () override {
+                virtual void Release () override {
                     this->~Internal ();
                     this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
                 }
@@ -764,28 +704,12 @@ namespace thekogans {
                 Node *GetNode (
                         std::size_t index,
                         bool segment = false) {
-                    if (nodes[index] == nullptr) {
-                        Node *node = segment ?
+                    if (this->children[index] == nullptr) {
+                        this->AddChild (segment ?
                             Segment::Alloc (this->pageMap, index) :
-                            Internal::Alloc (this->pageMap, index);
-                        nodes[index] = node;
-                        if (nodeList.empty () || nodeList.tail->index < node->index) {
-                            nodeList.push_back (node);
-                        }
-                        else {
-                            nodeList.for_each (
-                                [this, node] (typename NodeList::Callback::argument_type node_) ->
-                                        typename NodeList::Callback::result_type {
-                                    if (node_->index > node->index) {
-                                        nodeList.insert (node, node_);
-                                        return false;
-                                    }
-                                    return true;
-                                }
-                            );
-                        }
+                            Internal::Alloc (this->pageMap, index), index);
                     }
-                    return nodes[index];
+                    return this->children[index];
                 }
 
                 /// \brief
@@ -797,7 +721,7 @@ namespace thekogans {
                 /// \brief
                 /// Allocate an internl node using a custom \see{BlockAllocator}.
                 /// \param[in] pageMap \see{PageMap} the internal node belongs to.
-                /// \param[in] index Internal node index in parent \see{Internal::nodes}.
+                /// \param[in] index Internal node index in parent \see{Internal::children}.
                 /// \return The new internal node.
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -805,16 +729,6 @@ namespace thekogans {
                     return new (
                         pageMap.segmentAllocator.Alloc (
                             pageMap.internalSize)) Internal (pageMap, index);
-                }
-
-            private:
-                /// \brief
-                /// Delete the given node.
-                /// \param[in] node \see{Node} to delete.
-                void DeleteNode (Node *node) {
-                    nodes[node->index] = nullptr;
-                    nodeList.erase (node);
-                    node->Harakiri ();
                 }
 
                 /// \brief
@@ -893,7 +807,9 @@ namespace thekogans {
                 if (bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||
                         /*bitsPerLevel == 0 ||*/ bitsPerLevel > (bitsPerAddress - bitsPerSegment) ||
                         bitsPerPage == 0 || bitsPerPage > bitsPerSegment ||
-                        !IsPowerOf2 (pageAlignment)) {
+                        !IsPowerOf2 (pageAlignment) ||
+                        internalNodesPerPage == 0 || segmentNodesPerPage == 0 ||
+                        allocator == nullptr) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
@@ -902,7 +818,7 @@ namespace thekogans {
             /// dtor.
             ~PageMap () {
                 if (root != nullptr) {
-                    root->Harakiri ();
+                    root->Release ();
                 }
             }
 
@@ -960,9 +876,7 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Clear (flags);
-                    if (lastGetPagePage != nullptr &&
-                            (((flags & FLAGS_CLEAR_DIRTY) && lastGetPagePage->dirty) ||
-                                ((flags & FLAGS_CLEAR_CLEAN) && !lastGetPagePage->dirty))) {
+                    if (lastGetPagePage != nullptr && lastGetPagePage->Clear (flags)) {
                         lastGetPageOffset = NOFFS;
                         lastGetPagePage.Reset ();
                     }
@@ -1020,10 +934,11 @@ namespace thekogans {
             Node *GetRoot () {
                 if (root == nullptr) {
                     // levelCount == 0 is a corner case where one segment covers the
-                    // entire address space. In that case root is the one and only
-                    // Segment leaf. Otherwise it's an Internal structure node.
+                    // entire address space...
                     root = levelCount == 0 ?
                         Segment::Alloc (*this, 0) :
+                        // This is the most common case. One or more levels of internal
+                        // nodes leading to segment nodes.
                         Internal::Alloc (*this, 0);
                 }
                 return root;
@@ -1034,7 +949,7 @@ namespace thekogans {
             /// prunning.
             void DeleteRoot () {
                 if (root->IsEmpty ()) {
-                    root->Harakiri ();
+                    root->Release ();
                     root = nullptr;
                 }
             }
