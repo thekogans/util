@@ -807,8 +807,8 @@ namespace thekogans {
             /// \return \see{Page} that contains the given offset.
             typename Page::SharedPtr GetPage (AddressType offset) {
                 LockGuard<Lock> guard (lock);
-                AddressType pageOffset = offset & ~(pageSize - 1);
-                if (lastGetPageOffset != pageOffset) {
+                offset &= ~(pageSize - 1);
+                if (lastGetPageOffset != offset) {
                     Node *node = GetRoot ();
                     // This is the address dissassembly engine used to
                     // break up the address (offset) in service of a virtual
@@ -826,7 +826,7 @@ namespace thekogans {
                     // this for loop will not be executed.
                     for (std::size_t levelCount_ = levelCount; levelCount_-- != 0;
                             levelShift_ -= bitsPerLevel, levelMask_ >>= bitsPerLevel) {
-                        std::size_t index = (pageOffset & levelMask_) >> levelShift_;
+                        std::size_t index = (offset & levelMask_) >> levelShift_;
                         node = ((Internal *)node)->GetChild (index,
                             [this, index, levelCount_] () -> Node * {
                                 return levelCount_ == 0 ?
@@ -834,17 +834,17 @@ namespace thekogans {
                                     Internal::Alloc (*this, index);
                             });
                     }
-                    lastGetPageOffset = pageOffset;
+                    lastGetPageOffset = offset;
                     // Since tree leafs are segments, ask the one we got for the
                     // page correponding to the given address.
                     // Cache the result so that we can reuse it if the next
                     // call to GetPage is sufficiently close to this one
                     // (locality of reference).
-                    std::size_t pageIndex = (pageOffset & segmentMask) >> bitsPerPage;
+                    std::size_t index = (offset & segmentMask) >> bitsPerPage;
                     lastGetPagePage.Reset (
-                        (Page *)((Segment *)node)->GetChild (pageIndex,
-                            [this, pageIndex, pageOffset] () -> Node * {
-                                return Page::Alloc (*this, pageIndex, pageOffset);
+                        (Page *)((Segment *)node)->GetChild (index,
+                            [this, index, offset] () -> Node * {
+                                return Page::Alloc (*this, index, offset);
                             }));
                 }
                 return lastGetPagePage;
