@@ -462,7 +462,7 @@ namespace thekogans {
             /// \struct PageMap::Parent PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
-            /// Base for \see{Segment} and \see{Internal} nodes. Adstracts out
+            /// Base for \see{Segment} and \see{Internal} nodes. Abstracts out
             /// all the common code between the two classes.
             struct Parent : public Node {
                 /// \brief
@@ -567,25 +567,34 @@ namespace thekogans {
                     return IsEmpty ();
                 }
 
-                void AddChild (
-                        Node *child,
-                        std::size_t index) {
-                    children[index] = child;
-                    if (childList.empty () || childList.tail->index < child->index) {
-                        childList.push_back (child);
-                    }
-                    else {
-                        childList.for_each (
-                            [this, child] (typename NodeList::Callback::argument_type child_) ->
-                            typename NodeList::Callback::result_type {
-                                if (child_->index > child->index) {
-                                    childList.insert (child, child_);
-                                    return false;
+                /// \brief
+                /// Retrieve the child @index, create if nullptr.
+                /// \param[in] index Child index to retrieve.
+                /// \param[in] factory Factory to create the child.
+                /// \return Child @ the given index.
+                Node *GetChild (
+                        std::size_t index,
+                        std::function<Node *()> factory) {
+                    if (children[index] == nullptr) {
+                        Node *child = factory ();
+                        children[index] = child;
+                        if (childList.empty () || childList.tail->index < child->index) {
+                            childList.push_back (child);
+                        }
+                        else {
+                            childList.for_each (
+                                [this, child] (typename NodeList::Callback::argument_type child_) ->
+                                typename NodeList::Callback::result_type {
+                                    if (child_->index > child->index) {
+                                        childList.insert (child, child_);
+                                        return false;
+                                    }
+                                    return true;
                                 }
-                                return true;
-                            }
-                        );
+                            );
+                        }
                     }
+                    return children[index];
                 }
 
             private:
@@ -625,20 +634,6 @@ namespace thekogans {
                 virtual void Release () override {
                     this->~Segment ();
                     this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
-                }
-
-                /// \brief
-                /// Return the \see{Page} @index. Create if null.
-                /// \param[in] index Page index in the pages array.
-                /// \param[in] offset Page offset (multiple of pageSize).
-                /// \return The new page.
-                Page *GetPage (
-                        std::size_t index,
-                        AddressType offset) {
-                    if (this->children[index] == nullptr) {
-                        this->AddChild (Page::Alloc (this->pageMap, index, offset), index);
-                    }
-                    return (Page *)this->children[index];
                 }
 
                 /// \brief
@@ -687,29 +682,6 @@ namespace thekogans {
                 virtual void Release () override {
                     this->~Internal ();
                     this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
-                }
-
-                /// \brief
-                /// Return either an \see{Internal} scaffolding node
-                /// or a \see{Segment} leaf node. Create if null.
-                /// \param[in] index Index of node to return.
-                /// \param[in] segment If null, true == create \see{Segment},
-                /// otherwise create \see{Internal}
-                /// \retrun \see{Segment} or \see{Internal} node @index.
-                /// NOTE: Unlike pages which are shared outside the PageMap
-                /// api, nodes are used internally only by GetPage which
-                /// uses them and lets them go. It's therefore unnecessary
-                /// overhead to return a SharedPtr. A raw pointer will do
-                /// just fine.
-                Node *GetNode (
-                        std::size_t index,
-                        bool segment = false) {
-                    if (this->children[index] == nullptr) {
-                        this->AddChild (segment ?
-                            Segment::Alloc (this->pageMap, index) :
-                            Internal::Alloc (this->pageMap, index), index);
-                    }
-                    return this->children[index];
                 }
 
                 /// \brief
@@ -854,8 +826,13 @@ namespace thekogans {
                     // this for loop will not be executed.
                     for (std::size_t levelCount_ = levelCount; levelCount_-- != 0;
                             levelShift_ -= bitsPerLevel, levelMask_ >>= bitsPerLevel) {
-                        node = ((Internal *)node)->GetNode (
-                            (pageOffset & levelMask_) >> levelShift_, levelCount_ == 0);
+                        std::size_t index = (pageOffset & levelMask_) >> levelShift_;
+                        node = ((Internal *)node)->GetChild (index,
+                            [this, index, levelCount_] () -> Node * {
+                                return levelCount_ == 0 ?
+                                    Segment::Alloc (*this, index) :
+                                    Internal::Alloc (*this, index);
+                            });
                     }
                     lastGetPageOffset = pageOffset;
                     // Since tree leafs are segments, ask the one we got for the
@@ -863,9 +840,12 @@ namespace thekogans {
                     // Cache the result so that we can reuse it if the next
                     // call to GetPage is sufficiently close to this one
                     // (locality of reference).
+                    std::size_t pageIndex = (pageOffset & segmentMask) >> bitsPerPage;
                     lastGetPagePage.Reset (
-                        ((Segment *)node)->GetPage (
-                            (pageOffset & segmentMask) >> bitsPerPage, pageOffset));
+                        (Page *)((Segment *)node)->GetChild (pageIndex,
+                            [this, pageIndex, pageOffset] () -> Node * {
+                                return Page::Alloc (*this, pageIndex, pageOffset);
+                            }));
                 }
                 return lastGetPagePage;
             }
