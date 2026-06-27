@@ -22,7 +22,7 @@
     /// Stats should be used during system integration and tuning. Every time
     /// a \see{Range} is created it bumps up the appropriate (based on reading)
     /// counter in it's ctor. It also bumps up an appropriate *Owner* counter if
-    /// it happens to straddle a \see{PageMap::Page} boundary. If the ratio of
+    /// it happens to straddle a \see{PageMapType::Page} boundary. If the ratio of
     /// *Owner* counter and range counter approaches 1 then you have some tuning
     /// to do.
     /// In an ideal world, no range would ever cross a page boundary and you would
@@ -30,7 +30,7 @@
     /// page boundary it needs to allocate a local buffer to satisfy the fact
     /// range reads and writes do no boundary checking (hence the performance boost).
     /// If a large percentage of your ranges have to allocate the buffer it means
-    /// that \see{PageMap::bitsPerPage} is not properly tuned for your application.
+    /// that \see{PageMapType::bitsPerPage} is not properly tuned for your application.
     struct Stats {
         /// \brief
         /// A count of \see{Range} (reading == true) that have been created for this file.
@@ -100,7 +100,7 @@ protected:
     /// \see{PageMapType::Page} associated with this range.
     PageMapType::Page::SharedPtr page;
     /// \brief
-    /// true == We straddle a \see{TransactedFile::Page} page boundary.
+    /// true == We straddle a \see{PageMapType::Page} page boundary.
     /// We allocated data and need to copy and free it in
     /// the dtor.
     bool owner;

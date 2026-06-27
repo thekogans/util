@@ -93,7 +93,7 @@ namespace thekogans {
         ///
         /// msb                                                                        lsb
         /// |----------------------------- bitsPerAddress ------------------------------|
-        /// |                         |----------------- bitsPerSegment ----------------|
+        /// |----------levels---------|----------------- bitsPerSegment ----------------|
         /// +------------+------------+-----------+-------------------------------------+
         /// |bitsPerLevel|            |           |------------ bitsPerPage ------------|
         /// +------------+------------+-----------+-------------------------------------+
@@ -117,7 +117,7 @@ namespace thekogans {
         ///
         /// msb                                                                                                      lsb
         /// |------------------------------------------- bitsPerAddress ----------------------------------------------|
-        /// |                                                    |------------------ bitsPerSegment ------------------|
+        /// |-----------------------levels-----------------------|------------------ bitsPerSegment ------------------|
         /// +------------+---------------------------------------+---------------------+------------------------------+
         /// |bitsPerLevel|                                       |                     |--------- bitsPerPage --------|
         /// +------------+---------------------------------------+---------------------+------------------------------+
@@ -141,7 +141,7 @@ namespace thekogans {
         ///
         /// msb                                                                                                      lsb
         /// |------------------------------------------- bitsPerAddress ----------------------------------------------|
-        /// |                                                |-------------------- bitsPerSegment --------------------|
+        /// |---------------------levels---------------------|-------------------- bitsPerSegment --------------------|
         /// +------------+-----------------------------------+---------------------+----------------------------------+
         /// |bitsPerLevel|                                   |                     |----------- bitsPerPage ----------|
         /// +------------+-----------------------------------+---------------------+----------------------------------+
@@ -165,7 +165,7 @@ namespace thekogans {
         ///
         /// msb                                                                                                         lsb
         /// |--------------------------------...----------- bitsPerAddress ----------------------------------------------|
-        /// |                                                       |------------------ bitsPerSegment ------------------|
+        /// |--------------levels------------...--------------------|------------------ bitsPerSegment ------------------|
         /// +------------+-------------------...--------------------+------------------+---------------------------------+
         /// |bitsPerLevel|                                          |                  |---------- bitsPerPage ----------|
         /// +------------+-------------------...--------------------+------------------+---------------------------------+
@@ -187,9 +187,6 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (PageMap)
 
         private:
-            /// \brief
-            /// \see{Page} bit source and sink.
-            RandomSeekSerializer &bitSource;
             /// \brief
             /// AddressType size in bits.
             const std::size_t bitsPerAddress;
@@ -277,7 +274,7 @@ namespace thekogans {
             /// tree.
             struct Node : public NodeList::Node {
                 /// \brief
-                /// \see{PageMap} this node belongs to.
+                /// Backpointer to \see{PageMap}.
                 PageMap &pageMap;
                 /// \brief
                 /// Node index in \see{Internal::nodes}.
@@ -310,8 +307,11 @@ namespace thekogans {
                 virtual void Log (RandomSeekSerializer &log) = 0;
                 /// \brief
                 /// Write dirty pages to their source.
+                /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete cache after fluh.
-                virtual void Flush (bool clearCache = false) = 0;
+                virtual void Flush (
+                    RandomSeekSerializer &bitSink,
+                    bool clearCache = false) = 0;
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
@@ -354,19 +354,27 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] pageMap PageMap managing this Page.
-                /// \param[in] index Page index in \see{Segment::pages}.
-                /// \param[in] offset_ Page offset.
+                /// \param[in] pageMap Backpointer to \see{PageMap}.
+                /// \param[in] index Page index in \see{Parent::children}.
+                /// \param[in] offset_ Page offset in the address space
+                /// (multiples of pageMap.pageSize).
+                /// \param[in] bitSource Optional \see{RandomSeekSerializer}
+                /// where \see{Page} bits come from. If this PageMap is associated
+                /// with a \see{RandomSeekSerializer}, it will read it's bits from it.
                 Page (
                         PageMap &pageMap,
                         std::size_t index,
-                        AddressType offset_) :
+                        AddressType offset_,
+                        RandomSeekSerializer *bitSource) :
                         Node (pageMap, index),
                         offset (offset_),
                         data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
                         dirty (false) {
-                    pageMap.bitSource.Seek (offset, SEEK_SET);
-                    std::size_t countRead = pageMap.bitSource.Read (data, pageMap.pageSize);
+                    std::size_t countRead = 0;
+                    if (bitSource != nullptr) {
+                        bitSource->Seek (offset, SEEK_SET);
+                        countRead = bitSource->Read (data, pageMap.pageSize);
+                    }
                     SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
                 }
                 /// \brief
@@ -376,8 +384,9 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return true if the node is empty (has no children).
-                /// \return true == the node is empty.
+                /// This part of the Node interface is meant for the \see{Parent}
+                /// derivative and doesn't apply to us. We return false.
+                /// \return false.
                 virtual bool IsEmpty () const override {
                     return false;
                 }
@@ -386,7 +395,7 @@ namespace thekogans {
                 /// Return true if page should be deleted based on the given flags and the dirty state.
                 /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
                 /// \return true == page shoul be deleted,
-                /// false == page does not match the give criteria.
+                /// false == page does not match the given criteria.
                 virtual bool Clear (std::size_t flags) override {
                     return ((flags & FLAGS_CLEAR_DIRTY) && dirty) || ((flags & FLAGS_CLEAR_CLEAN) && !dirty);
                 }
@@ -402,10 +411,13 @@ namespace thekogans {
                 }
                 /// \brief
                 /// If dirty, write page to it's source and make clean.
-                virtual void Flush (bool /*clearCache*/ = false) override {
+                /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
+                virtual void Flush (
+                        RandomSeekSerializer &bitSink,
+                        bool /*clearCache*/ = false) override {
                     if (dirty) {
-                        this->pageMap.bitSource.Seek (offset, SEEK_SET);
-                        this->pageMap.bitSource.Write (data, this->pageMap.pageSize);
+                        bitSink.Seek (offset, SEEK_SET);
+                        bitSink.Write (data, this->pageMap.pageSize);
                         dirty = false;
                     }
                 }
@@ -431,31 +443,29 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Kill yourself.
+                /// Release our hold on the page reference (kill yourself).
                 virtual void Release () override {
                     RefCounted::Release ();
                 }
 
                 /// \brief
-                /// Allocate an internl node using a custom \see{BlockAllocator}.
-                /// \param[in] pageMap \see{PageMap} the internal node belongs to.
-                /// \param[in] index Internal node index in parent \see{Internal::nodes}.
-                /// \return The new internal node.
+                /// Allocate a \see{Page}.
+                /// \param[in] pageMap Backpointer to \see{PageMap}.
+                /// \param[in] index \see{Parent} node index in \see{Parent::children}.
+                /// \return The new page node.
                 static Node *Alloc (
                         PageMap &pageMap,
                         std::size_t index,
-                        AddressType offset) {
-                    Page *page =  new Page (pageMap, index, offset);
+                        AddressType offset,
+                        RandomSeekSerializer *bitSource) {
+                    Page *page =  new Page (pageMap, index, offset, bitSource);
                     page->AddRef ();
                     return page;
                 }
 
                 /// \brief
-                /// Page is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Page)
-                /// \brief
-                /// Page is neither move constructable, nor move assignable.
-                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Page)
+                /// Page is neither copy or move constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Page)
             };
 
         private:
@@ -466,15 +476,23 @@ namespace thekogans {
             /// all the common code between the two classes.
             struct Parent : public Node {
                 /// \brief
-                /// Child children.
+                /// Array of our children directly following us. It is only used
+                /// in GetChild and for that we pay the full freight including all
+                /// the empty ones. It's used in \see{PageMap::GetPage} in the heart
+                /// of the address resolution engine. The fact that we can tell if a
+                /// child exists just by indexing in to an array is worth all the
+                /// cost.
                 Node **children;
                 /// \brief
-                /// \see{IntrusiveList} of \see{Node}s.
+                /// \see{IntrusiveList} of \see{Node}s. A linked list is much better
+                /// suited to everyday chores like tree walking. We therefore maintain
+                /// a list even at the cost of making sure that the nodes are inserted
+                /// in order.
                 NodeList childList;
 
                 /// \brief
                 /// ctor.
-                /// \param[in] pageMap \see{PageMap} this structure node belongs to.
+                /// \param[in] pageMap Backpointer to \see{PageMap}.
                 /// \param[in] index Parent node index in children.
                 /// \param[in] childCount Number of Node * following this node.
                 Parent (PageMap &pageMap,
@@ -488,8 +506,9 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Parent () {
                     childList.clear (
-                        [] (typename NodeList::Callback::argument_type child) ->
+                        [this] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
+                            children[child->index] = nullptr;
                             child->Release ();
                             return true;
                         }
@@ -497,8 +516,8 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return true if the structure node is empty (has no children).
-                /// \return true == the structure node is empty.
+                /// Return true if the node is empty (has no children).
+                /// \return true == the node is empty.
                 virtual bool IsEmpty () const override {
                     return childList.empty ();
                 }
@@ -506,8 +525,7 @@ namespace thekogans {
                 /// \brief
                 /// Delete pages.
                 /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
-                /// \return true == the node is empty,
-                /// false == the node has child nodes remaining.
+                /// \return IsEmpty ().
                 virtual bool Clear (std::size_t flags) override {
                     childList.for_each (
                         [this, flags] (typename NodeList::Callback::argument_type child) ->
@@ -533,13 +551,16 @@ namespace thekogans {
                     );
                 }
                 /// \brief
-                /// Write dirty pages to bitSource.
+                /// Write dirty pages to bitSink.
+                /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete the page cache after.
-                virtual void Flush (bool clearCache = false) override {
+                virtual void Flush (
+                        RandomSeekSerializer &bitSink,
+                        bool clearCache = false) override {
                     childList.for_each (
-                        [this, clearCache] (typename NodeList::Callback::argument_type child) ->
+                        [this, &bitSink, clearCache] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
-                            child->Flush (clearCache);
+                            child->Flush (bitSink, clearCache);
                             if (clearCache) {
                                 DeleteChild (child);
                             }
@@ -550,8 +571,7 @@ namespace thekogans {
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
-                /// \return true == the entire node was clipped, continue iterating.
-                /// false == a page was encoutered whose offset was < newSize, stop iterating.
+                /// \return IsEmpty ().
                 virtual bool Shrink (AddressType newSize) override {
                     childList.for_each (
                         [this, newSize] (typename NodeList::Callback::argument_type child) ->
@@ -584,7 +604,7 @@ namespace thekogans {
                         else {
                             childList.for_each (
                                 [this, child] (typename NodeList::Callback::argument_type child_) ->
-                                typename NodeList::Callback::result_type {
+                                        typename NodeList::Callback::result_type {
                                     if (child_->index > child->index) {
                                         childList.insert (child, child_);
                                         return false;
@@ -599,7 +619,7 @@ namespace thekogans {
 
             private:
                 /// \brief
-                /// Delete the given node.
+                /// Delete the given child.
                 /// \param[in] child \see{Node} to delete.
                 void DeleteChild (Node *child) {
                     children[child->index] = nullptr;
@@ -608,11 +628,8 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Parent is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Parent)
-                /// \brief
-                /// Parent is neither move constructable, nor move assignable.
-                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Parent)
+                /// Parent is neither copy or move constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Parent)
             };
 
             /// \struct PageMap::Segment PageMap.h thekogans/util/PageMap.h
@@ -656,11 +673,8 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Segment is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Segment)
-                /// \brief
-                /// Segment is neither move constructable, nor move assignable.
-                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Segment)
+                /// Segment is neither copy or move constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Segment)
             };
 
             /// \struct PageMap::Internal PageMap.h thekogans/util/PageMap.h
@@ -704,11 +718,8 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Internal is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Internal)
-                /// \brief
-                /// Internal is neither move constructable, nor move assignable.
-                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Internal)
+                /// Internal is neither copy or move constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Internal)
             };
             /// \brief
             /// The root of the tree.
@@ -738,7 +749,6 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] bitSource_ \see{RandomSeekSerializer} where \see{Page} bits come from.
             /// \param[in] bitsPerSegment_ How many address bits represent a segment.
             /// \param[in] bitsPerLevel_ How many address bits represent a level.
             /// \param[in] bitsPerPage_ How many address bits represent a page.
@@ -747,7 +757,6 @@ namespace thekogans {
             /// \param[in] segmentNodesPerPage Number of \see{Segment} nodes per \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} to use to create \see{BlockAllocator} pages.
             PageMap (
-                    RandomSeekSerializer &bitSource_,
                     std::size_t bitsPerSegment_,
                     std::size_t bitsPerLevel_,
                     std::size_t bitsPerPage_,
@@ -755,7 +764,6 @@ namespace thekogans {
                     std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
                     std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    bitSource (bitSource_),
                     bitsPerAddress (sizeof (AddressType) * CHAR_BIT),
                     bitsPerSegment (bitsPerSegment_),
                     bitsPerLevel (bitsPerLevel_),
@@ -804,8 +812,12 @@ namespace thekogans {
             /// \brief
             /// Return the \see{Page} that contains the given offset.
             /// \param[in] offset Offset whose page to return.
+            /// \param[in] bitSource Optional \see{RandomSeekSerializer}
+            /// where \see{Page} bits come from.
             /// \return \see{Page} that contains the given offset.
-            typename Page::SharedPtr GetPage (AddressType offset) {
+            typename Page::SharedPtr GetPage (
+                    AddressType offset,
+                    RandomSeekSerializer *bitSource) {
                 LockGuard<Lock> guard (lock);
                 offset &= ~(pageSize - 1);
                 if (lastGetPageOffset != offset) {
@@ -814,25 +826,28 @@ namespace thekogans {
                     // break up the address (offset) in service of a virtual
                     // tree walk.
                     // Begging the compiler to put these in to registers.
+                    std::size_t levelCount_ = levelCount;
                     std::size_t levelShift_ = levelShift;
                     AddressType levelMask_ = levelMask;
                     // We begin the tree walk with the root node and take a
-                    // bite off the level portion of the address at every loop
-                    // step, as we step internal scaffolding nodes on our way
+                    // bite off the levels portion of the address at every loop
+                    // step, as we step internal structure nodes on our way
                     // to visit the final segment node that will have our page.
                     // NOTE: This algorithm is sensitive to the corner case
                     // where one segment covers the entire address space. In
                     // that case GetRoot above will return that segment and
-                    // this for loop will not be executed.
-                    for (std::size_t levelCount_ = levelCount; levelCount_-- != 0;
-                            levelShift_ -= bitsPerLevel, levelMask_ >>= bitsPerLevel) {
+                    // this while loop will not be executed.
+                    while (levelCount_-- != 0) {
                         std::size_t index = (offset & levelMask_) >> levelShift_;
                         node = ((Internal *)node)->GetChild (index,
                             [this, index, levelCount_] () -> Node * {
                                 return levelCount_ == 0 ?
                                     Segment::Alloc (*this, index) :
                                     Internal::Alloc (*this, index);
-                            });
+                            }
+                        );
+                        levelShift_ -= bitsPerLevel;
+                        levelMask_ >>= bitsPerLevel;
                     }
                     lastGetPageOffset = offset;
                     // Since tree leafs are segments, ask the one we got for the
@@ -843,9 +858,11 @@ namespace thekogans {
                     std::size_t index = (offset & segmentMask) >> bitsPerPage;
                     lastGetPagePage.Reset (
                         (Page *)((Segment *)node)->GetChild (index,
-                            [this, index, offset] () -> Node * {
-                                return Page::Alloc (*this, index, offset);
-                            }));
+                            [this, index, offset, bitSource] () -> Node * {
+                                return Page::Alloc (*this, index, offset, bitSource);
+                            }
+                        )
+                    );
                 }
                 return lastGetPagePage;
             }
@@ -874,11 +891,14 @@ namespace thekogans {
             }
             /// \brief
             /// Write dirty pages to their source and optionaly clear the page cache.
+            /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
             /// \param[in] clearCache true == Delete the page cache after.
-            void Flush (bool clearCache = false) {
+            void Flush (
+                    RandomSeekSerializer &bitSink,
+                    bool clearCache = false) {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
-                    root->Flush (clearCache);
+                    root->Flush (bitSink, clearCache);
                     if (clearCache) {
                         lastGetPageOffset = NOFFS;
                         lastGetPagePage.Reset ();
@@ -935,11 +955,8 @@ namespace thekogans {
             }
 
             /// \brief
-            /// PageMap is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (PageMap)
-            /// \brief
-            /// PageMap is neither move constructable, nor move assignable.
-            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (PageMap)
+            /// PageMap is neither copy or move constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (PageMap)
         };
 
         /// \brief

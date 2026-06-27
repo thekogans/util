@@ -62,7 +62,7 @@ namespace thekogans {
             // 2. Use patterns and tunability. Range is specifically designed
             // to work with PageMap::Page and it's size. That size is parameterized
             // by bitsPerPage ctor value. You therefore have a lot of power to tune
-            // the underlying PageMap to minimize boudary crossings. At the same
+            // the underlying PageMapType to minimize boudary crossings. At the same
             // time range is designed to work with TransactedFile::Allocator::Block
             // (BlockRange). That means that most of range parameters will come from
             // block offset and size. And to that end...

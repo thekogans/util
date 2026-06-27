@@ -134,6 +134,12 @@ public:\
     _T (_T &&) = delete;\
     _T &operator = (_T &&) = delete;
 
+/// \def THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN(_T)
+/// A convenient macro to suppress copy and move construction and assignment.
+#define THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN(_T)\
+    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(_T)\
+    THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN(_T)
+
 namespace thekogans {
     namespace util {
 

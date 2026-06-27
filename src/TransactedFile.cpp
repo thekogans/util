@@ -127,7 +127,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 size = GetSize ();
                 pageMap.Reset (
-                    new PageMapType (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
+                    new PageMapType (32, 8, 20, GetPhysicalSectorSize (handle)));
                 Init (allocator, registry);
             }
         }
@@ -203,7 +203,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             size = GetSize ();
             pageMap.Reset (
-                new PageMapType (*this, 32, 8, 20, GetPhysicalSectorSize (handle)));
+                new PageMapType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Init (allocator, registry);
         }
 
@@ -228,7 +228,7 @@ namespace thekogans {
                     std::size_t countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0 && offset < size) {
-                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset);
+                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset, this);
                         std::size_t pageOffset = offset - page->offset;
                         std::size_t countToRead = MIN (
                             // Calculate the amount we can read from this page...
@@ -264,7 +264,7 @@ namespace thekogans {
                     std::size_t countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
-                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset);
+                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset, this);
                         std::size_t pageOffset = offset - page->offset;
                         std::size_t countToWrite = MIN (pageMap->GetPageSize () - pageOffset, count);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
@@ -433,7 +433,7 @@ namespace thekogans {
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32;
                 }
-                pageMap->Flush (clearCache);
+                pageMap->Flush (*this, clearCache);
                 SetSize (size);
                 Flush ();
                 Delete (logPath);
@@ -458,7 +458,7 @@ namespace thekogans {
 
         TransactedFile::PageMapType::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
             LockGuard<SpinLock> guard (spinLock);
-            return pageMap->GetPage (offset);
+            return pageMap->GetPage (offset, this);
         }
 
         std::string TransactedFile::GetLogPath (const std::string &path) {
