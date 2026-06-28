@@ -180,16 +180,18 @@ namespace thekogans {
         /// each containing 1K of 4MB pages.
         template<
             typename AddressType,
-            typename Lock = SpinLock>
+            typename Lock = SpinLock,
+            std::size_t bitsPerAddress = sizeof (AddressType) * CHAR_BIT>
         struct PageMap : public RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (PageMap)
 
-        private:
             /// \brief
-            /// AddressType size in bits.
-            const std::size_t bitsPerAddress;
+            /// Forward declaration for \see{Page}.
+            struct Page;
+
+        private:
             /// \brief
             /// \see{Segment} size in bits.
             const std::size_t bitsPerSegment;
@@ -199,9 +201,6 @@ namespace thekogans {
             /// \brief
             /// \see{Page} size in bits.
             const std::size_t bitsPerPage;
-            /// \brief
-            /// Tree depth.
-            const std::size_t levelCount;
             /// \brief
             /// Number of children per \see{Internal} node in bytes.
             const std::size_t nodesPerInternal;
@@ -243,6 +242,16 @@ namespace thekogans {
             /// \brief
             /// \see{AlignedAllocator} for \see{Page::data}.
             AlignedAllocator pageAllocator;
+            /// \brief
+            /// Alias for \see{IntrusiveList}<Page>.
+            using PageList = IntrusiveList<Page>;
+            /// \brief
+            /// PageList provides direct access to pages without
+            /// the need to walk the tree. Because the link between
+            /// a page and the list is made durring critical path
+            /// execution (GetPage), it's cost must be minimal.
+            /// The pages are therefore unsorted.
+            PageList pageList;
 
         public:
             /// \brief
@@ -337,7 +346,8 @@ namespace thekogans {
             /// access to the data.
             struct Page :
                     public virtual RefCounted,
-                    public Node {
+                    public Node,
+                    public PageList::Node {
                 /// \brief
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Page)
@@ -379,13 +389,16 @@ namespace thekogans {
                         countRead = bitSource->Read (data, pageMap.pageSize);
                     }
                     SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
+                    pageMap.pageList.push_back (this);
                 }
                 /// \brief
                 /// dtor.
                 virtual ~Page () {
                     this->pageMap.pageAllocator.Free (data, this->pageMap.pageSize);
+                    this->pageMap.pageList.erase (this);
                 }
 
+                // Node
                 /// \brief
                 /// This part of the Node interface is meant for the \see{Parent}
                 /// derivative and doesn't apply to us. We return false.
@@ -395,12 +408,14 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return true if page should be deleted based on the given flags and the dirty state.
+                /// Return true if page should be deleted based on the given
+                /// flags and the dirty state.
                 /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
                 /// \return true == page shoul be deleted,
                 /// false == page does not match the given criteria.
                 virtual bool Clear (std::size_t flags) override {
-                    return ((flags & FLAGS_CLEAR_DIRTY) && dirty) || ((flags & FLAGS_CLEAR_CLEAN) && !dirty);
+                    return ((flags & FLAGS_CLEAR_DIRTY) && dirty) ||
+                        ((flags & FLAGS_CLEAR_CLEAN) && !dirty);
                 }
 
                 /// \brief
@@ -526,6 +541,7 @@ namespace thekogans {
                     );
                 }
 
+                // Node
                 /// \brief
                 /// Return true if the node is empty (has no children).
                 /// \return true == the node is empty.
@@ -660,6 +676,7 @@ namespace thekogans {
                     std::size_t index) :
                     Parent (pageMap, index, pageMap.pagesPerSegment) {}
 
+                // Node
                 /// \brief
                 /// Kill yourself.
                 virtual void Release () override {
@@ -706,6 +723,7 @@ namespace thekogans {
                     std::size_t index) :
                     Parent (pageMap, index, pageMap.nodesPerInternal) {}
 
+                // Node
                 /// \brief
                 /// Kill yourself.
                 virtual void Release () override {
@@ -780,12 +798,9 @@ namespace thekogans {
                     std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
                     std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    bitsPerAddress (sizeof (AddressType) * CHAR_BIT),
                     bitsPerSegment (bitsPerSegment_),
                     bitsPerLevel (bitsPerLevel_),
                     bitsPerPage (bitsPerPage_),
-                    // Account for the corner case where one segment covers the entire address space.
-                    levelCount (bitsPerLevel != 0 ? (bitsPerAddress - bitsPerSegment) / bitsPerLevel : 0),
                     nodesPerInternal (1 << bitsPerLevel),
                     pageSize (1 << bitsPerPage),
                     pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
@@ -842,7 +857,6 @@ namespace thekogans {
                     // break up the address (offset) in service of a virtual
                     // tree walk.
                     // Begging the compiler to put these in to registers.
-                    std::size_t levelCount_ = levelCount;
                     std::size_t levelShift_ = levelShift;
                     AddressType levelMask_ = levelMask;
                     // We begin the tree walk with the root node and take a
@@ -853,17 +867,17 @@ namespace thekogans {
                     // where one segment covers the entire address space. In
                     // that case GetRoot above will return that segment and
                     // this while loop will not be executed.
-                    while (levelCount_-- != 0) {
+                    while (levelMask_ != 0) {
                         std::size_t index = (offset & levelMask_) >> levelShift_;
+                        levelShift_ -= bitsPerLevel;
+                        levelMask_ >>= bitsPerLevel;
                         node = ((Internal *)node)->GetChild (index,
-                            [this, index, levelCount_] () -> Node * {
-                                return levelCount_ == 0 ?
+                            [this, index, levelMask_] () -> Node * {
+                                return levelMask_ == 0 ?
                                     Segment::Alloc (*this, index) :
                                     Internal::Alloc (*this, index);
                             }
                         );
-                        levelShift_ -= bitsPerLevel;
-                        levelMask_ >>= bitsPerLevel;
                     }
                     lastGetPageOffset = offset;
                     // Since tree leafs are segments, ask the one we got for the
@@ -919,7 +933,7 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Delete all pages whose offset > newSize.
+            /// Shrink the address space (delete all pages whose offset > newSize).
             /// \param[in] newSize New size to clip the address space to.
             void Shrink (AddressType newSize) {
                 LockGuard<Lock> guard (lock);
@@ -929,6 +943,19 @@ namespace thekogans {
                     // will have been deleted by root->Shrink.
                     DeleteRoot (lastGetPageOffset >= newSize);
                 }
+            }
+
+            /// \brief
+            /// Provides direct access to pages. See comment above \see{PageList}.
+            /// NOTE: The callback is called while holding the lock.
+            /// \param[in] callback Called for every page in the list.
+            /// \param[in] reverse true == Walk the list tail to head.
+            /// \return true == Iterated over all pages, false == callback returned false.
+            bool EnumeratePages (
+                    const typename PageList::Function &callback,
+                    bool reverse = false) {
+                LockGuard<Lock> guard (lock);
+                return pageList.for_each (callback, reverse);
             }
 
         private:
@@ -941,9 +968,9 @@ namespace thekogans {
             /// \return root.
             Node *GetRoot () {
                 if (root == nullptr) {
-                    // levelCount == 0 is a corner case where one segment covers the
+                    // levelMask == 0 is a corner case where one segment covers the
                     // entire address space...
-                    root = levelCount == 0 ?
+                    root = levelMask == 0 ?
                         Segment::Alloc (*this, 0) :
                         // This is the most common case. One or more levels of internal
                         // nodes leading to segment nodes.
