@@ -178,10 +178,14 @@ namespace thekogans {
         ///
         /// This will cover the entire 128 bit address space with 8 levels of 4GB segments,
         /// each containing 1K of 4MB pages.
+        ///
+        /// \tparam AddressType The type that will represent addresses.
+        /// \tparam bitsPerAddress Narrow the address space to this many bits (default as wide as AddressType).
+        /// \tparam Lock Any of the standard locks to use for synchronization.
         template<
             typename AddressType,
-            typename Lock = SpinLock,
-            std::size_t bitsPerAddress = sizeof (AddressType) * CHAR_BIT>
+            std::size_t bitsPerAddress = BitWidth<AddressType>::value,
+            typename Lock = SpinLock>
         struct PageMap : public RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -192,6 +196,9 @@ namespace thekogans {
             struct Page;
 
         private:
+            /// \brief
+            /// Inverse address mask for quick rejection test in GetPage.
+            const AddressType inverseAddressMask;
             /// \brief
             /// \see{Segment} size in bits.
             const std::size_t bitsPerSegment;
@@ -291,7 +298,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in] pageMap_ \see{PageMap} this node belongs to.
+                /// \param[in] pageMap_ Backpointer to \see{PageMap}.
                 /// \param[in] index_ Node index in \see{Internal::nodes}.
                 Node (
                     PageMap &pageMap_,
@@ -506,8 +513,7 @@ namespace thekogans {
                 /// in GetChild and for that we pay the full freight including all
                 /// the empty ones. It's used in \see{PageMap::GetPage} in the heart
                 /// of the address disassembly engine. The fact that we can tell if a
-                /// child exists just by indexing in to an array is worth all the
-                /// cost.
+                /// child exists just by indexing in to an array is worth all the cost.
                 Node **children;
                 /// \brief
                 /// \see{IntrusiveList} of \see{Node}s. A linked list is much better
@@ -669,20 +675,12 @@ namespace thekogans {
             struct Segment : public Parent {
                 /// \brief
                 /// ctor.
-                /// \param[in] pageMap \see{PageMap} this segment belongs to.
-                /// \param[in] index Segment index in \see{Internal::children}.
+                /// \param[in] pageMap Backpointer to \see{PageMap}.
+                /// \param[in] index Index in \see{Parent::children}.
                 Segment (
                     PageMap &pageMap,
                     std::size_t index) :
                     Parent (pageMap, index, pageMap.pagesPerSegment) {}
-
-                // Node
-                /// \brief
-                /// Kill yourself.
-                virtual void Release () override {
-                    this->~Segment ();
-                    this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
-                }
 
                 /// \brief
                 /// Return the size of the segment node. They're all the same size, hence static.
@@ -692,9 +690,9 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Allocate a segment using a custom \see{BlockAllocator}.
-                /// \param[in] pageMap \see{PageMap} the segment belongs to.
-                /// \param[in] index Segment index in parent \see{Internal::children}.
+                /// Allocate a segment leaf using a custom \see{BlockAllocator}.
+                /// \param[in] pageMap Backpointer to \see{PageMap}.
+                /// \param[in] index Index in \see{Parent::children}.
                 /// \return The new segment node.
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -702,6 +700,14 @@ namespace thekogans {
                     return new (
                         pageMap.segmentAllocator.Alloc (
                             pageMap.segmentSize)) Segment (pageMap, index);
+                }
+
+                // Node
+                /// \brief
+                /// Kill yourself.
+                virtual void Release () override {
+                    this->~Segment ();
+                    this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
                 }
 
                 /// \brief
@@ -716,20 +722,12 @@ namespace thekogans {
             struct Internal : public Parent {
                 /// \brief
                 /// ctor.
-                /// \param[in] pageMap \see{PageMap} this internal node belongs to.
-                /// \param[in] index Internal node index in children.
+                /// \param[in] pageMap Backpointer to \see{PageMap}.
+                /// \param[in] index Index in \see{Parent::children}.
                 Internal (
                     PageMap &pageMap,
                     std::size_t index) :
                     Parent (pageMap, index, pageMap.nodesPerInternal) {}
-
-                // Node
-                /// \brief
-                /// Kill yourself.
-                virtual void Release () override {
-                    this->~Internal ();
-                    this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
-                }
 
                 /// \brief
                 /// Return the size of the internal node. They're all the same size, hence static.
@@ -739,9 +737,9 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Allocate an internl node using a custom \see{BlockAllocator}.
-                /// \param[in] pageMap \see{PageMap} the internal node belongs to.
-                /// \param[in] index Internal node index in parent \see{Internal::children}.
+                /// Allocate an internl structure node using a custom \see{BlockAllocator}.
+                /// \param[in] pageMap Backpointer to \see{PageMap}.
+                /// \param[in] index Index in \see{Parent::children}.
                 /// \return The new internal node.
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -749,6 +747,14 @@ namespace thekogans {
                     return new (
                         pageMap.segmentAllocator.Alloc (
                             pageMap.internalSize)) Internal (pageMap, index);
+                }
+
+                // Node
+                /// \brief
+                /// Kill yourself.
+                virtual void Release () override {
+                    this->~Internal ();
+                    this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
                 }
 
                 /// \brief
@@ -798,6 +804,9 @@ namespace thekogans {
                     std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
                     std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+                    inverseAddressMask (
+                        bitsPerAddress < BitWidth<AddressType>::value ?
+                            ~(((AddressType)1 << bitsPerAddress) - 1) : 0),
                     bitsPerSegment (bitsPerSegment_),
                     bitsPerLevel (bitsPerLevel_),
                     bitsPerPage (bitsPerPage_),
@@ -849,8 +858,12 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (
                     AddressType offset,
                     RandomSeekSerializer *bitSource) {
-                LockGuard<Lock> guard (lock);
+                // Quick bounds check.
+                if ((offset & inverseAddressMask) != 0) {
+                    return nullptr;
+                }
                 offset &= ~(pageSize - 1);
+                LockGuard<Lock> guard (lock);
                 if (lastGetPageOffset != offset) {
                     Node *node = GetRoot ();
                     // This is the address dissassembly engine used to

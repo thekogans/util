@@ -242,7 +242,7 @@ namespace thekogans {
 
             /// \brief
             /// We do our own locking.
-            using PageMapType = PageMap<ui64, NullLock>;
+            using PageMapType = PageMap<ui64, BitWidth<ui64>::value, NullLock>;
 
         private:
             /// \brief
