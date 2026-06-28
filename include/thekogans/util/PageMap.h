@@ -301,10 +301,12 @@ namespace thekogans {
                 /// \return true == the node is empty,
                 /// false == the node has pages remaining.
                 virtual bool Clear (std::size_t flags) = 0;
+
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
                 virtual void Log (RandomSeekSerializer &log) = 0;
+
                 /// \brief
                 /// Write dirty pages to their source.
                 /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
@@ -312,6 +314,7 @@ namespace thekogans {
                 virtual void Flush (
                     RandomSeekSerializer &bitSink,
                     bool clearCache = false) = 0;
+
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
@@ -357,7 +360,7 @@ namespace thekogans {
                 /// \param[in] pageMap Backpointer to \see{PageMap}.
                 /// \param[in] index Page index in \see{Parent::children}.
                 /// \param[in] offset_ Page offset in the address space
-                /// (multiples of pageMap.pageSize).
+                /// (multiple of pageMap.pageSize).
                 /// \param[in] bitSource Optional \see{RandomSeekSerializer}
                 /// where \see{Page} bits come from. If this PageMap is associated
                 /// with a \see{RandomSeekSerializer}, it will read it's bits from it.
@@ -399,6 +402,7 @@ namespace thekogans {
                 virtual bool Clear (std::size_t flags) override {
                     return ((flags & FLAGS_CLEAR_DIRTY) && dirty) || ((flags & FLAGS_CLEAR_CLEAN) && !dirty);
                 }
+
                 /// \brief
                 /// If dirty, write page to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
@@ -409,6 +413,7 @@ namespace thekogans {
                         // NOTE: We don't set dirty = false here.
                     }
                 }
+
                 /// \brief
                 /// If dirty, write page to it's source and make clean.
                 /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
@@ -421,6 +426,7 @@ namespace thekogans {
                         dirty = false;
                     }
                 }
+
                 /// \brief
                 /// Clip the page to the new size.
                 /// \param[in] newize Size to clip the page to.
@@ -452,6 +458,11 @@ namespace thekogans {
                 /// Allocate a \see{Page}.
                 /// \param[in] pageMap Backpointer to \see{PageMap}.
                 /// \param[in] index \see{Parent} node index in \see{Parent::children}.
+                /// \param[in] offset Page offset in the address space
+                /// (multiple of pageMap.pageSize).
+                /// \param[in] bitSource Optional \see{RandomSeekSerializer}
+                /// where \see{Page} bits come from. If this PageMap is associated
+                /// with a \see{RandomSeekSerializer}, it will read it's bits from it.
                 /// \return The new page node.
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -479,7 +490,7 @@ namespace thekogans {
                 /// Array of our children directly following us. It is only used
                 /// in GetChild and for that we pay the full freight including all
                 /// the empty ones. It's used in \see{PageMap::GetPage} in the heart
-                /// of the address resolution engine. The fact that we can tell if a
+                /// of the address disassembly engine. The fact that we can tell if a
                 /// child exists just by indexing in to an array is worth all the
                 /// cost.
                 Node **children;
@@ -487,14 +498,14 @@ namespace thekogans {
                 /// \see{IntrusiveList} of \see{Node}s. A linked list is much better
                 /// suited to everyday chores like tree walking. We therefore maintain
                 /// a list even at the cost of making sure that the nodes are inserted
-                /// in order.
+                /// in order (sorted on index).
                 NodeList childList;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] pageMap Backpointer to \see{PageMap}.
-                /// \param[in] index Parent node index in children.
-                /// \param[in] childCount Number of Node * following this node.
+                /// \param[in] index Backpointer to Parent::children.
+                /// \param[in] childCount Number of child Node * following this node.
                 Parent (PageMap &pageMap,
                         std::size_t index,
                         std::size_t childCount) :
@@ -538,6 +549,7 @@ namespace thekogans {
                     );
                     return IsEmpty ();
                 }
+
                 /// \brief
                 /// Write dirty pages to log.
                 /// \param[in] log \see{RandomSeekSerializer} to write to.
@@ -550,6 +562,7 @@ namespace thekogans {
                         }
                     );
                 }
+
                 /// \brief
                 /// Write dirty pages to bitSink.
                 /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
@@ -568,6 +581,7 @@ namespace thekogans {
                         }
                     );
                 }
+
                 /// \brief
                 /// Delete all pages whose offset > newSize.
                 /// \param[in] newSize New size to clip the address space to.
@@ -590,7 +604,7 @@ namespace thekogans {
                 /// \brief
                 /// Retrieve the child @index, create if nullptr.
                 /// \param[in] index Child index to retrieve.
-                /// \param[in] factory Factory to create the child.
+                /// \param[in] factory If null, Factory to create the child.
                 /// \return Child @ the given index.
                 Node *GetChild (
                         std::size_t index,
@@ -605,7 +619,7 @@ namespace thekogans {
                             childList.for_each (
                                 [this, child] (typename NodeList::Callback::argument_type child_) ->
                                         typename NodeList::Callback::result_type {
-                                    if (child_->index > child->index) {
+                                    if (child->index < child_->index) {
                                         childList.insert (child, child_);
                                         return false;
                                     }
@@ -659,6 +673,7 @@ namespace thekogans {
                 static std::size_t Size (std::size_t pagesPerSegment) {
                     return sizeof (Segment) + pagesPerSegment * sizeof (Page *);
                 }
+
                 /// \brief
                 /// Allocate a segment using a custom \see{BlockAllocator}.
                 /// \param[in] pageMap \see{PageMap} the segment belongs to.
@@ -704,6 +719,7 @@ namespace thekogans {
                 static std::size_t Size (std::size_t nodesPerInternal) {
                     return sizeof (Internal) + nodesPerInternal * sizeof (Node *);
                 }
+
                 /// \brief
                 /// Allocate an internl node using a custom \see{BlockAllocator}.
                 /// \param[in] pageMap \see{PageMap} the internal node belongs to.
@@ -866,6 +882,7 @@ namespace thekogans {
                 }
                 return lastGetPagePage;
             }
+
             /// \brief
             /// Delete pages.
             /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
@@ -873,13 +890,10 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Clear (flags);
-                    if (lastGetPagePage != nullptr && lastGetPagePage->Clear (flags)) {
-                        lastGetPageOffset = NOFFS;
-                        lastGetPagePage.Reset ();
-                    }
-                    DeleteRoot ();
+                    DeleteRoot (lastGetPagePage != nullptr && lastGetPagePage->Clear (flags));
                 }
             }
+
             /// \brief
             /// Write dirty pages to log.
             /// \param[in] log \see{RandomSeekSerializer} to write dirty pages to.
@@ -889,6 +903,7 @@ namespace thekogans {
                     root->Log (log);
                 }
             }
+
             /// \brief
             /// Write dirty pages to their source and optionaly clear the page cache.
             /// \param[in] bitSink \see{RandomSeekSerializer} where \see{Page} bits go.
@@ -899,13 +914,10 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Flush (bitSink, clearCache);
-                    if (clearCache) {
-                        lastGetPageOffset = NOFFS;
-                        lastGetPagePage.Reset ();
-                    }
-                    DeleteRoot ();
+                    DeleteRoot (clearCache);
                 }
             }
+
             /// \brief
             /// Delete all pages whose offset > newSize.
             /// \param[in] newSize New size to clip the address space to.
@@ -915,11 +927,7 @@ namespace thekogans {
                     root->Shrink (newSize);
                     // If newSize is <= lastGetPageOffset, lastGetPagePage
                     // will have been deleted by root->Shrink.
-                    if (lastGetPageOffset >= newSize) {
-                        lastGetPageOffset = NOFFS;
-                        lastGetPagePage.Reset ();
-                    }
-                    DeleteRoot ();
+                    DeleteRoot (lastGetPageOffset >= newSize);
                 }
             }
 
@@ -945,12 +953,17 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Dump the root if it is empty. Used by various methods above after a tree
+            /// Dump the root if it's empty. Used by various methods above after a tree
             /// prunning.
-            void DeleteRoot () {
+            /// \param[in] clearCache true == release the page cache.
+            void DeleteRoot (bool clearCache = false) {
                 if (root->IsEmpty ()) {
                     root->Release ();
                     root = nullptr;
+                }
+                if (clearCache) {
+                    lastGetPageOffset = NOFFS;
+                    lastGetPagePage.Reset ();
                 }
             }
 
