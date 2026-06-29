@@ -165,6 +165,15 @@ namespace thekogans {
         #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
     #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
 
+        /// \struct Width Types.h thekogans/util/Types.h
+        ///
+        /// \brief
+        /// Calculate the type width in bytes.
+        /// \tparam T Type whose width in bytes we need.
+        template<typename T>
+        struct Width {
+            static const std::size_t value = sizeof (T);
+        };
         /// \struct BitWidth Types.h thekogans/util/Types.h
         ///
         /// \brief
@@ -172,7 +181,7 @@ namespace thekogans {
         /// \tparam T Type whose width in bits we need.
         template<typename T>
         struct BitWidth {
-            static const std::size_t value = sizeof (T) * CHAR_BIT;
+            static const std::size_t value = Width<T>::value * CHAR_BIT;
         };
 
         /// \brief

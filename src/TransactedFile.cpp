@@ -219,7 +219,7 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::ReadEx (
-                ui64 offset,
+                PageMapType::AddressType offset,
                 void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
@@ -255,7 +255,7 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::WriteEx (
-                ui64 offset,
+                PageMapType::AddressType offset,
                 const void *buffer,
                 std::size_t count) {
             if (buffer != nullptr && count > 0) {
@@ -290,11 +290,13 @@ namespace thekogans {
             }
         }
 
-        ui64 TransactedFile::Grow (ui64 amount) {
+        TransactedFile::PageMapType::AddressType TransactedFile::Grow (
+                PageMapType::AddressType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
-                ui32 oldSize = size;
-                size += amount;
+                PageMapType::AddressType oldSize = size;
+                PageMapType::AddressType available = pageMap->GetLastValidOffset () - size;
+                size += MIN (available, amount);
                 return oldSize;
             }
             else {
@@ -303,7 +305,8 @@ namespace thekogans {
             }
         }
 
-        ui64 TransactedFile::Shrink (ui64 amount) {
+        TransactedFile::PageMapType::AddressType TransactedFile::Shrink (
+                PageMapType::AddressType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size -= MIN (amount, size);
@@ -401,14 +404,16 @@ namespace thekogans {
                             "Corrupt log %s",
                             logPath.c_str ());
                     }
-                    ui64 size;
-                    ui64 pageSize;
+                    PageMapType::AddressType size;
+                    PageMapType::AddressType pageSize;
                     log >> size >> pageSize;
-                    ui64 offset;
+                    PageMapType::AddressType offset;
                     HostBuffer page (pageSize);
-                    for (ui64 logPosition = log.Tell (), logSize = log.GetSize (); logPosition < logSize;) {
+                    for (PageMapType::AddressType
+                            logPosition = log.Tell (), logSize = log.GetSize ();
+                            logPosition < logSize;) {
                         log >> offset;
-                        logPosition += UI64_SIZE + log.Read (page.GetDataPtr (), pageSize);
+                        logPosition += Width<PageMapType::AddressType>::value + log.Read (page.GetDataPtr (), pageSize);
                         file.Seek (offset, SEEK_SET);
                         file.Write (page.GetDataPtr (), pageSize);
                     }
@@ -428,7 +433,7 @@ namespace thekogans {
                         endianness,
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-                    log << (ui32)0 << size << (ui64)pageMap->GetPageSize ();
+                    log << (ui32)0 << size << (PageMapType::AddressType)pageMap->GetPageSize ();
                     pageMap->Log (log);
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32;
@@ -456,7 +461,7 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::PageMapType::Page::SharedPtr TransactedFile::GetPage (ui64 offset) {
+        TransactedFile::PageMapType::Page::SharedPtr TransactedFile::GetPage (PageMapType::AddressType offset) {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap->GetPage (offset, this);
         }

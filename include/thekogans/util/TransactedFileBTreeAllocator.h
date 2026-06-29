@@ -154,42 +154,40 @@ namespace thekogans {
         private:
             // Serializable
             /// \brief
-            /// Read the \see{Header} from the file.
+            /// Read the \see{Header} from the given \see{Serializer}.
             virtual void Read (
                 const SerializableHeader & /*header*/,
                 Serializer &serializer) override;
             /// \brief
-            /// Write the \see{Header} to the file.
+            /// Write the \see{Header} to the given \see{Serializer}.
             virtual void Write (Serializer &serializer) const override;
 
             // TransactedFileEvents
             /// \brief
-            /// Transaction is committing. Depending on the phase do whatever
-            /// is appropriate.
-            /// If your object derives from \see{TransactedFile::TransactionParticipant}
-            /// all this is done under the hood for you. All you will need
-            /// to do is implement Alloc (phase 1) and Flush (phase 2).
+            /// Transaction is committing:
+            /// Phase 1: Nothing to do as we're the special first block.
+            /// Phase 2: Flush our and \see{Allocator::Header} to file.
+            /// \param[in] file \see{TransactedFile} commiting the transaction.
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
             virtual void OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr file,
                 int phase) noexcept override;
             /// \brief
-            /// Transaction is aborting. Time to reload the object.
-            /// If your object derives from \see{TransactedFile::TransactionParticipant}
-            /// all this is done under the hood for you. All you will need
-            /// to do is implement Reload.
+            /// Transaction is aborting:
+            /// Reload our and \see{Allocator::Header} from disk.
+            /// \param[in] file \see{TransactedFile} aborting the transaction.
             virtual void OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept override;
 
             // TransactedFile::ObjectEvents
             /// \brief
-            /// \see{Object} allocated a block in the file.
-            /// \param[in] object \see{Object} whose offset has become valid.
+            /// \see{BTree} allocated it's header block.
+            /// \param[in] object \see{BTree} that allocated it's header block.
             virtual void OnTransactedFileObjectAlloc (
                 TransactedFile::Object::SharedPtr object) noexcept override;
             /// \brief
-            /// \see{Object} freed its block.
-            /// \param[in] object \see{Object} whose offset has become invalid.
+            /// \see{BTree} freed it's header block.
+            /// \param[in] object \see{BTree} that freed it's header block.
             virtual void OnTransactedFileObjectFree (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 

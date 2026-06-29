@@ -467,7 +467,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (DynamicCreatable)
 
             /// \brief
-            /// Type factory method.
+            /// Type parameterization method.
             using ParametersType =
                 std::function<void (DynamicCreatable::SharedPtr /*dynamicCreatable*/)>;
             /// \brief

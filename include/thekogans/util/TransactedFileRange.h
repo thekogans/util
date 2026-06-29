@@ -90,7 +90,7 @@ protected:
     /// use this allocator to allocate a range buffer.
     util::Allocator::SharedPtr allocator;
     /// \brief
-    /// Either a pointer in to \see{TransactedFile::Page::data} or self
+    /// Either a pointer in to \see{PageMapType::Page::data} or self
     /// allocated range buffer.
     ui8 *data;
     /// \brief

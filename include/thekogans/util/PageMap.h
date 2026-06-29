@@ -179,14 +179,19 @@ namespace thekogans {
         /// This will cover the entire 128 bit address space with 8 levels of 4GB segments,
         /// each containing 1K of 4MB pages.
         ///
-        /// \tparam AddressType The type that will represent addresses.
+        /// \tparam T The type that will represent addresses.
         /// \tparam bitsPerAddress Narrow the address space to this many bits (default as wide as AddressType).
         /// \tparam Lock Any of the standard locks to use for synchronization.
         template<
-            typename AddressType,
-            std::size_t bitsPerAddress = BitWidth<AddressType>::value,
+            typename T,
+            std::size_t bitsPerAddress = BitWidth<T>::value,
             typename Lock = SpinLock>
         struct PageMap : public RefCounted {
+            /// \brief
+            /// Rename T to something more appropriate that's
+            /// visible outside the template.
+            using AddressType = T;
+
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (PageMap)
@@ -199,6 +204,9 @@ namespace thekogans {
             /// \brief
             /// Inverse address mask for quick rejection test in GetPage.
             const AddressType inverseAddressMask;
+            /// \brief
+            /// This is the very last valid address space offset (before it overflows).
+            const AddressType lastValidOffset;
             /// \brief
             /// \see{Segment} size in bits.
             const std::size_t bitsPerSegment;
@@ -807,6 +815,7 @@ namespace thekogans {
                     inverseAddressMask (
                         bitsPerAddress < BitWidth<AddressType>::value ?
                             ~(((AddressType)1 << bitsPerAddress) - 1) : 0),
+                    lastValidOffset (~inverseAddressMask),
                     bitsPerSegment (bitsPerSegment_),
                     bitsPerLevel (bitsPerLevel_),
                     bitsPerPage (bitsPerPage_),
@@ -843,8 +852,15 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return the last valid address space offset.
+            /// \return lastValidOffset.
+            inline AddressType GetLastValidOffset () const {
+                return lastValidOffset;
+            }
+
+            /// \brief
             /// Return the page size.
-            /// \return Page size.
+            /// \return pageSize.
             inline std::size_t GetPageSize () const {
                 return pageSize;
             }
@@ -974,9 +990,9 @@ namespace thekogans {
         private:
             /// \brief
             /// Helper to recreate the root if it's gone. Depending on the address space
-            /// parameterization, \see{Node} derivative nodes can actually become pretty
-            /// massive (>>1MB). In order to keep our footprint to a minimum if we're asked
-            /// to clear the tree and the root is empty, we will dump it too, regardless.
+            /// parameterization, \see{Parent} can actually become pretty massive (>>1MB).
+            /// In order to keep our footprint to a minimum if we're asked to clear the
+            /// tree and the root is empty, we will dump it too, regardless.
             /// This method is used by GetPage above to rebuild it.
             /// \return root.
             Node *GetRoot () {

@@ -247,7 +247,7 @@ namespace thekogans {
         private:
             /// \brief
             /// File size.
-            ui64 size;
+            PageMapType::AddressType size;
             /// \brief
             /// \see{PageMap} used to map file pages.
             PageMapType::SharedPtr pageMap;
@@ -387,7 +387,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
             std::size_t ReadEx (
-                ui64 offset,
+                PageMapType::AddressType offset,
                 void *buffer,
                 std::size_t count);
             /// \brief
@@ -397,7 +397,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
             std::size_t WriteEx (
-                ui64 offset,
+                PageMapType::AddressType offset,
                 const void *buffer,
                 std::size_t count);
 
@@ -406,20 +406,20 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
-            ui64 Grow (ui64 amount);
+            PageMapType::AddressType Grow (PageMapType::AddressType amount);
             /// \brief
             /// Shrink the file by the given amount.
             /// Thread safe.
             /// \param[in] amount Amount to shrink the file by.
             /// \return New file size.
-            ui64 Shrink (ui64 amount);
+            PageMapType::AddressType Shrink (PageMapType::AddressType amount);
 
             // File
             /// \brief
             /// Return file size in bytes.
             /// Thread safe.
             /// \return File size in bytes.
-            inline ui64 GetSizeEx () {
+            inline PageMapType::AddressType GetSizeEx () {
                 LockGuard<SpinLock> guard (spinLock);
                 return size;
             }
@@ -462,7 +462,7 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            PageMapType::Page::SharedPtr GetPage (ui64 offset);
+            PageMapType::Page::SharedPtr GetPage (PageMapType::AddressType offset);
 
             /// \brief
             /// Given a file path, use the full file name to create
@@ -477,11 +477,8 @@ namespace thekogans {
             friend struct SimpleTransactedFile;
 
             /// \brief
-            /// TransactedFile is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFile)
-            /// \brief
-            /// TransactedFile is neither move constructable, nor move assignable.
-            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (TransactedFile)
+            /// TransactedFile is neither copy or move constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
 
         /// \brief
@@ -537,11 +534,8 @@ namespace thekogans {
                 Registry::SharedPtr registry = nullptr);
 
             /// \brief
-            /// SimpleTransactedFile is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (SimpleTransactedFile)
-            /// \brief
-            /// SimpleTransactedFile is neither move constructable, nor move assignable.
-            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (SimpleTransactedFile)
+            /// SimpleTransactedFile is neither copy or move constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (SimpleTransactedFile)
         };
 
     } // namespace util
