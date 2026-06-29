@@ -389,8 +389,7 @@ namespace thekogans {
                 /// \param[in] bitSource Optional \see{RandomSeekSerializer}
                 /// where \see{Page} bits come from. If this PageMap is associated
                 /// with a \see{RandomSeekSerializer}, it will read it's bits from it.
-                Page (
-                        PageMap &pageMap,
+                Page (PageMap &pageMap,
                         std::size_t index,
                         AddressType offset_,
                         RandomSeekSerializer *bitSource) :
