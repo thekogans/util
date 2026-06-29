@@ -301,13 +301,13 @@ namespace thekogans {
                 /// Backpointer to \see{PageMap}.
                 PageMap &pageMap;
                 /// \brief
-                /// Node index in \see{Internal::nodes}.
+                /// Node index in \see{Parent::children}.
                 const std::size_t index;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] pageMap_ Backpointer to \see{PageMap}.
-                /// \param[in] index_ Node index in \see{Internal::nodes}.
+                /// \param[in] index_ Node index in \see{Parent::children}.
                 Node (
                     PageMap &pageMap_,
                     std::size_t index_) :
@@ -479,7 +479,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Release our hold on the page reference (kill yourself).
+                /// Release the hold on the page reference (kill yourself).
                 virtual void Release () override {
                     RefCounted::Release ();
                 }
@@ -833,7 +833,8 @@ namespace thekogans {
                     root (nullptr),
                     lastGetPageOffset (NOFFS) {
                 // Validate input.
-                if (bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||
+                if (bitsPerAddress == 0 || bitsPerAddress > BitWidth<AddressType>::value ||
+                        bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||
                         /*bitsPerLevel == 0 ||*/ bitsPerLevel > (bitsPerAddress - bitsPerSegment) ||
                         bitsPerPage == 0 || bitsPerPage > bitsPerSegment ||
                         !IsPowerOf2 (pageAlignment) ||
