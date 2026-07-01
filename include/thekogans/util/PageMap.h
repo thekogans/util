@@ -1110,7 +1110,7 @@ namespace thekogans {
             /// \brief
             /// Shrink the address space (delete all pages whose offset >= size).
             /// \param[in] size Size to clip the pages to.
-            AddressType Shrink (AddressType size) {
+            void Shrink (AddressType size) {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Shrink (size);
@@ -1118,7 +1118,6 @@ namespace thekogans {
                     // will have been deleted by root->Shrink.
                     DeleteRoot (lastGetPageOffset >= size);
                 }
-                return size;
             }
 
             /// \brief

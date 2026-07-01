@@ -267,6 +267,8 @@ namespace thekogans {
                 TransactedFileAddressSpaceType::AddressType oldSize = size;
                 TransactedFileAddressSpaceType::AddressType available = pageMap->GetMaxOffset () - size;
                 size += MIN (available, amount);
+                TransactedFileAddressSpaceType::Page::SharedPtr page = pageMap->GetPage (size, this);
+                page->dirty = true;
                 return oldSize;
             }
             else {
@@ -280,7 +282,8 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size -= MIN (amount, size);
-                return  pageMap->Shrink (size);
+                pageMap->Shrink (size);
+                return size;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
