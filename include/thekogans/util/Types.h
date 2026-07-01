@@ -93,14 +93,6 @@ namespace thekogans {
         /// 64 bit float type.
         using f64 = double;
 
-    } // namespace util
-} // namespace thekogans
-
-#include "thekogans/util/ui128.h"
-
-namespace thekogans {
-    namespace util {
-
         /// \brief
         /// bool type size.
         const std::size_t BOOL_SIZE = sizeof (ui8);
@@ -129,14 +121,38 @@ namespace thekogans {
         /// Unsigned 64 bit type size.
         const std::size_t UI64_SIZE = sizeof (ui64);
         /// \brief
-        /// Unsigned 128 bit type size.
-        const std::size_t UI128_SIZE = sizeof (ui128);
-        /// \brief
         /// 32 bit float type size.
         const std::size_t F32_SIZE = sizeof (f32);
         /// \brief
         /// 64 bit float type size.
         const std::size_t F64_SIZE = sizeof (f64);
+
+        /// \struct Width Types.h thekogans/util/Types.h
+        ///
+        /// \brief
+        /// Calculate the type width in bytes.
+        /// \tparam T Type whose width in bytes we need.
+        template<typename T>
+        struct Width {
+            static const std::size_t value = sizeof (T);
+        };
+        /// \struct BitWidth Types.h thekogans/util/Types.h
+        ///
+        /// \brief
+        /// Calculate the type width in bits.
+        /// \tparam T Type whose width in bits we need.
+        template<typename T>
+        struct BitWidth {
+            static const std::size_t value = Width<T>::value * CHAR_BIT;
+        };
+
+    } // namespace util
+} // namespace thekogans
+
+#include "thekogans/util/ui128.h"
+
+namespace thekogans {
+    namespace util {
 
         /// \brief
         /// Validate assumptions about integral type sizes.
@@ -164,25 +180,6 @@ namespace thekogans {
     #else // (TOOLCHAIN_ARCH_WORD_SIZE == 8)
         #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
     #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
-
-        /// \struct Width Types.h thekogans/util/Types.h
-        ///
-        /// \brief
-        /// Calculate the type width in bytes.
-        /// \tparam T Type whose width in bytes we need.
-        template<typename T>
-        struct Width {
-            static const std::size_t value = sizeof (T);
-        };
-        /// \struct BitWidth Types.h thekogans/util/Types.h
-        ///
-        /// \brief
-        /// Calculate the type width in bits.
-        /// \tparam T Type whose width in bits we need.
-        template<typename T>
-        struct BitWidth {
-            static const std::size_t value = Width<T>::value * CHAR_BIT;
-        };
 
         /// \brief
         /// Natural machine word size.

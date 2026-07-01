@@ -47,7 +47,7 @@ namespace thekogans {
         const int TransactedFile::COMMIT_PHASE_1 = 1;
         const int TransactedFile::COMMIT_PHASE_2 = 2;
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFile::PageMapType::Page)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFileAddressSpaceType::Page)
 
         TransactedFile::Transaction::~Transaction () {
             file.Abort ();
@@ -127,7 +127,8 @@ namespace thekogans {
             if (IsOpen ()) {
                 size = GetSize ();
                 pageMap.Reset (
-                    new PageMapType (32, 8, 20, GetPhysicalSectorSize (handle)));
+                    new TransactedFileAddressSpaceType (
+                        32, 8, 20, GetPhysicalSectorSize (handle)));
                 Init (allocator, registry);
             }
         }
@@ -203,7 +204,8 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             size = GetSize ();
             pageMap.Reset (
-                new PageMapType (32, 8, 20, GetPhysicalSectorSize (handle)));
+                new TransactedFileAddressSpaceType (
+                    32, 8, 20, GetPhysicalSectorSize (handle)));
             Init (allocator, registry);
         }
 
@@ -219,83 +221,51 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::ReadEx (
-                PageMapType::AddressType offset,
+                TransactedFileAddressSpaceType::AddressType offset,
                 void *buffer,
                 std::size_t count) {
-            if (buffer != nullptr && count > 0) {
+            if (offset < size) {
                 LockGuard<SpinLock> guard (spinLock);
                 if (IsOpen ()) {
-                    std::size_t countRead = 0;
-                    ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && offset < size) {
-                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset, this);
-                        std::size_t pageOffset = offset - page->offset;
-                        std::size_t countToRead = MIN (
-                            // Calculate the amount we can read from this page...
-                            MIN (pageMap->GetPageSize () - pageOffset, count),
-                            // ...and clamp it to the amount left to read in the file.
-                            size - page->offset);
-                        std::memcpy (ptr, page->data + pageOffset, countToRead);
-                        ptr += countToRead;
-                        countRead += countToRead;
-                        offset += countToRead;
-                        count -= countToRead;
+                    TransactedFileAddressSpaceType::AddressType available = size - offset;
+                    if (count > available) {
+                        count = available;
                     }
-                    return countRead;
+                    return pageMap->Read (offset, this, buffer, count);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
                 }
             }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
+            return 0;
         }
 
         std::size_t TransactedFile::WriteEx (
-                PageMapType::AddressType offset,
+                TransactedFileAddressSpaceType::AddressType offset,
                 const void *buffer,
                 std::size_t count) {
-            if (buffer != nullptr && count > 0) {
-                LockGuard<SpinLock> guard (spinLock);
-                if (IsOpen ()) {
-                    std::size_t countWritten = 0;
-                    ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0) {
-                        PageMapType::Page::SharedPtr page = pageMap->GetPage (offset, this);
-                        std::size_t pageOffset = offset - page->offset;
-                        std::size_t countToWrite = MIN (pageMap->GetPageSize () - pageOffset, count);
-                        std::memcpy (page->data + pageOffset, ptr, countToWrite);
-                        page->dirty = true;
-                        ptr += countToWrite;
-                        countWritten += countToWrite;
-                        offset += countToWrite;
-                        count -= countToWrite;
-                    }
-                    if (size < offset) {
-                        size = offset;
-                    }
-                    return countWritten;
+            LockGuard<SpinLock> guard (spinLock);
+            if (IsOpen ()) {
+                count = pageMap->Write (offset, this, buffer, count);
+                offset += count;
+                if (size < offset) {
+                    size = offset;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-                }
+                return count;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
             }
         }
 
-        TransactedFile::PageMapType::AddressType TransactedFile::Grow (
-                PageMapType::AddressType amount) {
+        TransactedFileAddressSpaceType::AddressType TransactedFile::Grow (
+                TransactedFileAddressSpaceType::AddressType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
-                PageMapType::AddressType oldSize = size;
-                PageMapType::AddressType available = pageMap->GetLastValidOffset () - size;
+                TransactedFileAddressSpaceType::AddressType oldSize = size;
+                TransactedFileAddressSpaceType::AddressType available = pageMap->GetMaxOffset () - size;
                 size += MIN (available, amount);
                 return oldSize;
             }
@@ -305,13 +275,12 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::PageMapType::AddressType TransactedFile::Shrink (
-                PageMapType::AddressType amount) {
+        TransactedFileAddressSpaceType::AddressType TransactedFile::Shrink (
+                TransactedFileAddressSpaceType::AddressType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size -= MIN (amount, size);
-                pageMap->Shrink (size);
-                return size;
+                return  pageMap->Shrink (amount);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -404,16 +373,15 @@ namespace thekogans {
                             "Corrupt log %s",
                             logPath.c_str ());
                     }
-                    PageMapType::AddressType size;
-                    PageMapType::AddressType pageSize;
-                    log >> size >> pageSize;
-                    PageMapType::AddressType offset;
+                    ui32 count;
+                    TransactedFileAddressSpaceType::AddressType size;
+                    TransactedFileAddressSpaceType::AddressType pageSize;
+                    log >> count >> size >> pageSize;
+                    TransactedFileAddressSpaceType::AddressType offset;
                     HostBuffer page (pageSize);
-                    for (PageMapType::AddressType
-                            logPosition = log.Tell (), logSize = log.GetSize ();
-                            logPosition < logSize;) {
+                    while (count-- != 0) {
                         log >> offset;
-                        logPosition += Width<PageMapType::AddressType>::value + log.Read (page.GetDataPtr (), pageSize);
+                        log.Read (page.GetDataPtr (), pageSize);
                         file.Seek (offset, SEEK_SET);
                         file.Write (page.GetDataPtr (), pageSize);
                     }
@@ -433,10 +401,11 @@ namespace thekogans {
                         endianness,
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-                    log << (ui32)0 << size << (PageMapType::AddressType)pageMap->GetPageSize ();
-                    pageMap->Log (log);
+                    log << (ui32)0 << (ui32)0 << size <<
+                        (TransactedFileAddressSpaceType::AddressType)pageMap->GetPageSize ();
+                    std::size_t count = pageMap->Log (log);
                     log.Seek (0, SEEK_SET);
-                    log << MAGIC32;
+                    log << MAGIC32 << (ui32)count;
                 }
                 pageMap->Flush (*this, clearCache);
                 SetSize (size);
@@ -453,7 +422,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size = GetSize ();
-                pageMap->Clear (PageMapType::FLAGS_CLEAR_DIRTY);
+                pageMap->Clear (TransactedFileAddressSpaceType::FLAGS_CLEAR_DIRTY);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -461,7 +430,8 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::PageMapType::Page::SharedPtr TransactedFile::GetPage (PageMapType::AddressType offset) {
+        TransactedFileAddressSpaceType::Page::SharedPtr TransactedFile::GetPage (
+                TransactedFileAddressSpaceType::AddressType offset) {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap->GetPage (offset, this);
         }

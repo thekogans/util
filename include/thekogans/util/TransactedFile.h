@@ -74,6 +74,8 @@ namespace thekogans {
                 RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
         };
 
+        using TransactedFileAddressSpaceType = PageMap<ui64, BitWidth<ui64>::value, NullLock>;
+
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
@@ -115,7 +117,8 @@ namespace thekogans {
         /// *******************************************************************
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFile :
                 private File,
-                public Producer<TransactedFileEvents> {
+                public Producer<TransactedFileEvents>,
+                public TransactedFileAddressSpaceType::PageSource {
             /// \brief
             /// TransactedFile participates in the \see{DynamicCreatable}
             /// dynamic discovery and creation.
@@ -171,11 +174,8 @@ namespace thekogans {
                 void Commit (bool clearCache = false);
 
                 /// \brief
-                /// Transaction is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Transaction)
-                /// \brief
-                /// Transaction is neither move constructable, nor move assignable.
-                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Transaction)
+                /// Transaction is neither copy or move constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Transaction)
             };
 
             /// \struct TransactedFile::TransactionParticipant TransactedFile.h
@@ -247,10 +247,10 @@ namespace thekogans {
         private:
             /// \brief
             /// File size.
-            PageMapType::AddressType size;
+            TransactedFileAddressSpaceType::AddressType size;
             /// \brief
             /// \see{PageMap} used to map file pages.
-            PageMapType::SharedPtr pageMap;
+            TransactedFileAddressSpaceType::SharedPtr pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
@@ -343,6 +343,15 @@ namespace thekogans {
                 return registry;
             }
 
+            /// \brief
+            /// Return file size in bytes.
+            /// Thread safe.
+            /// \return File size in bytes.
+            inline TransactedFileAddressSpaceType::AddressType GetSizeEx () {
+                LockGuard<SpinLock> guard (spinLock);
+                return size;
+            }
+
             inline std::size_t GetPageSize () const {
                 return pageMap->GetPageSize ();
             }
@@ -387,7 +396,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
             std::size_t ReadEx (
-                PageMapType::AddressType offset,
+                TransactedFileAddressSpaceType::AddressType offset,
                 void *buffer,
                 std::size_t count);
             /// \brief
@@ -397,7 +406,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
             std::size_t WriteEx (
-                PageMapType::AddressType offset,
+                TransactedFileAddressSpaceType::AddressType offset,
                 const void *buffer,
                 std::size_t count);
 
@@ -406,25 +415,45 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
-            PageMapType::AddressType Grow (PageMapType::AddressType amount);
+            TransactedFileAddressSpaceType::AddressType Grow (
+                TransactedFileAddressSpaceType::AddressType amount);
             /// \brief
             /// Shrink the file by the given amount.
             /// Thread safe.
             /// \param[in] amount Amount to shrink the file by.
             /// \return New file size.
-            PageMapType::AddressType Shrink (PageMapType::AddressType amount);
-
-            // File
-            /// \brief
-            /// Return file size in bytes.
-            /// Thread safe.
-            /// \return File size in bytes.
-            inline PageMapType::AddressType GetSizeEx () {
-                LockGuard<SpinLock> guard (spinLock);
-                return size;
-            }
+            TransactedFileAddressSpaceType::AddressType Shrink (
+                TransactedFileAddressSpaceType::AddressType amount);
 
         private:
+            // TransactedFileAddressSpaceType::PageSource
+            /// \brief
+            /// Read raw bytes.
+            /// \param[in] offset Offset to seek to.
+            /// \param[out] buffer Where to place the bytes.
+            /// \param[in] count Number of bytes to read.
+            /// \return Number of bytes actually read.
+            virtual TransactedFileAddressSpaceType::AddressType ReadPage (
+                    TransactedFileAddressSpaceType::AddressType offset,
+                    void *buffer,
+                    TransactedFileAddressSpaceType::AddressType count) override {
+                Seek (offset, SEEK_SET);
+                return Read (buffer, count);
+            }
+            /// \brief
+            /// Write raw bytes.
+            /// \param[in] offset Offset to seek to.
+            /// \param[in] buffer Bytes to write.
+            /// \param[in] count Number of bytes to write.
+            /// \return Number of bytes actually written.
+            virtual TransactedFileAddressSpaceType::AddressType WritePage (
+                    TransactedFileAddressSpaceType::AddressType offset,
+                    const void *buffer,
+                    TransactedFileAddressSpaceType::AddressType count) override {
+                Seek (offset, SEEK_SET);
+                return Write (buffer, count);
+            }
+
             /// \brief
             /// Called during file open. If the file is empty and an
             /// \see{Allocator} and an optional \see{Registry} were
@@ -462,7 +491,8 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            PageMapType::Page::SharedPtr GetPage (PageMapType::AddressType offset);
+            TransactedFileAddressSpaceType::Page::SharedPtr GetPage (
+                TransactedFileAddressSpaceType::AddressType offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

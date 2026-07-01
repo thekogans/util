@@ -162,7 +162,7 @@ namespace thekogans {
                 decrementable<ui128> {
             using BaseType = ui64;
 
-            static const std::size_t BIT_COUNT = (sizeof (BaseType) + sizeof (BaseType)) * CHAR_BIT;
+            static const std::size_t BIT_COUNT = BitWidth<BaseType>::value + BitWidth<BaseType>::value;
 
             BaseType lo;
             BaseType hi;
@@ -468,6 +468,10 @@ namespace thekogans {
                 return &sz[i];
             }
         };
+
+        /// \brief
+        /// Unsigned 128 bit type size.
+        const std::size_t UI128_SIZE = sizeof (ui128);
 
         #define UI128_C(s) thekogans::util::ui128 (#s)
 
