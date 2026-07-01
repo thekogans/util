@@ -280,7 +280,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size -= MIN (amount, size);
-                return  pageMap->Shrink (amount);
+                return  pageMap->Shrink (size);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
