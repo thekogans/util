@@ -421,9 +421,9 @@ namespace thekogans {
                 /// \param[in] index Page index in \see{Parent::children}.
                 /// \param[in] offset_ Page offset in the address space
                 /// (multiple of pageMap.pageSize).
-                /// \param[in] bitSource Optional \see{BitSource}
+                /// \param[in] pageSource Optional \see{PageSource}
                 /// where \see{Page} bits come from. If this PageMap is associated
-                /// with a \see{BitSource}, it will read it's bits from it.
+                /// with a \see{PageSource}, it will read it's bits from it.
                 Page (PageMap &pageMap,
                         std::size_t index,
                         AddressType offset_,
@@ -483,7 +483,7 @@ namespace thekogans {
 
                 /// \brief
                 /// If dirty, write page to it's source and make clean.
-                /// \param[in] bitSink \see{BitSource} where \see{Page} bits go.
+                /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
                 virtual void Flush (
                         PageSource &pageSink,
                         bool /*clearCache*/ = false) override {
@@ -526,9 +526,9 @@ namespace thekogans {
                 /// \param[in] index \see{Parent} node index in \see{Parent::children}.
                 /// \param[in] offset Page offset in the address space
                 /// (multiple of pageMap.pageSize).
-                /// \param[in] bitSource Optional \see{BitSource}
+                /// \param[in] pageSource Optional \see{PageSource}
                 /// where \see{Page} bits come from. If this PageMap is associated
-                /// with a \see{BitSource}, it will read it's bits from it.
+                /// with a \see{PageSource}, it will read it's bits from it.
                 /// \return The new page node.
                 static Node *Alloc (
                         PageMap &pageMap,
@@ -908,7 +908,7 @@ namespace thekogans {
             /// \brief
             /// Return the \see{Page} that contains the given offset.
             /// \param[in] offset Offset whose page to return.
-            /// \param[in] bitSource Optional \see{BitSource}
+            /// \param[in] pageSource Optional \see{PageSource}
             /// where \see{Page} bits come from.
             /// \return \see{Page} that contains the given offset.
             typename Page::SharedPtr GetPage (
@@ -991,13 +991,26 @@ namespace thekogans {
                         AddressType countToRead = MIN (
                             // Calculate the amount we can read from this page...
                             MIN (GetPageSize () - pageOffset, count),
-                            // ...and clamp it to the amount left to read in the address space.
-                            GetMaxOffset () - page->offset);
+                            // ...and clamp it to the amount left to read from the address space.
+                            GetMaxOffset () - offset);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         offset += countToRead;
                         count -= countToRead;
+                    }
+                    // We account for the quirk of not overflowing the address space above
+                    // by checking for a special combination of conditions. If we get them
+                    // we know the above read is off by one byte (the last one). Because this
+                    // condition is so rare, we don't check for it above for performance and
+                    // only pay the price once both predicates are true. On most reads
+                    // count == 0 and the price of the overflow check is a single comparison.
+                    // Which is acceptable considering modern branch prediction will make the
+                    // cost even lower.
+                    if (count != 0 && offset == GetMaxOffset ()) {
+                        typename Page::SharedPtr page = GetPage (offset, pageSource);
+                        *ptr = page->data[offset - page->offset];
+                        ++countRead;
                     }
                     return countRead;
                 }
@@ -1032,14 +1045,20 @@ namespace thekogans {
                         AddressType countToWrite =  MIN (
                             // Calculate the amount we can write to this page...
                             MIN (GetPageSize () - pageOffset, count),
-                            // ...and clamp it to the amount left to write in the address space.
-                            GetMaxOffset () - page->offset);
+                            // ...and clamp it to the amount left to write to the address space.
+                            GetMaxOffset () - offset);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
                         page->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;
                         offset += countToWrite;
                         count -= countToWrite;
+                    }
+                    // See the comment in the same place in Read above.
+                    if (count != 0 && offset == GetMaxOffset ()) {
+                        typename Page::SharedPtr page = GetPage (offset, pageSource);
+                        page->data[offset - page->offset] = *ptr;
+                        ++countWritten;
                     }
                     return countWritten;
                 }
@@ -1076,7 +1095,7 @@ namespace thekogans {
 
             /// \brief
             /// Write dirty pages to their source and optionaly clear the page cache.
-            /// \param[in] bitSink \see{BitSource} where \see{Page} bits go.
+            /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
             /// \param[in] clearCache true == Delete the page cache after.
             void Flush (
                     PageSource &pageSink,
