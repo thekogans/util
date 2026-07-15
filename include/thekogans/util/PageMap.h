@@ -362,6 +362,12 @@ namespace thekogans {
                 /// Write dirty pages to log.
                 /// \param[in] log \see{Serializer} to write to.
                 /// \param[in] count Running count of number of pages written.
+                /// FIXME: Semanticaly, this is completely wrong. We can argue
+                /// that in most cases the number of pages logged is < Serializer
+                /// address space size, but we cannot guarantee it. Logically,
+                /// Serializer address space should be as big a this one. And
+                /// the only wy to achieve that is rewrite the entire Serializer
+                /// machinery (a big undertaking).
                 virtual void Log (
                     Serializer &log,
                     std::size_t &count) = 0;
@@ -804,7 +810,7 @@ namespace thekogans {
                         PageMap &pageMap,
                         std::size_t index) {
                     return new (
-                        pageMap.segmentAllocator.Alloc (
+                        pageMap.internalAllocator.Alloc (
                             pageMap.internalSize)) Internal (pageMap, index);
                 }
 
@@ -1088,8 +1094,7 @@ namespace thekogans {
                     return nullptr;
                 }
                 offset &= ~(pageSize - 1);
-                if (lastGetPagePage == nullptr ||
-                        lastGetPagePage->offset != offset) {
+                if (lastGetPagePage == nullptr || lastGetPagePage->offset != offset) {
                     Node *node = GetRoot ();
                     // This is the address dissassembly engine used to
                     // break up the addresses (offset) in service of a
