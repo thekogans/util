@@ -369,13 +369,13 @@ namespace thekogans {
                 /// \brief
                 /// Write dirty pages to their source.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
-                /// \param[in] clearCache true == Delete cache after fluh.
+                /// \param[in] clearCache true == Delete cache after flush.
                 virtual void Flush (
                     PageSource &pageSink,
                     bool clearCache = false) = 0;
 
                 /// \brief
-                /// Delete all pages whose offset > size.
+                /// Delete all pages whose offset >= size.
                 /// \param[in] size New size to clip the address space to.
                 /// \return true == node was completely clipped (it is empty).
                 /// false == node was partialy clipped (it has pages).
@@ -494,7 +494,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Clip the page to the new size.
+                /// Clip the page so it lies inside size.
                 /// \param[in] newize Size to clip the page to.
                 /// \return true == the page was completely clipped.
                 /// false == the page was partially clipped.
@@ -505,7 +505,7 @@ namespace thekogans {
                             // Pages don't maintain internal lengths. All pages are
                             // pageMap.pageSize long (with potentially the last one
                             // being less). If this is the last page, we clear that
-                            // part which falls outside the new address space size.
+                            // part which falls outside the new address space 'size'.
                             SecureZeroMemory (data + consumed, this->pageMap.pageSize - consumed);
                             dirty = true;
                         }
@@ -536,6 +536,7 @@ namespace thekogans {
                         AddressType offset,
                         PageSource *pageSource) {
                     Page *page =  new Page (pageMap, index, offset, pageSource);
+                    // We own ourelves.
                     page->AddRef ();
                     return page;
                 }
@@ -571,6 +572,9 @@ namespace thekogans {
                 /// \param[in] pageMap Backpointer to \see{PageMap}.
                 /// \param[in] index Backpointer to Parent::children.
                 /// \param[in] childCount Number of child Node * following this node.
+                /// NOTE: It must be supplied by Parent derivatives because only
+                /// they know how many children they have based on address space
+                /// parameterization.
                 Parent (PageMap &pageMap,
                         std::size_t index,
                         std::size_t childCount) :
@@ -681,10 +685,18 @@ namespace thekogans {
                     if (children[index] == nullptr) {
                         Node *child = factory ();
                         children[index] = child;
+                        // A quick optimization to check if the node is first or last.
                         if (childList.empty () || childList.tail->index < child->index) {
+                            // In that case a simple push_back will do the trick.
                             childList.push_back (child);
                         }
                         else {
+                            // If not, walk the list, the slowest method.
+                            // TODO: There are various games we can play with
+                            // child->index and the size of the child list (both
+                            // full and current) to perhaps scan in reverse. Skip
+                            // list? This needs further profiling to get the lay
+                            // of the land.
                             childList.for_each (
                                 [this, child] (typename NodeList::Callback::argument_type child_) ->
                                         typename NodeList::Callback::result_type {
@@ -812,11 +824,6 @@ namespace thekogans {
             /// The root of the tree.
             Node *root;
             /// \brief
-            /// Last accessed page offset.
-            /// This is the page offset of the last call to \see{GetPage (offset)}.
-            /// (offset & ~(pageSize - 1))
-            AddressType lastGetPageOffset;
-            /// \brief
             /// Last accessed page cache promoting locality of refernce.
             typename Page::SharedPtr lastGetPagePage;
             /// \brief
@@ -869,11 +876,11 @@ namespace thekogans {
                     internalAllocator (internalSize, internalNodesPerPage, allocator),
                     segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
                     pageAllocator (pageAlignment, allocator),
-                    root (nullptr),
-                    lastGetPageOffset (NOFFS) {
+                    root (nullptr) {
                 // Validate input.
                 if (bitsPerAddress == 0 || bitsPerAddress > BitWidth<AddressType>::value ||
                         bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||
+                        // bitsPerLevel are allowed to be 0.
                         /*bitsPerLevel == 0 ||*/ bitsPerLevel > (bitsPerAddress - bitsPerSegment) ||
                         bitsPerPage == 0 || bitsPerPage > bitsPerSegment ||
                         !IsPowerOf2 (pageAlignment) ||
@@ -914,56 +921,8 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (
                     AddressType offset,
                     PageSource *pageSource) {
-                // Quick bounds check.
-                if ((offset & inverseOffsetMask) != 0) {
-                    return nullptr;
-                }
-                offset &= ~(pageSize - 1);
                 LockGuard<Lock> guard (lock);
-                if (lastGetPageOffset != offset) {
-                    Node *node = GetRoot ();
-                    // This is the address dissassembly engine used to
-                    // break up the addresses (offset) in service of a
-                    // virtual tree walk.
-                    // Begging the compiler to put these in to registers.
-                    std::size_t levelShift_ = levelShift;
-                    AddressType levelMask_ = levelMask;
-                    // We begin the tree walk with the root node and take a
-                    // bite off the levels portion of the address at every loop
-                    // step, as we step internal structure nodes on our way
-                    // to visit the final segment node that will have our page.
-                    // NOTE: This algorithm is sensitive to the corner case
-                    // where one segment covers the entire address space. In
-                    // that case GetRoot above will return that segment and
-                    // this while loop will not be executed.
-                    while (levelMask_ != 0) {
-                        std::size_t index = (offset & levelMask_) >> levelShift_;
-                        levelShift_ -= bitsPerLevel;
-                        levelMask_ >>= bitsPerLevel;
-                        node = ((Internal *)node)->GetChild (index,
-                            [this, index, levelMask_] () -> Node * {
-                                return levelMask_ == 0 ?
-                                    Segment::Alloc (*this, index) :
-                                    Internal::Alloc (*this, index);
-                            }
-                        );
-                    }
-                    lastGetPageOffset = offset;
-                    // Since tree leafs are segments, ask the one we got for the
-                    // page correponding to the given address.
-                    // Cache the result so that we can reuse it if the next
-                    // call to GetPage is sufficiently close to this one
-                    // (locality of reference).
-                    std::size_t index = (offset & segmentMask) >> bitsPerPage;
-                    lastGetPagePage.Reset (
-                        (Page *)((Segment *)node)->GetChild (index,
-                            [this, index, offset, pageSource] () -> Node * {
-                                return Page::Alloc (*this, index, offset, pageSource);
-                            }
-                        )
-                    );
-                }
-                return lastGetPagePage;
+                return GetPageHelper (offset, pageSource);
             }
 
             /// \brief
@@ -984,33 +943,20 @@ namespace thekogans {
                     LockGuard<Lock> guard (lock);
                     AddressType countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && offset < GetMaxOffset ()) {
-                        typename Page::SharedPtr page = GetPage (offset, pageSource);
+                    while (count > 0 && offset <= GetMaxOffset ()) {
+                        typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
                         AddressType countToRead = MIN (
                             // Calculate the amount we can read from this page...
                             MIN (GetPageSize () - pageOffset, count),
                             // ...and clamp it to the amount left to read from the address space.
-                            GetMaxOffset () - offset);
+                            GetMaxOffset () - offset + 1);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
                         offset += countToRead;
                         count -= countToRead;
-                    }
-                    // We account for the quirk of not overflowing the address space above
-                    // by checking for a special combination of conditions. If we get them
-                    // we know the above read is off by one byte (the last one). Because this
-                    // condition is so rare, we don't check for it above for performance and
-                    // only pay the price once both predicates are true. On most reads
-                    // count == 0 and the price of the overflow check is a single comparison.
-                    // Which is acceptable considering modern branch prediction will make the
-                    // cost even lower.
-                    if (count != 0 && offset == GetMaxOffset ()) {
-                        typename Page::SharedPtr page = GetPage (offset, pageSource);
-                        *ptr = page->data[offset - page->offset];
-                        ++countRead;
                     }
                     return countRead;
                 }
@@ -1038,27 +984,21 @@ namespace thekogans {
                     LockGuard<Lock> guard (lock);
                     AddressType countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && offset < GetMaxOffset ()) {
-                        typename Page::SharedPtr page = GetPage (offset, pageSource);
+                    while (count > 0 && offset <= GetMaxOffset ()) {
+                        typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
                         AddressType countToWrite =  MIN (
                             // Calculate the amount we can write to this page...
                             MIN (GetPageSize () - pageOffset, count),
                             // ...and clamp it to the amount left to write to the address space.
-                            GetMaxOffset () - offset);
+                            GetMaxOffset () - offset + 1);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
                         page->dirty = true;
                         ptr += countToWrite;
                         countWritten += countToWrite;
                         offset += countToWrite;
                         count -= countToWrite;
-                    }
-                    // See the comment in the same place in Read above.
-                    if (count != 0 && offset == GetMaxOffset ()) {
-                        typename Page::SharedPtr page = GetPage (offset, pageSource);
-                        page->data[offset - page->offset] = *ptr;
-                        ++countWritten;
                     }
                     return countWritten;
                 }
@@ -1070,7 +1010,7 @@ namespace thekogans {
 
             /// \brief
             /// Delete pages.
-            /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
+            /// \param[in] flags Combination of \see{FLAGS_CLEAR_DIRTY} and \see{FLAGS_CLEAR_CLEAN}.
             void Clear (std::size_t flags) {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
@@ -1114,9 +1054,9 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Shrink (size);
-                    // If size is <= lastGetPageOffset, lastGetPagePage
+                    // If size is <= lastGetPagePage->offset, lastGetPagePage
                     // will have been deleted by root->Shrink.
-                    DeleteRoot (lastGetPageOffset >= size);
+                    DeleteRoot (lastGetPagePage->offset >= size);
                 }
             }
 
@@ -1134,6 +1074,66 @@ namespace thekogans {
             }
 
         private:
+            /// \brief
+            /// Return the \see{Page} that contains the given offset.
+            /// \param[in] offset Offset whose page to return.
+            /// \param[in] pageSource Optional \see{PageSource}
+            /// where \see{Page} bits come from.
+            /// \return \see{Page} that contains the given offset.
+            typename Page::SharedPtr GetPageHelper (
+                    AddressType offset,
+                    PageSource *pageSource) {
+                // Quick bounds check.
+                if ((offset & inverseOffsetMask) != 0) {
+                    return nullptr;
+                }
+                offset &= ~(pageSize - 1);
+                if (lastGetPagePage == nullptr ||
+                        lastGetPagePage->offset != offset) {
+                    Node *node = GetRoot ();
+                    // This is the address dissassembly engine used to
+                    // break up the addresses (offset) in service of a
+                    // virtual tree walk.
+                    // Begging the compiler to put these in to registers.
+                    std::size_t levelShift_ = levelShift;
+                    AddressType levelMask_ = levelMask;
+                    // We begin the tree walk with the root node and take a
+                    // bite off the levels portion of the address at every loop
+                    // step, as we step internal structure nodes on our way
+                    // to visit the final segment node that will have our page.
+                    // NOTE: This algorithm is sensitive to the corner case
+                    // where one segment covers the entire address space. In
+                    // that case GetRoot above will return that segment and
+                    // this while loop will not be executed.
+                    while (levelMask_ != 0) {
+                        std::size_t index = (offset & levelMask_) >> levelShift_;
+                        levelShift_ -= bitsPerLevel;
+                        levelMask_ >>= bitsPerLevel;
+                        node = ((Internal *)node)->GetChild (index,
+                            [this, index, levelMask_] () -> Node * {
+                                return levelMask_ == 0 ?
+                                    Segment::Alloc (*this, index) :
+                                    Internal::Alloc (*this, index);
+                            }
+                        );
+                    }
+                    // Since tree leafs are segments, ask the one we got for the
+                    // page correponding to the given address.
+                    // Cache the result so that we can reuse it if the next
+                    // call to GetPage is sufficiently close to this one
+                    // (locality of reference).
+                    std::size_t index = (offset & segmentMask) >> bitsPerPage;
+                    lastGetPagePage.Reset (
+                        (Page *)((Segment *)node)->GetChild (index,
+                            [this, index, offset, pageSource] () -> Node * {
+                                return Page::Alloc (*this, index, offset, pageSource);
+                            }
+                        )
+                    );
+                }
+                return lastGetPagePage;
+            }
+
             /// \brief
             /// Helper to recreate the root if it's gone. Depending on the address space
             /// parameterization, \see{Parent} can actually become pretty massive (>>1MB).
@@ -1164,7 +1164,6 @@ namespace thekogans {
                     root = nullptr;
                 }
                 if (clearCache) {
-                    lastGetPageOffset = NOFFS;
                     lastGetPagePage.Reset ();
                 }
             }
