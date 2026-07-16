@@ -265,10 +265,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 TransactedFileAddressSpaceType::AddressType oldSize = size;
-                TransactedFileAddressSpaceType::AddressType available = pageMap->GetMaxOffset () - size;
-                size += MIN (available, amount);
-                TransactedFileAddressSpaceType::Page::SharedPtr page = pageMap->GetPage (size, this);
-                page->dirty = true;
+                size += MIN (pageMap->GetMaxOffset () - size + 1, amount);
                 return oldSize;
             }
             else {

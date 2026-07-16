@@ -163,7 +163,7 @@ namespace thekogans {
             I64_SIZE == 8 && UI64_SIZE == 8 &&
                              UI128_SIZE == 16 &&
             F32_SIZE == 4 && F64_SIZE == 8,
-            "Invalid assumption about integral types sizes.");
+            "Invalid assumption about integral type sizes.");
 
         /// \brief
         /// Architecture dependent natural word (register) type (size).
@@ -177,7 +177,7 @@ namespace thekogans {
         using MachineWord = ui64;
     #elif (TOOLCHAIN_ARCH_WORD_SIZE == 16)
         using MachineWord = ui128;
-    #else // (TOOLCHAIN_ARCH_WORD_SIZE == 8)
+    #else // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
         #error Unknown TOOLCHAIN_ARCH_WORD_SIZE.
     #endif // (TOOLCHAIN_ARCH_WORD_SIZE == 1)
 
