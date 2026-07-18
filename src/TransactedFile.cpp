@@ -61,6 +61,10 @@ namespace thekogans {
 
         void TransactedFile::Transaction::Commit (bool clearCache) {
             // We must account for objects that dirty other objects during commit.
+            // We keep looping, collecting the newly dirtied ones and make them
+            // clean again. Eventually the noise will settle down. Even though
+            // this might look cheotic and unpredictable, in reallity I find this
+            // much more reasuring then devising ellaborate synchonizaton schemes.
             while (file.GetSubscriberCount () != 0) {
                 std::vector<SharedSubscriberInfo> subscribers;
                 file.GetSubscribers (subscribers, true);
@@ -88,8 +92,8 @@ namespace thekogans {
 
         void TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
             flags.Set (FLAGS_DIRTY, dirty);
-            if (dirty) {
-                Subscriber<TransactedFileEvents>::Subscribe (*file);
+            if (dirty && !IsSubscribed (*file)) {
+                Subscribe (*file);
             }
         }
 
@@ -322,6 +326,7 @@ namespace thekogans {
                     }
                 );
                 range >> allocator;
+                assert (allocator->file != nullptr);
             }
             if (allocator->GetRegistryOffset () == 0) {
                 if (registry_ != nullptr) {
@@ -343,6 +348,7 @@ namespace thekogans {
                     }
                 );
                 range >> registry;
+                assert (registry->file != nullptr);
             }
             transaction.Commit ();
         }

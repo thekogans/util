@@ -211,6 +211,10 @@ namespace thekogans {
             /// entity through.
             struct PageSource {
                 /// \brief
+                /// dtor.
+                virtual ~PageSource () {}
+
+                /// \brief
                 /// Read raw bytes.
                 /// \param[in] offset Address at which to start reading.
                 /// \param[out] buffer Where to place the bytes.

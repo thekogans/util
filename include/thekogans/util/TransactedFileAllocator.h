@@ -369,7 +369,7 @@ protected:
 
 public:
     /// \brief
-    /// Allocaor size on disk.
+    /// Allocator size on disk.
     static const std::size_t SIZE = Header::SIZE;
 
     /// \brief
