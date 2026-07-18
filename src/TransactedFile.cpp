@@ -269,7 +269,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 TransactedFileAddressSpaceType::AddressType oldSize = size;
-                size += MIN (pageMap->GetMaxOffset () - size + 1, amount);
+                size += MIN (pageMap->GetMaxOffset () - size, amount);
                 return oldSize;
             }
             else {

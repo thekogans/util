@@ -953,7 +953,7 @@ namespace thekogans {
                     LockGuard<Lock> guard (lock);
                     AddressType countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && offset <= GetMaxOffset ()) {
+                    while (count > 0 && offset < GetMaxOffset ()) {
                         typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
@@ -961,7 +961,7 @@ namespace thekogans {
                             // Calculate the amount we can read from this page...
                             MIN (GetPageSize () - pageOffset, count),
                             // ...and clamp it to the amount left to read from the address space.
-                            GetMaxOffset () - offset + 1);
+                            GetMaxOffset () - offset);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
                         ptr += countToRead;
                         countRead += countToRead;
@@ -994,7 +994,7 @@ namespace thekogans {
                     LockGuard<Lock> guard (lock);
                     AddressType countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && offset <= GetMaxOffset ()) {
+                    while (count > 0 && offset < GetMaxOffset ()) {
                         typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
@@ -1002,7 +1002,7 @@ namespace thekogans {
                             // Calculate the amount we can write to this page...
                             MIN (GetPageSize () - pageOffset, count),
                             // ...and clamp it to the amount left to write to the address space.
-                            GetMaxOffset () - offset + 1);
+                            GetMaxOffset () - offset);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
                         page->dirty = true;
                         ptr += countToWrite;
