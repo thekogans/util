@@ -47,9 +47,9 @@ namespace thekogans {
             ui64 pageOffset = offset & (file.GetPageSize () - 1);
             ////////////////////////////////////////////////////////////////////
             // The two designs considered for range were:
-            // 1. Have range implement something simmilar to TransactedFile::ReadEx
-            // and TransactedFile::WriteEx where it would check the page boundary
-            // with every read and write or,
+            // 1. Have range implement something simmilar to PageMap::Read and
+            // PageMap::Write where it would check the page boundary with every
+            // read and write or,
             // 2. Have range assume contiguity and eschew all bounds checking. And
             // if it happens to fall on a page boudary, allocate a backing buffer
             // to guarantee that assumption (with all of its inherent performance
@@ -75,7 +75,7 @@ namespace thekogans {
             ////////////////////////////////////////////////////////////////////
             // Check to see if the range straddles a page boundary...
             if (length > file.GetPageSize () - pageOffset) {
-                // ... it does. Allocate a backing buffer.
+                // ...it does. Allocate a backing buffer.
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
                 if (reading) {

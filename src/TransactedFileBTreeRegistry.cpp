@@ -103,10 +103,12 @@ namespace thekogans {
             // Can't have a registry without an allocator.
             assert (allocator != nullptr);
             if (phase == TransactedFile::COMMIT_PHASE_1) {
-                allocator->SetRegistryOffset (allocator->Realloc (allocator->GetRegistryOffset (), GetSize ()));
+                allocator->SetRegistryOffset (
+                    allocator->Realloc (allocator->GetRegistryOffset (), GetSize ()));
             }
             else if (phase == TransactedFile::COMMIT_PHASE_2) {
-                TransactedFile::BlockRange range (*file, allocator->GetRegistryOffset (), false);
+                TransactedFile::BlockRange range (
+                    *file, allocator->GetRegistryOffset (), false);
                 range << *this;
                 SetDirty (false);
             }
@@ -114,7 +116,8 @@ namespace thekogans {
 
         void TransactedFileBTreeRegistry::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            TransactedFile::BlockRange range (*file, file->GetAllocator ()->GetRegistryOffset ());
+            TransactedFile::BlockRange range (
+                *file, file->GetAllocator ()->GetRegistryOffset ());
             range >> *this;
             SetDirty (false);
         }

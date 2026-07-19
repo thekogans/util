@@ -890,7 +890,7 @@ namespace thekogans {
                 // Validate input.
                 if (bitsPerAddress == 0 || bitsPerAddress > BitWidth<AddressType>::value ||
                         bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||
-                        // bitsPerLevel are allowed to be 0.
+                        // bitsPerLevel is allowed to be 0.
                         /*bitsPerLevel == 0 ||*/ bitsPerLevel > (bitsPerAddress - bitsPerSegment) ||
                         bitsPerPage == 0 || bitsPerPage > bitsPerSegment ||
                         !IsPowerOf2 (pageAlignment) ||
@@ -1025,7 +1025,7 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Clear (flags);
-                    DeleteRoot (lastGetPagePage != nullptr && lastGetPagePage->Clear (flags));
+                    DeleteRoot (lastGetPagePage->Clear (flags));
                 }
             }
 
