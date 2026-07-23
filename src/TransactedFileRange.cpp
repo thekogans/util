@@ -99,16 +99,14 @@ namespace thekogans {
         }
 
         TransactedFile::Range::~Range () {
-            if (!reading && position > 0) {
-                if (owner) {
+            if (owner) {
+                if (!reading && position > 0) {
                     file.WriteEx (offset, data, position);
                 }
-                else {
-                    page->dirty = true;
-                }
-            }
-            if (owner) {
                 allocator->Free (data, length);
+            }
+            else if (!reading && position > 0) {
+                page->dirty = true;
             }
         }
 

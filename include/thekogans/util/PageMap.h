@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_PageMap_h)
 #define __thekogans_util_PageMap_h
 
+#include <limits>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/SpinLock.h"
@@ -303,21 +304,6 @@ namespace thekogans {
             /// execution (GetPage), it's cost must be minimal.
             /// The pages are therefore unsorted (on offset or index).
             PageList pageList;
-
-        public:
-            /// \brief
-            /// \see{Page} cache management flags.
-            /// If this flag is passed to \see{Clear},
-            /// will result in all \see{Page}s with
-            /// dirty == true, being purged from the cache.
-            static const std::size_t FLAGS_CLEAR_DIRTY = 1;
-            /// \brief
-            /// If this flag is passed to \see{Clear},
-            /// will result in all \see{Page}s with
-            /// dirty == false, being purged from the cache.
-            static const std::size_t FLAGS_CLEAR_CLEAN = 2;
-
-        private:
             /// \brief
             /// Forward declaration of \see{Node} needed by NodeList.
             struct Node;
@@ -357,10 +343,10 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
+                /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
                 /// \return true == the node is empty,
                 /// false == the node has pages remaining.
-                virtual bool Clear (std::size_t flags) = 0;
+                virtual bool Clear (bool dirty_) = 0;
 
                 /// \brief
                 /// Write dirty pages to log.
@@ -468,12 +454,11 @@ namespace thekogans {
                 /// \brief
                 /// Return true if page should be deleted based on the given
                 /// flags and the dirty state.
-                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
+                /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
                 /// \return true == page shoul be deleted,
                 /// false == page does not match the given criteria.
-                virtual bool Clear (std::size_t flags) override {
-                    return ((flags & FLAGS_CLEAR_DIRTY) && dirty) ||
-                        ((flags & FLAGS_CLEAR_CLEAN) && !dirty);
+                virtual bool Clear (bool dirty_) override {
+                    return dirty == dirty_;
                 }
 
                 /// \brief
@@ -505,7 +490,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Clip the page so it lies inside size.
-                /// \param[in] newize Size to clip the page to.
+                /// \param[in] newSize Size to clip the page to.
                 /// \return true == the page was completely clipped.
                 /// false == the page was partially clipped.
                 virtual bool Shrink (AddressType size) override {
@@ -545,7 +530,7 @@ namespace thekogans {
                         std::size_t index,
                         AddressType offset,
                         PageSource *pageSource) {
-                    Page *page =  new Page (pageMap, index, offset, pageSource);
+                    Page *page = new Page (pageMap, index, offset, pageSource);
                     // We own ourelves.
                     page->AddRef ();
                     return page;
@@ -615,13 +600,13 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] flags Combination of FLAGS_CLEAR_DIRTY and FLAGS_CLEAR_CLEAN.
+                /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
                 /// \return IsEmpty ().
-                virtual bool Clear (std::size_t flags) override {
+                virtual bool Clear (bool dirty_) override {
                     childList.for_each (
-                        [this, flags] (typename NodeList::Callback::argument_type child) ->
+                        [this, dirty_] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
-                            if (child->Clear (flags)) {
+                            if (child->Clear (dirty_)) {
                                 DeleteChild (child);
                             }
                             return true;
@@ -647,7 +632,7 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Write dirty pages to bitSink.
+                /// Write dirty pages to pageSink.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete the page cache after.
                 virtual void Flush (
@@ -949,31 +934,27 @@ namespace thekogans {
                     PageSource *pageSource,
                     void *buffer,
                     AddressType count) {
-                if (buffer != nullptr && count > 0) {
+                AddressType countRead = 0;
+                if ((offset & inverseOffsetMask) == 0 && buffer != nullptr && count > 0) {
                     LockGuard<Lock> guard (lock);
-                    AddressType countRead = 0;
                     ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && offset < GetMaxOffset ()) {
+                    while (count > 0) {
                         typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
-                        AddressType countToRead = MIN (
-                            // Calculate the amount we can read from this page...
-                            MIN (GetPageSize () - pageOffset, count),
-                            // ...and clamp it to the amount left to read from the address space.
-                            GetMaxOffset () - offset);
+                        // Calculate the amount we can read from this page...
+                        AddressType countToRead = MIN (GetPageSize () - pageOffset, count);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
-                        ptr += countToRead;
                         countRead += countToRead;
+                        if (overflow_addition (offset, countToRead)) {
+                            break;
+                        }
                         offset += countToRead;
+                        ptr += countToRead;
                         count -= countToRead;
                     }
-                    return countRead;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
+                return countRead;
             }
 
             /// \brief
@@ -990,42 +971,39 @@ namespace thekogans {
                     PageSource *pageSource,
                     const void *buffer,
                     AddressType count) {
-                if (buffer != nullptr && count > 0) {
+                AddressType countWritten = 0;
+                // Quick bounds check.
+                if ((offset & inverseOffsetMask) == 0 && buffer != nullptr && count > 0) {
                     LockGuard<Lock> guard (lock);
-                    AddressType countWritten = 0;
                     ui8 *ptr = (ui8 *)buffer;
-                    while (count > 0 && offset < GetMaxOffset ()) {
+                    while (count > 0) {
                         typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
-                        AddressType countToWrite =  MIN (
-                            // Calculate the amount we can write to this page...
-                            MIN (GetPageSize () - pageOffset, count),
-                            // ...and clamp it to the amount left to write to the address space.
-                            GetMaxOffset () - offset);
+                        // Calculate the amount we can write to this page...
+                        AddressType countToWrite = MIN (GetPageSize () - pageOffset, count);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
                         page->dirty = true;
-                        ptr += countToWrite;
                         countWritten += countToWrite;
+                        if (overflow_addition (offset, countToWrite)) {
+                            break;
+                        }
                         offset += countToWrite;
+                        ptr += countToWrite;
                         count -= countToWrite;
                     }
-                    return countWritten;
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-                }
+                return countWritten;
             }
 
             /// \brief
             /// Delete pages.
-            /// \param[in] flags Combination of \see{FLAGS_CLEAR_DIRTY} and \see{FLAGS_CLEAR_CLEAN}.
-            void Clear (std::size_t flags) {
+            /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
+            void Clear (bool dirty_) {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
-                    root->Clear (flags);
-                    DeleteRoot (lastGetPagePage->Clear (flags));
+                    root->Clear (dirty_);
+                    DeleteRoot (lastGetPagePage->Clear (dirty_));
                 }
             }
 
@@ -1175,6 +1153,15 @@ namespace thekogans {
                 if (clearCache) {
                     lastGetPagePage.Reset ();
                 }
+            }
+
+            /// \brief
+            /// Check for overflow when adding two AddressTypes.
+            /// \param[in] a First operand.
+            /// \param[in] b Second operand.
+            /// \return true == a + b would overflow.
+            inline bool overflow_addition (AddressType a, AddressType b) {
+                return std::numeric_limits<AddressType>::max () - a < b;
             }
 
             /// \brief

@@ -326,7 +326,7 @@ namespace thekogans {
                     }
                 );
                 range >> allocator;
-                assert (allocator->file != nullptr);
+                assert (allocator->file == this);
             }
             if (allocator->GetRegistryOffset () == 0) {
                 if (registry_ != nullptr) {
@@ -348,7 +348,7 @@ namespace thekogans {
                     }
                 );
                 range >> registry;
-                assert (registry->file != nullptr);
+                assert (registry->file == this);
             }
             transaction.Commit ();
         }
@@ -428,7 +428,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size = GetSize ();
-                pageMap->Clear (TransactedFileAddressSpaceType::FLAGS_CLEAR_DIRTY);
+                pageMap->Clear (true);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

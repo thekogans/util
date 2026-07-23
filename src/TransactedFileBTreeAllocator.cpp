@@ -187,7 +187,7 @@ namespace thekogans {
                 if (!block.IsFree ()) {
                     PtrType clearOffset = block.GetOffset ();
                     ui64 clearLength = block.GetSize ();
-                    // Consolidate adjacent free non BTree::Node blocks.
+                    // Consolidate adjacent free blocks.
                     Block prev (*file);
                     if (block.Prev (prev) && prev.IsFree ()) {
                         btree->Remove (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
@@ -228,7 +228,7 @@ namespace thekogans {
                     }
                     // If we're not the last block...
                     if (!block.IsLast ()) {
-                        // ... add it to the free list.
+                        // ...add it to the free list.
                         btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
                         block.Write ();
