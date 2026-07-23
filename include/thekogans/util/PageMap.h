@@ -18,7 +18,6 @@
 #if !defined (__thekogans_util_PageMap_h)
 #define __thekogans_util_PageMap_h
 
-#include <limits>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/SpinLock.h"
@@ -206,7 +205,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Basic \see{Page::data} i/o. We're a virtual address space.
-            /// We don't represent any particular source or detination.
+            /// We don't represent any particular source or destination.
             /// Therefore page data, if any, must be supplied and consumed
             /// by an external entity. This is the interface we talk to that
             /// entity through.
@@ -494,7 +493,7 @@ namespace thekogans {
                 /// \return true == the page was completely clipped.
                 /// false == the page was partially clipped.
                 virtual bool Shrink (AddressType size) override {
-                    if (offset <= size) {
+                    if (offset < size) {
                         AddressType consumed = size - offset;
                         if (consumed < this->pageMap.pageSize) {
                             // Pages don't maintain internal lengths. All pages are
@@ -1161,7 +1160,7 @@ namespace thekogans {
             /// \param[in] b Second operand.
             /// \return true == a + b would overflow.
             inline bool overflow_addition (AddressType a, AddressType b) {
-                return std::numeric_limits<AddressType>::max () - a < b;
+                return GetMaxOffset () - a < b;
             }
 
             /// \brief
