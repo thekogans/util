@@ -728,16 +728,20 @@ namespace thekogans {
                     return children[index];
                 }
 
-            private:
+            protected:
                 /// \brief
                 /// Delete the given child.
                 /// \param[in] child \see{Node} to delete.
-                void DeleteChild (Node *child) {
+                /// \return true == the child was deleted.
+                /// false == the child has outstanding refereces.
+                virtual bool DeleteChild (Node *child) {
                     if (child->GetRefCount () == 1) {
                         children[child->index] = nullptr;
                         childList.erase (child);
                         child->Release ();
+                        return true;
                     }
+                    return false;
                 }
 
                 /// \brief
@@ -786,6 +790,20 @@ namespace thekogans {
                     this->~Segment ();
                     this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
                 }
+
+            protected:
+                /// \brief
+                /// Delete the given child.
+                /// \param[in] child \see{Page} to delete.
+                virtual bool DeleteChild (Node *child) override {
+                    if (Parent::DeleteChild (child) &&
+                            this->pageMap.lastGetPagePage == (Page *)child) {
+                        this->pageMap.lastGetPagePage = nullptr;
+                        return true;
+                    }
+                    return false;
+                }
+
 
                 /// \brief
                 /// Segment is neither copy or move constructable, nor assignable.
@@ -1170,7 +1188,6 @@ namespace thekogans {
                     root->Release ();
                     root = nullptr;
                 }
-                lastGetPagePage = nullptr;
             }
 
             /// \brief
