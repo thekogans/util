@@ -43,6 +43,7 @@ namespace thekogans {
             RunLoop::Stats::StaticInit ();
             TimeSpec::StaticInit ();
             TransactedFile::Allocator::StaticInit ();
+            TransactedFile::Registry::StaticInit ();
             TransactedFileBTree::Key::StaticInit ();
             StringValue::StaticInit ();
             PtrValue::StaticInit ();

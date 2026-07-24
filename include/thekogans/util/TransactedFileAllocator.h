@@ -73,11 +73,11 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
     /// \brief
-    /// PtrType is \see{ui64}.
+    /// PtrType is tied to the \see{PageMap::AddressType}.
     using PtrType = TransactedFileAddressSpaceType::AddressType;
     /// \brief
     /// PtrType size on disk.
-    static const std::size_t PTR_TYPE_SIZE = UI64_SIZE;
+    static const std::size_t PTR_TYPE_SIZE = Width<PtrType>::value;
 
     /// \struct TransactedFile::Allocator::Block TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h

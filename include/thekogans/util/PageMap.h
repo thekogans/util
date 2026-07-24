@@ -365,7 +365,9 @@ namespace thekogans {
                 /// Write dirty pages to their source.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete cache after flush.
-                virtual void Flush (
+                /// \return true == the node is empty,
+                /// false == the node has pages remaining.
+                virtual bool Flush (
                     PageSource &pageSink,
                     bool clearCache = false) = 0;
 
@@ -376,6 +378,10 @@ namespace thekogans {
                 /// false == node was partialy clipped (it has pages).
                 virtual bool Shrink (AddressType size) = 0;
 
+                /// \brief
+                /// Return the number of references held on this Node.
+                /// \return Number of references held on this Node.
+                virtual ui32 GetRefCount () const = 0;
                 /// \brief
                 /// Kill yourself. Since different node types come from differernt
                 /// custom \see{BlockAllocator}s, each node type will know which
@@ -478,13 +484,15 @@ namespace thekogans {
                 /// \brief
                 /// If dirty, write page to it's source and make clean.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
-                virtual void Flush (
+                /// \return clearCache;
+                virtual bool Flush (
                         PageSource &pageSink,
-                        bool /*clearCache*/ = false) override {
+                        bool clearCache = false) override {
                     if (dirty) {
                         pageSink.WritePage (offset, data, this->pageMap.pageSize);
                         dirty = false;
                     }
+                    return clearCache;
                 }
 
                 /// \brief
@@ -508,6 +516,12 @@ namespace thekogans {
                     return true;
                 }
 
+                /// \brief
+                /// Return the number of references held on this Page.
+                /// \return Number of references held on this Page.
+                virtual ui32 GetRefCount () const override {
+                    return RefCounted::GetRefCount ();
+                }
                 /// \brief
                 /// Release the hold on the page reference (kill yourself).
                 virtual void Release () override {
@@ -634,19 +648,19 @@ namespace thekogans {
                 /// Write dirty pages to pageSink.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete the page cache after.
-                virtual void Flush (
+                virtual bool Flush (
                         PageSource &pageSink,
                         bool clearCache = false) override {
                     childList.for_each (
                         [this, &pageSink, clearCache] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
-                            child->Flush (pageSink, clearCache);
-                            if (clearCache) {
+                            if (child->Flush (pageSink, clearCache)) {
                                 DeleteChild (child);
                             }
                             return true;
                         }
                     );
+                    return IsEmpty ();
                 }
 
                 /// \brief
@@ -666,6 +680,14 @@ namespace thekogans {
                         true
                     );
                     return IsEmpty ();
+                }
+
+                /// \brief
+                /// Internal structure and Segment leaf nodes are only held and accessed by PageMap.
+                /// Unlike \see{Page}, they are not visible outside it.
+                /// \return 1.
+                virtual ui32 GetRefCount () const override {
+                    return 1;
                 }
 
                 /// \brief
@@ -711,9 +733,11 @@ namespace thekogans {
                 /// Delete the given child.
                 /// \param[in] child \see{Node} to delete.
                 void DeleteChild (Node *child) {
-                    children[child->index] = nullptr;
-                    childList.erase (child);
-                    child->Release ();
+                    if (child->GetRefCount () == 1) {
+                        children[child->index] = nullptr;
+                        childList.erase (child);
+                        child->Release ();
+                    }
                 }
 
                 /// \brief
@@ -819,7 +843,7 @@ namespace thekogans {
             Node *root;
             /// \brief
             /// Last accessed page cache promoting locality of refernce.
-            typename Page::SharedPtr lastGetPagePage;
+            Page *lastGetPagePage;
             /// \brief
             /// Synchronization lock.
             Lock lock;
@@ -1002,7 +1026,7 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Clear (dirty_);
-                    DeleteRoot (lastGetPagePage->Clear (dirty_));
+                    DeleteRoot ();
                 }
             }
 
@@ -1030,7 +1054,7 @@ namespace thekogans {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Flush (pageSink, clearCache);
-                    DeleteRoot (clearCache);
+                    DeleteRoot ();
                 }
             }
 
@@ -1043,7 +1067,7 @@ namespace thekogans {
                     root->Shrink (size);
                     // If size is <= lastGetPagePage->offset, lastGetPagePage
                     // will have been deleted by root->Shrink.
-                    DeleteRoot (lastGetPagePage->offset >= size);
+                    DeleteRoot ();
                 }
             }
 
@@ -1109,12 +1133,10 @@ namespace thekogans {
                     // call to GetPage is sufficiently close to this one
                     // (locality of reference).
                     std::size_t index = (offset & segmentMask) >> bitsPerPage;
-                    lastGetPagePage.Reset (
-                        (Page *)((Segment *)node)->GetChild (index,
-                            [this, index, offset, pageSource] () -> Node * {
-                                return Page::Alloc (*this, index, offset, pageSource);
-                            }
-                        )
+                    lastGetPagePage = (Page *)((Segment *)node)->GetChild (index,
+                        [this, index, offset, pageSource] () -> Node * {
+                            return Page::Alloc (*this, index, offset, pageSource);
+                        }
                     );
                 }
                 return lastGetPagePage;
@@ -1143,15 +1165,12 @@ namespace thekogans {
             /// \brief
             /// Dump the root if it's empty. Used by various methods above after a tree
             /// prunning.
-            /// \param[in] clearCache true == release the page cache.
-            void DeleteRoot (bool clearCache = false) {
+            void DeleteRoot () {
                 if (root->IsEmpty ()) {
                     root->Release ();
                     root = nullptr;
                 }
-                if (clearCache) {
-                    lastGetPagePage.Reset ();
-                }
+                lastGetPagePage = nullptr;
             }
 
             /// \brief
