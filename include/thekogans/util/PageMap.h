@@ -256,9 +256,6 @@ namespace thekogans {
             /// Number of children per \see{Internal} node in bytes.
             const std::size_t nodesPerInternal;
             /// \brief
-            /// \see{Page} size in bytes.
-            const std::size_t pageSize;
-            /// \brief
             /// Number of \see{Page}s per \see{Segment}.
             const std::size_t pagesPerSegment;
             /// \brief
@@ -271,6 +268,9 @@ namespace thekogans {
             /// \see{BlockAllocator}. Cache it's size to speed up
             /// allocations.
             const std::size_t segmentSize;
+            /// \brief
+            /// \see{Page} size in bytes.
+            const std::size_t pageSize;
             /// \brief
             /// Level bit shift count to prime the address
             /// disassembly engine in preparation for a tree
@@ -902,10 +902,10 @@ namespace thekogans {
                     bitsPerLevel (bitsPerLevel_),
                     bitsPerPage (bitsPerPage_),
                     nodesPerInternal (1 << bitsPerLevel),
-                    pageSize (1 << bitsPerPage),
                     pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
                     internalSize (Internal::Size (nodesPerInternal)),
                     segmentSize (Segment::Size (pagesPerSegment)),
+                    pageSize (1 << bitsPerPage),
                     levelShift (bitsPerAddress - bitsPerLevel),
                     levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
                     segmentMask (((AddressType)1 << bitsPerSegment) - 1),
