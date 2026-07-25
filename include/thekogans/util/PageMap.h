@@ -349,14 +349,14 @@ namespace thekogans {
 
                 /// \brief
                 /// Write dirty pages to log.
+                /// NOTE: Given that address space size can vary (32, 64, 128 bit),
+                /// it would appear that \see{Serializer} would not have enough room.
+                /// Fotunatelly the design of \see{Serializer} is such that there are
+                /// no offsets to seek to. \see{Serializer} is a Write/Read only object,
+                /// and therefore can represent any underlying sink. Keep that in mind
+                /// when accumulating dirty pages.
                 /// \param[in] log \see{Serializer} to write to.
                 /// \param[in] count Running count of number of pages written.
-                /// FIXME: Semanticaly, this is completely wrong. We can argue
-                /// that in most cases the number of pages logged is < Serializer
-                /// address space size, but we cannot guarantee it. Logically,
-                /// Serializer address space should be as big a this one. And
-                /// the only wy to achieve that is rewrite the entire Serializer
-                /// machinery (a big undertaking).
                 virtual void Log (
                     Serializer &log,
                     std::size_t &count) = 0;
@@ -796,14 +796,14 @@ namespace thekogans {
                 /// Delete the given child.
                 /// \param[in] child \see{Page} to delete.
                 virtual bool DeleteChild (Node *child) override {
-                    if (Parent::DeleteChild (child) &&
-                            this->pageMap.lastGetPagePage == (Page *)child) {
-                        this->pageMap.lastGetPagePage = nullptr;
+                    if (Parent::DeleteChild (child)) {
+                        if (this->pageMap.lastGetPagePage == (Page *)child) {
+                            this->pageMap.lastGetPagePage = nullptr;
+                        }
                         return true;
                     }
                     return false;
                 }
-
 
                 /// \brief
                 /// Segment is neither copy or move constructable, nor assignable.
@@ -931,6 +931,7 @@ namespace thekogans {
             ~PageMap () {
                 if (root != nullptr) {
                     root->Release ();
+                    root = nullptr;
                 }
             }
 
@@ -1054,12 +1055,11 @@ namespace thekogans {
             /// \return Count of number of pages written.
             std::size_t Log (Serializer &log) {
                 LockGuard<Lock> guard (lock);
+                std::size_t count = 0;
                 if (root != nullptr) {
-                    std::size_t count = 0;
                     root->Log (log, count);
-                    return count;
                 }
-                return 0;
+                return count;
             }
 
             /// \brief
