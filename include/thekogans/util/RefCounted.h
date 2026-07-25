@@ -175,7 +175,7 @@ namespace thekogans {
             /// It's important to understand its semantic differences. RefCounted objects
             /// and std::shared_ptr are fundamentally different beasts. RefCounted is an
             /// invasive mixin class that is part of the object DNA. It allows you to take
-            /// a reference on an existing object regrdless of how that object was presented
+            /// a reference on an existing object regardless of how that object was presented
             /// to you (even as a raw pointer). std::shared_ptr on the other hand maintains
             /// seperate counters outside the object scope. As a result, one has to be especially
             /// careful when wrapping objects in std::shared_ptr to maintain the proper count.
