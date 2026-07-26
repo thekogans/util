@@ -226,6 +226,15 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return true if a given subscriber is subscribed to this producer.
+            /// \param[in] subscriber \see{Subscriber} to check.
+            /// \return true == the given subscriber is subscribed to our events.
+            bool IsSubscribed (Subscriber<T> &subscriber) {
+                LockGuard<SpinLock> guard (spinLock);
+                return subscribers.find (&subscriber) != subscribers.end ();
+            }
+
+            /// \brief
             /// Called by \see{Subscriber} to add itself to the subscribers map.
             /// \param[in] subscriber \see{Subscriber} to add to the subscribers map.
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which
@@ -237,12 +246,11 @@ namespace thekogans {
                         new ImmediateEventDeliveryPolicy) {
                 LockGuard<SpinLock> guard (spinLock);
                 return subscribers.insert (
-                        typename Subscribers::value_type (
-                            &subscriber,
-                            SubscriberInfo (
-                                typename Subscriber<T>::WeakPtr (&subscriber),
-                                eventDeliveryPolicy))).second &&
-                    subscriber.SubscribeProducer (*this);
+                    typename Subscribers::value_type (
+                        &subscriber,
+                        SubscriberInfo (
+                            typename Subscriber<T>::WeakPtr (&subscriber),
+                            eventDeliveryPolicy))).second;
             }
 
             /// \brief
@@ -251,22 +259,13 @@ namespace thekogans {
             /// \return true == unsubscribed, false == was not subscribed.
             bool Unsubscribe (Subscriber<T> &subscriber) {
                 LockGuard<SpinLock> guard (spinLock);
-                return subscribers.erase (&subscriber) == 1 && subscriber.UnsubscribeProducer (*this);
+                return subscribers.erase (&subscriber) == 1;
             }
 
             /// \brief
             /// Unsubscribe all subscribers.
             void Unsubscribe () {
                 LockGuard<SpinLock> guard (spinLock);
-                for (typename Subscribers::iterator
-                         it = subscribers.begin (),
-                         end = subscribers.end (); it != end; ++it) {
-                    typename Subscriber<T>::SharedPtr subscriber =
-                        it->second.first.GetSharedPtr ();
-                    if (subscriber != nullptr) {
-                        subscriber->UnsubscribeProducer (*this);
-                    }
-                }
                 subscribers.clear ();
             }
 
@@ -303,9 +302,6 @@ namespace thekogans {
                         if (subscriber != nullptr) {
                             subscribers_.push_back (
                                 SharedSubscriberInfo (subscriber, it->second.second));
-                            if (unsubscribe) {
-                                subscriber->UnsubscribeProducer (*this);
-                            }
                         }
                     }
                     if (unsubscribe) {
@@ -334,38 +330,6 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 return subscribers.size ();
             }
-
-        private:
-            /// \brief
-            /// Used only by \see{Subscriber::Subscribe} to break recursive dependency.
-            /// \param[in] subscriber \see{Subscriber} to link to this producer.
-            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} for this \see{Subscriber}.
-            /// \return true == subscribed. false == already subscribed.
-            bool SubscribeSubscriber (
-                    Subscriber<T> &subscriber,
-                    typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
-                        new ImmediateEventDeliveryPolicy) {
-                LockGuard<SpinLock> guard (spinLock);
-                return subscribers.insert (
-                    typename Subscribers::value_type (
-                        &subscriber,
-                        SubscriberInfo (
-                            typename Subscriber<T>::WeakPtr (&subscriber),
-                            eventDeliveryPolicy))).second;
-            }
-
-            /// \brief
-            /// Used only by \see{Subscriber::Unsubscribe} to break recursive dependency.
-            /// \param[in] subscriber \see{Subscriber} to unlink from this producer.
-            /// \return true == unsubscribed. false == not subscribed.
-            bool UnsubscribeSubscriber (Subscriber<T> &subscriber) {
-                LockGuard<SpinLock> guard (spinLock);
-                return subscribers.erase (&subscriber) == 1;
-            }
-
-            /// \brief
-            /// Needs access to above two methods.
-            friend struct Subscriber<T>;
         };
 
     } // namespace util

@@ -53,26 +53,11 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Subscriber<T>)
 
-        private:
-            /// \brief
-            /// Alias for std::unordered_map<Producer<T> *, typename Producer<T>::WeakPtr>.
-            using Producers = std::unordered_map<Producer<T> *, typename Producer<T>::WeakPtr>;
-            /// \brief
-            /// List of producers whos events we subscribe to.
-            Producers producers;
-            /// \brief
-            /// Synchronization lock for producers.
-            /// NOTE: In a multi-threaded/async environment there may be a need
-            /// for delayed subscription coming from multiple threads. This lock
-            /// is here for that reason.
-            SpinLock spinLock;
-
-        public:
             /// \brief
             /// dtor.
             virtual ~Subscriber () {
-                // We're going out of scope, unsubscribe ourselves from our producer's events.
-                Unsubscribe ();
+                // We're going out of scope. If we're subscribed, those producers
+                // will eventually reallize that we're gone and remove us.
             }
 
             /// \brief
@@ -80,8 +65,7 @@ namespace thekogans {
             /// \param[in] producer \see{Producer} to check for subscription.
             /// \return true == We're subscribed to the given producer.
             bool IsSubscribed (Producer<T> &producer) {
-                LockGuard<SpinLock> guard (spinLock);
-                return producers.find (&producer) != producers.end ();
+                return producer.IsSubscribed (*this);
             }
 
             /// \brief
@@ -95,12 +79,7 @@ namespace thekogans {
                     typename Producer<T>::EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
                             new typename Producer<T>::ImmediateEventDeliveryPolicy)) {
-                LockGuard<SpinLock> guard (spinLock);
-                return producer.SubscribeSubscriber (*this, eventDeliveryPolicy) &&
-                    producers.insert (
-                        typename Producers::value_type (
-                            &producer,
-                            typename Producer<T>::WeakPtr (&producer))).second;
+                return producer.Subscribe (*this, eventDeliveryPolicy);
             }
 
             /// \brief
@@ -108,50 +87,8 @@ namespace thekogans {
             /// \param[in] producer \see{Producer} whose events we want to unsubscribe from.
             /// \return true == unsubscribed, false == was not subscribed.
             bool Unsubscribe (Producer<T> &producer) {
-                LockGuard<SpinLock> guard (spinLock);
-                return producers.erase (&producer) == 1 && producer.UnsubscribeSubscriber (*this);
+                return producer.Unsubscribe (*this);
             }
-
-            /// \brief
-            /// Unsubscribe from all \see{Producer}s of particular events.
-            void Unsubscribe () {
-                LockGuard<SpinLock> guard (spinLock);
-                for (typename Producers::iterator
-                        it = producers.begin (),
-                        end = producers.end (); it != end; ++it) {
-                    typename Producer<T>::SharedPtr producer = it->second.GetSharedPtr ();
-                    if (producer != nullptr) {
-                        producer->UnsubscribeSubscriber (*this);
-                    }
-                }
-                producers.clear ();
-            }
-
-        private:
-            /// \brief
-            /// Used by \see{Producer::Subscribe} to link the producer back to it's subscriber.
-            /// \param[in] producer \see{Producer} to link to this subscriber.
-            /// \return true == subcribed. false == already subscribed.
-            bool SubscribeProducer (Producer<T> &producer) {
-                LockGuard<SpinLock> guard (spinLock);
-                return producers.insert (
-                    typename Producers::value_type (
-                        &producer,
-                        typename Producer<T>::WeakPtr (&producer))).second;
-            }
-
-            /// \brief
-            /// Used by \see{Producer::Unsubscribe} to unlink the producer from it's subscriber.
-            /// \param[in] producer \see{Producer} to unlink from this subscriber.
-            /// \return true == unsubcribed. false == not subscribed.
-            bool UnsubscribeProducer (Producer<T> &producer) {
-                LockGuard<SpinLock> guard (spinLock);
-                return producers.erase (&producer) == 1;
-            }
-
-            /// \brief
-            /// Needs access to above two methods.
-            friend struct Producer<T>;
         };
 
     } // namespace util
