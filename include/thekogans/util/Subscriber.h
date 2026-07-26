@@ -96,14 +96,11 @@ namespace thekogans {
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
                             new typename Producer<T>::ImmediateEventDeliveryPolicy)) {
                 LockGuard<SpinLock> guard (spinLock);
-                if (producer.SubscribeSubscriber (*this, eventDeliveryPolicy)) {
+                return producer.SubscribeSubscriber (*this, eventDeliveryPolicy) &&
                     producers.insert (
                         typename Producers::value_type (
                             &producer,
-                            typename Producer<T>::WeakPtr (&producer)));
-                    return true;
-                }
-                return false;
+                            typename Producer<T>::WeakPtr (&producer))).second;
             }
 
             /// \brief
@@ -112,11 +109,7 @@ namespace thekogans {
             /// \return true == unsubscribed, false == was not subscribed.
             bool Unsubscribe (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
-                if (producers.erase (&producer) == 1) {
-                    producer.UnsubscribeSubscriber (*this);
-                    return true;
-                }
-                return false;
+                return producers.erase (&producer) == 1 && producer.UnsubscribeSubscriber (*this);
             }
 
             /// \brief
