@@ -91,9 +91,11 @@ namespace thekogans {
         }
 
         void TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
-            flags.Set (FLAGS_DIRTY, dirty);
-            if (dirty && !IsSubscribed (*file)) {
+            if (dirty) {
                 Subscribe (*file);
+            }
+            else {
+                Unsubscribe (*file);
             }
         }
 

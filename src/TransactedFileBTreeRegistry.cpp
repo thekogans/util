@@ -110,7 +110,6 @@ namespace thekogans {
                 TransactedFile::BlockRange range (
                     *file, allocator->GetRegistryOffset (), false);
                 range << *this;
-                SetDirty (false);
             }
         }
 
@@ -119,7 +118,6 @@ namespace thekogans {
             TransactedFile::BlockRange range (
                 *file, file->GetAllocator ()->GetRegistryOffset ());
             range >> *this;
-            SetDirty (false);
         }
 
         void TransactedFileBTreeRegistry::OnTransactedFileObjectAlloc (

@@ -23,7 +23,6 @@ namespace thekogans {
 
         TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
             if (IsDirty ()) {
-                Subscriber<TransactedFileEvents>::Unsubscribe (*file);
                 Alloc ();
                 Flush ();
                 SetDirty (false);
@@ -66,7 +65,6 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::Flush () {
-            assert (IsDirty ());
             assert (offset != 0);
             BlockRange range (*file, offset, false);
             Write (range);
@@ -84,28 +82,15 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Object::SetDirty (bool dirty) {
-            TransactionParticipant::SetDirty (dirty);
-            if (dirty) {
-                Produce (
-                    std::bind (
-                        &ObjectEvents::OnTransactedFileObjectDirty,
-                        std::placeholders::_1,
-                        this));
-            }
-        }
-
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
-                assert (IsDirty ());
                 if (phase == TransactedFile::COMMIT_PHASE_1) {
                     Alloc ();
                 }
                 else if (phase == TransactedFile::COMMIT_PHASE_2) {
                     Flush ();
-                    SetDirty (false);
                 }
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
@@ -114,9 +99,7 @@ namespace thekogans {
         void TransactedFile::Object::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
-                assert (IsDirty ());
                 Reload ();
-                SetDirty (false);
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }

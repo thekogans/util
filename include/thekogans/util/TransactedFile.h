@@ -196,20 +196,13 @@ namespace thekogans {
                 /// \see{TransactedFile} whose \see{TransactedFileEvents}
                 /// we're participants of.
                 TransactedFile::SharedPtr file;
-                /// \brief
-                /// Set if the internal cache is dirty.
-                static const ui32 FLAGS_DIRTY = 1;
-                /// \brief
-                /// Combination of the above flags.
-                Flags32 flags;
 
             public:
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
                 TransactionParticipant (TransactedFile::SharedPtr file_) :
-                    file (file_),
-                    flags (0) {}
+                    file (file_) {}
                 /// \brief
                 /// dtor.
                 virtual ~TransactionParticipant () {}
@@ -221,16 +214,14 @@ namespace thekogans {
                     return file;
                 }
 
-                /// \brief
-                /// Return dirty state.
-                /// \return true == dirty.
-                inline bool IsDirty () const {
-                    return flags.Test (FLAGS_DIRTY);
+                inline bool IsDirty () {
+                    return IsSubscribed (*file);
                 }
                 /// \brief
-                /// Set the dirty flag and if true, subscribe to \see{TransactedFileEvents}.
-                /// \param[in] dirty true == dirty, false == clean.
-                virtual void SetDirty (bool dirty);
+                /// Subscribe to \see{TransactedFileEvents}.
+                /// \param[in] dirty == true, Subcribe.
+                /// dirty == false, Unsubscribe.
+                void SetDirty (bool dirty);
 
                 /// \brief
                 /// TransactionParticipant is neither copy or move constructable, nor assignable.

@@ -33,12 +33,6 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     virtual ~ObjectEvents () {}
 
     /// \brief
-    /// \see{Object} became dirty.
-    /// \param[in] object \see{Object} that became dirty.
-    virtual void OnTransactedFileObjectDirty (
-        RefCounted::SharedPtr<Object> /*object*/) noexcept {}
-
-    /// \brief
     /// \see{Object} allocated a block in the file.
     /// \param[in] object \see{Object} whose offset has become valid.
     virtual void OnTransactedFileObjectAlloc (
@@ -117,13 +111,6 @@ public:
     /// \brief
     /// Reload the internal cache from file.
     virtual void Reload ();
-
-    // TransactedFile::TransactionParticipant
-    /// \brief
-    /// Set the dirty flag.
-    /// \param[in] dirty true == dirty, false == clean.
-    /// \return true == the state has transitioned from clean to dirty.
-    virtual void SetDirty (bool dirty) override;
 
 protected:
     // TransactedFileEvents
@@ -225,7 +212,6 @@ public:
     Serializable::SharedPtr GetSerializable ();
     /// \brief
     /// Set the contained serializable.
-    /// NOTE: Does not call SetDirty (true).
     /// \param[in] serializable_ New contained \see{Serializable}.
     void SetSerializable (Serializable::SharedPtr serializable_);
 

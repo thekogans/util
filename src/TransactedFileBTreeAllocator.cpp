@@ -376,7 +376,6 @@ namespace thekogans {
                     Serializer::ContextGuard guard (range, allocatorHeader);
                     range << *this;
                 }
-                SetDirty (false);
             }
         }
 
@@ -384,7 +383,6 @@ namespace thekogans {
                 TransactedFile::SharedPtr file) noexcept {
             TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
             range >> *this;
-            SetDirty (false);
         }
 
         void TransactedFileBTreeAllocator::OnTransactedFileObjectAlloc (
