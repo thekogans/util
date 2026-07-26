@@ -233,11 +233,8 @@ namespace thekogans {
                 virtual void SetDirty (bool dirty);
 
                 /// \brief
-                /// TransactionParticipant is neither copy constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactionParticipant)
-                /// \brief
-                /// TransactionParticipant is neither move constructable, nor move assignable.
-                THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (TransactionParticipant)
+                /// TransactionParticipant is neither copy or move constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactionParticipant)
             };
 
             /// \brief
