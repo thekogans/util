@@ -92,10 +92,10 @@ namespace thekogans {
 
         void TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
             if (dirty) {
-                Subscribe (*file);
+                file->Subscribe (*this);
             }
             else {
-                Unsubscribe (*file);
+                file->Unsubscribe (*this);
             }
         }
 
