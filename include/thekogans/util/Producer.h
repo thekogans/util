@@ -288,12 +288,16 @@ namespace thekogans {
                     subscribers_.reserve (subscribers.size ());
                     for (typename Subscribers::iterator
                             it = subscribers.begin (),
-                            end = subscribers.end (); it != end; ++it) {
+                            end = subscribers.end (); it != end;) {
                         typename Subscriber<T>::SharedPtr subscriber =
                             it->second.first.GetSharedPtr ();
                         if (subscriber != nullptr) {
                             subscribers_.push_back (
                                 SharedSubscriberInfo (subscriber, it->second.second));
+                            ++it;
+                        }
+                        else if (!unsubscribe) {
+                            it = subscribers.erase (it);
                         }
                     }
                     if (unsubscribe) {
