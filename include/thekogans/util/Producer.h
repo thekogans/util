@@ -229,7 +229,7 @@ namespace thekogans {
             /// Return true if a given subscriber is subscribed to this producer.
             /// \param[in] subscriber \see{Subscriber} to check.
             /// \return true == the given subscriber is subscribed to our events.
-            bool IsSubscribed (Subscriber<T> &subscriber) {
+            inline bool IsSubscribed (Subscriber<T> &subscriber) {
                 LockGuard<SpinLock> guard (spinLock);
                 return subscribers.find (&subscriber) != subscribers.end ();
             }
@@ -240,7 +240,7 @@ namespace thekogans {
             /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by which
             /// events are delivered.
             /// \return true == subscribed, false == already subscribed.
-            bool Subscribe (
+            inline bool Subscribe (
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         new ImmediateEventDeliveryPolicy) {
@@ -257,14 +257,14 @@ namespace thekogans {
             /// Called by \see{Subscriber} to remove itself from the subscribers map.
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers map.
             /// \return true == unsubscribed, false == was not subscribed.
-            bool Unsubscribe (Subscriber<T> &subscriber) {
+            inline bool Unsubscribe (Subscriber<T> &subscriber) {
                 LockGuard<SpinLock> guard (spinLock);
                 return subscribers.erase (&subscriber) == 1;
             }
 
             /// \brief
             /// Unsubscribe all subscribers.
-            void Unsubscribe () {
+            inline void Unsubscribe () {
                 LockGuard<SpinLock> guard (spinLock);
                 subscribers.clear ();
             }
@@ -287,16 +287,8 @@ namespace thekogans {
                 if (!subscribers.empty ()) {
                     subscribers_.reserve (subscribers.size ());
                     for (typename Subscribers::iterator
-                             it = subscribers.begin (),
-                             end = subscribers.end (); it != end; ++it) {
-                        // NOTE: If we get a NULL pointer here it simply means
-                        // that that particular subscriber is in the porocess
-                        // of deallocating. It just hasn't removed itself from
-                        // our subscriber list (~Subscriber) in time for us to
-                        // include it in subscribers_ above. This race is unavoidable
-                        // but harmless. We want to preserve the right of the
-                        // \see{Subscriber} to be able to call back in to the
-                        // producer while processing a particular event.
+                            it = subscribers.begin (),
+                            end = subscribers.end (); it != end; ++it) {
                         typename Subscriber<T>::SharedPtr subscriber =
                             it->second.first.GetSharedPtr ();
                         if (subscriber != nullptr) {
@@ -326,7 +318,7 @@ namespace thekogans {
             /// \brief
             /// Return the count of registered subscribers.
             /// \return The count of registered subscribers.
-            std::size_t GetSubscriberCount () {
+            inline std::size_t GetSubscriberCount () {
                 LockGuard<SpinLock> guard (spinLock);
                 return subscribers.size ();
             }

@@ -57,14 +57,14 @@ namespace thekogans {
             /// dtor.
             virtual ~Subscriber () {
                 // We're going out of scope. If we're subscribed, those producers
-                // will eventually reallize that we're gone and remove us.
+                // will eventually realize that we're gone and remove us.
             }
 
             /// \brief
             /// Return true if we're subscribed to the given producer.
             /// \param[in] producer \see{Producer} to check for subscription.
             /// \return true == We're subscribed to the given producer.
-            bool IsSubscribed (Producer<T> &producer) {
+            inline bool IsSubscribed (Producer<T> &producer) {
                 return producer.IsSubscribed (*this);
             }
 
@@ -74,7 +74,7 @@ namespace thekogans {
             /// \param[in] eventDeliveryPolicy \see{Producer::EventDeliveryPolicy}
             /// by which events are delivered.
             /// \return true == subscribed, false == already subscribed.
-            bool Subscribe (
+            inline bool Subscribe (
                     Producer<T> &producer,
                     typename Producer<T>::EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         typename Producer<T>::EventDeliveryPolicy::SharedPtr (
@@ -86,7 +86,7 @@ namespace thekogans {
             /// Given a \see{Producer} of particular events, unsubscribe from it.
             /// \param[in] producer \see{Producer} whose events we want to unsubscribe from.
             /// \return true == unsubscribed, false == was not subscribed.
-            bool Unsubscribe (Producer<T> &producer) {
+            inline bool Unsubscribe (Producer<T> &producer) {
                 return producer.Unsubscribe (*this);
             }
         };
