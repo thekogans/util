@@ -161,7 +161,8 @@ namespace thekogans {
                             if (job.IsRunning (done)) {
                                 event (subscriber.Get ());
                             }
-                        });
+                        }
+                    );
                 }
             };
 
