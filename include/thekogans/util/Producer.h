@@ -234,20 +234,17 @@ namespace thekogans {
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         new ImmediateEventDeliveryPolicy) {
-                {
-                    LockGuard<SpinLock> guard (spinLock);
-                    if (!subscribers.insert (
+                LockGuard<SpinLock> guard (spinLock);
+                if (subscribers.insert (
                         typename Subscribers::value_type (
                             &subscriber,
                             SubscriberInfo (
                                 typename Subscriber<T>::WeakPtr (&subscriber),
                                 eventDeliveryPolicy))).second) {
-                        return false;
-                    }
                     subscriber.SubscribeProducer (*this);
+                    return true;
                 }
-                OnSubscribe (subscriber, eventDeliveryPolicy);
-                return true;
+                return false;
             }
 
             /// \brief
@@ -255,43 +252,28 @@ namespace thekogans {
             /// \param[in] subscriber \see{Subscriber} to remove from the subscribers map.
             /// \return true == unsubscribed, false == was not subscribed.
             bool Unsubscribe (Subscriber<T> &subscriber) {
-                {
-                    LockGuard<SpinLock> guard (spinLock);
-                    if (subscribers.erase (&subscriber) == 0) {
-                        return false;
-                    }
+                LockGuard<SpinLock> guard (spinLock);
+                if (subscribers.erase (&subscriber) == 1) {
                     subscriber.UnsubscribeProducer (*this);
+                    return true;
                 }
-                OnUnsubscribe (subscriber);
-                return true;
+                return false;
             }
 
             /// \brief
             /// Unsubscribe all subscribers.
             void Unsubscribe () {
-                Subscribers subscribers_;
-                {
-                    LockGuard<SpinLock> guard (spinLock);
-                    for (typename Subscribers::iterator
-                            it = subscribers.begin (),
-                            end = subscribers.end (); it != end; ++it) {
-                        typename Subscriber<T>::SharedPtr subscriber =
-                            it->second.first.GetSharedPtr ();
-                        if (subscriber != nullptr) {
-                            subscriber->UnsubscribeProducer (*this);
-                        }
-                    }
-                    subscribers_.swap (subscribers);
-                }
+                LockGuard<SpinLock> guard (spinLock);
                 for (typename Subscribers::iterator
-                        it = subscribers_.begin (),
-                        end = subscribers_.end (); it != end; ++it) {
+                         it = subscribers.begin (),
+                         end = subscribers.end (); it != end; ++it) {
                     typename Subscriber<T>::SharedPtr subscriber =
                         it->second.first.GetSharedPtr ();
                     if (subscriber != nullptr) {
-                        OnUnsubscribe (*subscriber);
+                        subscriber->UnsubscribeProducer (*this);
                     }
                 }
+                subscribers.clear ();
             }
 
             /// \brief
@@ -308,40 +290,32 @@ namespace thekogans {
             void GetSubscribers (
                     std::vector<SharedSubscriberInfo> &subscribers_,
                     bool unsubscribe = false) {
-                {
-                    LockGuard<SpinLock> guard (spinLock);
-                    if (!subscribers.empty ()) {
-                        subscribers_.reserve (subscribers.size ());
-                        for (typename Subscribers::iterator
-                                it = subscribers.begin (),
-                                end = subscribers.end (); it != end; ++it) {
-                            // NOTE: If we get a NULL pointer here it simply means
-                            // that that particular subscriber is in the porocess
-                            // of deallocating. It just hasn't removed itself from
-                            // our subscriber list (~Subscriber) in time for us to
-                            // include it in subscribers_ above. This race is unavoidable
-                            // but harmless. We want to preserve the right of the
-                            // \see{Subscriber} to be able to call back in to the
-                            // producer while processing a particular event.
-                            typename Subscriber<T>::SharedPtr subscriber =
-                                it->second.first.GetSharedPtr ();
-                            if (subscriber != nullptr) {
-                                subscribers_.push_back (
-                                    SharedSubscriberInfo (subscriber, it->second.second));
-                                if (unsubscribe) {
-                                    subscriber->UnsubscribeProducer (*this);
-                                }
+                LockGuard<SpinLock> guard (spinLock);
+                if (!subscribers.empty ()) {
+                    subscribers_.reserve (subscribers.size ());
+                    for (typename Subscribers::iterator
+                             it = subscribers.begin (),
+                             end = subscribers.end (); it != end; ++it) {
+                        // NOTE: If we get a NULL pointer here it simply means
+                        // that that particular subscriber is in the porocess
+                        // of deallocating. It just hasn't removed itself from
+                        // our subscriber list (~Subscriber) in time for us to
+                        // include it in subscribers_ above. This race is unavoidable
+                        // but harmless. We want to preserve the right of the
+                        // \see{Subscriber} to be able to call back in to the
+                        // producer while processing a particular event.
+                        typename Subscriber<T>::SharedPtr subscriber =
+                            it->second.first.GetSharedPtr ();
+                        if (subscriber != nullptr) {
+                            subscribers_.push_back (
+                                SharedSubscriberInfo (subscriber, it->second.second));
+                            if (unsubscribe) {
+                                subscriber->UnsubscribeProducer (*this);
                             }
                         }
-                        if (unsubscribe) {
-                            Subscribers temp;
-                            temp.swap (subscribers);
-                        }
                     }
-                }
-                if (unsubscribe) {
-                    for (std::size_t i = 0, count = subscribers_.size (); i < count; ++i) {
-                        OnUnsubscribe (*subscribers_[i].first);
+                    if (unsubscribe) {
+                        subscribers.clear ();
                     }
                 }
             }
@@ -367,19 +341,6 @@ namespace thekogans {
                 return subscribers.size ();
             }
 
-            /// \brief
-            /// Override this methid to react to a new \see{Subscriber}.
-            /// \param[in] subscriber \see{Subscriber} to add to the subscribers list.
-            /// \param[in] eventDeliveryPolicy \see{EventDeliveryPolicy} by
-            /// which events are delivered.
-            virtual void OnSubscribe (
-                Subscriber<T> & /*subscriber*/,
-                typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {}
-            /// \brief
-            /// Override this methid to react to a \see{Subscriber} being removed.
-            /// \param[in] subscriber \see{Subscriber} to remove from the subscribers list.
-            virtual void OnUnsubscribe (Subscriber<T> & /*subscriber*/) {}
-
         private:
             /// \brief
             /// Used only by \see{Subscriber::Subscribe} to break recursive dependency.
@@ -390,19 +351,13 @@ namespace thekogans {
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         new ImmediateEventDeliveryPolicy) {
-                {
-                    LockGuard<SpinLock> guard (spinLock);
-                    if (!subscribers.insert (
-                        typename Subscribers::value_type (
-                            &subscriber,
-                            SubscriberInfo (
-                                typename Subscriber<T>::WeakPtr (&subscriber),
-                                eventDeliveryPolicy))).second) {
-                        return false;
-                    }
-                }
-                OnSubscribe (subscriber, eventDeliveryPolicy);
-                return true;
+                LockGuard<SpinLock> guard (spinLock);
+                return subscribers.insert (
+                    typename Subscribers::value_type (
+                        &subscriber,
+                        SubscriberInfo (
+                            typename Subscriber<T>::WeakPtr (&subscriber),
+                            eventDeliveryPolicy))).second;
             }
 
             /// \brief
@@ -410,14 +365,8 @@ namespace thekogans {
             /// \param[in] subscriber \see{Subscriber} to unlink from this producer.
             /// \return true == unsubscribed. false == not subscribed.
             bool UnsubscribeSubscriber (Subscriber<T> &subscriber) {
-                {
-                    LockGuard<SpinLock> guard (spinLock);
-                    if (subscribers.erase (&subscriber) == 0) {
-                        return false;
-                    }
-                }
-                OnUnsubscribe (subscriber);
-                return true;
+                LockGuard<SpinLock> guard (spinLock);
+                return subscribers.erase (&subscriber) == 1;
             }
 
             /// \brief
