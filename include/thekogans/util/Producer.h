@@ -236,16 +236,14 @@ namespace thekogans {
                         new ImmediateEventDeliveryPolicy) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
-                    typename Subscribers::iterator it = subscribers.find (&subscriber);
-                    if (it != subscribers.end ()) {
-                        return false;
-                    }
-                    subscribers.insert (
+                    if (!subscribers.insert (
                         typename Subscribers::value_type (
                             &subscriber,
                             SubscriberInfo (
                                 typename Subscriber<T>::WeakPtr (&subscriber),
-                                eventDeliveryPolicy)));
+                                eventDeliveryPolicy))).second) {
+                        return false;
+                    }
                     subscriber.SubscribeProducer (*this);
                 }
                 OnSubscribe (subscriber, eventDeliveryPolicy);
@@ -259,11 +257,9 @@ namespace thekogans {
             bool Unsubscribe (Subscriber<T> &subscriber) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
-                    typename Subscribers::iterator it = subscribers.find (&subscriber);
-                    if (it == subscribers.end ()) {
+                    if (subscribers.erase (&subscriber) == 0) {
                         return false;
                     }
-                    subscribers.erase (it);
                     subscriber.UnsubscribeProducer (*this);
                 }
                 OnUnsubscribe (subscriber);
@@ -396,16 +392,14 @@ namespace thekogans {
                         new ImmediateEventDeliveryPolicy) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
-                    typename Subscribers::iterator it = subscribers.find (&subscriber);
-                    if (it != subscribers.end ()) {
-                        return false;
-                    }
-                    subscribers.insert (
+                    if (!subscribers.insert (
                         typename Subscribers::value_type (
                             &subscriber,
                             SubscriberInfo (
                                 typename Subscriber<T>::WeakPtr (&subscriber),
-                                eventDeliveryPolicy)));
+                                eventDeliveryPolicy))).second) {
+                        return false;
+                    }
                 }
                 OnSubscribe (subscriber, eventDeliveryPolicy);
                 return true;
@@ -418,11 +412,9 @@ namespace thekogans {
             bool UnsubscribeSubscriber (Subscriber<T> &subscriber) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
-                    typename Subscribers::iterator it = subscribers.find (&subscriber);
-                    if (it == subscribers.end ()) {
+                    if (subscribers.erase (&subscriber) == 0) {
                         return false;
                     }
-                    subscribers.erase (it);
                 }
                 OnUnsubscribe (subscriber);
                 return true;

@@ -112,10 +112,8 @@ namespace thekogans {
             /// \return true == unsubscribed, false == was not subscribed.
             bool Unsubscribe (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
-                typename Producers::iterator it = producers.find (&producer);
-                if (it != producers.end ()) {
+                if (producers.erase (&producer) == 1) {
                     producer.UnsubscribeSubscriber (*this);
-                    producers.erase (it);
                     return true;
                 }
                 return false;
@@ -155,12 +153,7 @@ namespace thekogans {
             /// \return true == unsubcribed. false == not subscribed.
             bool UnsubscribeProducer (Producer<T> &producer) {
                 LockGuard<SpinLock> guard (spinLock);
-                typename Producers::iterator it = producers.find (&producer);
-                if (it != producers.end ()) {
-                    producers.erase (it);
-                    return true;
-                }
-                return false;
+                return producers.erase (&producer) == 1;
             }
 
             /// \brief
