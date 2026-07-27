@@ -269,8 +269,16 @@ namespace thekogans {
             /// allocations.
             const std::size_t segmentSize;
             /// \brief
+            /// \see{Segment} mask to use by the address disassembly
+            /// engine as a final \see{Page} address resolution step
+            /// in \see{GetPage}.
+            const AddressType segmentMask;
+            /// \brief
             /// \see{Page} size in bytes.
             const std::size_t pageSize;
+            /// \brief
+            /// Mask to use to isolate the part of the offset that lies within page.
+            const AddressType pageMask;
             /// \brief
             /// Level bit shift count to prime the address
             /// disassembly engine in preparation for a tree
@@ -279,11 +287,6 @@ namespace thekogans {
             /// \brief
             /// Level mask to work with the levelShift above.
             const AddressType levelMask;
-            /// \brief
-            /// \see{Segment} mask to use by the address disassembly
-            /// engine as a final \see{Page} address resolution step
-            /// in \see{GetPage}.
-            const AddressType segmentMask;
             /// \brief
             /// \see{BlockAllocator} for allocating \see{Internal} nodes.
             BlockAllocator internalAllocator;
@@ -352,9 +355,9 @@ namespace thekogans {
                 /// NOTE: Given that address space size can vary (32, 64, 128 bit),
                 /// it would appear that \see{Serializer} would not have enough room.
                 /// Fotunatelly the design of \see{Serializer} is such that there are
-                /// no offsets to seek to. \see{Serializer} is a Write/Read only object,
-                /// and therefore can represent any underlying sink. Keep that in mind
-                /// when accumulating dirty pages.
+                /// no offsets to seek to. \see{Serializer} is a Black Hole, Write/
+                /// White Hole, Read object, and therefore can represent any underlying
+                /// source or sink. Keep that in mind when accumulating dirty pages.
                 /// \param[in] log \see{Serializer} to write to.
                 /// \param[in] count Running count of number of pages written.
                 virtual void Log (
@@ -905,10 +908,11 @@ namespace thekogans {
                     pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
                     internalSize (Internal::Size (nodesPerInternal)),
                     segmentSize (Segment::Size (pagesPerSegment)),
+                    segmentMask (((AddressType)1 << bitsPerSegment) - 1),
                     pageSize (1 << bitsPerPage),
+                    pageMask (pageSize - 1),
                     levelShift (bitsPerAddress - bitsPerLevel),
                     levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
-                    segmentMask (((AddressType)1 << bitsPerSegment) - 1),
                     internalAllocator (internalSize, internalNodesPerPage, allocator),
                     segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
                     pageAllocator (pageAlignment, allocator),
@@ -947,6 +951,13 @@ namespace thekogans {
             /// \return pageSize.
             inline std::size_t GetPageSize () const {
                 return pageSize;
+            }
+
+            /// \brief
+            /// Return the page mask.
+            /// \return pageMask.
+            inline std::size_t GetPageMask () const {
+                return pageMask;
             }
 
             /// \brief
@@ -1116,7 +1127,7 @@ namespace thekogans {
                 if ((offset & inverseOffsetMask) != 0) {
                     return nullptr;
                 }
-                offset &= ~(pageSize - 1);
+                offset &= ~pageMask;
                 if (lastGetPagePage == nullptr || lastGetPagePage->offset != offset) {
                     Node *node = GetRoot ();
                     // This is the address dissassembly engine used to

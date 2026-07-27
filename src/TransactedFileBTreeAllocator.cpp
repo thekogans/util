@@ -64,7 +64,7 @@ namespace thekogans {
                     //               |               |
                     //          result.second  page boundary
                     //
-                    // ui64 pageOffset = result.second & (file->GetPageSize () - 1);
+                    // ui64 pageOffset = result.second & file->GetPageMask ();
                     // ui64 remainder = file->GetPageSize () - pageOffset;
                     // prev.offset = result.second;
                     // prev.size = remainder - Block::HEADER_SIZE;
@@ -84,7 +84,7 @@ namespace thekogans {
                     ui64 remainder = result.first - size;
                     if (remainder >= MIN_BLOCK_SIZE) {
                         // Check to see if the block would straddle a page boundary...
-                        ui64 pageOffset = offset & (file->GetPageSize () - 1);
+                        ui64 pageOffset = offset & file->GetPageMask ();
                         if (pageOffset + size + Block::HEADER_SIZE > file->GetPageSize ()) {
                             // ...it would. Now check to see if the block would fit aligned...
                             remainder = file->GetPageSize () - pageOffset;
@@ -136,7 +136,7 @@ namespace thekogans {
                     // Ranges that straddle page boundaries incur an
                     // allocation/copy/deallocation penalty.
                     // Calculate the remainder left in the last page.
-                    ui64 remainder = file->GetPageSize () - (file->GetSizeEx () & (file->GetPageSize () - 1));
+                    ui64 remainder = file->GetPageSize () - (file->GetSizeEx () & file->GetPageMask ());
                     // If we don't fit in to remainder and, if the remainder
                     // can be turned in to another block and we fit into one
                     // page, all is well. Go ahead and create a spacer block
