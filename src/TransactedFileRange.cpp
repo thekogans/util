@@ -44,7 +44,7 @@ namespace thekogans {
                 ++file.stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ui64 pageOffset = offset & (file.GetPageSize () - 1);
+            ui64 pageOffset = offset & file.GetPageMask ();
             ////////////////////////////////////////////////////////////////////
             // The two designs considered for range were:
             // 1. Have range implement something simmilar to PageMap::Read and

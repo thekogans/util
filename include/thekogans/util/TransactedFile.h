@@ -340,9 +340,15 @@ namespace thekogans {
                 return size;
             }
 
+            /// \brief
+            /// Return page size.
+            /// \return pageMap->GetPageSize ().
             inline std::size_t GetPageSize () const {
                 return pageMap->GetPageSize ();
             }
+            /// \brief
+            /// Return page mask.
+            /// \return pageMap->GetPageMask ().
             inline std::size_t GetPageMask () const {
                 return pageMap->GetPageMask ();
             }
