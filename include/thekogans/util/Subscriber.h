@@ -54,10 +54,14 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Subscriber<T>)
 
             /// \brief
+            /// default ctor.
+            Subscriber () {}
+            /// \brief
             /// dtor.
             virtual ~Subscriber () {
                 // We're going out of scope. If we're subscribed, those producers
-                // will eventually realize that we're gone and remove us.
+                // will eventually realize that we're gone (Producer::GetSubscribers)
+                // and remove us.
             }
 
             /// \brief
@@ -89,6 +93,10 @@ namespace thekogans {
             inline bool Unsubscribe (Producer<T> &producer) {
                 return producer.Unsubscribe (*this);
             }
+
+            /// \brief
+            /// Subscriber is neither copy or move constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Subscriber)
         };
 
     } // namespace util

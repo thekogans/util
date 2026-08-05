@@ -39,7 +39,6 @@ namespace thekogans {
         /// A simple 2D integer based rectangle. Useful for handling
         /// window and image rectangles. Coordinates are right handed
         /// Cartesian.
-
         struct _LIB_THEKOGANS_UTIL_DECL Rectangle {
             /// \brief
             /// Bottom/Left point.
@@ -226,6 +225,30 @@ namespace thekogans {
                 const Extents &frame,
                 const Extents &window,
                 f32 *scale = nullptr);
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convert to Windows RECT.
+            /// \return Windows RECT.
+            inline RECT ToRectangle () const {
+                return RECT {
+                    origin.x,
+                    origin.y - extents.height,
+                    origin.x + extents.width,
+                    origin.y
+                };
+            }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// Convert to OS X CGRect.
+            /// \return OS X CGRect.
+            inline CGRect ToRectangle () const {
+                return CGRect {
+                    {static_cast<CGFloat> (origin.x), static_cast<CGFloat> (origin.y)},
+                    {static_cast<CGFloat> (extents.width), static_cast<CGFloat> (extents.height)}
+                };
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         /// \brief

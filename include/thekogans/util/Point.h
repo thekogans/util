@@ -40,7 +40,6 @@ namespace thekogans {
         /// \brief
         /// A simple 2D integer based point. Useful for handling mouse
         /// and window coordinates.
-
         struct _LIB_THEKOGANS_UTIL_DECL Point {
             /// \brief
             /// x coordinate.
@@ -134,6 +133,22 @@ namespace thekogans {
             /// \param[in] rectangle \see{Rectangle} to test for point containment.
             /// \return true = Point in rectangle, false = Point is outside.
             bool InRectangle (const Rectangle &rectangle) const;
+
+        #if defined (TOOLCHAIN_OS_Windows)
+            /// \brief
+            /// Convert to Windows POINT.
+            /// \return Windows POINT.
+            inline POINT ToPOINT () const {
+                return POINT {x, y};
+            }
+        #elif defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// Convert to OS X CGPoint.
+            /// \return OS X CGPoint.
+            CGPoint ToCGPoint () const {
+                return CGPoint {static_cast<CGFloat> (x), static_cast<CGFloat> (y)};
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
         /// \brief

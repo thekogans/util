@@ -106,8 +106,8 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 Node () :
-                    prev (0),
-                    next (0),
+                    prev (nullptr),
+                    next (nullptr),
                     inList (false) {}
                 /// \brief
                 /// dtor.
@@ -126,15 +126,15 @@ namespace thekogans {
             /// \brief
             /// ctor.
             IntrusiveList () :
-                head (0),
-                tail (0),
+                head (nullptr),
+                tail (nullptr),
                 count (0) {}
             /// \brief
             /// Move ctor.
             /// \param[in,out] other IntrusiveList to move.
             IntrusiveList (IntrusiveList<T, ID> &&other) :
-                    head (0),
-                    tail (0),
+                    head (nullptr),
+                    tail (nullptr),
                     count (0) {
                 swap (other);
             }

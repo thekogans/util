@@ -243,7 +243,8 @@ namespace thekogans {
                 /// hard to spot bugs. That dynamic_cast is there for a reason. If ptr.object
                 /// has no relationship to T *, nullptr is the best we can do. I thought about
                 /// it's design long and hard and in the end decided to leave it in for it's
-                /// sheer utility.
+                /// sheer utility. But remember; with great power comes great reponsibility.
+                /// So, buyer beware. Use at your own risk.
                 /// **********************************
                 template<typename _U>
                 SharedPtr (const SharedPtr<_U> &ptr) :
@@ -638,8 +639,8 @@ namespace thekogans {
             }
 
             /// \brief
-            /// RefCounted is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (RefCounted)
+            /// RefCounted is neither copy or move constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (RefCounted)
         };
 
         /// \def THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS(_T)

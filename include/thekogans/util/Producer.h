@@ -219,6 +219,9 @@ namespace thekogans {
 
         public:
             /// \brief
+            /// default ctor.
+            Producer () {}
+            /// \brief
             /// dtor.
             virtual ~Producer () {
                 // We're going out of scope, delete all subscribers.
@@ -297,6 +300,9 @@ namespace thekogans {
                             ++it;
                         }
                         else if (!unsubscribe) {
+                            // Expired subscriber. If we're not asked to unsubscribe,
+                            // remove it here. Otherwise it will be removed by clear
+                            // below.
                             it = subscribers.erase (it);
                         }
                     }
@@ -326,6 +332,10 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 return subscribers.size ();
             }
+
+            /// \brief
+            /// Producer is neither copy or move constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Producer)
         };
 
     } // namespace util
