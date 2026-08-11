@@ -413,9 +413,10 @@ namespace thekogans {
                 const AddressType offset;
                 /// \brief
                 /// Page data.
-                ui8 *data;
+                /// NOTE: The pointer is const, not the data it's pointing too.
+                ui8 * const data;
                 /// \brief
-                /// true == modified.
+                /// true == data is modified.
                 bool dirty;
 
                 /// \brief
@@ -485,6 +486,7 @@ namespace thekogans {
                 /// \brief
                 /// If dirty, write page to it's source and make clean.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
+                /// \param[in] clearCache true == Delete cache after flush.
                 /// \return clearCache.
                 virtual bool Flush (
                         PageSource &pageSink,
@@ -500,7 +502,7 @@ namespace thekogans {
                 /// Clip the page so it lies inside size.
                 /// \param[in] newSize Size to clip the page to.
                 /// \return true == the page was completely clipped.
-                /// false == the page was partially clipped.
+                /// false == the page was partially (or not at all) clipped.
                 virtual bool Shrink (SizeType size) override {
                     if (offset < size) {
                         SizeType consumed = size - offset;
@@ -648,6 +650,7 @@ namespace thekogans {
                 /// Write dirty pages to pageSink.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete the page cache after.
+                /// \return true == the node is empty, false == the node has pages remaining.
                 virtual bool Flush (
                         PageSource &pageSink,
                         bool clearCache = false) override {
@@ -697,7 +700,7 @@ namespace thekogans {
                 /// \return Child @ the given index.
                 Node *GetChild (
                         std::size_t index,
-                        std::function<Node *()> factory) {
+                        std::function<Node * ()> factory) {
                     if (children[index] == nullptr) {
                         Node *child = factory ();
                         children[index] = child;
@@ -735,7 +738,7 @@ namespace thekogans {
                 /// \return true == the child was deleted.
                 /// false == the child has outstanding refereces.
                 virtual bool DeleteChild (Node *child) {
-                    // This check is for mostly for Page as Segment
+                    // This check is here mostly for Page as Segment
                     // and Internal don't have reference counts and
                     // are not visible outside of PageMap. We need it
                     // because shared pages cannot just be deleted
@@ -770,7 +773,8 @@ namespace thekogans {
 
                 /// \brief
                 /// Return the size of the segment node. They're all the same size, hence static.
-                /// \return Size of the segment node.
+                /// \param[in] pagesPerSegment Number of \see{Page} pointers following the segment.
+                /// \return Size of the segment node (including the following \see{Page} pointer array).
                 static std::size_t Size (std::size_t pagesPerSegment) {
                     return sizeof (Segment) + pagesPerSegment * sizeof (Page *);
                 }
@@ -800,6 +804,8 @@ namespace thekogans {
                 /// \brief
                 /// Delete the given child.
                 /// \param[in] child \see{Page} to delete.
+                /// \return true == the \see{Page} was deleted.
+                /// false == the \see{Page} has outstanding refereces.
                 virtual bool DeleteChild (Node *child) override {
                     if (Parent::DeleteChild (child)) {
                         if (this->pageMap.lastGetPagePage == (Page *)child) {
@@ -831,7 +837,8 @@ namespace thekogans {
 
                 /// \brief
                 /// Return the size of the internal node. They're all the same size, hence static.
-                /// \return Size of the internal node.
+                /// \param[in] nodesPerInternal Number of \see{Node} pointers following the internal node.
+                /// \return Size of the internal node (including the following \see{Node} pointer array).
                 static std::size_t Size (std::size_t nodesPerInternal) {
                     return sizeof (Internal) + nodesPerInternal * sizeof (Node *);
                 }
@@ -905,7 +912,7 @@ namespace thekogans {
                     bitsPerPage (bitsPerPage_),
                     maxOffset (
                         bitsPerAddress == BitWidth<AddressType>::value ?
-                            ~0 : (((AddressType)1 << bitsPerAddress) - 1)),
+                            ~(AddressType)0 : (((AddressType)1 << bitsPerAddress) - 1)),
                     nodesPerInternal (1 << bitsPerLevel),
                     pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
                     internalSize (Internal::Size (nodesPerInternal)),
@@ -1018,7 +1025,7 @@ namespace thekogans {
             /// sure we don't overflow the address space.
             /// \param[in] offset Address at which to start writing.
             /// \param[in] pageSource Optional \see{PageSource} to provide the \see{Page} bits.
-            /// \param[out] buffer Buffer containing the data.
+            /// \param[in] buffer Buffer containing the data to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
             SizeType Write (

@@ -51,8 +51,8 @@ namespace thekogans {
 
         TransactedFile::Transaction::~Transaction () {
             // If the transaction has been committed, these two statements
-            // are noop. There will be no dirty pages to abort. And there
-            // will be no more subscribers to notify.
+            // are noop. There will be no dirty pages to abort, and no
+            // subscribers to notify.
             file.Abort ();
             file.Produce (
                 std::bind (

@@ -359,6 +359,8 @@ namespace thekogans {
         void TransactedFileBTreeAllocator::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr file,
                 int phase) noexcept {
+            // We live inside block 1. It's set aside for us by TransactedFile::Init.
+            // We don't need to allocate it.
             if (phase == TransactedFile::COMMIT_PHASE_2) {
                 // Since allocator block is special (it's first and unresizable)...
                 SerializableHeader allocatorHeader;
