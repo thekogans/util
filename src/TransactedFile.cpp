@@ -50,6 +50,9 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFileAddressSpaceType::Page)
 
         TransactedFile::Transaction::~Transaction () {
+            // If the transaction has been committed, these two statements
+            // are noop. There will be no dirty pages to abort. And there
+            // will be no more subscribers to notify.
             file.Abort ();
             file.Produce (
                 std::bind (
@@ -192,6 +195,8 @@ namespace thekogans {
                 Registry::SharedPtr registry) {
             CloseEx ();
             CommitLog (path);
+            // Turn off OS page buffering. With PageMap's page alignment,
+            // we don't need the cost of extra copying.
         #if defined (TOOLCHAIN_OS_Windows)
             Open (
                 path,
@@ -233,7 +238,7 @@ namespace thekogans {
             if (offset < size) {
                 LockGuard<SpinLock> guard (spinLock);
                 if (IsOpen ()) {
-                    TransactedFileAddressSpaceType::AddressType available = size - offset;
+                    TransactedFileAddressSpaceType::SizeType available = size - offset;
                     if (count > available) {
                         count = available;
                     }
@@ -266,11 +271,11 @@ namespace thekogans {
             }
         }
 
-        TransactedFileAddressSpaceType::AddressType TransactedFile::Grow (
-                TransactedFileAddressSpaceType::AddressType amount) {
+        TransactedFileAddressSpaceType::SizeType TransactedFile::Grow (
+                TransactedFileAddressSpaceType::SizeType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
-                TransactedFileAddressSpaceType::AddressType oldSize = size;
+                TransactedFileAddressSpaceType::SizeType oldSize = size;
                 size += MIN (pageMap->GetMaxOffset () - size, amount);
                 return oldSize;
             }
@@ -280,8 +285,8 @@ namespace thekogans {
             }
         }
 
-        TransactedFileAddressSpaceType::AddressType TransactedFile::Shrink (
-                TransactedFileAddressSpaceType::AddressType amount) {
+        TransactedFileAddressSpaceType::SizeType TransactedFile::Shrink (
+                TransactedFileAddressSpaceType::SizeType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size -= MIN (amount, size);
@@ -297,6 +302,7 @@ namespace thekogans {
         void TransactedFile::Init (
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_) {
+            // Initialization is all or nothing.
             Transaction transaction (*this);
             if (GetSize () == 0) {
                 if (allocator_ != nullptr) {
@@ -382,8 +388,8 @@ namespace thekogans {
                             logPath.c_str ());
                     }
                     ui32 count;
-                    TransactedFileAddressSpaceType::AddressType size;
-                    TransactedFileAddressSpaceType::AddressType pageSize;
+                    TransactedFileAddressSpaceType::SizeType size;
+                    TransactedFileAddressSpaceType::SizeType pageSize;
                     log >> count >> size >> pageSize;
                     TransactedFileAddressSpaceType::AddressType offset;
                     HostBuffer page (pageSize);
@@ -410,7 +416,7 @@ namespace thekogans {
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
                     log << (ui32)0 << (ui32)0 << size <<
-                        (TransactedFileAddressSpaceType::AddressType)pageMap->GetPageSize ();
+                        (TransactedFileAddressSpaceType::SizeType)pageMap->GetPageSize ();
                     std::size_t count = pageMap->Log (log);
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32 << (ui32)count;

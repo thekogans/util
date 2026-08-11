@@ -34,7 +34,7 @@ namespace thekogans {
         /// \struct PageMap PageMap.h thekogans/util/PageMap.h
         ///
         /// \brief
-        /// PageMap gives you the ability to work with virtual address spacess, potentialy
+        /// PageMap gives you the ability to work with virtual address spaces, potentialy
         /// astronomical (10^19, 10^38...) in size, given the somewhat limited resources
         /// of today's and tomorrow's hosts. PageMap divides the given address space in to
         /// sequential, contiguous, nonoverlapping pages. The pages are maintained in groups
@@ -192,6 +192,9 @@ namespace thekogans {
             /// Rename T to something more appropriate that's
             /// visible outside the template.
             using AddressType = T;
+            /// \brief
+            /// Alias for T. In our world address type and size type are the same type.
+            using SizeType = T;
 
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -220,29 +223,23 @@ namespace thekogans {
                 /// \param[out] buffer Where to place the bytes.
                 /// \param[in] count Number of bytes to read.
                 /// \return Number of bytes actually read.
-                virtual AddressType ReadPage (
+                virtual SizeType ReadPage (
                     AddressType /*offset*/,
                     void * /*buffer*/,
-                    AddressType /*count*/) = 0;
+                    SizeType /*count*/) = 0;
                 /// \brief
                 /// Write raw bytes.
                 /// \param[in] offset Address at which to start writing.
                 /// \param[in] buffer Bytes to write.
                 /// \param[in] count Number of bytes to write.
                 /// \return Number of bytes actually written.
-                virtual AddressType WritePage (
+                virtual SizeType WritePage (
                     AddressType /*offset*/,
                     const void * /*buffer*/,
-                    AddressType /*count*/) = 0;
+                    SizeType /*count*/) = 0;
             };
 
         private:
-            /// \brief
-            /// Inverse address mask for quick rejection test in GetPage.
-            const AddressType inverseOffsetMask;
-            /// \brief
-            /// This is the very last valid address space offset (before it overflows).
-            const AddressType offsetMask;
             /// \brief
             /// \see{Segment} size in bits.
             const std::size_t bitsPerSegment;
@@ -252,6 +249,9 @@ namespace thekogans {
             /// \brief
             /// \see{Page} size in bits.
             const std::size_t bitsPerPage;
+            /// \brief
+            /// This is the very last valid address space offset (before it overflows).
+            const AddressType maxOffset;
             /// \brief
             /// Number of children per \see{Internal} node in bytes.
             const std::size_t nodesPerInternal;
@@ -325,7 +325,7 @@ namespace thekogans {
                 /// Backpointer to \see{PageMap}.
                 PageMap &pageMap;
                 /// \brief
-                /// Node index in \see{Parent::children}.
+                /// Node index in \see{Parent::children} array.
                 const std::size_t index;
 
                 /// \brief
@@ -346,18 +346,18 @@ namespace thekogans {
                 /// \brief
                 /// Delete pages.
                 /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
-                /// \return true == the node is empty,
-                /// false == the node has pages remaining.
+                /// \return true == the node is empty, false == the node has pages remaining.
                 virtual bool Clear (bool dirty_) = 0;
 
                 /// \brief
                 /// Write dirty pages to log.
                 /// NOTE: Given that address space size can vary (32, 64, 128 bit),
                 /// it would appear that \see{Serializer} would not have enough room.
-                /// Fotunatelly the design of \see{Serializer} is such that there are
-                /// no offsets to seek to. \see{Serializer} is a Black Hole, Write/
-                /// White Hole, Read object, and therefore can represent any underlying
-                /// source or sink. Keep that in mind when accumulating dirty pages.
+                /// Fortunatelly the design of \see{Serializer} is such that there are
+                /// no offsets to seek to (that's left up to \see{RandomSeekSerializer}).
+                /// \see{Serializer} is a Black Hole, Write/White Hole, Read object, and
+                /// therefore can represent any underlying source or sink. Keep that in
+                /// mind when accumulating dirty pages.
                 /// \param[in] log \see{Serializer} to write to.
                 /// \param[in] count Running count of number of pages written.
                 virtual void Log (
@@ -368,8 +368,7 @@ namespace thekogans {
                 /// Write dirty pages to their source.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete cache after flush.
-                /// \return true == the node is empty,
-                /// false == the node has pages remaining.
+                /// \return true == the node is empty, false == the node has pages remaining.
                 virtual bool Flush (
                     PageSource &pageSink,
                     bool clearCache = false) = 0;
@@ -379,7 +378,7 @@ namespace thekogans {
                 /// \param[in] size New size to clip the address space to.
                 /// \return true == node was completely clipped (it is empty).
                 /// false == node was partialy clipped (it has pages).
-                virtual bool Shrink (AddressType size) = 0;
+                virtual bool Shrink (SizeType size) = 0;
 
                 /// \brief
                 /// Return the number of references held on this Node.
@@ -396,7 +395,7 @@ namespace thekogans {
             /// \struct PageMap::Page PageMap.h thekogans/util/PageMap.h
             ///
             /// \brief
-            /// Page tiles the address space providing incremental, sparse
+            /// Page tiles the address space providing incremental, random
             /// access to the data.
             struct Page :
                     public virtual RefCounted,
@@ -436,7 +435,7 @@ namespace thekogans {
                         offset (offset_),
                         data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
                         dirty (false) {
-                    AddressType countRead = 0;
+                    SizeType countRead = 0;
                     if (pageSource != nullptr) {
                         countRead = pageSource->ReadPage (offset, data, pageMap.pageSize);
                     }
@@ -460,11 +459,10 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Return true if page should be deleted based on the given
-                /// flags and the dirty state.
-                /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
-                /// \return true == page shoul be deleted,
-                /// false == page does not match the given criteria.
+                /// Return true if page should be deleted based on the given dirty state.
+                /// \param[in] dirty_ true == delete dirty page. false == delete clean page.
+                /// \return true == page should be deleted, false == page does not match
+                /// the given dirty state criteria.
                 virtual bool Clear (bool dirty_) override {
                     return dirty == dirty_;
                 }
@@ -487,7 +485,7 @@ namespace thekogans {
                 /// \brief
                 /// If dirty, write page to it's source and make clean.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
-                /// \return clearCache;
+                /// \return clearCache.
                 virtual bool Flush (
                         PageSource &pageSink,
                         bool clearCache = false) override {
@@ -503,9 +501,9 @@ namespace thekogans {
                 /// \param[in] newSize Size to clip the page to.
                 /// \return true == the page was completely clipped.
                 /// false == the page was partially clipped.
-                virtual bool Shrink (AddressType size) override {
+                virtual bool Shrink (SizeType size) override {
                     if (offset < size) {
-                        AddressType consumed = size - offset;
+                        SizeType consumed = size - offset;
                         if (consumed < this->pageMap.pageSize) {
                             // Pages don't maintain internal lengths. All pages are
                             // pageMap.pageSize long (with potentially the last one
@@ -547,7 +545,6 @@ namespace thekogans {
                         AddressType offset,
                         PageSource *pageSource) {
                     Page *page = new Page (pageMap, index, offset, pageSource);
-                    // We own ourelves.
                     page->AddRef ();
                     return page;
                 }
@@ -670,7 +667,7 @@ namespace thekogans {
                 /// Delete all pages whose offset > size.
                 /// \param[in] size New size to clip the address space to.
                 /// \return IsEmpty ().
-                virtual bool Shrink (AddressType size) override {
+                virtual bool Shrink (SizeType size) override {
                     childList.for_each (
                         [this, size] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
@@ -738,6 +735,11 @@ namespace thekogans {
                 /// \return true == the child was deleted.
                 /// false == the child has outstanding refereces.
                 virtual bool DeleteChild (Node *child) {
+                    // This check is for mostly for Page as Segment
+                    // and Internal don't have reference counts and
+                    // are not visible outside of PageMap. We need it
+                    // because shared pages cannot just be deleted
+                    // from the map. They need to be returned first.
                     if (child->GetRefCount () == 1) {
                         children[child->index] = nullptr;
                         childList.erase (child);
@@ -885,7 +887,8 @@ namespace thekogans {
             /// \param[in] bitsPerSegment_ How many address bits represent a segment.
             /// \param[in] bitsPerLevel_ How many address bits represent a level.
             /// \param[in] bitsPerPage_ How many address bits represent a page.
-            /// \param[in] pageAlignment Page alignment.
+            /// \param[in] pageAlignment Page alignment. Certain uses of PageMap (file buffering)
+            /// require aligned pages to perform direct I/O (bypassing OS buffering).
             /// \param[in] internalNodesPerPage Number of \see{Internal} nodes per \see{BlockAllocator} page.
             /// \param[in] segmentNodesPerPage Number of \see{Segment} nodes per \see{BlockAllocator} page.
             /// \param[in] allocator \see{Allocator} to use to create \see{BlockAllocator} pages.
@@ -897,13 +900,12 @@ namespace thekogans {
                     std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
                     std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
                     util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-                    inverseOffsetMask (
-                        bitsPerAddress < BitWidth<AddressType>::value ?
-                            ~(((AddressType)1 << bitsPerAddress) - 1) : 0),
-                    offsetMask (~inverseOffsetMask),
                     bitsPerSegment (bitsPerSegment_),
                     bitsPerLevel (bitsPerLevel_),
                     bitsPerPage (bitsPerPage_),
+                    maxOffset (
+                        bitsPerAddress == BitWidth<AddressType>::value ?
+                            ~0 : (((AddressType)1 << bitsPerAddress) - 1)),
                     nodesPerInternal (1 << bitsPerLevel),
                     pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
                     internalSize (Internal::Size (nodesPerInternal)),
@@ -941,9 +943,9 @@ namespace thekogans {
 
             /// \brief
             /// Return the maximum address space offset.
-            /// \return offsetMask.
+            /// \return maxOffset.
             inline AddressType GetMaxOffset () const {
-                return offsetMask;
+                return maxOffset;
             }
 
             /// \brief
@@ -982,13 +984,13 @@ namespace thekogans {
             /// \param[out] buffer Buffer to receive the data.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            AddressType Read (
+            SizeType Read (
                     AddressType offset,
                     PageSource *pageSource,
                     void *buffer,
-                    AddressType count) {
-                AddressType countRead = 0;
-                if ((offset & inverseOffsetMask) == 0 && buffer != nullptr && count > 0) {
+                    SizeType count) {
+                SizeType countRead = 0;
+                if (offset < maxOffset && buffer != nullptr && count > 0) {
                     LockGuard<Lock> guard (lock);
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
@@ -996,10 +998,10 @@ namespace thekogans {
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
                         // Calculate the amount we can read from this page...
-                        AddressType countToRead = MIN (GetPageSize () - pageOffset, count);
+                        SizeType countToRead = MIN (pageSize - pageOffset, count);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
                         countRead += countToRead;
-                        if (overflow_addition (offset, countToRead)) {
+                        if (maxOffset - offset < countToRead) {
                             break;
                         }
                         offset += countToRead;
@@ -1019,14 +1021,14 @@ namespace thekogans {
             /// \param[out] buffer Buffer containing the data.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            AddressType Write (
+            SizeType Write (
                     AddressType offset,
                     PageSource *pageSource,
                     const void *buffer,
-                    AddressType count) {
-                AddressType countWritten = 0;
+                    SizeType count) {
+                SizeType countWritten = 0;
                 // Quick bounds check.
-                if ((offset & inverseOffsetMask) == 0 && buffer != nullptr && count > 0) {
+                if (offset < maxOffset && buffer != nullptr && count > 0) {
                     LockGuard<Lock> guard (lock);
                     ui8 *ptr = (ui8 *)buffer;
                     while (count > 0) {
@@ -1034,11 +1036,12 @@ namespace thekogans {
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
                         // Calculate the amount we can write to this page...
-                        AddressType countToWrite = MIN (GetPageSize () - pageOffset, count);
+                        SizeType countToWrite = MIN (pageSize - pageOffset, count);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
                         page->dirty = true;
                         countWritten += countToWrite;
-                        if (overflow_addition (offset, countToWrite)) {
+                        // Check for overflow.
+                        if (maxOffset - offset < countToWrite) {
                             break;
                         }
                         offset += countToWrite;
@@ -1090,12 +1093,10 @@ namespace thekogans {
             /// \brief
             /// Shrink the address space (delete all pages whose offset >= size).
             /// \param[in] size Size to clip the pages to.
-            void Shrink (AddressType size) {
+            void Shrink (SizeType size) {
                 LockGuard<Lock> guard (lock);
                 if (root != nullptr) {
                     root->Shrink (size);
-                    // If size is <= lastGetPagePage->offset, lastGetPagePage
-                    // will have been deleted by root->Shrink.
                     DeleteRoot ();
                 }
             }
@@ -1107,7 +1108,7 @@ namespace thekogans {
             /// \param[in] reverse true == Walk the list tail to head.
             /// \return true == Iterated over all pages, false == callback returned false.
             bool EnumeratePages (
-                    const typename PageList::Function &callback,
+                    const typename PageList::Callback &callback,
                     bool reverse = false) {
                 LockGuard<Lock> guard (lock);
                 return pageList.for_each (callback, reverse);
@@ -1124,7 +1125,7 @@ namespace thekogans {
                     AddressType offset,
                     PageSource *pageSource) {
                 // Quick bounds check.
-                if ((offset & inverseOffsetMask) != 0) {
+                if (offset > maxOffset) {
                     return nullptr;
                 }
                 offset &= ~pageMask;
@@ -1199,15 +1200,6 @@ namespace thekogans {
                     root->Release ();
                     root = nullptr;
                 }
-            }
-
-            /// \brief
-            /// Check for overflow when adding two AddressTypes.
-            /// \param[in] a First operand.
-            /// \param[in] b Second operand.
-            /// \return true == a + b would overflow.
-            inline bool overflow_addition (AddressType a, AddressType b) {
-                return GetMaxOffset () - a < b;
             }
 
             /// \brief

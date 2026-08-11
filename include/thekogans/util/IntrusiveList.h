@@ -133,9 +133,9 @@ namespace thekogans {
             /// Move ctor.
             /// \param[in,out] other IntrusiveList to move.
             IntrusiveList (IntrusiveList<T, ID> &&other) :
-                    head (nullptr),
-                    tail (nullptr),
-                    count (0) {
+                head (nullptr),
+                tail (nullptr),
+                count (0) {
                 swap (other);
             }
             /// \brief
@@ -283,86 +283,6 @@ namespace thekogans {
                 return false;
             }
 
-            /// \struct IntrusiveList::unary_function IntrusiveList.h thekogans/stream/IntrusiveList.h
-            ///
-            /// \brief
-            /// Since this simple template has been deprecated (and now removed) from the standard library,
-            /// we recreate it here as a dependency of \see{Callback} below.
-            template<
-                typename ArgumentType,
-                typename ResultType>
-            struct unary_function {
-                /// \brief
-                /// Expose ArgumentType template argument for derivatives to use.
-                using argument_type = ArgumentType;
-                /// \brief
-                /// Expose ResultType template argument for derivatives to use.
-                using result_type = ResultType;
-            };
-
-            /// \struct IntrusiveList::Callback IntrusiveList.h thekogans/stream/IntrusiveList.h
-            ///
-            /// \brief
-            /// Base class for callbacks passed to clear and for_each.
-            struct Callback : public unary_function<T *, bool> {
-                /// \brief
-                /// Alias for unary_function<T *, bool>::result_type.
-                using result_type = typename unary_function<T *, bool>::result_type;
-                /// \brief
-                /// Alias for unary_function<T *, bool>::argument_type.
-                using argument_type = typename unary_function<T *, bool>::argument_type;
-                /// \brief
-                /// dtor.
-                virtual ~Callback () {}
-                /// \brief
-                /// Called by clear and for_each.
-                /// \param[in] node T *.
-                /// \return true = continue enumeration, false = stop enumeration.
-                virtual result_type operator () (argument_type /*node*/) = 0;
-            };
-
-            /// \struct IntrusiveList::DefaultCallback IntrusiveList.h thekogans/stream/IntrusiveList.h
-            ///
-            /// \brief
-            /// Default no op callback.
-            struct DefaultCallback : public Callback {
-                /// \brief
-                /// Alias for Callback::result_type.
-                using result_type = typename Callback::result_type;
-                /// \brief
-                /// Alias for Callback::argument_type.
-                using argument_type = typename Callback::argument_type;
-                /// \brief
-                /// No op.
-                virtual result_type operator () (argument_type /*node*/) override {
-                    return true;
-                }
-            };
-
-            /// \brief
-            /// Remove all nodes from the list.
-            /// \param[in] callback Callback to be called for every node in the list.
-            /// VERY, VERY IMPORTANT: The node is removed from the list BEFORE the
-            /// call to callback and is never touched again (regardless of the callback
-            /// return value).
-            /// \return true == List is cleared. false == callback returned false.
-            inline bool clear (Callback &callback) {
-                for (T *node = head; node != nullptr;) {
-                    // After callback returns, we might not be able to access the node.
-                    // Remove it from the list first.
-                    T *temp = next (node);
-                    prev (node) = next (node) = nullptr;
-                    contains (node) = false;
-                    if (!callback (node)) {
-                        return false;
-                    }
-                    node = temp;
-                }
-                head = tail = nullptr;
-                count = 0;
-                return true;
-            }
-
             /// \brief
             /// Remove all nodes from the list.
             inline void clear () {
@@ -380,14 +300,14 @@ namespace thekogans {
             /// Alias for std::function<bool (T * /*node*/)>.
             /// \param[in] node T *.
             /// \return true = continue enumeration, false = stop enumeration.
-            using Function = std::function<bool (T * /*node*/)>;
+            using Callback = std::function<bool (T * /*node*/)>;
 
             /// \brief
             /// Remove all nodes from the list.
             /// \param[in] callback Callback to be called for every node in the list.
             /// See VERY, VERY important comment above (clear).
             /// \return true == List is cleared. false == callback returned false.
-            inline bool clear (const Function &callback) {
+            inline bool clear (const Callback &callback) {
                 for (T *node = head; node != nullptr;) {
                     // After callback returns, we might not be able to access the node.
                     // Remove it from the list first.
@@ -549,39 +469,7 @@ namespace thekogans {
             /// \param[in] reverse true == Walk the list tail to head.
             /// \return true == Iterated over all elements, false == callback returned false.
             inline bool for_each (
-                    Callback &callback,
-                    bool reverse = false) const {
-                if (reverse) {
-                    for (T *node = tail; node != nullptr;) {
-                        // After callback returns, we might not be able to call prev (node).
-                        T *temp = prev (node);
-                        if (!callback (node)) {
-                            return false;
-                        }
-                        node = temp;
-                    }
-                }
-                else {
-                    for (T *node = head; node != nullptr;) {
-                        // After callback returns, we might not be able to call next (node).
-                        T *temp = next (node);
-                        if (!callback (node)) {
-                            return false;
-                        }
-                        node = temp;
-                    }
-                }
-                return true;
-            }
-
-            /// \brief
-            /// Walk the list calling the callback for every node.
-            /// The enumeration stops if callback returns false.
-            /// \param[in] callback Called for every node in the list.
-            /// \param[in] reverse true == Walk the list tail to head.
-            /// \return true == Iterated over all elements, false == callback returned false.
-            inline bool for_each (
-                    const Function &callback,
+                    const Callback &callback,
                     bool reverse = false) const {
                 if (reverse) {
                     for (T *node = tail; node != nullptr;) {
@@ -614,34 +502,7 @@ namespace thekogans {
             /// \return First node for which the callback returned true.
             /// nullptr if no node was found matching the criteria.
             inline T *find (
-                    Callback &callback,
-                    bool reverse = false) const {
-                if (reverse) {
-                    for (T *node = tail; node != nullptr; node = prev (node)) {
-                        if (callback (node)) {
-                            return node;
-                        }
-                    }
-                }
-                else {
-                    for (T *node = head; node != nullptr; node = next (node)) {
-                        if (callback (node)) {
-                            return node;
-                        }
-                    }
-                }
-                return nullptr;
-            }
-
-            /// \brief
-            /// Walk the list calling the callback for every node.
-            /// The enumeration stops if callback returns true.
-            /// \param[in] callback Called for every node in the list.
-            /// \param[in] reverse true == Walk the list tail to head.
-            /// \return First node for which the callback returned true.
-            /// nullptr if no node was found matching the criteria.
-            inline T *find (
-                    const Function &callback,
+                    const Callback &callback,
                     bool reverse = false) const {
                 if (reverse) {
                     for (T *node = tail; node != nullptr; node = prev (node)) {

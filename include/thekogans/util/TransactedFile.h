@@ -166,11 +166,12 @@ namespace thekogans {
                     file (file_),
                     guard (file.mutex) {}
                 /// \brief
-                /// dtor.
+                /// dtor. Abort the uncommitted transaction.
                 ~Transaction ();
 
                 /// \brief
                 /// Commit the transaction before the dtor aborts it.
+                /// \param[in] clearCache true == Clear the \see{PageMap} cache after committing.
                 void Commit (bool clearCache = false);
 
                 /// \brief
@@ -201,7 +202,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
-                TransactionParticipant (TransactedFile::SharedPtr file_) :
+                explicit TransactionParticipant (TransactedFile::SharedPtr file_) :
                     file (file_) {}
                 /// \brief
                 /// dtor.
@@ -215,7 +216,7 @@ namespace thekogans {
                 }
 
                 inline bool IsDirty () {
-                    return IsSubscribed (*file);
+                    return file->IsSubscribed (*this);
                 }
                 /// \brief
                 /// Subscribe to \see{TransactedFileEvents}.
@@ -235,7 +236,7 @@ namespace thekogans {
         private:
             /// \brief
             /// File size.
-            TransactedFileAddressSpaceType::AddressType size;
+            TransactedFileAddressSpaceType::SizeType size;
             /// \brief
             /// \see{PageMap} used to map file pages.
             TransactedFileAddressSpaceType::SharedPtr pageMap;
@@ -335,7 +336,7 @@ namespace thekogans {
             /// Return file size in bytes.
             /// Thread safe.
             /// \return File size in bytes.
-            inline TransactedFileAddressSpaceType::AddressType GetSizeEx () {
+            inline TransactedFileAddressSpaceType::SizeType GetSizeEx () {
                 LockGuard<SpinLock> guard (spinLock);
                 return size;
             }
@@ -412,15 +413,15 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
-            TransactedFileAddressSpaceType::AddressType Grow (
-                TransactedFileAddressSpaceType::AddressType amount);
+            TransactedFileAddressSpaceType::SizeType Grow (
+                TransactedFileAddressSpaceType::SizeType amount);
             /// \brief
             /// Shrink the file by the given amount.
             /// Thread safe.
             /// \param[in] amount Amount to shrink the file by.
             /// \return New file size.
-            TransactedFileAddressSpaceType::AddressType Shrink (
-                TransactedFileAddressSpaceType::AddressType amount);
+            TransactedFileAddressSpaceType::SizeType Shrink (
+                TransactedFileAddressSpaceType::SizeType amount);
 
         private:
             // TransactedFileAddressSpaceType::PageSource
@@ -430,10 +431,10 @@ namespace thekogans {
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            virtual TransactedFileAddressSpaceType::AddressType ReadPage (
+            virtual TransactedFileAddressSpaceType::SizeType ReadPage (
                     TransactedFileAddressSpaceType::AddressType offset,
                     void *buffer,
-                    TransactedFileAddressSpaceType::AddressType count) override {
+                    TransactedFileAddressSpaceType::SizeType count) override {
                 Seek (offset, SEEK_SET);
                 return Read (buffer, count);
             }
@@ -443,10 +444,10 @@ namespace thekogans {
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual TransactedFileAddressSpaceType::AddressType WritePage (
+            virtual TransactedFileAddressSpaceType::SizeType WritePage (
                     TransactedFileAddressSpaceType::AddressType offset,
                     const void *buffer,
-                    TransactedFileAddressSpaceType::AddressType count) override {
+                    TransactedFileAddressSpaceType::SizeType count) override {
                 Seek (offset, SEEK_SET);
                 return Write (buffer, count);
             }
