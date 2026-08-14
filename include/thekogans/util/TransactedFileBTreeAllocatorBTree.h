@@ -35,7 +35,15 @@ struct BTree : public TransactedFile::Object {
 
     /// \brief
     /// KeyType is structured on block {size, offset}.
-    using KeyType = std::pair<ui64, PtrType>;
+    struct KeyType {
+        ui64 size;
+        PtrType offset;
+        KeyType (
+            ui64 size_ = 0,
+            PtrType offset_ = 0) :
+            size (size_),
+            offset (offset_) {}
+    };
     /// \brief
     /// KeyType size on disk.
     static const std::size_t KEY_TYPE_SIZE = UI64_SIZE + PTR_TYPE_SIZE;
@@ -386,6 +394,11 @@ protected:
     /// \brief
     /// Needs access to private members.
     friend bool operator < (
+        const KeyType &key1,
+        const KeyType &key2);
+    /// \brief
+    /// Needs access to private members.
+    friend bool operator > (
         const KeyType &key1,
         const KeyType &key2);
 

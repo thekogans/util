@@ -25,14 +25,14 @@ namespace thekogans {
         inline Serializer &operator << (
                Serializer &serializer,
                const TransactedFileBTreeAllocator::BTree::KeyType &key) {
-            serializer << key.first << key.second;
+            serializer << key.size << key.offset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
                 TransactedFileBTreeAllocator::BTree::KeyType &key) {
-            serializer >> key.first >> key.second;
+            serializer >> key.size >> key.offset;
             return serializer;
         }
 
@@ -515,20 +515,27 @@ namespace thekogans {
         inline bool operator == (
                 const TransactedFileBTreeAllocator::BTree::KeyType &key1,
                 const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
-            return key1.first == key2.first && key1.second == key2.second;
+            return key1.size == key2.size && key1.offset == key2.offset;
         }
 
         inline bool operator != (
                 const TransactedFileBTreeAllocator::BTree::KeyType &key1,
                 const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
-            return key1.first != key2.first || key1.second != key2.second;
+            return key1.size != key2.size || key1.offset != key2.offset;
         }
 
         inline bool operator < (
                 const TransactedFileBTreeAllocator::BTree::KeyType &key1,
                 const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
-            return key1.first < key2.first ||
-                (key1.first == key2.first && key1.second < key2.second);
+            return key1.size < key2.size ||
+                (key1.size == key2.size && key1.offset < key2.offset);
+        }
+
+        inline bool operator > (
+                const TransactedFileBTreeAllocator::BTree::KeyType &key1,
+                const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
+            return key1.size > key2.size ||
+                (key1.size == key2.size && key1.offset > key2.offset);
         }
 
         inline Serializer &operator << (

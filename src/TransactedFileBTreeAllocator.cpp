@@ -37,51 +37,51 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 BTree::KeyType result = btree->Find (BTree::KeyType (size, 0));
                 // If we got a block see if it's too big.
-                if (result.second != 0) {
+                if (result.offset != 0) {
                     // Got it!
-                    assert (result.first >= size);
+                    assert (result.size >= size);
                     btree->Remove (result);
                     // If the block we got is bigger than we need, split it.
                     //
                     // we need to go from:
                     //
-                    //               |--------------------- result.first ---------------------|
+                    //               |--------------------- result.size ---------------------|
                     // -----+--------+---------------+----------------------------------------+--------+-----
                     //      | header |               |                                        | footer |
                     // -----+--------+---------------+----------------------------------------+--------+-----
                     //               |               |
-                    //         result.second         |
+                    //         result.offset         |
                     //                         page boundary
                     //
                     // to: Where we avoid straddling a page boundary...
                     //
-                    //               |--------------------- result.first ---------------------|
+                    //               |--------------------- result.size ---------------------|
                     // -----+--------+------+--------+--------+------+--------+--------+------+--------+-----
                     //      | header | prev | footer | header | size | footer | header | next | footer |
                     // -----+--------+------+--------+--------+------+--------+--------+------+--------+-----
                     //               |-- remainder --|        |                        |
                     //          filler block         | page aligned block         free block
                     //               |               |
-                    //          result.second  page boundary
+                    //          result.offset  page boundary
                     //
-                    // ui64 pageOffset = result.second & file->GetPageMask ();
+                    // ui64 pageOffset = result.offset & file->GetPageMask ();
                     // ui64 remainder = file->GetPageSize () - pageOffset;
-                    // prev.offset = result.second;
+                    // prev.offset = result.offset;
                     // prev.size = remainder - Block::HEADER_SIZE;
                     //
                     // or to: ...where we potentially straddle a page boundary.
                     //
-                    //               |------------ result.first -----------|
+                    //               |------------ result.size -----------|
                     // -----+--------+------+----+----+--------+-----------+--------+-----
                     //      | header | size | foo|ter | header | next.size | footer |
                     // -----+--------+------+----+----+--------+-----------+--------+-----
                     //               |           |             |
-                    //         result.second     |        next.offset
+                    //         result.offset     |        next.offset
                     //                     page boundary
                     //
-                    // next.offset = result.second + size + Block::SIZE;
-                    // next.size = result.first - size - Block::SIZE;
-                    ui64 remainder = result.first - size;
+                    // next.offset = result.offset + size + Block::SIZE;
+                    // next.size = result.size - size - Block::SIZE;
+                    ui64 remainder = result.size - size;
                     if (remainder >= MIN_BLOCK_SIZE) {
                         // Check to see if the block would straddle a page boundary...
                         ui64 pageOffset = offset & file->GetPageMask ();
@@ -89,30 +89,30 @@ namespace thekogans {
                             // ...it would. Now check to see if the block would fit aligned...
                             remainder = file->GetPageSize () - pageOffset;
                             if (remainder >= MIN_USER_DATA_SIZE + Block::HEADER_SIZE &&
-                                    result.first >= remainder + size + Block::HEADER_SIZE) {
+                                    result.size >= remainder + size + Block::HEADER_SIZE) {
                                 // ...it would. Add a filler block.
                                 Block prev (
                                     *file,
-                                    result.second,
+                                    result.offset,
                                     Block::FLAGS_FREE,
                                     remainder - Block::HEADER_SIZE);
                                 prev.Write ();
                                 btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
                                 // Adjust result to account for the filler block so that downstream
                                 // calculations have the right values.
-                                result.first -= remainder + Block::HEADER_SIZE;
-                                result.second += remainder + Block::HEADER_SIZE;
+                                result.size -= remainder + Block::HEADER_SIZE;
+                                result.offset += remainder + Block::HEADER_SIZE;
                             }
                         }
                         // We get our offset here, potentially adjusted by the filler block above.
-                        offset = result.second;
+                        offset = result.offset;
                         // We check to see if there's enough remaining after allocation to split the block...
-                        remainder = result.first - size;
+                        remainder = result.size - size;
                         if (remainder >= MIN_BLOCK_SIZE) {
                             // ...there is. Add a free block.
                             Block next (
                                 *file,
-                                result.second + size + Block::SIZE,
+                                result.offset + size + Block::SIZE,
                                 Block::FLAGS_FREE,
                                 remainder - Block::SIZE);
                             next.Write ();
@@ -120,14 +120,14 @@ namespace thekogans {
                         }
                         else {
                             // ...otherwise adjust size to reflect true free block size.
-                            size = result.first;
+                            size = result.size;
                         }
                     }
                     else {
                         // Take on the characteristics of result so that block.Write
                         // bolow does it's job.
-                        offset = result.second;
-                        size = result.first;
+                        offset = result.offset;
+                        size = result.size;
                     }
                 }
                 else {
