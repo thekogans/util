@@ -358,6 +358,7 @@ namespace thekogans {
 
         void CPU::Dump (std::ostream &stream) const {
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64) ||\
+            defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_arm64) ||\
             defined (TOOLCHAIN_ARCH_ppc32) || defined (TOOLCHAIN_ARCH_ppc64)
             auto Supported = [&stream] (
                     const std::string &feature,

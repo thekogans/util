@@ -475,14 +475,22 @@ namespace thekogans {
 
         #define UI128_C(s) thekogans::util::ui128 (#s)
 
+        template <typename T>
+        struct my_is_integral : std::is_integral<T> {};
+        template <typename T>
+        struct my_is_arithmetic : std::is_arithmetic<T> {};
+
+        template <>
+        struct my_is_integral<ui128> : std::true_type {};
+        template <>
+        struct my_is_arithmetic<ui128> : std::true_type {};
+
+        template <typename T>
+        inline constexpr bool my_is_integral_v = my_is_integral<T>::value;
+        template <typename T>
+        inline constexpr bool my_is_arithmetic_v = my_is_arithmetic<T>::value;
+
     } // namespace util
 } // namespace thekogans
-
-namespace std {
-    template<>
-    struct is_integral<thekogans::util::ui128> : true_type {};
-    template<>
-    struct is_arithmetic<thekogans::util::ui128> : true_type {};
-}
 
 #endif // __thekogans_util_ui128_h

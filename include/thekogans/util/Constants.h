@@ -452,7 +452,7 @@ namespace thekogans {
         bool IS_EVEN (T value) {
             // Ensure value is an arithmetic type.
             static_assert (
-                std::is_arithmetic<T>::value,
+                std::is_arithmetic<T>::value || my_is_arithmetic_v<T>,
                 "Template parameter must be an arithmetic type.");
             return (value % 2) == 0;
         }
@@ -465,7 +465,7 @@ namespace thekogans {
         bool IS_ODD (T value) {
             // Ensure value is an arithmetic type.
             static_assert (
-                std::is_arithmetic<T>::value,
+                std::is_arithmetic<T>::value || my_is_arithmetic_v<T>,
                 "Template parameter must be an arithmetic type.");
             return (value % 2) == 1;
         }
@@ -476,7 +476,8 @@ namespace thekogans {
             typename _U>
         _T MIN (_T t, _U u) {
             static_assert (
-                std::is_arithmetic<_T>::value && std::is_arithmetic<_U>::value,
+                (std::is_arithmetic<_T>::value || my_is_arithmetic_v<_T>) &&
+                (std::is_arithmetic<_U>::value || my_is_arithmetic_v<_U>),
                 "Template parameters must be an arithmetic type.");
             return t < u ? t : u;
         }
@@ -488,7 +489,8 @@ namespace thekogans {
             typename _U>
         _T MAX (_T t, _U u) {
             static_assert (
-                std::is_arithmetic<_T>::value && std::is_arithmetic<_U>::value,
+                (std::is_arithmetic<_T>::value || my_is_arithmetic_v<_T>) &&
+                (std::is_arithmetic<_U>::value || my_is_arithmetic_v<_U>),
                 "Template parameters must be an arithmetic type.");
             return t < u ? u : t;
         }
