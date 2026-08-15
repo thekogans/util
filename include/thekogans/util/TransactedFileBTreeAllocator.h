@@ -205,33 +205,33 @@ namespace thekogans {
             /// \brief
             /// Needs access to private members.
             friend bool operator == (
-                const BTree::KeyType &key1,
-                const BTree::KeyType &key2);
+                const BTree::Key &key1,
+                const BTree::Key &key2);
             /// \brief
             /// Needs access to private members.
             friend bool operator != (
-                const BTree::KeyType &key1,
-                const BTree::KeyType &key2);
+                const BTree::Key &key1,
+                const BTree::Key &key2);
             /// \brief
             /// Needs access to private members.
             friend bool operator < (
-                const BTree::KeyType &key1,
-                const BTree::KeyType &key2);
+                const BTree::Key &key1,
+                const BTree::Key &key2);
             /// \brief
             /// Needs access to private members.
             friend bool operator > (
-                const BTree::KeyType &key1,
-                const BTree::KeyType &key2);
+                const BTree::Key &key1,
+                const BTree::Key &key2);
             /// \brief
             /// Needs access to private members.
             friend Serializer &operator << (
                Serializer &serializer,
-               const BTree::KeyType &key);
+               const BTree::Key &key);
             /// \brief
             /// Needs access to private members.
             friend Serializer &operator >> (
                 Serializer &serializer,
-                BTree::KeyType &key);
+                BTree::Key &key);
 
             /// \brief
             /// Needs access to private members.

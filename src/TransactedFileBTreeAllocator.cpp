@@ -35,7 +35,7 @@ namespace thekogans {
                     size = MIN_USER_DATA_SIZE;
                 }
                 LockGuard<SpinLock> guard (spinLock);
-                BTree::KeyType result = btree->Find (BTree::KeyType (size, 0));
+                BTree::Key result = btree->Find (BTree::Key (size, 0));
                 // If we got a block see if it's too big.
                 if (result.offset != 0) {
                     // Got it!
@@ -97,7 +97,7 @@ namespace thekogans {
                                     Block::FLAGS_FREE,
                                     remainder - Block::HEADER_SIZE);
                                 prev.Write ();
-                                btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                                btree->Insert (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                                 // Adjust result to account for the filler block so that downstream
                                 // calculations have the right values.
                                 result.size -= remainder + Block::HEADER_SIZE;
@@ -116,7 +116,7 @@ namespace thekogans {
                                 Block::FLAGS_FREE,
                                 remainder - Block::SIZE);
                             next.Write ();
-                            btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                            btree->Insert (BTree::Key (next.GetSize (), next.GetOffset ()));
                         }
                         else {
                             // ...otherwise adjust size to reflect true free block size.
@@ -151,7 +151,7 @@ namespace thekogans {
                             Block::FLAGS_FREE,
                             remainder - Block::SIZE);
                         prev.Write ();
-                        btree->Insert (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                        btree->Insert (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                     }
                     // Otherwise, we fit in the ramainder. Check if what will remain
                     // after our allocation would be too small for a block and cause
@@ -190,7 +190,7 @@ namespace thekogans {
                     // Consolidate adjacent free blocks.
                     Block prev (*file);
                     if (block.Prev (prev) && prev.IsFree ()) {
-                        btree->Remove (BTree::KeyType (prev.GetSize (), prev.GetOffset ()));
+                        btree->Remove (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume prev body is clear.
                             clearOffset -= Block::HEADER_SIZE;
@@ -210,7 +210,7 @@ namespace thekogans {
                     }
                     Block next (*file);
                     if (block.Next (next) && next.IsFree ()) {
-                        btree->Remove (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        btree->Remove (BTree::Key (next.GetSize (), next.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume next body is clear.
                             clearLength += Block::HEADER_SIZE;
@@ -229,7 +229,7 @@ namespace thekogans {
                     // If we're not the last block...
                     if (!block.IsLast ()) {
                         // ...add it to the free list.
-                        btree->Insert (BTree::KeyType (block.GetSize (), block.GetOffset ()));
+                        btree->Insert (BTree::Key (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
                         block.Write ();
                         if (IsSecure ()) {
@@ -296,7 +296,7 @@ namespace thekogans {
                             range.Seek (
                                 SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         }
-                        btree->Insert (BTree::KeyType (next.GetSize (), next.GetOffset ()));
+                        btree->Insert (BTree::Key (next.GetSize (), next.GetOffset ()));
                         block.SetSize (size);
                         block.Write ();
                     }

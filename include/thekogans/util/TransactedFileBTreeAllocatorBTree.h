@@ -33,20 +33,33 @@ struct BTree : public TransactedFile::Object {
     /// Declare \see{RefCounted} pointers.
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
 
+    /// \struct Fileallocator::BTree::Key FileallocatorBTree.h
+    /// thekogans/util/FileallocatorBTree.h
+    ///
     /// \brief
-    /// KeyType is structured on block {size, offset}.
-    struct KeyType {
+    /// Key is structured on block {size, offset}.
+    struct Key {
+        /// \brief
+        /// Block size.
         ui64 size;
+        /// \brief
+        /// Block offset.
         PtrType offset;
-        KeyType (
+
+        /// \brief
+        /// Key size on disk.
+        static const std::size_t SIZE = UI64_SIZE + PTR_TYPE_SIZE;
+
+        /// \brief
+        /// ctor.
+        /// \param[in] size_ Block size.
+        /// \param[in] offset_ Block offset.
+        Key (
             ui64 size_ = 0,
             PtrType offset_ = 0) :
             size (size_),
             offset (offset_) {}
     };
-    /// \brief
-    /// KeyType size on disk.
-    static const std::size_t KEY_TYPE_SIZE = UI64_SIZE + PTR_TYPE_SIZE;
 
 private:
     /// \brief
@@ -108,7 +121,7 @@ private:
         struct Entry {
             /// \brief
             /// Entry key.
-            KeyType key;
+            Key key;
             /// \brief
             /// Right child node offset.
             PtrType rightOffset;
@@ -119,7 +132,7 @@ private:
             /// \brief
             /// ctor.
             /// \param[in] key_ Entry key.
-            Entry (const KeyType &key_ = KeyType (0, 0)) :
+            Entry (const Key &key_ = Key (0, 0)) :
                 key (key_),
                 rightOffset (0),
                 rightNode (nullptr) {}
@@ -177,7 +190,7 @@ private:
         /// If not found will contain the index of the closest larger key.
         /// \return true == found the key.
         bool Find (
-            const KeyType &key,
+            const Key &key,
             ui32 &index) const;
         /// \brief
         /// Try to recursively insert the given entry.
@@ -187,9 +200,9 @@ private:
         bool Insert (Entry &entry);
         /// \brief
         /// Try to recursively delete the given key.
-        /// \param[in] key \see{KeyType} whose entry we want to delete.
+        /// \param[in] key \see{Key} whose entry we want to delete.
         /// \return true == entry was deleted. false == key not found.
-        bool Remove (const KeyType &key);
+        bool Remove (const Key &key);
         /// \brief
         /// Maintain BTree structure.
         void RestoreBalance (ui32 index);
@@ -334,20 +347,20 @@ public:
 
     /// \brief
     /// Find the given key in the btree.
-    /// \param[in] key KeyType to find.
+    /// \param[in] key Key to find.
     /// \return If found the given key will be returned.
     /// If not found, return the nearest larger key.
-    KeyType Find (const KeyType &key);
+    Key Find (const Key &key);
     /// \brief
     /// Add the given key to the btree.
-    /// \param[in] key KeyType to add.
+    /// \param[in] key Key to add.
     /// NOTE: Duplicate keys are ignored.
-    void Insert (const KeyType &key);
+    void Insert (const Key &key);
     /// \brief
     /// Delete the given key from the btree.
-    /// \param[in] key KeyType whose entry to delete.
+    /// \param[in] key Key whose entry to delete.
     /// \return true == entry deleted. false == entry not found.
-    bool Remove (const KeyType &key);
+    bool Remove (const Key &key);
 
 protected:
     // TransactedFile::Object
@@ -384,34 +397,34 @@ protected:
     /// \brief
     /// Needs access to private members.
     friend bool operator == (
-        const KeyType &key1,
-        const KeyType &key2);
+        const Key &key1,
+        const Key &key2);
     /// \brief
     /// Needs access to private members.
     friend bool operator != (
-        const KeyType &key1,
-        const KeyType &key2);
+        const Key &key1,
+        const Key &key2);
     /// \brief
     /// Needs access to private members.
     friend bool operator < (
-        const KeyType &key1,
-        const KeyType &key2);
+        const Key &key1,
+        const Key &key2);
     /// \brief
     /// Needs access to private members.
     friend bool operator > (
-        const KeyType &key1,
-        const KeyType &key2);
+        const Key &key1,
+        const Key &key2);
 
     /// \brief
     /// Needs access to private members.
     friend Serializer &operator << (
         Serializer &serializer,
-        const KeyType &key);
+        const Key &key);
     /// \brief
     /// Needs access to private members.
     friend Serializer &operator >> (
         Serializer &serializer,
-        KeyType &key);
+        Key &key);
 
     /// \brief
     /// Needs access to private members.

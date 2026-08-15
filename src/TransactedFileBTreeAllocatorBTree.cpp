@@ -24,14 +24,14 @@ namespace thekogans {
 
         inline Serializer &operator << (
                Serializer &serializer,
-               const TransactedFileBTreeAllocator::BTree::KeyType &key) {
+               const TransactedFileBTreeAllocator::BTree::Key &key) {
             serializer << key.size << key.offset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
-                TransactedFileBTreeAllocator::BTree::KeyType &key) {
+                TransactedFileBTreeAllocator::BTree::Key &key) {
             serializer >> key.size >> key.offset;
             return serializer;
         }
@@ -73,7 +73,7 @@ namespace thekogans {
 
         std::size_t TransactedFileBTreeAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
                                         // key             rightOffset
-            const std::size_t ENTRY_SIZE = KEY_TYPE_SIZE + PTR_TYPE_SIZE;
+            const std::size_t ENTRY_SIZE = Key::SIZE + PTR_TYPE_SIZE;
                 // magic       count       leftOffset      entries
             return UI32_SIZE + UI32_SIZE + PTR_TYPE_SIZE + entriesPerNode * ENTRY_SIZE;
         }
@@ -141,7 +141,7 @@ namespace thekogans {
         }
 
         bool TransactedFileBTreeAllocator::BTree::Node::Find (
-                const KeyType &key,
+                const Key &key,
                 ui32 &index) const {
             index = 0;
             ui32 last = count;
@@ -202,7 +202,7 @@ namespace thekogans {
             return true;
         }
 
-        bool TransactedFileBTreeAllocator::BTree::Node::Remove (const KeyType &key) {
+        bool TransactedFileBTreeAllocator::BTree::Node::Remove (const Key &key) {
             ui32 index;
             bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
@@ -426,8 +426,8 @@ namespace thekogans {
             rootNode->Release ();
         }
 
-        TransactedFileBTreeAllocator::BTree::KeyType TransactedFileBTreeAllocator::BTree::Find (const KeyType &key) {
-            KeyType result (UI64_MAX, 0);
+        TransactedFileBTreeAllocator::BTree::Key TransactedFileBTreeAllocator::BTree::Find (const Key &key) {
+            Key result (UI64_MAX, 0);
             Node *node = rootNode;
             while (node != nullptr) {
                 ui32 index;
@@ -443,7 +443,7 @@ namespace thekogans {
             return result;
         }
 
-        void TransactedFileBTreeAllocator::BTree::Insert (const KeyType &key) {
+        void TransactedFileBTreeAllocator::BTree::Insert (const Key &key) {
             Node::Entry entry (key);
             if (!rootNode->Insert (entry)) {
                 // The path to the leaf node is full.
@@ -461,7 +461,7 @@ namespace thekogans {
             }
         }
 
-        bool TransactedFileBTreeAllocator::BTree::Remove (const KeyType &key) {
+        bool TransactedFileBTreeAllocator::BTree::Remove (const Key &key) {
             bool removed = rootNode->Remove (key);
             if (removed) {
                 if (rootNode->IsEmpty () && rootNode->GetChild (0) != nullptr) {
@@ -513,27 +513,27 @@ namespace thekogans {
         }
 
         inline bool operator == (
-                const TransactedFileBTreeAllocator::BTree::KeyType &key1,
-                const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
+                const TransactedFileBTreeAllocator::BTree::Key &key1,
+                const TransactedFileBTreeAllocator::BTree::Key &key2) {
             return key1.size == key2.size && key1.offset == key2.offset;
         }
 
         inline bool operator != (
-                const TransactedFileBTreeAllocator::BTree::KeyType &key1,
-                const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
+                const TransactedFileBTreeAllocator::BTree::Key &key1,
+                const TransactedFileBTreeAllocator::BTree::Key &key2) {
             return key1.size != key2.size || key1.offset != key2.offset;
         }
 
         inline bool operator < (
-                const TransactedFileBTreeAllocator::BTree::KeyType &key1,
-                const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
+                const TransactedFileBTreeAllocator::BTree::Key &key1,
+                const TransactedFileBTreeAllocator::BTree::Key &key2) {
             return key1.size < key2.size ||
                 (key1.size == key2.size && key1.offset < key2.offset);
         }
 
         inline bool operator > (
-                const TransactedFileBTreeAllocator::BTree::KeyType &key1,
-                const TransactedFileBTreeAllocator::BTree::KeyType &key2) {
+                const TransactedFileBTreeAllocator::BTree::Key &key1,
+                const TransactedFileBTreeAllocator::BTree::Key &key2) {
             return key1.size > key2.size ||
                 (key1.size == key2.size && key1.offset > key2.offset);
         }
