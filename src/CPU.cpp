@@ -339,12 +339,20 @@ namespace thekogans {
         #endif // !defined (MemoryBarrier)
     #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         #if defined (TOOLCHAIN_ARCH_arm64)
-             #define YieldProcessor() asm volatile ("yield")
-             #define MemoryBarrier __sync_synchronize
+            #if !defined (YieldProcessor)
+                #define YieldProcessor() asm volatile ("yield")
+            #endif // !defined (YieldProcessor)
+            #if !defined (MemoryBarrier)
+                #define MemoryBarrier __sync_synchronize
+            #endif // !defined (MemoryBarrier)
         #endif // defined (TOOLCHAIN_ARCH_arm64)
         #if defined (TOOLCHAIN_ARCH_arm32)
-             #define YieldProcessor()
-             #define MemoryBarrier __sync_synchronize
+            #if !defined (YieldProcessor)
+                #define YieldProcessor()
+            #endif // !defined (YieldProcessor)
+            #if !defined (MemoryBarrier)
+                #define MemoryBarrier __sync_synchronize
+            #endif // !defined (MemoryBarrier)
         #endif // defined (TOOLCHAIN_ARCH_arm32)
     #endif // defined (TOOLCHAIN_COMPILER_cl)
 
