@@ -32,13 +32,13 @@ namespace {
     std::string GetHasherList (const std::string &separator) {
         std::string hasherList;
         {
-            std::list<std::string> hashers;
-            util::Hash::GetTypes (hashers);
+            util::DynamicCreatable::TypeMapType hashers = util::Hash::GetTypes ();
             if (!hashers.empty ()) {
-                std::list<std::string>::const_iterator it = hashers.begin ();
-                hasherList = *it++;
-                for (std::list<std::string>::const_iterator end = hashers.end (); it != end; ++it) {
-                    hasherList += separator + *it;
+                util::DynamicCreatable::TypeMapType::const_iterator it = hashers.begin ();
+                hasherList = it->first;
+                ++it;
+                for (util::DynamicCreatable::TypeMapType::const_iterator end = hashers.end (); it != end; ++it) {
+                    hasherList += separator + it->first;
                 }
             }
             else {
@@ -76,12 +76,12 @@ int main (
                 case 'h': {
                     if (!hashers.empty () && hashers.back ()->digestSizes.empty ()) {
                         util::Hash::SharedPtr hash =
-                            util::Hash::CreateType (hashers.back ()->name);
+                            util::Hash::CreateType (hashers.back ()->name.c_str ());
                         assert (hash.Get () != 0);
                         hashers.back ()->digestSizes.clear ();
                         hash->GetDigestSizes (hashers.back ()->digestSizes);
                     }
-                    util::Hash::SharedPtr hash = util::Hash::CreateType (value);
+                    util::Hash::SharedPtr hash = util::Hash::CreateType (value.c_str ());
                     if (hash.Get () != 0) {
                         hashers.push_back (new Hasher (value));
                     }
@@ -94,7 +94,7 @@ int main (
                     if (!hashers.empty ()) {
                         if (value == "ALL") {
                             util::Hash::SharedPtr hash =
-                                util::Hash::CreateType (hashers.back ()->name);
+                                util::Hash::CreateType (hashers.back ()->name.c_str ());
                             assert (hash.Get () != 0);
                             hashers.back ()->digestSizes.clear ();
                             hash->GetDigestSizes (hashers.back ()->digestSizes);
@@ -127,7 +127,7 @@ int main (
         }
         virtual void Epilog () {
             if (!hashers.empty () && hashers.back ()->digestSizes.empty ()) {
-                util::Hash::SharedPtr hash = util::Hash::CreateType (hashers.back ()->name);
+                util::Hash::SharedPtr hash = util::Hash::CreateType (hashers.back ()->name.c_str ());
                 assert (hash.Get () != 0);
                 hashers.back ()->digestSizes.clear ();
                 hash->GetDigestSizes (hashers.back ()->digestSizes);
@@ -148,7 +148,7 @@ int main (
     for (util::OwnerList<Options::Hasher>::const_iterator
             it = options.hashers.begin (),
             end = options.hashers.end (); it != end; ++it) {
-        util::Hash::SharedPtr hash = util::Hash::CreateType ((*it)->name);
+        util::Hash::SharedPtr hash = util::Hash::CreateType ((*it)->name.c_str ());
         assert (hash.Get () != 0);
         for (std::list<std::size_t>::const_iterator
                 jt = (*it)->digestSizes.begin (),

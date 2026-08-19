@@ -584,6 +584,14 @@ namespace thekogans {
             return serializer;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+                Serializer &serializer,
+                Buffer::SharedPtr &buffer) {
+            buffer.Reset (new Buffer);
+            serializer >> *buffer;
+            return serializer;
+        }
+
         namespace {
             const char * const ATTR_ENDIANESS = "Endianness";
             const char * const ATTR_LENGTH = "Length";

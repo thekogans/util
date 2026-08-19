@@ -76,12 +76,7 @@ int main (
     else {
         for (util::ui32 i = 0; i < options.count; ++i) {
             util::GUID guid = util::GUID::FromRandom ();
-            if (options.windows) {
-                std::cout << guid.ToWindowsGUIDString (options.upperCase);
-            }
-            else {
-                std::cout << guid.ToString (options.upperCase);
-            }
+            std::cout << guid.ToHexString (options.windows, options.upperCase);
             if (options.count > 1 || options.newLine) {
                 std::cout << std::endl;
             }

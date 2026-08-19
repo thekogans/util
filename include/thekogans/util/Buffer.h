@@ -935,6 +935,14 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
             Buffer &buffer);
+        /// \brief
+        /// Read a buffer from the given \see{Serializer}.
+        /// \param[in] serializer Where to read the buffer from.
+        /// \param[out] buffer Buffer to read.
+        /// \return serializer.
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+            Serializer &serializer,
+            Buffer::SharedPtr &buffer);
 
         /// \brief
         /// Write the given buffer to the given node.
