@@ -666,6 +666,14 @@ namespace thekogans {
             return node;
         }
 
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+                pugi::xml_node &node,
+                Buffer::SharedPtr &buffer) {
+            buffer.Reset (new Buffer);
+            node >> *buffer;
+            return node;
+        }
+
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
                 const Buffer &buffer) {
@@ -730,6 +738,14 @@ namespace thekogans {
             buffer.endianness = endianness;
             buffer.readOffset = readOffset;
             buffer.writeOffset = writeOffset;
+            return object;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+                JSON::Object &object,
+                Buffer::SharedPtr &buffer) {
+            buffer.Reset (new Buffer);
+            object >> *buffer;
             return object;
         }
 

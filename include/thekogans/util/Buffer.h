@@ -977,6 +977,22 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
             pugi::xml_node &node,
             Buffer &buffer);
+        /// \brief
+        /// Read an buffer from the given node.
+        /// The node syntax looks like this:
+        /// <Buffer Endianness = ""
+        ///         Length = ""
+        ///         ReadOffset = ""
+        ///         WriteOffset = ""
+        ///         Allocator = "">
+        /// Base 64 encoded buffer contents.
+        /// </Buffer>
+        /// \param[in] node Where to read the buffer from.
+        /// \param[out] buffer Allocate a new Buffer to read.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
+            pugi::xml_node &node,
+            Buffer::SharedPtr &buffer);
 
         /// \brief
         /// Write the given buffer to the given object.
@@ -1012,11 +1028,30 @@ namespace thekogans {
         ///   }
         /// }
         /// \param[in] object Where to read the buffer from.
-        /// \param[out] buffer Buffer to read.
+        /// \param[out] buffer \see{Buffer} to read.
         /// \return node.
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
             JSON::Object &object,
             Buffer &buffer);
+        /// \brief
+        /// Read an Exception from the given object.
+        /// The object syntax looks like this:
+        /// {
+        ///   Endianness: 'endianness',
+        ///   Length: 'length',
+        ///   ReadOffset: 'read offset',
+        ///   WriteOffset: 'write offset',
+        ///   Allocator: 'allocator name',
+        ///   Contents: {
+        ///   ...
+        ///   }
+        /// }
+        /// \param[in] object Where to read the buffer from.
+        /// \param[out] buffer Allocate a new \see{Buffer} to read.
+        /// \return node.
+        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
+            JSON::Object &object,
+            Buffer::SharedPtr &buffer);
 
     } // namespace util
 } // namespace thekogans
