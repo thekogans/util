@@ -36,7 +36,7 @@ Here is a complete feature list:
       clever JOSN::Array ctor.
 
     - A collection of useful, simple, and lightweight types (Flags.h,
-      Variant.h, GUID.h, Fraction.h, Array.h, FixedArray.h, BitSet.h).
+      Variant.h, GUID.h, Fraction.h, FixedArray.h, BitSet.h).
 
     - A collection of standard container wrappers (OwnerList.h,
       OwnerVector.h, OwnerMap.h) which help with lifetime management
@@ -80,7 +80,7 @@ Here is a complete feature list:
 
     - A TransactedFile.h framework which exposes Allocator and
       Regitry (TransactedFileAllocator.h, TransactedFileRegistry.h).
-      Default implementations of allocator and registry usinga BTree
+      Default implementations of allocator and registry using a BTree
       (TransactedFileBTreeAllocator.h, TransactedFileBTreeRegistry.h)
 
     - A BTree (TransactedFileBTree.h) designed to work with TransactedFile.
@@ -164,4 +164,6 @@ libthekogans_util has the following optional dependencies:
 Windows:
 if -DTHEKOGANS_UTIL_HAVE_OLE is specified; ole32.lib, oleaut32.lib
 if -DTHEKOGANS_UTIL_HAVE_WTS is specified; Wtsapi32.lib, Advapi32.lib.
-Linux: if -DTHEKOGANS_UTIL_HAVE_XLIB is specified; X11.
+
+Linux:
+if -DTHEKOGANS_UTIL_HAVE_XLIB is specified; X11.

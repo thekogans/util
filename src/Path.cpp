@@ -390,6 +390,7 @@ namespace thekogans {
                 else {
                     component = path.substr (start, end - start);
                 }
+                component = util::TrimSpaces (component.c_str ());
                 if (!component.empty ()) {
                     components.push_back (component);
                 }

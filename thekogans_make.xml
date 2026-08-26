@@ -55,18 +55,13 @@
       </when>
     </choose>
   </dependencies>
-  <c_preprocessor_definitions>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+  <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
+    <c_preprocessor_definitions>
       <c_preprocessor_definition>_CRT_SECURE_NO_WARNINGS</c_preprocessor_definition>
       <c_preprocessor_definition>_CRT_SECURE_NO_DEPRECATE</c_preprocessor_definition>
       <c_preprocessor_definition>_CRT_NONSTDC_NO_DEPRECATE</c_preprocessor_definition>
-    </if>
-  </c_preprocessor_definitions>
-  <cpp_preprocessor_definitions>
-    <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
-      <cpp_preprocessor_definition>_CRT_SECURE_NO_WARNINGS</cpp_preprocessor_definition>
-    </if>
-  </cpp_preprocessor_definitions>
+    </c_preprocessor_definitions>
+  </if>
   <c_headers prefix = "include/3rdparty/private/zlib"
              install = "no">
     <c_header>crc32.h</c_header>
