@@ -19,7 +19,9 @@
 #include <cstring>
 #include <algorithm>
 #include <vector>
-#include <zlib.h>
+#if defined (THEKOGANS_UTIL_HAVE_ZLIB)
+    #include <zlib.h>
+#endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsUtils.h"
@@ -257,6 +259,7 @@ namespace thekogans {
             return advance;
         }
 
+    #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         namespace {
             struct OutBuffer {
                 Allocator::SharedPtr allocator;
@@ -407,6 +410,7 @@ namespace thekogans {
             }
             return nullptr;
         }
+    #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
         Buffer::SharedPtr Buffer::FromHexBuffer (
                 Endianness endianness,

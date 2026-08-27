@@ -353,6 +353,7 @@ namespace thekogans {
             /// \return Number of bytes actually advanced.
             std::size_t AdvanceWriteOffset (std::size_t advance);
 
+        #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
             /// Use zlib to compress the buffer.
             /// \param[in] allocator_ \see{Allocator} for the returned buffer.
@@ -367,6 +368,7 @@ namespace thekogans {
             /// \return A buffer containing inflated data.
             virtual SharedPtr Inflate (
                 Allocator::SharedPtr allocator_ = nullptr) const;
+        #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
             /// \brief
             /// Given a hex encoded string and length, convert to Buffer.

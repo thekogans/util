@@ -7,6 +7,9 @@
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
+    <if condition = "$(is_package_installed -p:zlib)">
+      <feature>THEKOGANS_UTIL_HAVE_ZLIB</feature>
+    </if>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
       <feature>THEKOGANS_UTIL_HAVE_OLE</feature>
       <feature>THEKOGANS_UTIL_HAVE_WTS</feature>
@@ -22,36 +25,39 @@
     <feature>THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC</feature>
   </features>
   <dependencies>
+    <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_ZLIB)">
+      <package name = "zlib"/>
+    </if>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
-        <library>Ws2_32.lib</library>
+        <library name = "Ws2_32.lib"/>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_OLE)">
           <library>ole32.lib</library>
-          <library>oleaut32.lib</library>
+          <library name = "oleaut32.lib"/>
         </if>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_WTS)">
-          <library>Wtsapi32.lib</library>
-          <library>Advapi32.lib</library>
+          <library name = "Wtsapi32.lib"/>
+          <library name = "Advapi32.lib"/>
         </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
-        <library>pthread</library>
-        <library>rt</library>
-        <library>dl</library>
+        <library name = "pthread"/>
+        <library nane = "rt"/>
+        <library name = "dl"/>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
           <library>X11</library>
         </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <library>pthread</library>
-        <framework>Foundation</framework>
-        <framework>Security</framework>
-        <framework>Cocoa</framework>
-        <framework>CoreFoundation</framework>
-        <framework>CoreServices</framework>
-        <framework>CoreGraphics</framework>
-        <framework>SystemConfiguration</framework>
-        <framework>IOKit</framework>
+        <library name = "pthread"/>
+        <framework name = "Foundation"/>
+        <framework name = "Security"/>
+        <framework name = "Cocoa"/>
+        <framework name = "CoreFoundation"/>
+        <framework name = "CoreServices"/>
+        <framework name = "CoreGraphics"/>
+        <framework name = "SystemConfiguration"/>
+        <framework name = "IOKit"/>
       </when>
     </choose>
   </dependencies>
@@ -62,20 +68,6 @@
       <c_preprocessor_definition>_CRT_NONSTDC_NO_DEPRECATE</c_preprocessor_definition>
     </c_preprocessor_definitions>
   </if>
-  <c_headers prefix = "include/3rdparty/private/zlib"
-             install = "no">
-    <c_header>crc32.h</c_header>
-    <c_header>deflate.h</c_header>
-    <c_header>gzguts.h</c_header>
-    <c_header>inffast.h</c_header>
-    <c_header>inffixed.h</c_header>
-    <c_header>inflate.h</c_header>
-    <c_header>inftrees.h</c_header>
-    <c_header>trees.h</c_header>
-    <c_header>zconf.h</c_header>
-    <c_header>zlib.h</c_header>
-    <c_header>zutil.h</c_header>
-  </c_headers>
   <cpp_headers prefix = "include"
                install = "yes">
     <cpp_header>$(organization)/$(project_directory)/AlignedAllocator.h</cpp_header>
@@ -631,24 +623,6 @@
     <cpp_header>boost/utility/detail/in_place_factory_prefix.hpp</cpp_header>
     <cpp_header>boost/utility/detail/result_of_iterate.hpp</cpp_header>
   </cpp_headers>
-  <!-- For Buffer::Compress/Decompress -->
-  <c_sources prefix = "src/3rdparty/zlib">
-    <c_source>adler32.c</c_source>
-    <c_source>compress.c</c_source>
-    <c_source>crc32.c</c_source>
-    <c_source>deflate.c</c_source>
-    <c_source>gzclose.c</c_source>
-    <c_source>gzlib.c</c_source>
-    <c_source>gzread.c</c_source>
-    <c_source>gzwrite.c</c_source>
-    <c_source>infback.c</c_source>
-    <c_source>inffast.c</c_source>
-    <c_source>inflate.c</c_source>
-    <c_source>inftrees.c</c_source>
-    <c_source>trees.c</c_source>
-    <c_source>uncompr.c</c_source>
-    <c_source>zutil.c</c_source>
-  </c_sources>
   <cpp_sources prefix = "src">
     <cpp_source>AlignedAllocator.cpp</cpp_source>
     <cpp_source>Allocator.cpp</cpp_source>
