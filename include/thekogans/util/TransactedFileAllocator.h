@@ -140,6 +140,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             /// \brief
             /// Size of header on disk.
             static const std::size_t SIZE =
+            // If this feature is on, every block header and footer will
+            // have magic 4 bytes (ui32) embeded. These bytes are used to
+            // check block integrity. If you absolutely must save space on
+            // your blocks (8 bytes total), turn this feature off.
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 UI32_SIZE + // magic
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)

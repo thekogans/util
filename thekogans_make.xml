@@ -32,7 +32,7 @@
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">
         <library name = "Ws2_32.lib"/>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_OLE)">
-          <library>ole32.lib</library>
+          <library name = "ole32.lib"/>
           <library name = "oleaut32.lib"/>
         </if>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_WTS)">
@@ -45,7 +45,7 @@
         <library nane = "rt"/>
         <library name = "dl"/>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
-          <library>X11</library>
+          <library name = "X11"/>
         </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
