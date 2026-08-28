@@ -503,6 +503,7 @@ namespace thekogans {
             return Buffer::Subset (offset, count, SecureAllocator::Instance ());
         }
 
+    #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
         Buffer::SharedPtr SecureBuffer::Deflate (Allocator::SharedPtr /*allocator*/) const {
             if (GetDataAvailableForReading () != 0) {
                 OutBuffer outBuffer (SecureAllocator::Instance ());
@@ -535,6 +536,7 @@ namespace thekogans {
             }
             return SharedPtr ();
         }
+    #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,

@@ -586,6 +586,7 @@ namespace thekogans {
                 std::size_t count,
                 Allocator::SharedPtr /*allocator*/ = nullptr) const override;
 
+        #if defined (THEKOGANS_UTIL_HAVE_ZLIB)
             /// \brief
             /// Use zlib to compress the buffer.
             /// \param[in] allocator Allocator for the returned buffer.
@@ -600,6 +601,7 @@ namespace thekogans {
             /// \return A buffer containing inflated data.
             virtual SharedPtr Inflate (
                 Allocator::SharedPtr /*allocator*/ = nullptr) const override;
+        #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
         };
 
         /// \struct TenantReadBuffer Buffer.h thekogans/util/Buffer.h
