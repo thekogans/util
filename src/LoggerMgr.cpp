@@ -468,12 +468,10 @@ namespace thekogans {
             void LogSubsystem (
                     const LoggerMgr::Entry &entry,
                     const LoggerMgr::LoggerList &loggerList) {
-                for (LoggerMgr::LoggerList::const_iterator
-                        it = loggerList.begin (),
-                        end = loggerList.end (); it != end; ++it) {
+                for (auto logger : loggerList) {
                     THEKOGANS_UTIL_TRY {
-                        if ((*it)->level >= entry.level) {
-                            (*it)->Log (entry.subsystem, entry.level, entry.header, entry.message);
+                        if (logger->level >= entry.level) {
+                            logger->Log (entry.subsystem, entry.level, entry.header, entry.message);
                         }
                     }
                     THEKOGANS_UTIL_CATCH (std::exception) {

@@ -187,11 +187,19 @@ namespace thekogans {
                 lo (static_cast<BaseType> (value)),
                 hi (0) {}
             ui128 (float value) :
-                lo (static_cast<BaseType> (value)),
-                hi (0) {}
+                    lo (static_cast<BaseType> (value)),
+                    hi (0) {
+                if (value < 0) {
+                    hi = static_cast<BaseType> (-1);
+                }
+            }
             ui128 (double value) :
-                lo (static_cast<BaseType> (value)),
-                hi (0) {}
+                    lo (static_cast<BaseType> (value)),
+                    hi (0) {
+                if (value < 0) {
+                    hi = static_cast<BaseType> (-1);
+                }
+            }
             ui128 (const ui128 &value) :
                 lo (value.lo),
                 hi (value.hi) {}

@@ -57,10 +57,12 @@ namespace thekogans {
         #if defined (TOOLCHAIN_OS_Windows)
             const char NATIVE_PATH_SEPARATOR = WINDOWS_PATH_SEPARATOR;
             const char OTHER_PATH_SEPARATOR = UNIX_PATH_SEPARATOR;
+            const char PATH_LIST_SEPARATOR = ';';
             const char DRIVE_LETTER_DELIMITER = ':';
         #else // defined (TOOLCHAIN_OS_Windows)
             const char NATIVE_PATH_SEPARATOR = UNIX_PATH_SEPARATOR;
             const char OTHER_PATH_SEPARATOR = WINDOWS_PATH_SEPARATOR;
+            const char PATH_LIST_SEPARATOR = ':';
         #endif // defined (TOOLCHAIN_OS_Windows)
             const char PATH_SEPARATORS[3] = {
                 NATIVE_PATH_SEPARATOR,
@@ -164,6 +166,10 @@ namespace thekogans {
             std::replace (tmpPath.begin (), tmpPath.end (),
                 WINDOWS_PATH_SEPARATOR, UNIX_PATH_SEPARATOR);
             return tmpPath;
+        }
+
+        char Path::GetNativePathListSeparator () {
+            return PATH_LIST_SEPARATOR;
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -370,7 +376,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-        bool Path::GetComponents (std::list<std::string> &components) const {
+        bool Path::GetComponents (std::vector<std::string> &components) const {
             std::string::size_type start = 0;
         #if defined (TOOLCHAIN_OS_Windows)
             char drive = GetDrive ();
@@ -540,11 +546,11 @@ namespace thekogans {
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API MakePath (
-                const std::list<std::string> &components,
+                const std::vector<std::string> &components,
                 bool absolute) {
             std::string path;
-            std::list<std::string>::const_iterator it = components.begin ();
-            std::list<std::string>::const_iterator end = components.end ();
+            std::vector<std::string>::const_iterator it = components.begin ();
+            std::vector<std::string>::const_iterator end = components.end ();
         #if defined (TOOLCHAIN_OS_Windows)
             if (it != end && IsDrive (*it)) {
                 path = *it++;

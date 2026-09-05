@@ -15,33 +15,40 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include <string>
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Version.h"
 
 namespace thekogans {
     namespace util {
 
-    #if defined (TOOLCHAIN_COMPILER_cl)
-        #pragma warning (push)
-        #pragma warning (disable : 4996)
-    #endif // defined (TOOLCHAIN_COMPILER_cl)
-
         Version::Version (const std::string &value) :
                 majorVersion (0),
                 minorVersion (0),
                 patchVersion (0) {
-            if (!value.empty ()) {
-                if (sscanf (value.c_str (), "%u.%u.%u",
-                        &majorVersion, &minorVersion, &patchVersion) != 3) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            std::string::size_type start = 0;
+            std::string::size_type end = value.find_first_of (".", start);
+            if (end != std::string::npos) {
+                majorVersion = stringToui32 (value.substr (start, end - start).c_str ());
+                start = end + 1;
+                end = value.find_first_of (".", start);
+                if (end != std::string::npos) {
+                    patchVersion = stringToui32 (value.substr (start, end - start).c_str ());
+                    start = end + 1;
+                    patchVersion = stringToui32 (value.substr (start).c_str ());
+                }
+                else {
+                    minorVersion = stringToui32 (value.substr (start).c_str ());
+                    patchVersion = 0;
                 }
             }
+            else {
+                majorVersion = stringToui32 (value.substr (start).c_str ());
+                minorVersion = 0;
+                patchVersion = 0;
+            }
         }
-
-    #if defined (TOOLCHAIN_COMPILER_cl)
-        #pragma warning (pop)
-    #endif // defined (TOOLCHAIN_COMPILER_cl)
 
         void Version::IncMajorVersion () {
             ++majorVersion;
@@ -56,6 +63,31 @@ namespace thekogans {
 
         void Version::IncPatchVersion () {
             ++patchVersion;
+        }
+
+        int Version::Compare (const Version &version) const {
+            return
+                majorVersion < version.majorVersion ? -1 :
+                majorVersion > version.majorVersion ? 1 :
+                minorVersion < version.minorVersion ? -1 :
+                minorVersion > version.minorVersion ? 1 :
+                patchVersion < version.patchVersion ? -1 :
+                patchVersion > version.patchVersion ? 1 : 0;
+        }
+
+        bool Version::SatisfiesConstraint (
+                OP op,
+                const Version &version) const {
+            if (op == NOP || IsEmpty () || version.IsEmpty ()) {
+                return true;
+            }
+            int result = Compare (version);
+            return op == EQ ? result == 0 :
+                op == NEQ ? result != 0 :
+                op == GEQ ? result >= 0 :
+                op == LEQ ? result <= 0 :
+                op == GT ? result > 0 :
+                op == LT ? result < 0 : false;
         }
 
         _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API operator == (

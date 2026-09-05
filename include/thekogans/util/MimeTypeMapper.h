@@ -56,7 +56,7 @@ namespace thekogans {
             MimeTypeMap mimeTypeToExtensions;
             /// \brief
             /// Reverse map (extension -> mime type)
-            ExtensionMap extensionToMimeType;
+            ExtensionMap extensionsToMimeType;
 
             /// \brief
             /// Name of mime types file.

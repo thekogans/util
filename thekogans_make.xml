@@ -41,7 +41,6 @@
         </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
-        <library name = "pthread"/>
         <library nane = "rt"/>
         <library name = "dl"/>
         <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
@@ -49,7 +48,6 @@
         </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
-        <library name = "pthread"/>
         <framework name = "Foundation"/>
         <framework name = "Security"/>
         <framework name = "Cocoa"/>

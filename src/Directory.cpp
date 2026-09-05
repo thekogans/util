@@ -481,9 +481,7 @@ namespace thekogans {
                                 watches.insert ((WatchId)kqueueEvents[i].udata);
                             }
                         }
-                        for (std::set<WatchId>::const_iterator
-                                it = watches.begin (),
-                                end = watches.end (); it != end; ++it) {
+                        for (const auto &watch : watches) {
                             std::string directory;
                             EventSink *eventSink = nullptr;
                             WatchId watchId = 0;
@@ -492,7 +490,7 @@ namespace thekogans {
                             std::list<Directory::Entry> modified;
                             {
                                 LockGuard<SpinLock> guard (spinLock);
-                                Watches::iterator jt = this->watches.find (*it);
+                                Watches::iterator jt = this->watches.find (watch);
                                 if (jt != this->watches.end ()) {
                                     directory = jt->second->directory;
                                     eventSink = &jt->second->eventSink;
@@ -501,20 +499,14 @@ namespace thekogans {
                                 }
                             }
                             if (eventSink != nullptr) {
-                                for (std::list<Directory::Entry>::const_iterator
-                                        it = added.begin (), end = added.end ();
-                                        it != end; ++it) {
-                                    eventSink->HandleAdd (watchId, directory, *it);
+                                for (const auto &entry : added) {
+                                    eventSink->HandleAdd (watchId, directory, entry);
                                 }
-                                for (std::list<Directory::Entry>::const_iterator
-                                        it = deleted.begin (), end = deleted.end ();
-                                        it != end; ++it) {
-                                    eventSink->HandleDelete (watchId, directory, *it);
+                                for (const auto &entry : deleted) {
+                                    eventSink->HandleDelete (watchId, directory, entry);
                                 }
-                                for (std::list<Directory::Entry>::const_iterator
-                                        it = modified.begin (), end = modified.end ();
-                                        it != end; ++it) {
-                                    eventSink->HandleModified (watchId, directory, *it);
+                                for (const auto &entry : modified) {
+                                    eventSink->HandleModified (watchId, directory, entry);
                                 }
                             }
                         }
@@ -902,7 +894,7 @@ namespace thekogans {
                 LPSECURITY_ATTRIBUTES lpSecurityAttributes) {
             if (!Path (path).Exists ()) {
                 if (createAncestry) {
-                    std::list<std::string> components;
+                    std::vector<std::string> components;
                     {
                         if (!Path (path).IsAbsolute ()) {
                             Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (
@@ -912,13 +904,12 @@ namespace thekogans {
                             Path (path).GetComponents (components);
                         }
                     }
-                    std::list<std::string> ancestors;
-                    for (std::list<std::string>::const_iterator it = components.begin (),
-                            end = components.end (); it != end; ++it) {
-                        if (*it == ".") {
+                    std::vector<std::string> ancestors;
+                    for (const auto &component : components) {
+                        if (component == ".") {
                             continue;
                         }
-                        else if (*it == "..") {
+                        else if (component == "..") {
                             if (!ancestors.empty ()) {
                                 ancestors.pop_back ();
                             }
@@ -928,7 +919,7 @@ namespace thekogans {
                             }
                         }
                         else {
-                            ancestors.push_back (*it);
+                            ancestors.push_back (component);
                             std::string currenPath = MakePath (ancestors, true);
                             if (!Path (currenPath).Exists () &&
                                     !CreateDirectoryW (
@@ -1026,7 +1017,7 @@ namespace thekogans {
                 mode_t mode) {
             if (!Path (path).Exists ()) {
                 if (createAncestry) {
-                    std::list<std::string> components;
+                    std::vector<std::string> components;
                     {
                         if (!Path (path).IsAbsolute ()) {
                             Path (MakePath (Path::GetCurrDirectory (), path)).GetComponents (
@@ -1036,13 +1027,12 @@ namespace thekogans {
                             Path (path).GetComponents (components);
                         }
                     }
-                    std::list<std::string> ancestors;
-                    for (std::list<std::string>::const_iterator it = components.begin (),
-                            end = components.end (); it != end; ++it) {
-                        if (*it == ".") {
+                    std::vector<std::string> ancestors;
+                    for (const auto &component : components) {
+                        if (component == ".") {
                             continue;
                         }
-                        else if (*it == "..") {
+                        else if (component == "..") {
                             if (!ancestors.empty ()) {
                                 ancestors.pop_back ();
                             }
@@ -1052,7 +1042,7 @@ namespace thekogans {
                             }
                         }
                         else {
-                            ancestors.push_back (*it);
+                            ancestors.push_back (component);
                             std::string currenPath = MakePath (ancestors, true);
                             if (!Path (currenPath).Exists () &&
                                     mkdir (currenPath.c_str (), mode) != 0) {

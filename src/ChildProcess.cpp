@@ -310,10 +310,8 @@ namespace thekogans {
 
         std::string ChildProcess::BuildCommandLine () const {
             std::string commandLine = "\"" + path + "\"";
-            for (std::list<std::string>::const_iterator
-                    it = arguments.begin (),
-                    end = arguments.end (); it != end; ++it) {
-                commandLine += " " + *it;
+            for (const auto &argument : arguments) {
+                commandLine += " " + argument;
             }
             return commandLine;
         }
@@ -324,16 +322,13 @@ namespace thekogans {
                 return THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
             }
             commandLine = "\"" + path + "\"";
-            for (std::list<std::string>::const_iterator it = arguments.begin (),
-                    end = arguments.end (); it != end; ++it) {
-                commandLine += " " + *it;
+            for (const auto &argument : arguments) {) {
+                commandLine += " " + argument;
             }
             environment.clear ();
             if (!environmentVariables.empty ()) {
-                for (std::list<std::string>::const_iterator
-                        it = environmentVariables.begin (),
-                        end = environmentVariables.end (); it != end; ++it) {
-                    environment += *it + '\0';
+                for (const auto &environmentVariable : environmentVariables) {
+                    environment += environmentVariable + '\0';
                 }
                 environment += '\0';
             }
@@ -366,18 +361,14 @@ namespace thekogans {
             }
             std::vector<const char *> argv;
             argv.push_back (path.c_str ());
-            for (std::list<std::string>::const_iterator
-                    it = arguments.begin (),
-                    end = arguments.end (); it != end; ++it) {
-                argv.push_back ((*it).c_str ());
+            for (const auto &argument : arguments) {
+                argv.push_back (argument.c_str ());
             }
             argv.push_back (0);
             std::vector<const char *> envp;
             if (!environmentVariables.empty ()) {
-                for (std::list<std::string>::const_iterator
-                        it = environmentVariables.begin (),
-                        end = environmentVariables.end (); it != end; ++it) {
-                    envp.push_back ((*it).c_str ());
+                for (const auto &environmentVariable : environmentVariables) {
+                    envp.push_back (environmentVariable.c_str ());
                 }
                 envp.push_back (0);
             }

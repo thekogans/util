@@ -48,12 +48,11 @@ namespace thekogans {
         /// Buffer is a convenient in memory serializer. It's main
         /// purpose is to provide serialization/deserialization
         /// services for binary protocols, but can be used anywhere
-        /// lightweight sharing and lifetime management is
-        /// appropriate. One of Buffer's more novel features is
-        /// outsourcing memory management to an \see{Allocator}.
-        /// This feature allows you to create buffers for all
-        /// occasions (See \see{SecureBuffer} and \see{TenantBuffer}
-        /// below).
+        /// lightweight sharing and lifetime management is appropriate.
+        /// One of Buffer's more novel features is outsourcing memory
+        /// management to an \see{Allocator}. This feature allows you
+        /// to create buffers for all occasions (See \see{SecureBuffer}
+        /// and \see{Tenant[Read | Write]Buffer} below).
         /// NOTE: Buffer maintains distinct read and write positions
         /// (readOffset and writeOffset). It allows you to continue
         /// filling the buffer without disturbing the current read

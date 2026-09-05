@@ -19,7 +19,7 @@
 #define __thekogans_util_Path_h
 
 #include <string>
-#include <list>
+#include <vector>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #if !defined (TOOLCHAIN_OS_Windows)
@@ -84,6 +84,11 @@ namespace thekogans {
             /// \brief
             /// Convert all '\' seperators to '/'.
             std::string ToUnixPathSeparator () const;
+
+            /// \brief
+            /// Return system native path list seperator.
+            /// Windows = ';', POSIX = ':'
+            static char GetNativePathListSeparator ();
 
             /// \brief
             /// Implicit typecast operator.
@@ -183,7 +188,7 @@ namespace thekogans {
             /// \param[out] components List to store path components.
             /// \return true = Original path was absolute,
             /// false = Original path was relative.
-            bool GetComponents (std::list<std::string> &components) const;
+            bool GetComponents (std::vector<std::string> &components) const;
 
             /// \brief
             /// Return path leading up to the last component.
@@ -261,7 +266,7 @@ namespace thekogans {
         /// false == start with empty path.
         /// \return Path from a list of components.
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API MakePath (
-            const std::list<std::string> &components,
+            const std::vector<std::string> &components,
             bool absolute = false);
 
         /// \brief

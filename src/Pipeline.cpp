@@ -620,8 +620,8 @@ namespace thekogans {
         }
 
         void Pipeline::CancelJobs (const RunLoop::UserJobList &jobs) {
-            for (RunLoop::UserJobList::const_iterator it = jobs.begin (), end = jobs.end (); it != end; ++it) {
-                (*it)->Cancel ();
+            for (auto job : jobs) {
+                job->Cancel ();
             }
         }
 

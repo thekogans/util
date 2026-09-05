@@ -62,9 +62,8 @@ namespace thekogans {
         bool HeapRegistry::IsValidPtr (void *ptr) noexcept {
             if (ptr != nullptr) {
                 LockGuard<SpinLock> guard (spinLock);
-                for (Map::const_iterator it = map.begin (),
-                        end = map.end (); it != end; ++it) {
-                    if (it->second->IsValidPtr (ptr)) {
+                for (auto heap : map) {
+                    if (heap.second->IsValidPtr (ptr)) {
                         return true;
                     }
                 }
@@ -79,9 +78,8 @@ namespace thekogans {
             if (!header.empty ()) {
                 stream << header << std::endl;
             }
-            for (Map::const_iterator it = map.begin (),
-                    end = map.end (); it != end; ++it) {
-                Diagnostics::Stats::UniquePtr stats = it->second->GetStats ();
+            for (auto heap : map) {
+                Diagnostics::Stats::UniquePtr stats = heap.second->GetStats ();
                 if (stats != nullptr) {
                     stats->Dump (stream);
                 }

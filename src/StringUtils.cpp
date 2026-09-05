@@ -514,10 +514,8 @@ namespace thekogans {
             std::string prefix;
             if (!strings.empty ()) {
                 std::vector<std::string> vStrings;
-                for (std::list<std::string>::const_iterator
-                        it = strings.begin (),
-                        end = strings.end (); it != end; ++it) {
-                    vStrings.push_back (*it);
+                for (const auto &string :  strings) {
+                    vStrings.push_back (string);
                 }
                 std::sort (vStrings.begin (), vStrings.end ());
                 std::size_t index = 0;
@@ -541,8 +539,8 @@ namespace thekogans {
             if (!strings.empty ()) {
                 std::list<std::string>::const_iterator it = strings.begin ();
                 formattedList = *it++;
-                for (std::list<std::string>::const_iterator end = strings.end (); it != end; ++it) {
-                    formattedList += separator + *it;
+                for (const auto &string : strings) {
+                    formattedList += separator + string;
                 }
             }
             return formattedList;

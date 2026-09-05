@@ -87,7 +87,7 @@ namespace thekogans {
             // Clear out the old maps.
             {
                 mimeTypeToExtensions.clear ();
-                extensionToMimeType.clear ();
+                extensionsToMimeType.clear ();
             }
             // Reload from config file.
             {
@@ -104,12 +104,10 @@ namespace thekogans {
                             // FIXME: Should we be checking for collisions here?
                             mimeTypeToExtensions.insert (
                                 MimeTypeMap::value_type (mimeType, extensions));
-                            for (ExtensionList::const_iterator
-                                    it = extensions.begin (),
-                                    end = extensions.end (); it != end; ++it) {
+                            for (const auto &extension : extensions) {
                                 // FIXME: Should we be checking for collisions here?
-                                extensionToMimeType.insert (
-                                    ExtensionMap::value_type (*it, mimeType));
+                                extensionsToMimeType.insert (
+                                    ExtensionMap::value_type (extension, mimeType));
                             }
                         }
                     }
@@ -129,34 +127,28 @@ namespace thekogans {
         std::string MimeTypeMapper::ExtensionToMimeType (
                 const std::string &extension) const {
             ExtensionMap::const_iterator it =
-                extensionToMimeType.find (ToLower (extension));
-            return it == extensionToMimeType.end () ? std::string () : it->second;
+                extensionsToMimeType.find (ToLower (extension));
+            return it == extensionsToMimeType.end () ? std::string () : it->second;
         }
 
         void MimeTypeMapper::DumpMaps (std::ostream &stream) const {
             {
                 stream << "*** mimeTypeToExtensions ***" << std::endl;
-                for (MimeTypeMap::const_iterator
-                        it = mimeTypeToExtensions.begin (),
-                        end = mimeTypeToExtensions.end (); it != end; ++it) {
-                    stream << it->first << " -> ";
+                for (const auto &mimeTypeToExtension : mimeTypeToExtensions) {
+                    stream << mimeTypeToExtension.first << " -> ";
                     {
-                        const ExtensionList &extensions = it->second;
-                        for (ExtensionList::const_iterator
-                                it = extensions.begin (),
-                                end = extensions.end (); it != end; ++it) {
-                            stream << *it << ", ";
+                        const ExtensionList &extensions = mimeTypeToExtension.second;
+                        for (const auto &extension : extensions) {
+                            stream << extension << ", ";
                         }
                     }
                     stream << std::endl;
                 }
             }
             {
-                stream << "*** extensionToMimeType ***" << std::endl;
-                for (ExtensionMap::const_iterator
-                        it = extensionToMimeType.begin (),
-                        end = extensionToMimeType.end (); it != end; ++it) {
-                    stream << it->first << " -> " << it->second << std::endl;
+                stream << "*** extensionsToMimeType ***" << std::endl;
+                for (const auto &extensionToMimeType : extensionsToMimeType) {
+                    stream << extensionToMimeType.first << " -> " << extensionToMimeType.second << std::endl;
                 }
             }
             stream.flush ();

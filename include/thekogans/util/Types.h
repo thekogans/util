@@ -26,6 +26,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstdarg>
+#include <climits>
 #include "thekogans/util/Config.h"
 
 /// \brief

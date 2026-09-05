@@ -30,6 +30,10 @@ namespace thekogans {
         /// \struct Version Version.h thekogans/util/Version.h
         ///
         /// \brief
+        /// Version works with the following version format:
+        /// [major][.minor][.minor] where all fields are optional.
+        /// Whatever is not provided is set to 0.
+        ///
         /// Version provides runtime access to major, minor and patch
         /// versions found in the project's thekognas_make.xml file.
         ///
@@ -80,6 +84,10 @@ namespace thekogans {
             ui32 patchVersion;
 
             /// \brief
+            /// Serialized Version size.
+            static const std::size_t SIZE = UI32_SIZE + UI32_SIZE + UI32_SIZE;
+
+            /// \brief
             /// ctor.
             /// \param[in] majorVersion_ Project major version.
             /// \param[in] minorVersion_ Project minor version.
@@ -94,16 +102,21 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] value String representation of a version (major.minor.patch).
-            explicit Version (const std::string &value);
+            Version (const std::string &value);
 
             /// \brief
             /// Return the serialized size of this version.
             /// \return Serialized size of this version.
-            inline std::size_t Size () const {
-                return
-                    Serializer::Size (majorVersion) +
-                    Serializer::Size (minorVersion) +
-                    Serializer::Size (patchVersion);
+            inline constexpr std::size_t Size () const {
+                return SIZE;
+            }
+
+            /// \brief
+            /// Return true if no version has been assigned (0.0.0).
+            /// \return true == empty version.
+            /// NOTE: This special version also represents ANY in constraint comparison.
+            inline bool IsEmpty () const {
+                return majorVersion == 0 && minorVersion == 0 && patchVersion == 0;
             }
 
             /// \brief
@@ -117,16 +130,54 @@ namespace thekogans {
             void IncPatchVersion ();
 
             /// \brief
+            /// Compare against the given version.
+            /// \param[in] version Version to compare against.
+            /// \return -1 == this < version, 1 == this > version, 0 == this == version.
+            int Compare (const Version &version) const;
+            /// \brief
+            /// Operators used in SatisfiesConstraint below.
+            enum OP {
+                NOP, // noop
+                EQ,  // "="
+                NEQ, // "!="
+                GEQ, // ">="
+                LEQ, // "<="
+                GT,  // ">"
+                LT   // "<"
+            };
+            static OP stringToOP (const std::string &op) {
+                return op == "=" ? EQ :
+                    op == "!=" ? NEQ :
+                    op == ">=" ? GEQ :
+                    op == "<=" ? LEQ :
+                    op == ">" ? GT :
+                    op == "<" ? LT : NOP;
+            }
+            static const std::string OPTostring (OP op) {
+                return op == EQ ? "=" :
+                    op == NEQ ? "!=" :
+                    op == GEQ ? ">=" :
+                    op == LEQ ? "<=" :
+                    op == GT ? ">" :
+                    op == LT ? "<"  : std::string ();
+            }
+            /// \brief
+            /// Return true if we satisfy the given constraint.
+            /// \param[in] op "=" | ">=" | "<=" | ">" | "<" | "!="
+            /// \param[in] version Version to compare against.
+            /// \return true == the given constraint is satisfied.
+            ///
+            bool SatisfiesConstraint (
+                OP op,
+                const Version &version) const;
+
+            /// \brief
             /// Return the canonical version string this project was compiled with.
             /// \return The canonical Version string this project was compiled with.
             inline std::string ToString () const {
                 return FormatString ("%u.%u.%u", majorVersion, minorVersion, patchVersion);
             }
         };
-
-        /// \brief
-        /// Serialized Version size.
-        const std::size_t VERSION_SIZE = UI32_SIZE + UI32_SIZE + UI32_SIZE;
 
         /// \brief
         /// Compare two versions for equality.
