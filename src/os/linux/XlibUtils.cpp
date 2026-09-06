@@ -61,17 +61,17 @@ namespace thekogans {
                     XSetIOErrorHandler (IOErrorHandler);
                 }
 
-                XlibDispays::XlibDispays (
+                XlibDisplays::XlibDisplays (
                         const char *path,
                         const char *pattern) {
                     Directory directory (path);
                     Directory::Entry entry;
                     for (bool gotEntry = directory.GetFirstEntry (entry);
                          gotEntry; gotEntry = directory.GetNextEntry (entry)) {
-                        i32 dispayNumber;
-                        if (sscanf (entry.name.c_str (), pattern, &dispayNumber) == 1) {
+                        i32 displayNumber;
+                        if (sscanf (entry.name.c_str (), pattern, &displayNumber) == 1) {
                             Display *display = XOpenDisplay (
-                                FormatString (":%d", dispayNumber).c_str ());
+                                FormatString (":%d", displayNumber).c_str ());
                             if (display != nullptr) {
                                 displays.push_back (display);
                             }
@@ -104,7 +104,7 @@ namespace thekogans {
                     struct XlibWindowMap :
                             public Singleton<XlibWindowMap>,
                             private std::map<Window, XlibWindow::Registry::Token::ValueType> {
-                        SpinLock spinLok;
+                        SpinLock spinLock;
 
                         void Add (
                                 Window window,
@@ -172,7 +172,7 @@ namespace thekogans {
                     bool GetEvent (
                             Display *display,
                             XEvent &event) {
-                        DisplayGuard guard (display);
+                        XlibDisplayGuard guard (display);
                         if (XPending (display) > 0) {
                             XNextEvent (display, &event);
                             return true;
@@ -294,7 +294,7 @@ namespace thekogans {
                     event.message_type = message_type;
                     event.format = 32;
                     event.data.l[0] = id;
-                    DisplayGuard guard (window->display);
+                    XlibDisplayGuard guard (window->display);
                     XSendEvent (window->display, window->window, False, 0, (XEvent *)&event);
                 }
 

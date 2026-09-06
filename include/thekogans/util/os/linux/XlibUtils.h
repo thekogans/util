@@ -48,7 +48,7 @@ namespace thekogans {
                 /// \brief
                 /// List of all X-servers running on the system.
 
-                struct XlibDispays : public Singleton<XlibDispays> {
+                struct XlibDisplays : public Singleton<XlibDisplays> {
                     /// \brief
                     /// A list of connections (Display) to all X-servers running on the system.
                     std::vector<Display *> displays;
@@ -60,7 +60,7 @@ namespace thekogans {
                     /// NOTE: More often than not, displays have the following pattern: "X%d". If you
                     /// have a custom X11 install, supply the pattern that works for you. Keep in mind
                     /// that your pattern needs to expose a display number.
-                    XlibDispays (
+                    XlibDisplays (
                         const char *path = "/tmp/.X11-unix",
                         const char *pattern = "X%d");
                 };

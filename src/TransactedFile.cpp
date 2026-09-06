@@ -20,7 +20,9 @@
     #include "thekogans/util/os/windows/WindowsHeader.h"
 #else // defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_OS_Linux)
-        #define _GNU_SOURCE
+        #include "thekogans/util/os/linux/LinuxUtils.h"
+    #elif defined (TOOLCHAIN_OS_OSH)
+        #include "thekogans/util/os/windows/OSXUtils.h"
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include <fcntl.h>
 #endif // defined (TOOLCHAIN_OS_Windows)

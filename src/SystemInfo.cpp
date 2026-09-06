@@ -33,6 +33,8 @@
         #include <unistd.h>
         #include <pwd.h>
         #include <climits>
+        #include <iostream>
+        #include <fstream>
     #elif defined (TOOLCHAIN_OS_OSX)
         #include <IOKit/IOKitLib.h>
         #include <net/if_dl.h>
@@ -239,8 +241,25 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
 
-        #if defined (TOOLCHAIN_OS_OSX)
             namespace {
+            #if defined (TOOLCHAIN_OS_Linux)
+                std::string ReadId (const std::string &path) {
+                    std::ifstream file (path);
+                    std::string machineId;
+                    if (file.is_open ()) {
+                        std::getline (file, machineId);
+                    }
+                    return machineId;
+                }
+
+                std::string GetMachineId () {
+                    std::string machineId = ReadId ("/etc/machine-id");
+                    if (machineId.empty()) {
+                        machineId = ReadId ("/var/lib/dbus/machine-id");
+                    }
+                    return machineId;
+                }
+            #elif defined (TOOLCHAIN_OS_OSX)
                 struct CFStringRefDeleter {
                     void operator () (CFStringRef stringRef) {
                         if (stringRef != nullptr) {
@@ -249,8 +268,8 @@ namespace thekogans {
                     }
                 };
                 using CFStringRefPtr = std::unique_ptr<const __CFString, CFStringRefDeleter>;
+            #endif // defined (TOOLCHAIN_OS_Linux)
             }
-        #endif // defined (TOOLCHAIN_OS_OSX)
 
             std::string GetHostIdImpl () {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -279,23 +298,20 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_Linux)
-                uuid_t uuid;
-                timespec wait;
-                wait.tv_sec = 0;
-                wait.tv_nsec = 0;
-                if (gethostuuid (uuid, &wait) == 0) {
+                std::string machineId = GetMachineId ();
+                if (!machineId.empty ()) {
                     Hash::Digest digest;
                     {
                         SHA2 sha2;
                         sha2.Init (SHA2::DIGEST_SIZE_256);
-                        sha2.Update (uuid, sizeof (uuid_t));
+                        sha2.Update (machineId.c_str (), machineId.size ());
                         sha2.Final (digest);
                     }
                     return HexEncodeBuffer (digest.data (), digest.size ());
                 }
                 else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Unable to retrieve machine id.");
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
                 #if (MAC_OS_X_VERSION_MAX_ALLOWED >= 120000) // Before macOS 12 Monterey

@@ -374,9 +374,7 @@ namespace thekogans {
             #if defined (TOOLCHAIN_OS_Windows)
                 return GetCurrentThreadId ();
             #else // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_THREAD_ID id;
-                pthread_threadid_np (0, &id);
-                return id;
+                return gettid ();
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
         #if defined (TOOLCHAIN_OS_Windows)

@@ -91,7 +91,7 @@ namespace thekogans {
             const std::string name;
             /// \brief
             /// \see{Pipeline} \see{Pipeline::JobExecutionPolicy}.
-            Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy;
+            util::Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy;
             /// \brief
             /// Number of worker threads servicing the \see{Pipeline}.
             const std::size_t workerCount;
@@ -220,8 +220,8 @@ namespace thekogans {
                 const util::Pipeline::Stage *begin_,
                 const util::Pipeline::Stage *end_,
                 const std::string &name_ = std::string (),
-                Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
-                    new Pipeline::FIFOJobExecutionPolicy,
+                util::Pipeline::JobExecutionPolicy::SharedPtr jobExecutionPolicy_ =
+                    new util::Pipeline::FIFOJobExecutionPolicy,
                 std::size_t workerCount_ = 1,
                 i32 workerPriority_ = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity_ = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
