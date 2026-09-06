@@ -25,13 +25,10 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/RunLoop.h"
-#if defined (TOOLCHAIN_OS_Linux)
-    #if defined (THEKOGANS_UTIL_HAVE_XLIB)
-        #include "thekogans/util/SystemRunLoop.h"
-    #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
-        #include "thekogans/util/ThreadRunLoop.h"
-    #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
-#endif // defined (TOOLCHAIN_OS_Linux)
+#include "thekogans/util/SystemRunLoop.h"
+#if defined (TOOLCHAIN_OS_Linux) && !defined (THEKOGANS_UTIL_HAVE_XLIB)
+    #include "thekogans/util/ThreadRunLoop.h"
+#endif // defined (TOOLCHAIN_OS_Linux) && !defined (THEKOGANS_UTIL_HAVE_XLIB)
 
 namespace thekogans {
     namespace util {

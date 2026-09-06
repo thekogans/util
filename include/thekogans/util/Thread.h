@@ -373,8 +373,12 @@ namespace thekogans {
             static THEKOGANS_UTIL_THREAD_ID GetCurrThreadId () {
             #if defined (TOOLCHAIN_OS_Windows)
                 return GetCurrentThreadId ();
-            #else // defined (TOOLCHAIN_OS_Windows)
+            #elif defined (TOOLCHAIN_OS_Linux)
                 return gettid ();
+            #elif defined (TOOLCHAIN_OS_OSX)
+                THEKOGANS_UTIL_THREAD_ID id;
+                pthread_threadid_np (0, &id);
+                return id;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
         #if defined (TOOLCHAIN_OS_Windows)
