@@ -19,14 +19,19 @@
 #define __thekogans_util_MainRunLoop_h
 
 #include <memory>
-#include <list>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/RunLoop.h"
-#include "thekogans/util/SystemRunLoop.h"
+#if defined (TOOLCHAIN_OS_Linux)
+    #if defined (THEKOGANS_UTIL_HAVE_XLIB)
+        #include "thekogans/util/SystemRunLoop.h"
+    #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
+        #include "thekogans/util/ThreadRunLoop.h"
+    #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
+#endif // defined (TOOLCHAIN_OS_Linux)
 
 namespace thekogans {
     namespace util {
@@ -62,7 +67,11 @@ namespace thekogans {
                 #if defined (TOOLCHAIN_OS_Windows)
                     new SystemRunLoop<os::windows::RunLoop> (name, jobExecutionPolicy));
                 #elif defined (TOOLCHAIN_OS_Linux)
+                #if defined (THEKOGANS_UTIL_HAVE_XLIB)
                     new SystemRunLoop<os::linux::XlibRunLoop> (name, jobExecutionPolicy));
+                #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
+                    new ThreadRunLoop (name, jobExecutionPolicy));
+                #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
                 #elif defined (TOOLCHAIN_OS_OSX)
                     new SystemRunLoop<os::osx::NSAppRunLoop> (name, jobExecutionPolicy));
                 #endif // defined (TOOLCHAIN_OS_Windows)

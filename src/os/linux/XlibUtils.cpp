@@ -144,6 +144,9 @@ namespace thekogans {
                 }
 
 
+                const char *XlibRunLoop::MESSAGE_TYPE_NAME =
+                    "thekogans_util_os_linux_XlibRunLoop_message_type";
+
                 XlibRunLoop::XlibRunLoop () {
                     if (!XlibDisplays::Instance ()->displays.empty ()) {
                         Display *display = XlibDisplays::Instance ()->displays[0];
@@ -246,8 +249,7 @@ namespace thekogans {
                                                         ID_RUN_LOOP_EXECUTE_JOB) {
                                                     ExecuteJob ();
                                                 }
-                                                else if (event.xclient.data.l[0] ==
-                                                        ID_RUN_LOOP_STOP) {
+                                                else if (event.xclient.data.l[0] == ID_RUN_LOOP_STOP) {
                                                     return;
                                                 }
                                             }
@@ -258,8 +260,7 @@ namespace thekogans {
                                                 // DispatchMessage. For this to work user Xlib windows
                                                 // need to inherit from XlibWindow.
                                                 XlibWindow::SharedPtr window =
-                                                    XlibWindowMap::Instance ()->Get (
-                                                        event.xclient.window);
+                                                    XlibWindowMap::Instance ()->Get (event.xclient.window);
                                                 if (window != nullptr) {
                                                     window->OnEvent (event);
                                                 }

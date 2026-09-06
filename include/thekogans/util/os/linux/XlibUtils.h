@@ -154,8 +154,7 @@ namespace thekogans {
                 private:
                     /// \brief
                     /// Run loop custom message type.
-                    static const char * const MESSAGE_TYPE_NAME =
-                        "thekogans_util_os_linux_XlibRunLoop_message_type";
+                    static const char *MESSAGE_TYPE_NAME;
                     enum {
                         /// \brief
                         /// Execute the next waiting job.

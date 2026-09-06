@@ -320,7 +320,7 @@ namespace thekogans {
             SerializableHeader header;
             object >> header;
             serializable = Serializable::CreateType (header.type.c_str ());
-            if (serializable == nullptr) {
+            if (serializable != nullptr) {
                 if (header.version <= serializable->Version ()) {
                     serializable->ReadJSON (header, object);
                     return object;
