@@ -26,7 +26,8 @@
   </features>
   <dependencies>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_ZLIB)">
-      <package name = "zlib"/>
+      <package name = "zlib"
+               private = "yes"/>
     </if>
     <choose>
       <when condition = "$(TOOLCHAIN_OS) == 'Windows'">

@@ -58,8 +58,7 @@ namespace thekogans {
             name = node.attribute (ATTR_NAME).value ();
             attributes.clear ();
             pugi::xml_node attributesNode = node.child (TAG_ATTRIBUTES);
-            for (pugi::xml_node child = attributesNode.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
+            for (const auto &child : attributesNode.children ()) {
                 std::string name = child.attribute (ATTR_NAME).value ();
                 std::string value = child.attribute (ATTR_NAME).value ();
                 if (!name.empty () && !value.empty ()) {

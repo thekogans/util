@@ -120,7 +120,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Alias for Interface & (_LIB_THEKOGANS_UTIL_API *) ().
-                typedef Interface & (_LIB_THEKOGANS_UTIL_API *GetPluginInterfaceProc) ();
+                using GetPluginInterfaceProc = Interface & (_LIB_THEKOGANS_UTIL_API *) ();
 
                 /// \brief
                 /// ctor.
@@ -226,17 +226,17 @@ namespace thekogans {
             /// \brief
             /// Parse the plugins tag.
             /// \param[in] node Root node.
-            void ParsePlugins (pugi::xml_node &node);
+            void ParsePlugins (const pugi::xml_node &node);
             /// \brief
             /// Parse a plugin tag.
             /// \param[in] node Node associated with the plugin.
-            void ParsePlugin (pugi::xml_node &node);
+            void ParsePlugin (const pugi::xml_node &node);
             /// \brief
             /// Parse plugin dependencies tag.
             /// \param[in] node Node associated with plugin dependencies.
             /// \param[in] plugin Plugin that will receive the parsed dependencies.
             void ParseDependencies (
-                pugi::xml_node &node,
+                const pugi::xml_node &node,
                 Plugin &plugin);
 
             /// \brief

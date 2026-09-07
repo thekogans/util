@@ -66,10 +66,8 @@ namespace thekogans {
 
         bool Exception::FilterException (const Exception &exception) {
             LockGuard<Mutex> guard (filterListMutex);
-            for (FilterList::iterator
-                    it = filterList.begin (),
-                    end = filterList.end (); it != end; ++it) {
-                if (!(*it) (exception)) {
+            for (auto filter : filterList) {
+                if (!filter (exception)) {
                     return false;
                 }
             }
@@ -355,10 +353,8 @@ namespace thekogans {
             exception.errorCode =
                 stringToTHEKOGANS_UTIL_ERROR_CODE (node.attribute (ATTR_ERROR_CODE).value ());
             exception.message = Decodestring (node.attribute (ATTR_MESSAGE).value ());
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
-                if (child.type () == pugi::node_element &&
-                        std::string (child.name ()) == TAG_LOCATION) {
+            for (auto &child : node.children ()) {
+                if (child.type () == pugi::node_element && std::string (child.name ()) == TAG_LOCATION) {
                     Exception::Location location;
                     child >> location;
                     exception.traceback.push_back (location);

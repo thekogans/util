@@ -554,23 +554,17 @@ namespace thekogans {
             if (jobQueue != nullptr) {
                 jobQueue->WaitForIdle (timeSpec);
             }
-            for (LoggerMap::iterator
-                    it = loggerMap.begin (),
-                    end = loggerMap.end (); it != end; ++it) {
-                for (LoggerList::iterator
-                        jt = it->second.begin (),
-                        end = it->second.end (); jt != end; ++jt) {
-                    (*jt)->Flush (timeSpec);
+            for (const auto &subsystem : loggerMap) {
+                for (auto logger : subsystem.second) {
+                    logger->Flush (timeSpec);
                 }
             }
         }
 
         bool LoggerMgr::FilterEntry (Entry &entry) {
             LockGuard<Mutex> guard (mutex);
-            for (FilterList::iterator
-                    it = filterList.begin (),
-                    end = filterList.end (); it != end; ++it) {
-                if (!(*it)->FilterEntry (entry)) {
+            for (auto &filter : filterList) {
+                if (!filter->FilterEntry (entry)) {
                     return false;
                 }
             }

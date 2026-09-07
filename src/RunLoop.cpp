@@ -302,8 +302,7 @@ namespace thekogans {
             name = Decodestring (node.attribute (ATTR_NAME).value ());
             totalJobs = stringTosize_t (node.attribute (ATTR_TOTAL_JOBS).value ());
             totalJobTime = stringToui64 (node.attribute (ATTR_TOTAL_JOB_TIME).value ());
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
+            for (const auto child : node.children ()) {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
                     if (childName == TAG_LAST_JOB) {

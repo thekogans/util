@@ -186,25 +186,21 @@ namespace thekogans {
                     Attributes attributes;
                     attributes.push_back (Attribute (ATTR_SCHEMA_VERSION, ui32Tostring (PLUGINS_XML_SCHEMA_VERSION)));
                     pluginsFile << OpenTag (0, TAG_PLUGINS, attributes, false, true);
-                    for (PluginMap::const_iterator
-                            it = plugins.begin (),
-                            end = plugins.end (); it != end; ++it) {
+                    for (const auto &plugin : plugins) {
                         Attributes attributes;
-                        attributes.push_back (Attribute (ATTR_PATH, EncodeXMLCharEntities (it->second->path)));
-                        attributes.push_back (Attribute (ATTR_VERSION, it->second->version));
-                        attributes.push_back (Attribute (ATTR_SHA2_256, it->second->SHA2_256));
-                        if (it->second->dependencies.empty ()) {
+                        attributes.push_back (Attribute (ATTR_PATH, EncodeXMLCharEntities (plugin.second->path)));
+                        attributes.push_back (Attribute (ATTR_VERSION, plugin.second->version));
+                        attributes.push_back (Attribute (ATTR_SHA2_256, plugin.second->SHA2_256));
+                        if (plugin.second->dependencies.empty ()) {
                             pluginsFile << OpenTag (1, TAG_PLUGIN, attributes, true, true);
                         }
                         else {
                             pluginsFile <<
                                 OpenTag (1, TAG_PLUGIN, attributes, false, true) <<
                                 OpenTag (2, TAG_DEPENDENCIES, Attributes (), false, true);
-                            for (Plugin::Dependencies::const_iterator
-                                    jt = it->second->dependencies.begin (),
-                                    end = it->second->dependencies.end (); jt != end; ++jt) {
+                            for (const auto &dependency : plugin.second->dependencies) {
                                 pluginsFile << OpenTag (3, TAG_DEPENDENCY) <<
-                                    EncodeXMLCharEntities (*jt) << CloseTag (0, TAG_DEPENDENCY);
+                                    EncodeXMLCharEntities (dependency) << CloseTag (0, TAG_DEPENDENCY);
                             }
                             pluginsFile <<
                                 CloseTag (2, TAG_DEPENDENCIES) <<
@@ -224,24 +220,19 @@ namespace thekogans {
 
         void Plugins::Load () {
             std::string directory = Path (path).GetDirectory ();
-            for (PluginMap::iterator
-                    it = plugins.begin (),
-                    end = plugins.end (); it != end; ++it) {
-                it->second->Load (directory);
+            for (auto &plugin : plugins) {
+                plugin.second->Load (directory);
             }
         }
 
         void Plugins::Unload () {
-            for (PluginMap::iterator
-                    it = plugins.begin (),
-                    end = plugins.end (); it != end; ++it) {
-                it->second->Unload ();
+            for (auto &plugin : plugins) {
+                plugin.second->Unload ();
             }
         }
 
-        void Plugins::ParsePlugins (pugi::xml_node &node) {
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
+        void Plugins::ParsePlugins (const pugi::xml_node &node) {
+            for (const auto child : node.children ()) {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
                     if (childName == TAG_PLUGIN) {
@@ -251,7 +242,7 @@ namespace thekogans {
             }
         }
 
-        void Plugins::ParsePlugin (pugi::xml_node &node) {
+        void Plugins::ParsePlugin (const pugi::xml_node &node) {
             std::string path = Decodestring (node.attribute (ATTR_PATH).value ());
             if (!path.empty ()) {
                 std::string version = node.attribute (ATTR_VERSION).value ();
@@ -259,8 +250,7 @@ namespace thekogans {
                     std::string SHA2_256 = node.attribute (ATTR_SHA2_256).value ();
                     if (!SHA2_256.empty ()) {
                         Plugin::SharedPtr plugin (new Plugin (path, version, SHA2_256));
-                        for (pugi::xml_node child = node.first_child ();
-                                !child.empty (); child = child.next_sibling ()) {
+                        for (const auto &child : node.children ()) {
                             if (child.type () == pugi::node_element) {
                                 std::string childName = child.name ();
                                 if (childName == TAG_DEPENDENCIES) {
@@ -289,10 +279,9 @@ namespace thekogans {
         }
 
         void Plugins::ParseDependencies (
-                pugi::xml_node &node,
+                const pugi::xml_node &node,
                 Plugin &plugin) {
-            for (pugi::xml_node child = node.first_child ();
-                    !child.empty (); child = child.next_sibling ()) {
+            for (const auto &child : node.children ()) {
                 if (child.type () == pugi::node_element) {
                     std::string childName = child.name ();
                     if (childName == TAG_DEPENDENCY) {
