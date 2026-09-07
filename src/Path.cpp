@@ -198,16 +198,16 @@ namespace thekogans {
         }
     #else // defined (TOOLCHAIN_OS_Windows)
         std::string Path::GetExtendedAttributeValue (const std::string &name) const {
-            ssize_t size = 0;
+            std::size_t size = 0;
             std::string value;
             do {
                 if (size > 0) {
                     value.resize (size);
                 }
             #if defined (TOOLCHAIN_OS_Linux)
-                size = getxattr (path.c_str (), name.c_str (), size > 0 ? &value[0] : 0, size);
+                size = getxattr (path.c_str (), name.c_str (), size > 0 ? value.data () : nullptr, size);
             #else // defined (TOOLCHAIN_OS_Linux)
-                size = getxattr (path.c_str (), name.c_str (), size > 0 ? &value[0] : 0, size, 0, 0);
+                size = getxattr (path.c_str (), name.c_str (), size > 0 ? value.data () : nullptr, size, 0, 0);
             #endif // defined (TOOLCHAIN_OS_Linux)
             } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
             if (size < 0) {

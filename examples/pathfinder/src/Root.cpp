@@ -16,7 +16,6 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
-#include <list>
 #include <unordered_set>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Path.h"
@@ -72,9 +71,9 @@ namespace thekogans {
         }
 
         namespace {
-            std::list<std::string>::const_iterator FindPrefix (
-                    std::list<std::string>::const_iterator pathBegin,
-                    std::list<std::string>::const_iterator pathEnd,
+            std::vector<std::string>::const_iterator FindPrefix (
+                    std::vector<std::string>::const_iterator pathBegin,
+                    std::vector<std::string>::const_iterator pathEnd,
                     const std::string &prefix,
                     bool ignoreCase) {
                 util::StringKey prefixKey (prefix, ignoreCase);
@@ -88,14 +87,14 @@ namespace thekogans {
             }
 
             bool ScanPattern (
-                    std::list<std::string>::const_iterator pathBegin,
-                    std::list<std::string>::const_iterator pathEnd,
-                    std::list<std::string>::const_iterator patternBegin,
-                    std::list<std::string>::const_iterator patternEnd,
+                    std::vector<std::string>::const_iterator pathBegin,
+                    std::vector<std::string>::const_iterator pathEnd,
+                    std::vector<std::string>::const_iterator patternBegin,
+                    std::vector<std::string>::const_iterator patternEnd,
                     bool ignoreCase,
                     bool ordered) {
                 while (patternBegin != patternEnd) {
-                    std::list<std::string>::const_iterator it =
+                    std::vector<std::string>::const_iterator it =
                         FindPrefix (pathBegin, pathEnd, *patternBegin, ignoreCase);
                     if (it == pathEnd) {
                         return false;
@@ -112,8 +111,8 @@ namespace thekogans {
         }
 
         void Root::Find (
-                std::list<std::string>::const_iterator patternBegin,
-                std::list<std::string>::const_iterator patternEnd,
+                std::vector<std::string>::const_iterator patternBegin,
+                std::vector<std::string>::const_iterator patternEnd,
                 bool ignoreCase,
                 bool ordered) {
             Produce (
@@ -141,7 +140,7 @@ namespace thekogans {
                         if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
                             util::StringValue::SharedPtr value = jt.GetValue ();
                             std::string path = value->value;
-                            std::list<std::string> pathComponents;
+                            std::vector<std::string> pathComponents;
                             util::Path (path).GetComponents (pathComponents);
                             // Components are stored caseless but paths are stored
                             // with case in tact. That means that a component might
@@ -195,9 +194,9 @@ namespace thekogans {
                         std::placeholders::_1,
                         this,
                         path));
-                std::list<std::string> components;
+                std::vector<std::string> components;
                 util::Path (path).GetComponents (components);
-                std::list<std::string>::const_iterator it = components.begin ();
+                std::vector<std::string>::const_iterator it = components.begin ();
             #if defined (TOOLCHAIN_OS_Windows)
                 // If on Windows, skip over the drive leter.
                 ++it;

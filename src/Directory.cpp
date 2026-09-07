@@ -971,15 +971,13 @@ namespace thekogans {
             Close ();
             dir = opendir (path.c_str ());
             if (dir != nullptr) {
-                char buffer[sizeof (dirent) + NAME_MAX + 1];
-                dirent *dirEnt = nullptr;
-                if (readdir_r (dir, (dirent *)buffer, &dirEnt) == 0) {
-                    if (dirEnt != nullptr) {
-                        GetEntry (*dirEnt, entry);
-                        return true;
-                    }
+                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                dirent *dirEnt = readdir (dir);
+                if (dirEnt != nullptr) {
+                    GetEntry (*dirEnt, entry);
+                    return true;
                 }
-                else {
+                else if (THEKOGANS_UTIL_OS_ERROR_CODE != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
@@ -995,15 +993,13 @@ namespace thekogans {
 
         bool Directory::GetNextEntry (Entry &entry) {
             if (dir != nullptr) {
-                char buffer[sizeof (dirent) + NAME_MAX + 1];
-                dirent *dirEnt = nullptr;
-                if (readdir_r (dir, (dirent *)buffer, &dirEnt) == 0) {
-                    if (dirEnt != nullptr) {
-                        GetEntry (*dirEnt, entry);
-                        return true;
-                    }
+                THEKOGANS_UTIL_OS_ERROR_CODE = 0;
+                dirent *dirEnt = readdir (dir);
+                if (dirEnt != nullptr) {
+                    GetEntry (*dirEnt, entry);
+                    return true;
                 }
-                else {
+                else if (THEKOGANS_UTIL_OS_ERROR_CODE != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }

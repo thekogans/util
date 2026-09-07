@@ -116,10 +116,10 @@ namespace thekogans {
                 const std::string &pattern,
                 bool ignoreCase,
                 bool ordered) {
-            std::list<std::string> patternComponents;
+            std::vector<std::string> patternComponents;
             util::Path (pattern).GetComponents (patternComponents);
-            std::list<std::string>::const_iterator patternBegin = patternComponents.begin ();
-            std::list<std::string>::const_iterator patternEnd = patternComponents.end ();
+            std::vector<std::string>::const_iterator patternBegin = patternComponents.begin ();
+            std::vector<std::string>::const_iterator patternEnd = patternComponents.end ();
             if (patternBegin != patternEnd) {
                 for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                     if (value[i]->IsActive ()) {

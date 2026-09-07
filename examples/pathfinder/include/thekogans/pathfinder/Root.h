@@ -20,7 +20,6 @@
 
 #include <string>
 #include <vector>
-#include <list>
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
@@ -116,8 +115,8 @@ namespace thekogans {
             void Delete ();
 
             void Find (
-                std::list<std::string>::const_iterator patternBegin,
-                std::list<std::string>::const_iterator patternEnd,
+                std::vector<std::string>::const_iterator patternBegin,
+                std::vector<std::string>::const_iterator patternEnd,
                 bool ignoreCase,
                 bool ordered);
 
