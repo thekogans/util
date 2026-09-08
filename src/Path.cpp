@@ -205,6 +205,10 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Linux)
         }
 
+    #if defined (TOOLCHAIN_OS_Linux)
+        #define ENOATTR ENODATA
+    #endif // defined (TOOLCHAIN_OS_Linux)
+
         std::string Path::GetExtendedAttributeValue (const std::string &name) const {
             for (;;) {
                 ssize_t size =
