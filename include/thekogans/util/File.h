@@ -265,6 +265,46 @@ namespace thekogans {
                 const TimeSpec &lastAccessTime = GetCurrentTime (),
                 const TimeSpec &lastWriteTime = GetCurrentTime ());
 
+        #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+            /// \brief
+            /// Return true if an extended attribute with the given name exists.
+            /// \param[in] name Extended attribute name to check.
+            /// \return true == An extended attribute with the given name is attached to the path.
+            bool HasExtendedAttribute (const std::string &name) const;
+            /// \brief
+            /// On Linux/OS X file system objects can have name:value extended attributes.
+            /// Given an attribute name return it's corresponding value.
+            /// \param[in] name Attribute name whose value to return.
+            /// \return Attribute value corresponding to the given name, std::string ()
+            /// if no attribute with the given name exists.
+            std::string GetExtendedAttributeValue (const std::string &name) const;
+            /// \brief
+            /// Return all extended \see{Attributes} correspondind to the path.
+            /// \return All extended \see{Attributes} correspondind to the path.
+            Attributes GetExtendedAttributeValues () const;
+            /// \brief
+            /// Return all extended attribute names correspondind to the path.
+            /// \return All extended attribute names correspondind to the path.
+            std::vector<std::string> GetExtendedAttributeNames () const;
+            /// \brief
+            /// Add a new name:value attribute. If the given name already
+            /// exists, replace it's value with the given one. The above
+            /// behavior can be modified by supplying XATTR_CREATE or
+            /// XATTR_REPLACE flags.
+            /// \param[in] attribute \see{Attribute} to add/update.
+            /// \param[in] flags 0 == create or replace.
+            void AddExtendedAttribute (
+                const Attribute &attribute,
+                int flags = 0) const;
+            /// \brief
+            /// Given an attribute name, remove it's value from the path.
+            /// \param[in] name Extended attribute name to remove.
+            void DeleteExtendedAttribute (const std::string &name) const;
+            /// \brief
+            /// Remove all extended attributes.
+            void DeleteExtendedAttributes () const;
+        #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+
         private:
             /// \brief
             /// Platform specific seek.

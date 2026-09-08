@@ -136,6 +136,11 @@ namespace thekogans {
             static std::string GetSystemDirectory ();
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
+            /// Return true if an extended attribute with the given name exists.
+            /// \param[in] name Extended attribute name to check.
+            /// \return true == An extended attribute with the given name is attached to the path.
+            bool HasExtendedAttribute (const std::string &name) const;
+            /// \brief
             /// On Linux/OS X file system objects can have name:value extended attributes.
             /// Given an attribute name return it's corresponding value.
             /// \param[in] name Attribute name whose value to return.

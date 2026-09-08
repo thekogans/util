@@ -197,79 +197,101 @@ namespace thekogans {
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
+        bool Path::HasExtendedAttribute (const std::string &name) const {
+        #if defined (TOOLCHAIN_OS_Linux)
+            return getxattr (path.c_str (), name.c_str (), nullptr, 0) > 0;
+        #else // defined (TOOLCHAIN_OS_Linux)
+            return getxattr (path.c_str (), name.c_str (), nullptr, 0, 0, 0) > 0;
+        #endif // defined (TOOLCHAIN_OS_Linux)
+        }
+
         std::string Path::GetExtendedAttributeValue (const std::string &name) const {
-            std::size_t size = 0;
-            std::string value;
-            do {
-                if (size > 0) {
-                    value.resize (size);
+            for (;;) {
+                ssize_t size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    getxattr (path.c_str (), name.c_str (), nullptr, 0);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    getxattr (path.c_str (), name.c_str (), nullptr, 0, 0, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                if (size < 0) {
+                    if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                        return std::string ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    }
                 }
-            #if defined (TOOLCHAIN_OS_Linux)
-                size = getxattr (path.c_str (), name.c_str (), size > 0 ? value.data () : nullptr, size);
-            #else // defined (TOOLCHAIN_OS_Linux)
-                size = getxattr (path.c_str (), name.c_str (), size > 0 ? value.data () : nullptr, size, 0, 0);
-            #endif // defined (TOOLCHAIN_OS_Linux)
-            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
-            if (size < 0) {
-                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                std::string value;
+                value.resize (size);
+                size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    getxattr (path.c_str (), name.c_str (), value.data (), size);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    getxattr (path.c_str (), name.c_str (), value.data (), size, 0, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                if (size > 0) {
+                    return value;
+                }
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                    return std::string ();
+                }
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE != ERANGE) {
+                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                }
             }
-            return value;
         }
 
         Attributes Path::GetExtendedAttributeValues () const {
             Attributes attributes;
-            ssize_t size = 0;
-            std::vector<char> buffer;
-            do {
-                if (size > 0) {
-                    buffer.resize (size);
-                }
-            #if defined (TOOLCHAIN_OS_Linux)
-                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size);
-            #else // defined (TOOLCHAIN_OS_Linux)
-                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
-            #endif // defined (TOOLCHAIN_OS_Linux)
-            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
-            if (size > 0) {
-                for (ssize_t i = 0; i < size; i += (ssize_t)(strlen (buffer.data () + i) + 1)) {
-                    attributes.push_back (
-                        Attribute (
-                            buffer.data () + i,
-                            GetExtendedAttributeValue (buffer.data () + i)));
-                }
-            }
-            else if (size < 0) {
-                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            std::vector<std::string> names = GetExtendedAttributeNames ();
+            for (const auto &name : names) {
+                attributes.push_back (Attribute (name, GetExtendedAttributeValue (name)));
             }
             return attributes;
         }
 
         std::vector<std::string> Path::GetExtendedAttributeNames () const {
-            std::vector<std::string> names;
-            ssize_t size = 0;
-            std::vector<char> buffer;
-            do {
+            for (;;) {
+                ssize_t size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    listxattr (path.c_str (), nullptr, 0);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    listxattr (path.c_str (), nullptr, 0, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                if (size < 0) {
+                    if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                        return std::vector<std::string> ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    }
+                }
+                std::vector<char> buffer;
+                buffer.resize (size);
+                size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    listxattr (path.c_str (), buffer.data (), size);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    listxattr (path.c_str (), buffer.data (), size, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
                 if (size > 0) {
-                    buffer.resize (size);
+                    std::vector<std::string> names;
+                    for (ssize_t i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                        names.push_back (buffer.data () + i);
+                    }
+                    return names;
                 }
-            #if defined (TOOLCHAIN_OS_Linux)
-                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size);
-            #else // defined (TOOLCHAIN_OS_Linux)
-                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
-            #endif // defined (TOOLCHAIN_OS_Linux)
-            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
-            if (size > 0) {
-                for (ssize_t i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
-                    names.push_back (buffer.data () + i);
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                    return std::vector<std::string> ();
+                }
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE != ERANGE) {
+                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
                 }
             }
-            else if (size < 0) {
-                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
-            }
-            return names;
         }
 
         void Path::AddExtendedAttribute (
@@ -299,26 +321,9 @@ namespace thekogans {
         }
 
         void Path::DeleteExtendedAttributes () const {
-            ssize_t size = 0;
-            std::vector<char> buffer;
-            do {
-                if (size > 0) {
-                    buffer.resize (size);
-                }
-            #if defined (TOOLCHAIN_OS_Linux)
-                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size);
-            #else // defined (TOOLCHAIN_OS_Linux)
-                size = listxattr (path.c_str (), size > 0 ? buffer.data () : 0, size, 0);
-            #endif // defined (TOOLCHAIN_OS_Linux)
-            } while (size < 0 && THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ERANGE);
-            if (size > 0) {
-                for (ssize_t i = 0; i < size; i += (ssize_t)(strlen (buffer.data () + i) + 1)) {
-                    DeleteExtendedAttribute (buffer.data () + i);
-                }
-            }
-            else if (size < 0) {
-                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            std::vector<std::string> attributes = GetExtendedAttributeNames ();
+            for (const auto &attribute : attributes) {
+                DeleteExtendedAttribute (attribute);
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)

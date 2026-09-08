@@ -18,6 +18,8 @@
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include <direct.h>
+#else // defined (TOOLCHAIN_OS_Windows)
+    #include <sys/xattr.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <errno.h>
 #include <sys/types.h>
@@ -435,6 +437,138 @@ namespace thekogans {
                 File file (HostEndian, path);
             }
         }
+
+    #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+        bool File::HasExtendedAttribute (const std::string &name) const {
+        #if defined (TOOLCHAIN_OS_Linux)
+            return fgetxattr (handle, name.c_str (), nullptr, 0) > 0;
+        #else // defined (TOOLCHAIN_OS_Linux)
+            return fgetxattr (handle, name.c_str (), nullptr, 0, 0, 0) > 0;
+        #endif // defined (TOOLCHAIN_OS_Linux)
+        }
+
+        std::string File::GetExtendedAttributeValue (const std::string &name) const {
+            for (;;) {
+                ssize_t size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    fgetxattr (handle, name.c_str (), nullptr, 0);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    fgetxattr (handle, name.c_str (), nullptr, 0, 0, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                if (size < 0) {
+                    if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                        return std::string ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    }
+                }
+                std::string value;
+                value.resize (size);
+                size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    fgetxattr (handle, name.c_str (), value.data (), size);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    fgetxattr (handle, name.c_str (), value.data (), size, 0, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                if (size > 0) {
+                    return value;
+                }
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                    return std::string ();
+                }
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE != ERANGE) {
+                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                }
+            }
+        }
+
+        Attributes File::GetExtendedAttributeValues () const {
+            Attributes attributes;
+            std::vector<std::string> names = GetExtendedAttributeNames ();
+            for (const auto &name : names) {
+                attributes.push_back (Attribute (name, GetExtendedAttributeValue (name)));
+            }
+            return attributes;
+        }
+
+        std::vector<std::string> File::GetExtendedAttributeNames () const {
+            for (;;) {
+                ssize_t size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    flistxattr (handle, nullptr, 0);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    flistxattr (handle, nullptr, 0, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                if (size < 0) {
+                    if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                        return std::vector<std::string> ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                    }
+                }
+                std::vector<char> buffer;
+                buffer.resize (size);
+                size =
+                #if defined (TOOLCHAIN_OS_Linux)
+                    flistxattr (handle, buffer.data (), size);
+                #else // defined (TOOLCHAIN_OS_Linux)
+                    flistxattr (handle, buffer.data (), size, 0);
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                if (size > 0) {
+                    std::vector<std::string> names;
+                    for (ssize_t i = 0; i < size; i += strlen (buffer.data () + i) + 1) {
+                        names.push_back (buffer.data () + i);
+                    }
+                    return names;
+                }
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE == ENOATTR) {
+                    return std::vector<std::string> ();
+                }
+                else if (THEKOGANS_UTIL_POSIX_OS_ERROR_CODE != ERANGE) {
+                    THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+                }
+            }
+        }
+
+        void File::AddExtendedAttribute (
+                const Attribute &attribute,
+                int flags) const {
+        #if defined (TOOLCHAIN_OS_Linux)
+            if (fsetxattr (handle, attribute.first.c_str (),
+                    attribute.second.c_str (), attribute.second.size (), flags) < 0) {
+        #else // defined (TOOLCHAIN_OS_Linux)
+            if (fsetxattr (handle, attribute.first.c_str (),
+                    attribute.second.c_str (), attribute.second.size (), 0, flags) < 0) {
+        #endif // defined (TOOLCHAIN_OS_Linux)
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+        }
+
+        void File::DeleteExtendedAttribute (const std::string &name) const {
+        #if defined (TOOLCHAIN_OS_Linux)
+            if (fremovexattr (handle, name.c_str ()) < 0) {
+        #else // defined (TOOLCHAIN_OS_Linux)
+            if (fremovexattr (handle, name.c_str (), 0) < 0) {
+        #endif // defined (TOOLCHAIN_OS_Linux)
+                THEKOGANS_UTIL_THROW_POSIX_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_POSIX_OS_ERROR_CODE);
+            }
+        }
+
+        void File::DeleteExtendedAttributes () const {
+            std::vector<std::string> attributes = GetExtendedAttributeNames ();
+            for (const auto &attribute : attributes) {
+                DeleteExtendedAttribute (attribute);
+            }
+        }
+    #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
