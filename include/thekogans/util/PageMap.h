@@ -181,7 +181,7 @@ namespace thekogans {
         /// each containing 1K of 4MB pages.
         ///
         /// \tparam T The type that will represent addresses.
-        /// \tparam bitsPerAddress Narrow the address space to this many bits (default as wide as AddressType).
+        /// \tparam bitsPerAddress Narrow the address space to this many bits (default as wide as T).
         /// \tparam Lock Any of the standard locks to use for synchronization.
         template<
             typename T,
@@ -596,7 +596,7 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Parent () {
                     childList.clear (
-                        [this] (typename NodeList::Callback::argument_type child) ->
+                        [&] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
                             children[child->index] = nullptr;
                             child->Release ();
@@ -619,7 +619,7 @@ namespace thekogans {
                 /// \return IsEmpty ().
                 virtual bool Clear (bool dirty_) override {
                     childList.for_each (
-                        [this, dirty_] (typename NodeList::Callback::argument_type child) ->
+                        [&] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
                             if (child->Clear (dirty_)) {
                                 DeleteChild (child);
@@ -638,7 +638,7 @@ namespace thekogans {
                         Serializer &log,
                         std::size_t &count) override {
                     childList.for_each (
-                        [&log, &count] (typename NodeList::Callback::argument_type child) ->
+                        [&] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
                             child->Log (log, count);
                             return true;
@@ -655,7 +655,7 @@ namespace thekogans {
                         PageSource &pageSink,
                         bool clearCache = false) override {
                     childList.for_each (
-                        [this, &pageSink, clearCache] (typename NodeList::Callback::argument_type child) ->
+                        [&] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
                             if (child->Flush (pageSink, clearCache)) {
                                 DeleteChild (child);
@@ -672,7 +672,7 @@ namespace thekogans {
                 /// \return IsEmpty ().
                 virtual bool Shrink (SizeType size) override {
                     childList.for_each (
-                        [this, size] (typename NodeList::Callback::argument_type child) ->
+                        [&] (typename NodeList::Callback::argument_type child) ->
                                 typename NodeList::Callback::result_type {
                             if (child->Shrink (size)) {
                                 DeleteChild (child);
@@ -717,7 +717,7 @@ namespace thekogans {
                             // list? This needs further profiling to get the lay
                             // of the land.
                             childList.for_each (
-                                [this, child] (typename NodeList::Callback::argument_type child_) ->
+                                [&] (typename NodeList::Callback::argument_type child_) ->
                                         typename NodeList::Callback::result_type {
                                     if (child->index < child_->index) {
                                         childList.insert (child, child_);
@@ -872,7 +872,7 @@ namespace thekogans {
             /// The root of the tree.
             Node *root;
             /// \brief
-            /// Last accessed page cache promoting locality of refernce.
+            /// Last accessed page cache promoting locality of reference.
             Page *lastGetPagePage;
             /// \brief
             /// Synchronization lock.
@@ -1037,7 +1037,7 @@ namespace thekogans {
                 // Quick bounds check.
                 if (offset < maxOffset && buffer != nullptr && count > 0) {
                     LockGuard<Lock> guard (lock);
-                    ui8 *ptr = (ui8 *)buffer;
+                    const ui8 *ptr = (const ui8 *)buffer;
                     while (count > 0) {
                         typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
@@ -1157,7 +1157,7 @@ namespace thekogans {
                         levelShift_ -= bitsPerLevel;
                         levelMask_ >>= bitsPerLevel;
                         node = ((Internal *)node)->GetChild (index,
-                            [this, index, levelMask_] () -> Node * {
+                            [&] () -> Node * {
                                 return levelMask_ == 0 ?
                                     Segment::Alloc (*this, index) :
                                     Internal::Alloc (*this, index);
@@ -1171,7 +1171,7 @@ namespace thekogans {
                     // (locality of reference).
                     std::size_t index = (offset & segmentMask) >> bitsPerPage;
                     lastGetPagePage = (Page *)((Segment *)node)->GetChild (index,
-                        [this, index, offset, pageSource] () -> Node * {
+                        [&] () -> Node * {
                             return Page::Alloc (*this, index, offset, pageSource);
                         }
                     );
