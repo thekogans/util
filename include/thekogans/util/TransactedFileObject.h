@@ -41,7 +41,8 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// \see{Object} freed its file block.
     /// \param[in] object \see{Object} whose offset has become invalid.
     /// VERY IMPORTANT SEMANTICS: When you get this notification,
-    /// object->GetOffset () will still point to the old offset (which been freed).
+    /// object->GetOffset () will still point to the old offset (which
+    /// has been freed).
     virtual void OnTransactedFileObjectFree (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 };

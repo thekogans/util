@@ -117,7 +117,6 @@ namespace thekogans {
         /// handled in a sensical and uniform way.
         ///
         /// NOTE: On POSIX systems, threads are created with signals disabled.
-
         struct _LIB_THEKOGANS_UTIL_DECL Thread {
             /// \brief
             /// Alias for std::unique_ptr<Thread>.
@@ -583,7 +582,6 @@ namespace thekogans {
         ///
         /// This mechanism allows the thread to control it's own lifetime and
         /// cleanup after itself avoiding leaks.
-
         struct _LIB_THEKOGANS_UTIL_DECL ThreadReaper :
                 public Thread,
                 public Singleton<ThreadReaper> {

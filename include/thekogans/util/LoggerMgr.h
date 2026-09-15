@@ -119,7 +119,6 @@ namespace thekogans {
         /// *** VERY, VERY IMPORTANT ***
         /// You cannot use the LoggerMgr in JobQueue/SpinLock/Mutex!
         /// (circular dependency)
-
         struct _LIB_THEKOGANS_UTIL_DECL LoggerMgr {
             /// \enum
             /// Log levels. Each successive level builds on the previous ones.
@@ -550,7 +549,6 @@ namespace thekogans {
         ///
         /// \brief
         /// A global logger manager instance.
-
         struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgr :
                 public LoggerMgr,
                 public Singleton<GlobalLoggerMgr> {

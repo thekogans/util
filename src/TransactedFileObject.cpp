@@ -65,13 +65,14 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::Flush () {
-            assert (offset != 0);
-            BlockRange range (*file, offset, false);
-            Write (range);
-            if (GetAllocator ()->IsSecure ()) {
-                range.Seek (
-                    SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
-                    SEEK_CUR);
+            if (offset != 0) {
+                BlockRange range (*file, offset, false);
+                Write (range);
+                if (GetAllocator ()->IsSecure ()) {
+                    range.Seek (
+                        SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
+                        SEEK_CUR);
+                }
             }
         }
 

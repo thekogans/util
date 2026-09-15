@@ -95,7 +95,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     /// This design provides two benefits;
     /// 1. Heap integrity. Header and Footer provide a no man's
     /// land that Block uses to make sure the block has not
-    /// been corrupted by [over/under]flow writes.
+    /// been corrupted by [under|over]flow writes.
     /// 2. Ability to navigate the heap in linear order. This
     /// property is used in Free to help coalesce adjecent free
     /// blocks.
@@ -453,10 +453,6 @@ protected:
     virtual void Write (Serializer &serializer) const override;
 
     /// \brief
-    /// Needs access to file.
-    friend struct TransactedFile;
-
-    /// \brief
     /// Needs access to private members.
     friend Serializer &operator << (
         Serializer &serializer,
@@ -488,7 +484,7 @@ struct _LIB_THEKOGANS_UTIL_DECL BlockRange : public Range {
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     BlockRange (
         TransactedFile &file,
-        ui64 offset,
+        Allocator::PtrType offset,
         bool reading = true,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
         Range (file, offset, Allocator::Block::GetSize (file, offset), reading, allocator) {}
@@ -510,7 +506,7 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeBlockRange : public SafeRange {
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     SafeBlockRange (
         TransactedFile &file,
-        ui64 offset,
+        Allocator::PtrType offset,
         bool reading = true,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
         SafeRange (file, offset, Allocator::Block::GetSize (file, offset), reading, allocator) {}

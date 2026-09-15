@@ -615,7 +615,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Delete pages.
-                /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
+                /// \param[in] dirty_ true == delete dirty pages. false == delete clean pages.
                 /// \return IsEmpty ().
                 virtual bool Clear (bool dirty_) override {
                     childList.for_each (

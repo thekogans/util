@@ -320,8 +320,8 @@ namespace thekogans {
                     bool unsubscribe = false) {
                 std::vector<SharedSubscriberInfo> subscribers;
                 GetSubscribers (subscribers, unsubscribe);
-                for (std::size_t i = 0, count = subscribers.size (); i < count; ++i) {
-                    subscribers[i].second->DeliverEvent (event, subscribers[i].first);
+                for (const auto &subscriber : subscribers) {
+                    subscriber.second->DeliverEvent (event, subscriber.first);
                 }
             }
 

@@ -58,10 +58,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry :
         const std::string & /*key*/,
         Serializable::SharedPtr /*value*/) = 0;
 
-protected:
-    /// \brief
-    /// Needs access to file.
-    friend struct TransactedFile;
 
     /// \brief
     /// Registry is neither copy constructable, nor assignable.

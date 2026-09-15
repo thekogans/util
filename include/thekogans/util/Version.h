@@ -145,6 +145,10 @@ namespace thekogans {
                 GT,  // ">"
                 LT   // "<"
             };
+            /// \brief
+            /// Given a string representation of OP, return the enum.
+            /// \param[in] op String representation of OP.
+            /// \return OP.
             static OP stringToOP (const std::string &op) {
                 return op == "=" ? EQ :
                     op == "!=" ? NEQ :
@@ -153,6 +157,10 @@ namespace thekogans {
                     op == ">" ? GT :
                     op == "<" ? LT : NOP;
             }
+            /// \brief
+            /// Given OP, return the string representation.
+            /// \param[in] op OP.
+            /// \return String representation.
             static const std::string OPTostring (OP op) {
                 return op == EQ ? "=" :
                     op == NEQ ? "!=" :
@@ -166,14 +174,13 @@ namespace thekogans {
             /// \param[in] op "=" | ">=" | "<=" | ">" | "<" | "!="
             /// \param[in] version Version to compare against.
             /// \return true == the given constraint is satisfied.
-            ///
             bool SatisfiesConstraint (
                 OP op,
                 const Version &version) const;
 
             /// \brief
-            /// Return the canonical version string this project was compiled with.
-            /// \return The canonical Version string this project was compiled with.
+            /// Return the string representation of version.
+            /// \return String representation of version.
             inline std::string ToString () const {
                 return FormatString ("%u.%u.%u", majorVersion, minorVersion, patchVersion);
             }

@@ -44,7 +44,6 @@ namespace thekogans {
                 ++file.stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-            ui64 pageOffset = offset & file.GetPageMask ();
             ////////////////////////////////////////////////////////////////////
             // The two designs considered for range were:
             // 1. Have range implement something simmilar to PageMap::Read and
@@ -62,10 +61,11 @@ namespace thekogans {
             // 2. Use patterns and tunability. Range is specifically designed
             // to work with PageMap::Page and it's size. That size is parameterized
             // by bitsPerPage ctor value. You therefore have a lot of power to tune
-            // the underlying PageMapType to minimize boudary crossings. At the same
-            // time range is designed to work with TransactedFile::Allocator::Block
-            // (BlockRange). That means that most of range parameters will come from
-            // block offset and size. And to that end...
+            // the underlying TransactedFileAddressSpaceType to minimize boudary
+            // crossings. At the same time range is designed to work with
+            // TransactedFile::Allocator::Block (BlockRange). That means that most
+            // of range parameters will come from block offset and size. And to
+            // that end...
             // 3. ...TransactedFileBTreeAllocator. TransactedFileBTreeAllocator
             // bends over backward to try and reduce the number of page boundary
             // crossing blocks it allocates.
@@ -74,6 +74,7 @@ namespace thekogans {
             // critical path code to deal with it would be the wrong way to go.
             ////////////////////////////////////////////////////////////////////
             // Check to see if the range straddles a page boundary...
+            ui64 pageOffset = offset & file.GetPageMask ();
             if (length > file.GetPageSize () - pageOffset) {
                 // ...it does. Allocate a backing buffer.
                 data = (ui8 *)allocator->Alloc (length);

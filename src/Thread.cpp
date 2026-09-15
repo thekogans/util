@@ -495,8 +495,7 @@ namespace thekogans {
                 const Deleter &deleter) {
             if (thread != nullptr) {
                 runLoop.EnqJob (
-                    [thread, timeSpec, deleter] (
-                            const RunLoop::Job & /*job*/,
+                    [&] (const RunLoop::Job & /*job*/,
                             const std::atomic<bool> & /*done*/) {
                         thread->Wait (timeSpec);
                         deleter (thread);

@@ -74,6 +74,8 @@ namespace thekogans {
                 RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
         };
 
+        /// \brief
+        /// We do our own locking.
         using TransactedFileAddressSpaceType = PageMap<ui64, BitWidth<ui64>::value, NullLock>;
 
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
@@ -166,12 +168,16 @@ namespace thekogans {
                     file (file_),
                     guard (file.mutex) {}
                 /// \brief
-                /// dtor. Abort the uncommitted transaction.
+                /// dtor. Abort an uncommitted transaction.
                 ~Transaction ();
 
                 /// \brief
-                /// Commit the transaction before the dtor aborts it.
-                /// \param[in] clearCache true == Clear the \see{PageMap} cache after committing.
+                /// Commit transaction before dtor aborts it.
+                /// NOTE: You can call Commit as many times as you like in the
+                /// scope of a single transaction. Effectively turning Commit
+                /// in to Checkpoint. That's only an illusion since there is
+                /// no Rollback.
+                /// \param[in] clearCache true == Clear \see{PageMap} cache after committing.
                 void Commit (bool clearCache = false);
 
                 /// \brief
@@ -225,13 +231,13 @@ namespace thekogans {
                 void SetDirty (bool dirty);
 
                 /// \brief
+                /// TransactedFile::ReadTransactionParticipant sets the file.
+                friend struct TransactedFile;
+
+                /// \brief
                 /// TransactionParticipant is neither copy or move constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactionParticipant)
             };
-
-            /// \brief
-            /// We do our own locking.
-            using PageMapType = PageMap<ui64, BitWidth<ui64>::value, NullLock>;
 
         private:
             /// \brief
@@ -452,6 +458,10 @@ namespace thekogans {
                 return Write (buffer, count);
             }
 
+            TransactionParticipant::SharedPtr ReadTransactionParticipant (
+                Allocator::PtrType offset,
+                const SerializableHeader &context = SerializableHeader (),
+                DynamicCreatable::FactoryType factory = DynamicCreatable::FactoryType ());
             /// \brief
             /// Called during file open. If the file is empty and an
             /// \see{Allocator} and an optional \see{Registry} were
@@ -508,6 +518,10 @@ namespace thekogans {
             /// TransactedFile is neither copy or move constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
+
+        /// \brief
+        /// Implement \see{TransactedFile::TransactionParticipant} extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::TransactionParticipant)
 
         /// \brief
         /// Implement \see{TransactedFile::Allocator} extraction operators.

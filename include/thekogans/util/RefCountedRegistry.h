@@ -47,8 +47,12 @@ namespace thekogans {
         /// the object that can later be used to create a SharedPtr (if the object
         /// still exists).
 
-        template<typename T>
-        struct RefCountedRegistry : public Singleton<RefCountedRegistry<T>> {
+        template<
+            typename T,
+            typename Lock = SpinLock,
+            typename InstanceCreator = DefaultInstanceCreator<T>,
+            typename InstanceDestroyer = DefaultInstanceDestroyer<T>>
+        struct RefCountedRegistry : public Singleton<RefCountedRegistry<T, Lock, InstanceCreator, InstanceDestroyer>> {
         public:
             /// \brief
             /// Default initial entry list size.
@@ -262,7 +266,7 @@ namespace thekogans {
             typename Token::IndexType freeList;
             /// \brief
             /// Synchronization lock.
-            SpinLock spinLock;
+            Lock lock;
 
         public:
             /// \brief
@@ -290,7 +294,7 @@ namespace thekogans {
                     typename Token::IndexType index;
                     typename Token::CounterType counter;
                     {
-                        LockGuard<SpinLock> guard (spinLock);
+                        LockGuard<Lock> guard (lock);
                         if (freeList != BAD_INDEX) {
                             // Reuse a free entry.
                             index = freeList;
@@ -336,7 +340,7 @@ namespace thekogans {
                 // Unpack the token to get index and counter.
                 typename Token::IndexType index = Token::GetIndex (value);
                 typename Token::CounterType counter = Token::GetCounter (value);
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Lock> guard (lock);
                 // Check the counter to make sure this token
                 // still has access to this slot.
                 if (index < entries.size () && entries[index].counter == counter) {
@@ -358,7 +362,7 @@ namespace thekogans {
                 // Unpack the token to get index and counter.
                 typename Token::IndexType index = Token::GetIndex (value);
                 typename Token::CounterType counter = Token::GetCounter (value);
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Lock> guard (lock);
                 // Check the counter to make sure this token
                 // still references the current object.
                 return index < entries.size () && entries[index].counter == counter ?
