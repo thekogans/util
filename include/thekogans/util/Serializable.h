@@ -492,19 +492,25 @@ namespace thekogans {
             inline thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
                     thekogans::util::Serializer &serializer,\
                     _T::SharedPtr &serializable) {\
-                serializer >> (thekogans::util::Serializable::SharedPtr &)serializable;\
+                Serializable::SharedPtr base;\
+                serializer >> base;\
+                serializable = base;\
                 return serializer;\
             }\
             inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const pugi::xml_node &node,\
                     _T::SharedPtr &serializable) {\
-                node >> (thekogans::util::Serializable::SharedPtr &)serializable;\
+                Serializable::SharedPtr base;\
+                node >> base;\
+                serializable = base;\
                 return node;\
             }\
             inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const thekogans::util::JSON::Object &object,\
                     _T::SharedPtr &serializable) {\
-                object >> (thekogans::util::Serializable::SharedPtr &)serializable;\
+                Serializable::SharedPtr base;\
+                object >> base;\
+                serializable = base;\
                 return object;\
             }
 
@@ -641,13 +647,14 @@ namespace thekogans {
         /// Specialization of \see{ValueParser} for \see{Serializable::SharedPtr}.
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<Serializable::SharedPtr> {
+            /// \brief
+            /// Default serializable size;
+            static const std::size_t DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024;
+
         protected:
             /// \brief
             /// Serializable to parse.
             Serializable::SharedPtr &value;
-            /// \brief
-            /// Default serializable size;
-            static const std::size_t DEFAULT_MAX_SERIALIZABLE_SIZE = 2 * 1024 * 1024;
             /// \brief
             /// Used to twart ddos attacks. The generic 2MB might be too much.
             /// Tune this value to protect your application.
@@ -702,19 +709,33 @@ namespace thekogans {
         /// Implement a value parser for _T::SharedPtr.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER(_T)\
             template<>\
-            struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::SharedPtr> :\
-                    public thekogans::util::ValueParser<thekogans::util::Serializable::SharedPtr> {\
+            struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::SharedPtr> {\
+            private:\
+                _T::SharedPtr &value;\
+                Serializable::SharedPtr base;\
+                thekogans::util::ValueParser<thekogans::util::Serializable::SharedPtr> baseParser;\
+            public:\
                 ValueParser (\
-                    _T::SharedPtr &value,\
-                    Serializer &serializer,\
-                    std::size_t maxSerializableSize = DEFAULT_MAX_SERIALIZABLE_SIZE) :\
-                    thekogans::util::ValueParser<thekogans::util::Serializable::SharedPtr> (\
-                        (thekogans::util::Serializable::SharedPtr &)value,\
-                        serializer,\
-                        maxSerializableSize) {}\
+                    _T::SharedPtr &value_,\
+                    thekogans::util::Serializer &serializer,\
+                    std::size_t maxSerializableSize =\
+                        thekogans::util::ValueParser<thekogans::util::Serializable::SharedPtr>::DEFAULT_MAX_SERIALIZABLE_SIZE) :\
+                    value (value_),\
+                    base (value_),\
+                    baseParser (base, serializer, maxSerializableSize) {}\
+                void Reset (thekogans::util::Serializer &serializer) {\
+                    baseParser.Reset (serializer);\
+                }\
+                bool ParseValue (thekogans::util::Serializer &serializer) {\
+                    if (baseParser.ParseValue (serializer)) {\
+                        value = base;\
+                        return true;\
+                    }\
+                    return false;\
+                }\
             };
 
-    } // namespace util
+    } // Namespace util
 } // namespace thekogans
 
 #endif // !defined (__thekogans_util_Serializable_h)

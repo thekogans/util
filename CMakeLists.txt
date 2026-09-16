@@ -25,7 +25,7 @@ add_definitions(
     -DTOOLCHAIN_OS_OSX
     -DTOOLCHAIN_COMPILER_clang
     -DTHEKOGANS_UTIL_HAVE_MMAP
-    -DTOOLCHAIN_ARCH_x86_64
+    -DTOOLCHAIN_ARCH_arm64
     -DTOOLCHAIN_ENDIAN_Little
     -DTHEKOGANS_PATHFINDER_MAJOR_VERSION=0
     -DTHEKOGANS_PATHFINDER_MINOR_VERSION=2
@@ -44,21 +44,6 @@ add_definitions(
 
 target_sources(${PROJECT_NAME}
     PRIVATE
-        src/3rdparty/zlib/adler32.c
-        src/3rdparty/zlib/compress.c
-        src/3rdparty/zlib/crc32.c
-        src/3rdparty/zlib/deflate.c
-        src/3rdparty/zlib/gzclose.c
-        src/3rdparty/zlib/gzlib.c
-        src/3rdparty/zlib/gzread.c
-        src/3rdparty/zlib/gzwrite.c
-        src/3rdparty/zlib/infback.c
-        src/3rdparty/zlib/inffast.c
-        src/3rdparty/zlib/inflate.c
-        src/3rdparty/zlib/inftrees.c
-        src/3rdparty/zlib/trees.c
-        src/3rdparty/zlib/uncompr.c
-        src/3rdparty/zlib/zutil.c
         src/AlignedAllocator.cpp
         src/Allocator.cpp
         src/Barrier.cpp
@@ -186,8 +171,8 @@ target_compile_options(${PROJECT_NAME} PRIVATE
     -fPIC
     -fno-common
     -pipe
+    -pthread
     -march=native
-    -mno-avx
     -Wno-undefined-var-template)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE

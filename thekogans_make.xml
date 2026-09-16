@@ -2,12 +2,12 @@
                 project = "util"
                 project_type = "library"
                 major_version = "0"
-                minor_version = "38"
-                patch_version = "1"
+                minor_version = "39"
+                patch_version = "0"
                 guid = "e541acd69d9d020f7eac98d5bf9e0d7a"
                 schema_version = "2">
   <features>
-    <if condition = "$(is_package_installed -p:zlib)">
+    <if condition = "$(is_package_installed -n:zlib)">
       <feature>THEKOGANS_UTIL_HAVE_ZLIB</feature>
     </if>
     <if condition = "$(TOOLCHAIN_OS) == 'Windows'">
@@ -67,8 +67,7 @@
       <c_preprocessor_definition>_CRT_NONSTDC_NO_DEPRECATE</c_preprocessor_definition>
     </c_preprocessor_definitions>
   </if>
-  <cpp_headers prefix = "include"
-               install = "yes">
+  <cpp_headers prefix = "include">
     <cpp_header>$(organization)/$(project_directory)/AlignedAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Allocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Barrier.h</cpp_header>
@@ -202,20 +201,18 @@
       </when>
     </choose>
   </cpp_headers>
-  <cpp_headers prefix = "include/3rdparty"
-               install = "yes">
+  <cpp_headers prefix = "include/3rdparty">
     <cpp_header>pugixml/pugiconfig.hpp</cpp_header>
     <cpp_header>pugixml/pugixml.hpp</cpp_header>
   </cpp_headers>
   <!-- For tests -->
-  <cpp_headers prefix = "include/3rdparty"
-               install = "yes">
+  <cpp_headers prefix = "include/3rdparty">
     <cpp_header>CppUnitXLite/CppUnitXLite.hpp</cpp_header>
     <cpp_header>CppUnitXLite/CppUnitXLite.cpp</cpp_header>
   </cpp_headers>
   <!-- Just enough boost to make custom SharedAllocator::Lock work. -->
   <cpp_headers prefix = "include/3rdparty/private"
-               install = "no">
+               private = "yes">
     <cpp_header>boost/atomic.hpp</cpp_header>
     <cpp_header>boost/atomic/atomic.hpp</cpp_header>
     <cpp_header>boost/atomic/atomic_flag.hpp</cpp_header>
@@ -742,8 +739,7 @@
     <cpp_source>boost/atomic/lockpool.cpp</cpp_source>
   </cpp_sources>
   <if condition = "$(TOOLCHAIN_OS) == 'OSX'">
-    <objective_cpp_headers prefix = "include"
-                           install = "yes">
+    <objective_cpp_headers prefix = "include">
       <objective_cpp_header>$(organization)/$(project_directory)/os/osx/OSXUtils.h</objective_cpp_header>
     </objective_cpp_headers>
     <objective_cpp_sources prefix = "src">
@@ -759,8 +755,7 @@
     -->
     <cpp_test>test_Version.cpp</cpp_test>
   </cpp_tests>
-  <resources prefix = "resources"
-             install = "yes">
+  <resources prefix = "resources">
     <resource>mime_types.txt</resource>
   </resources>
 </thekogans_make>
