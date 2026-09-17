@@ -10,7 +10,8 @@
     <dependency organization = "thekogans"
                 name = "util"/>
   </dependencies>
-  <cpp_sources prefix = "src">
+  <cpp_sources prefix = "src"
+               private = "yes">
     <cpp_source>main.cpp</cpp_source>
   </cpp_sources>
   <if condition = "$(TOOLCHAIN_OS) == 'Windows'">

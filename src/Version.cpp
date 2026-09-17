@@ -27,26 +27,33 @@ namespace thekogans {
                 majorVersion (0),
                 minorVersion (0),
                 patchVersion (0) {
-            std::string::size_type start = 0;
-            std::string::size_type end = value.find_first_of (".", start);
-            if (end != std::string::npos) {
-                majorVersion = stringToui32 (value.substr (start, end - start).c_str ());
-                start = end + 1;
-                end = value.find_first_of (".", start);
-                if (end != std::string::npos) {
-                    patchVersion = stringToui32 (value.substr (start, end - start).c_str ());
-                    start = end + 1;
-                    patchVersion = stringToui32 (value.substr (start).c_str ());
-                }
-                else {
-                    minorVersion = stringToui32 (value.substr (start).c_str ());
-                    patchVersion = 0;
-                }
-            }
-            else {
-                majorVersion = stringToui32 (value.substr (start).c_str ());
-                minorVersion = 0;
-                patchVersion = 0;
+            if (!value.empty ()) {
+                std::size_t i = 0;
+                auto ExtractVersion = [&] (ui32 &version) {
+                    // Any integer bigger than 10 digits would overflow a ui32.
+                    const std::size_t MAX_VERSION_SIZE = 10;
+                    // +1 for '\0' terminator.
+                    char buffer[MAX_VERSION_SIZE + 1];
+                    std::size_t index = 0;
+                    while (i < value.size () && index < MAX_VERSION_SIZE) {
+                        if (value[i] == '.') {
+                            ++i;
+                            break;
+                        }
+                        else if (isdigit (value[i])) {
+                            buffer[index++] = value[i++];
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Unrecognized version: %s, should be [%u[.%u[.%u]]]", value.c_str ());
+                        }
+                    }
+                    buffer[index] = '\0';
+                    version = stringToui32 (buffer);
+                };
+                ExtractVersion (majorVersion);
+                ExtractVersion (minorVersion);
+                ExtractVersion (patchVersion);
             }
         }
 
