@@ -159,11 +159,20 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL const Version & _LIB_THEKOGANS_UTIL_API GetVersion () {
-            static const Version *version = new Version (
-                THEKOGANS_UTIL_MAJOR_VERSION,
-                THEKOGANS_UTIL_MINOR_VERSION,
-                THEKOGANS_UTIL_PATCH_VERSION);
-            return *version;
+            util::ui32 major = 0;
+            util::ui32 minor = 0;
+            util::ui32 patch = 0;
+        #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_MAJOR_VERSION)
+            major = THEKOGANS_UTIL_MAJOR_VERSION;
+        #endif
+        #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_MINOR_VERSION)
+            minor = THEKOGANS_UTIL_MINOR_VERSION;
+        #endif
+        #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_PATCH_VERSION)
+            patch = THEKOGANS_UTIL_PATCH_VERSION;
+        #endif
+            static const util::Version version (major, minor, patch);
+            return version;
         }
 
     } // namespace util

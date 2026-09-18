@@ -421,6 +421,12 @@ namespace thekogans {
         /// \param[in] prefix Name prefix.
         #define THEKOGANS_UTIL_UNIQUE_NAME(prefix) THEKOGANS_UTIL_LABEL (prefix, __LINE__)
 
+        #define THEKOGANS_UTIL_ARG_PLACEHOLDER_1 ,
+        #define THEKOGANS_UTIL_TAKE_SECOND_ARG(a, b, ...) b
+        #define THEKOGANS_UTIL_IS_EMPTY_CHECK(...) THEKOGANS_UTIL_TAKE_SECOND_ARG(__VA_ARGS__)
+        #define THEKOGANS_UTIL_IS_MACRO_EMPTY(macro)\
+            THEKOGANS_UTIL_IS_EMPTY_CHECK(THEKOGANS_UTIL_ARG_PLACEHOLDER_##macro 0, 1)
+
     } // namespace util
 } // namespace thekogans
 
