@@ -574,8 +574,13 @@ namespace thekogans {
                 size = DWORDDWORDToui64 (attributeData.nFileSizeLow, attributeData.nFileSizeHigh);
             }
             else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                fileSystem  = Windows;
+                type = Invalid;
+                attributes = 0;
+                creationDate = -1;
+                lastAccessedDate = -1;
+                lastModifiedDate = -1;
+                size = 0;
             }
         }
     #else // defined (TOOLCHAIN_OS_Windows)
@@ -600,8 +605,13 @@ namespace thekogans {
                 size = buf.st_size;
             }
             else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_AND_MESSAGE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE, " (%s)", path.c_str ());
+                fileSystem  = POSIX;
+                type = Invalid;
+                mode = 0;
+                lastStatusDate = -1;
+                lastAccessedDate = -1;
+                lastModifiedDate = -1;
+                size = 0;
             }
         }
     #endif // defined (TOOLCHAIN_OS_Windows)
