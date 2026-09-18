@@ -101,7 +101,15 @@ namespace thekogans {
                 patchVersion (patchVersion_) {}
             /// \brief
             /// ctor.
-            /// \param[in] value String representation of a version (major.minor.patch).
+            /// VERY IMPORTANT: This ctor is very flexible with
+            /// regard to the value format. Anything that looks
+            /// like this; [%u[.%u[.%u]]] will be properly parsed.
+            /// Ex: 1.4.5, 1.4, 1. Even an empty value is fine,
+            /// resulting in a 0.0.0 'Empty' version.
+            /// That said, ToString will always return a canonical
+            /// (i.e. major.minor.patch) version. Keep that in mind
+            /// when doing lexicographical (string) comparisons.
+            /// \param[in] value String representation of a version ([%u[.%u[.%u]]]).
             Version (const std::string &value);
 
             /// \brief
@@ -171,7 +179,7 @@ namespace thekogans {
             }
             /// \brief
             /// Return true if we satisfy the given constraint.
-            /// \param[in] op "=" | ">=" | "<=" | ">" | "<" | "!="
+            /// \param[in] op EQ, NEQ, GEQ, LEQ, GT, LT
             /// \param[in] version Version to compare against.
             /// \return true == the given constraint is satisfied.
             bool SatisfiesConstraint (

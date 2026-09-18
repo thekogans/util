@@ -30,26 +30,21 @@ namespace thekogans {
             if (!value.empty ()) {
                 std::size_t i = 0;
                 auto ExtractVersion = [&] (ui32 &version) {
-                    // Any integer bigger than 10 digits would overflow a ui32.
-                    const std::size_t MAX_VERSION_SIZE = 10;
-                    // +1 for '\0' terminator.
-                    char buffer[MAX_VERSION_SIZE + 1];
-                    std::size_t index = 0;
-                    while (i < value.size () && index < MAX_VERSION_SIZE) {
+                    for (; i < value.size (); ++i) {
                         if (value[i] == '.') {
                             ++i;
-                            break;
+                            return;
                         }
                         else if (isdigit (value[i])) {
-                            buffer[index++] = value[i++];
+                            version *= 10;
+                            version += value[i] - '0';
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Unrecognized version: %s, should be [%u[.%u[.%u]]]", value.c_str ());
+                                "Unrecognized version format: %s, should be [%%u[.%%u[.%%u]]]", value.c_str ());
+                            return;
                         }
                     }
-                    buffer[index] = '\0';
-                    version = stringToui32 (buffer);
                 };
                 ExtractVersion (majorVersion);
                 ExtractVersion (minorVersion);
