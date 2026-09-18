@@ -44,7 +44,6 @@ namespace thekogans {
         /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the
         /// main thread (main).
-
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
             /// \brief
             /// Returns RefCounted::SharedPtr<T> to instance.

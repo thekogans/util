@@ -16,7 +16,7 @@
     </if>
     <if condition = "$(TOOLCHAIN_OS) != 'Windows'">
       <feature>THEKOGANS_UTIL_HAVE_MMAP</feature>
-      <if condition = "$(TOOLCHAIN_OS) == 'Linux'">
+      <if condition = "$(TOOLCHAIN_OS) == 'Linux' &amp;&amp; $(is_package_installed -n:x11)">
         <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
       </if>
     </if>
@@ -42,11 +42,12 @@
         </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'Linux'">
+        <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
+          <package name = "x11"
+                   private = "yes"/>
+        </if>
         <library nane = "rt"/>
         <library name = "dl"/>
-        <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_XLIB)">
-          <library name = "X11"/>
-        </if>
       </when>
       <when condition = "$(TOOLCHAIN_OS) == 'OSX'">
         <framework name = "Foundation"/>
