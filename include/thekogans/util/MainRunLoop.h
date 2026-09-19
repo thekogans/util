@@ -38,15 +38,15 @@ namespace thekogans {
         /// \brief
         /// Call MainRunLoop::CreateInstance before the first use of
         /// MainRunLoop::Instance to supply custom arguments to SystemRunLoop ctor.
-        /// If you don't call MainRunLoop::CreateInstance, MainRunLoop
-        /// will create a \see{SystemRunLoop} on it's first invocation of Instance.
+        /// If you don't call MainRunLoop::CreateInstance, MainRunLoop will
+        /// create a \see{SystemRunLoop} on it's first invocation of Instance.
         ///
         /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
         /// (calls Thread::SetMainThread ()) that only makes sense when called from the
         /// main thread (main).
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
             /// \brief
-            /// Returns RefCounted::SharedPtr<T> to instance.
+            /// Returns RunLoop::SharedPtr.
             using ReturnType = RunLoop::SharedPtr;
 
             /// \brief
