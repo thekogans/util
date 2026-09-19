@@ -407,7 +407,7 @@ namespace thekogans {
             (sizeof (array) / sizeof (array[0]))
 
         /// \def THEKOGANS_UTIL_MERGE(prefix, lineNumber)
-        /// Concatenate a prefix and line number to for a unique name.
+        /// Concatenate a prefix and line number for a unique name.
         /// \param[in] prefix Name prefix.
         /// \param[in] lineNumber Line number.
         #define THEKOGANS_UTIL_MERGE(prefix, lineNumber) prefix##lineNumber
@@ -423,9 +423,9 @@ namespace thekogans {
 
         #define THEKOGANS_UTIL_ARG_PLACEHOLDER_1 ,
         #define THEKOGANS_UTIL_TAKE_SECOND_ARG(a, b, ...) b
-        #define THEKOGANS_UTIL_IS_EMPTY_CHECK(...) THEKOGANS_UTIL_TAKE_SECOND_ARG(__VA_ARGS__)
+        #define THEKOGANS_UTIL_IS_EMPTY_CHECK(...) THEKOGANS_UTIL_TAKE_SECOND_ARG (__VA_ARGS__)
         #define THEKOGANS_UTIL_IS_MACRO_EMPTY(macro)\
-            THEKOGANS_UTIL_IS_EMPTY_CHECK(THEKOGANS_UTIL_ARG_PLACEHOLDER_##macro 0, 1)
+            THEKOGANS_UTIL_IS_EMPTY_CHECK (THEKOGANS_UTIL_ARG_PLACEHOLDER_##macro 0, 1)
 
     } // namespace util
 } // namespace thekogans

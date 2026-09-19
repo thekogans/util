@@ -109,7 +109,8 @@ namespace thekogans {
             /// That said, ToString will always return a canonical
             /// (i.e. major.minor.patch) version. Keep that in mind
             /// when doing lexicographical (string) comparisons.
-            /// \param[in] value String representation of a version ([%u[.%u[.%u]]]).
+            /// \param[in] value String representation of a version
+            /// ([%u[.%u[.%u]]]).
             Version (const std::string &value);
 
             /// \brief
