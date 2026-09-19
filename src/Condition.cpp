@@ -65,7 +65,7 @@ namespace thekogans {
                 }
             }
             else {
-                timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
+                timespec absolute = (GetMonotonicTime () + timeSpec).Totimespec ();
                 THEKOGANS_UTIL_ERROR_CODE errorCode =
                     pthread_cond_timedwait (&condition, &mutex.mutex, &absolute);
                 if (errorCode != 0) {
@@ -105,35 +105,32 @@ namespace thekogans {
 
     #if !defined (TOOLCHAIN_OS_Windows)
         void Condition::Init (bool shared) {
-            THEKOGANS_UTIL_ERROR_CODE errorCode;
+            struct Attribute {
+                pthread_condattr_t attribute;
+                Attribute () {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        pthread_condattr_init (&attribute);
+                    if (errorCode != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                }
+                ~Attribute () {
+                    pthread_condattr_destroy (&attribute);
+                }
+            } attribute;
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_condattr_setclock (&attribute.attribute, CLOCK_MONOTONIC);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            }
             if (shared) {
-                struct Attribute {
-                    pthread_condattr_t attribute;
-                    Attribute () {
-                        {
-                            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                                pthread_condattr_init (&attribute);
-                            if (errorCode != 0) {
-                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                            }
-                        }
-                        {
-                            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                                pthread_condattr_setpshared (&attribute, PTHREAD_PROCESS_SHARED);
-                            if (errorCode != 0) {
-                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                            }
-                        }
-                    }
-                    ~Attribute () {
-                        pthread_condattr_destroy (&attribute);
-                    }
-                } attribute;
-                errorCode = pthread_cond_init (&condition, &attribute.attribute);
+                errorCode = pthread_condattr_setpshared (
+                    &attribute.attribute, PTHREAD_PROCESS_SHARED);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
             }
-            else {
-                errorCode = pthread_cond_init (&condition, 0);
-            }
+            errorCode = pthread_cond_init (&condition, &attribute.attribute);
             if (errorCode != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }

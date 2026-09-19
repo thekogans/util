@@ -443,7 +443,7 @@ namespace thekogans {
         }
 
         std::string SystemInfo::processStartDirectory = Path::GetCurrDirectory ();
-        TimeSpec SystemInfo::processStartTime = GetCurrentTime ();
+        TimeSpec SystemInfo::processStartTime = GetCalendarTime ();
 
         SystemInfo::SystemInfo () :
             endianness (GetEndiannessImpl ()),

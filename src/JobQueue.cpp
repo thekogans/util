@@ -28,22 +28,32 @@ namespace thekogans {
 
         void JobQueue::State::Worker::Run () noexcept {
             RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
-            while (!state->done) {
-                Job *job = state->DeqJob ();
-                if (job != nullptr) {
-                    ui64 start = 0;
-                    ui64 end = 0;
-                    // Short circuit cancelled pending jobs.
-                    if (!job->ShouldStop (state->done)) {
-                        start = HRTimer::Click ();
-                        job->SetState (Job::Running);
-                        job->Prologue (state->done);
-                        job->Execute (state->done);
-                        job->Epilogue (state->done);
-                        job->Succeed (state->done);
-                        end = HRTimer::Click ();
+            while (true) {
+                while (!state->done) {
+                    Job *job = state->DeqJob ();
+                    if (job != nullptr) {
+                        ui64 start = 0;
+                        ui64 end = 0;
+                        // Short circuit cancelled pending jobs.
+                        if (!job->ShouldStop (state->done)) {
+                            start = HRTimer::Click ();
+                            job->SetState (Job::Running);
+                            job->Prologue (state->done);
+                            job->Execute (state->done);
+                            job->Epilogue (state->done);
+                            job->Succeed (state->done);
+                            end = HRTimer::Click ();
+                        }
+                        state->FinishedJob (job, start, end);
                     }
-                    state->FinishedJob (job, start, end);
+                }
+                LockGuard<Mutex> guard (state->workersMutex);
+                if (state->done) {
+                    // If state->done is still true under the lock,
+                    // we were NOT rescued by Start. This guarantees
+                    // we are orphans sitting inside drainingWorkers.
+                    state->drainingWorkers.erase (this);
+                    break; // Break the outer loop to terminate the physical thread safely
                 }
             }
             ThreadReaper::Instance ()->ReapThread (this);
@@ -78,8 +88,14 @@ namespace thekogans {
         }
 
         void JobQueue::Start () {
+            // If we were paused and not stoped, continue.
+            Continue ();
             LockGuard<Mutex> guard (state->workersMutex);
             state->done = false;
+            // Rescue any active threads from the draining list instantly!
+            state->workers += state->drainingWorkers;
+            state->jobsNotEmpty.SignalAll (); // Wake them up to see state->done is false
+            // All we do in start is (re)create as many workers as was given.
             for (std::size_t i = state->workers.size (); i < state->workerCount; ++i) {
                 std::string workerName;
                 if (!state->name.empty ()) {
@@ -98,13 +114,13 @@ namespace thekogans {
         void JobQueue::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs) {
+            // Code below assumes the queue is not paused.
+            Continue ();
             LockGuard<Mutex> guard (state->workersMutex);
-            // Clear worker list in case Start is called again.
-            // The worker threads are responsible for their own
-            // lifetimes. Also do it before setting state->done = true
-            // below in case workers exit before we can clear the
-            // list so as not to have a race leading to a crash.
-            state->workers.clear ();
+            // Move the current active workers to the drainingWorkers list.
+            // There they will spin down and, if not rescued by Start will
+            // end their own lives.
+            state->drainingWorkers += state->workers;
             // Preclude workers from dequeuing any more pending jobs.
             state->done = true;
             // Wake up sleeping workers to allow them to exit.
@@ -113,7 +129,6 @@ namespace thekogans {
             if (cancelRunningJobs) {
                 CancelRunningJobs ();
             }
-            // CancelPendingJobs does not block.
             if (cancelPendingJobs) {
                 // The queue has no worker threads. Simulate what
                 // they would do to make sure anyone waiting on

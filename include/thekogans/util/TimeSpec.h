@@ -463,9 +463,14 @@ namespace thekogans {
             const TimeSpec &timeSpec2);
 
         /// \brief
-        /// Get current system time.
-        /// \return Current system time.
-        _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetCurrentTime ();
+        /// Get current wall clock time.
+        /// WARNING: Don't use for timeouts as it can change.
+        /// \return Current wall clock time.
+        _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetCalendarTime ();
+        /// \brief
+        /// Get monotonically increasing time. Used for timeouts.
+        /// \return Monotonically increasing time.
+        _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetMonotonicTime ();
         /// \brief
         /// Put the calling thread to sleep.
         /// \param[in] timeSpec How long to sleep for.

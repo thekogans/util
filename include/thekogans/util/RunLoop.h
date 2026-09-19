@@ -1089,7 +1089,6 @@ namespace thekogans {
             ///
             /// \brief
             /// A helper class used to execute lambda (function) jobs.
-
             struct _LIB_THEKOGANS_UTIL_DECL LambdaEqualityTest : public EqualityTest {
                 /// \brief
                 /// Alias for;

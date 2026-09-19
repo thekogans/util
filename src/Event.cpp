@@ -21,7 +21,6 @@
     #include "thekogans/util/os/windows/WindowsUtils.h"
 #else // defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/Heap.h"
-    #include "thekogans/util/SpinLock.h"
     #include "thekogans/util/Mutex.h"
     #include "thekogans/util/Condition.h"
     #include "thekogans/util/SharedObject.h"
@@ -39,12 +38,8 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
 
             bool manualReset;
-            volatile State state;
+            State state;
             bool shared;
-            ui32 count;
-            volatile bool pulse;
-            volatile ui64 pulseTime;
-            ui32 pulseCount;
             Mutex mutex;
             Condition condition;
 
@@ -55,24 +50,13 @@ namespace thekogans {
                 manualReset (manualReset_),
                 state (state_),
                 shared (shared_),
-                count (0),
-                pulse (false),
-                pulseTime (0),
-                pulseCount (0),
                 mutex (shared),
                 condition (mutex, shared) {}
-
-            // On Windows Signal uses SetEvent and SignalAll uses PulseEvent.
-            // The following logic is necessary to emulate their behavior on
-            // POSIX.
 
             void Signal () {
                 LockGuard<Mutex> guard (mutex);
                 if (state == NotSignalled) {
                     state = Signalled;
-                    pulse = false;
-                    // If in manual reset mode, release all waiting threads
-                    // to simulate the behavior of Windows event.
                     if (manualReset) {
                         condition.SignalAll ();
                     }
@@ -85,22 +69,8 @@ namespace thekogans {
             void SignalAll () {
                 LockGuard<Mutex> guard (mutex);
                 if (state == NotSignalled) {
-                    if (count > 0) {
-                        state = Signalled;
-                        pulse = true;
-                        pulseTime = HRTimer::Click ();
-                        if (manualReset) {
-                            pulseCount = count;
-                            condition.SignalAll ();
-                        }
-                        else {
-                            pulseCount = 1;
-                            condition.Signal ();
-                        }
-                    }
-                }
-                else {
-                    state = NotSignalled;
+                    state = Signalled;
+                    condition.SignalAll ();
                 }
             }
 
@@ -111,35 +81,25 @@ namespace thekogans {
 
             bool Wait (const TimeSpec &timeSpec) {
                 LockGuard<Mutex> guard (mutex);
-                ui64 time = HRTimer::Click ();
-                struct CountMgr {
-                    ui32 &count;
-                    CountMgr (ui32 &count_) :
-                            count (count_) {
-                        ++count;
-                    }
-                    ~CountMgr () {
-                        --count;
-                    }
-                } countMgr (count);
                 if (timeSpec == TimeSpec::Infinite) {
-                    while (state == NotSignalled || (pulse && time > pulseTime)) {
+                    while (state == NotSignalled) {
                         condition.Wait ();
                     }
                 }
                 else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + timeSpec;
-                    while ((state == NotSignalled || (pulse && time > pulseTime)) &&
-                            deadline > now) {
+                    TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                    while (state == NotSignalled) {
+                        TimeSpec now = GetMonotonicTime ();
+                        if (now >= deadline) {
+                            break;
+                        }
                         condition.Wait (deadline - now);
-                        now = GetCurrentTime ();
                     }
                     if (state == NotSignalled) {
                         return false;
                     }
                 }
-                if (!manualReset || (pulse && --pulseCount == 0)) {
+                if (!manualReset) {
                     state = NotSignalled;
                 }
                 return true;

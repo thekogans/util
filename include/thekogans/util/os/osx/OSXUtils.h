@@ -141,7 +141,6 @@ namespace thekogans {
                 ///
                 /// \brief
                 /// Base class for OS X based run loop.
-
                 struct RunLoop : public os::RunLoop {
                     /// \brief
                     /// OS X run loop.
@@ -168,7 +167,6 @@ namespace thekogans {
                 ///
                 /// \brief
                 /// CFRunLoopRef based OS X run loop.
-
                 struct CFRunLoop : public RunLoop {
                     /// \brief
                     /// ctor.
@@ -188,7 +186,6 @@ namespace thekogans {
                 ///
                 /// \brief
                 /// NSApp based main OS X run loop.
-
                 struct NSAppRunLoop : public RunLoop {
                     /// \brief
                     /// ctor.

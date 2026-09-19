@@ -65,7 +65,6 @@ namespace thekogans {
         /// On Windows, a single thread can acquire a CRITICAL_SECTION
         /// as many times as it needs, while on POSIX, a single thread
         /// HAS to release the pthread_mutex_t between every acquisition.
-
         struct _LIB_THEKOGANS_UTIL_DECL Mutex {
         private:
         #if defined (TOOLCHAIN_OS_Windows)

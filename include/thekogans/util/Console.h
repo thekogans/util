@@ -25,7 +25,6 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/Event.h"
 #include "thekogans/util/JobQueue.h"
 #include "thekogans/util/TimeSpec.h"
 

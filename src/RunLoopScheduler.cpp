@@ -53,7 +53,7 @@ namespace thekogans {
                     JobInfo::SharedPtr (
                         new RunLoopJobInfo (
                             job,
-                            GetCurrentTime () + timeSpec,
+                            GetMonotonicTime () + timeSpec,
                             runLoop)),
                     timeSpec);
             }
@@ -72,7 +72,7 @@ namespace thekogans {
                     JobInfo::SharedPtr (
                         new PipelineJobInfo (
                             job,
-                            GetCurrentTime () + timeSpec,
+                            GetMonotonicTime () + timeSpec,
                             pipeline)),
                     timeSpec);
             }
@@ -88,7 +88,7 @@ namespace thekogans {
                 TimeSpec deadline = queue.top ()->deadline;
                 queue.CancelJob (id);
                 if (!queue.empty () && queue.top ()->deadline != deadline) {
-                    timer->Start (queue.top ()->deadline - GetCurrentTime ());
+                    timer->Start (queue.top ()->deadline - GetMonotonicTime ());
                 }
             }
         }
@@ -99,7 +99,7 @@ namespace thekogans {
                 TimeSpec deadline = queue.top ()->deadline;
                 queue.CancelJobs (runLoopId);
                 if (!queue.empty () && queue.top ()->deadline != deadline) {
-                    timer->Start (queue.top ()->deadline - GetCurrentTime ());
+                    timer->Start (queue.top ()->deadline - GetMonotonicTime ());
                 }
             }
         }
@@ -113,8 +113,8 @@ namespace thekogans {
 
         void RunLoopScheduler::OnTimerAlarm (Timer::SharedPtr /*timer*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
-            TimeSpec now = GetCurrentTime ();
-            while (!queue.empty () && queue.top ()->deadline <= now) {
+            TimeSpec now = GetMonotonicTime ();
+            while (!queue.empty () && queue.top ()->deadline < now) {
                 queue.top ()->EnqJob ();
                 queue.pop ();
             }

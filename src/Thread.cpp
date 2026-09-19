@@ -291,7 +291,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    timespec absolute = (GetCurrentTime () + timeSpec).Totimespec ();
+                    timespec absolute = (GetMonotonicTime () + timeSpec).Totimespec ();
                     THEKOGANS_UTIL_ERROR_CODE errorCode =
                         pthread_timedjoin_np (thread, 0, &absolute);
                     if (errorCode != 0) {

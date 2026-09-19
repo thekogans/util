@@ -42,7 +42,6 @@ namespace thekogans {
         /// As you add jobs to the queue, the next idle worker removes and executes them.
         /// The queue can be either FIFO or LIFO. While very usefull on it's own, JobQueue
         /// also forms the basis for \see{Pipeline} and \see{JobQueuePool}.
-
         struct _LIB_THEKOGANS_UTIL_DECL JobQueue : public RunLoop {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -114,8 +113,18 @@ namespace thekogans {
                     virtual void Run () noexcept override;
                 };
                 /// \brief
-                /// List of workers.
+                /// List of 'active' workers.
+                /// Start will transfer whatever's remaining in drainingWorkers
+                /// in here (the working list). This way warm threads will have
+                /// a chance to survive and continue serving if Start is called
+                /// fast enough.
                 WorkerList workers;
+                /// \brief
+                /// When Stop is called, spindown workers go here.
+                /// They will do what they need to do to finish their
+                /// current jobs and, if not rescued by Start will
+                /// remove themselves from this list.
+                WorkerList drainingWorkers;
                 /// \brief
                 /// Synchronization mutex.
                 Mutex workersMutex;
@@ -229,7 +238,6 @@ namespace thekogans {
         /// To provide your own arguments to GlobalJobQueue ctor call
         /// GlobalJobQueue::CreateInstance (...) before the first call
         /// to GlobalJobQueue::Instance ().
-
         struct _LIB_THEKOGANS_UTIL_DECL GlobalJobQueue :
                 public JobQueue,
                 public RefCountedSingleton<GlobalJobQueue> {

@@ -367,7 +367,7 @@ namespace thekogans {
                         header += levelTostring (level);
                         header += " ";
                     }
-                    TimeSpec timeSpec = GetCurrentTime ();
+                    TimeSpec timeSpec = GetCalendarTime ();
                     if (flags.Test (Date)) {
                         header += FormatTimeSpec (timeSpec, "%a %b %d %Y ");
                     }

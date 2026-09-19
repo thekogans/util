@@ -72,7 +72,6 @@ namespace thekogans {
         /// If no threads are waiting, or if no thread can be released
         /// immediately, SignalAll simply sets the event object's state
         /// to non-signaled and returns.
-
         struct _LIB_THEKOGANS_UTIL_DECL Event {
             /// \enum
             /// Event state.

@@ -140,11 +140,13 @@ namespace thekogans {
                 }
             }
             else {
-                TimeSpec now = GetCurrentTime ();
-                TimeSpec deadline = now + timeSpec;
-                while (!borrowedJobQueues.empty () && deadline > now) {
+                TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                while (!borrowedJobQueues.empty ()) {
+                    TimeSpec now = GetMonotonicTime ();
+                    if (now >= deadline) {
+                        break;
+                    }
                     idle.Wait (deadline - now);
-                    now = GetCurrentTime ();
                 }
             }
             return borrowedJobQueues.empty ();

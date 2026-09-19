@@ -65,13 +65,15 @@ namespace thekogans {
                     }
                 }
                 else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + timeSpec;
-                    while (count == 0 && deadline > now) {
+                    TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                    while (count == 0) {
+                        TimeSpec now = GetMonotonicTime ();
+                        if (now >= deadline) {
+                            break;
+                        }
                         if (!condition.Wait (deadline - now)) {
                             return false;
                         }
-                        now = GetCurrentTime ();
                     }
                 }
                 if (count > 0) {

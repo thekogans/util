@@ -47,6 +47,10 @@ namespace thekogans {
     #elif defined (TOOLCHAIN_OS_OSX)
         /// \brief
         /// Alias for os::osx::CFRunLoop.
+        /// NOTE: os::osx::CFRunLoop is not a mistake. \see{MainRunLoop} is
+        /// responsible for creating a SystemRunLoop with the proper os::osx::NSAppRunLoop.
+        /// This way the main thread is responsible for the NS::App and it's run
+        /// loop, while threads will create a CF based run loop for such things.
         using OSThreadRunLoopType = os::osx::CFRunLoop;
     #endif // defined (TOOLCHAIN_OS_Windows)
 
@@ -60,7 +64,6 @@ namespace thekogans {
         /// is used by \see{MainRunLoop} to make sure the main thread is
         /// responsible for UI updates and other system notifications. But you
         /// can use SystemRunLoop in any thread that requires those facilities.
-
         template<typename OSRunLoopType = OSThreadRunLoopType>
         struct SystemRunLoop :
                 public util::RunLoop,
@@ -85,6 +88,7 @@ namespace thekogans {
             /// only complete when Stop is called.
             virtual void Start () override {
                 state->done = false;
+                // Clear out the backlog first.
                 ExecuteJob ();
                 OSRunLoopType::Begin ();
             }

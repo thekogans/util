@@ -324,26 +324,15 @@ namespace thekogans {
                         SubWithBorrow (timeSpec1, timeSpec2);
         }
 
-        _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetCurrentTime () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            SYSTEMTIME systemTime;
-            GetSystemTime (&systemTime);
-            return TimeSpec (systemTime);
-        #elif defined (TOOLCHAIN_OS_Linux)
-            timespec timeSpec;
-            if (clock_gettime (CLOCK_REALTIME, &timeSpec) != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE);
-            }
-            return TimeSpec (timeSpec);
-        #elif defined (TOOLCHAIN_OS_OSX)
+    #if defined (TOOLCHAIN_OS_OSX)
+        namespace {
             struct MachClock {
             private:
                 clock_serv_t serv;
+
             public:
                 explicit MachClock (clock_id_t id) {
-                    kern_return_t errorCode =
-                        host_get_clock_service (mach_host_self (), id, &serv);
+                    kern_return_t errorCode = host_get_clock_service (mach_host_self (), id, &serv);
                     if (errorCode != KERN_SUCCESS) {
                         THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION (errorCode);
                     }
@@ -357,11 +346,46 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION (errorCode);
                     }
                 }
-            } machClock (CALENDAR_CLOCK);
+            };
+        }
+    #endif // defined (TOOLCHAIN_OS_OSX)
+
+        _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetCalendarTime () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            SYSTEMTIME systemTime;
+            GetSystemTime (&systemTime);
+            return TimeSpec (systemTime);
+        #elif defined (TOOLCHAIN_OS_Linux)
+            timespec timeSpec;
+            if (clock_gettime (CLOCK_REALTIME, &timeSpec) != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            return TimeSpec (timeSpec);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            MachClock machClock (CALENDAR_CLOCK);
             mach_timespec_t machTimeSpec;
             machClock.GetTime (machTimeSpec);
             return TimeSpec (machTimeSpec.tv_sec, machTimeSpec.tv_nsec);
         #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL TimeSpec _LIB_THEKOGANS_UTIL_API GetMonotonicTime () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            ULONGLONG ms = GetTickCount64 ();
+            return TimeSpec (static_cast<time_t> (ms / 1000), static_cast<long> ((ms % 1000) * 1000000));
+        #elif defined (TOOLCHAIN_OS_Linux)
+            timespec timeSpec;
+            if (clock_gettime (CLOCK_MONOTONIC, &timeSpec) != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            return TimeSpec (timeSpec);
+        #elif defined (TOOLCHAIN_OS_OSX)
+            MachClock machClock (SYSTEM_CLOCK);
+            mach_timespec_t machTimeSpec;
+            machClock.GetTime (machTimeSpec);
+            return TimeSpec (machTimeSpec.tv_sec, machTimeSpec.tv_nsec);
+        #endif
         }
 
         _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Sleep (const TimeSpec &timeSpec) {

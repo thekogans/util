@@ -514,11 +514,13 @@ namespace thekogans {
                     }
                 }
                 else {
-                    TimeSpec now = GetCurrentTime ();
-                    TimeSpec deadline = now + timeSpec;
-                    while (IsRunning () && !job->IsCompleted () && deadline > now) {
+                    TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                    while (IsRunning () && !job->IsCompleted ()) {
+                        TimeSpec now = GetMonotonicTime ();
+                        if (now >= deadline) {
+                            break;
+                        }
                         job->Wait (deadline - now);
-                        now = GetCurrentTime ();
                     }
                 }
                 return job->IsCompleted ();
@@ -552,16 +554,18 @@ namespace thekogans {
                 }
             }
             else {
-                TimeSpec now = GetCurrentTime ();
-                TimeSpec deadline = now + timeSpec;
-                while (it != end && deadline > now) {
+                TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                while (it != end) {
+                    TimeSpec now = GetMonotonicTime ();
+                    if (now >= deadline) {
+                        break;
+                    }
                     if ((*it)->IsCompleted ()) {
                         ++it;
                     }
                     else {
                         (*it)->Wait (deadline - now);
                     }
-                    now = GetCurrentTime ();
                 }
             }
             return it == end;
@@ -594,11 +598,13 @@ namespace thekogans {
                 }
             }
             else {
-                TimeSpec now = GetCurrentTime ();
-                TimeSpec deadline = now + timeSpec;
-                while (IsRunning () && (!state->pendingJobs.empty () || !state->runningJobs.empty ()) && deadline > now) {
+                TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                while (IsRunning () && (!state->pendingJobs.empty () || !state->runningJobs.empty ())) {
+                    TimeSpec now = GetMonotonicTime ();
+                    if (now >= deadline) {
+                        break;
+                    }
                     state->idle.Wait (deadline - now);
-                    now = GetCurrentTime ();
                 }
             }
             return state->pendingJobs.empty () && state->runningJobs.empty ();

@@ -262,8 +262,8 @@ namespace thekogans {
             static void Touch (
                 const std::string &path,
                 TouchType touchType = TOUCH_BOTH,
-                const TimeSpec &lastAccessTime = GetCurrentTime (),
-                const TimeSpec &lastWriteTime = GetCurrentTime ());
+                const TimeSpec &lastAccessTime = GetCalendarTime (),
+                const TimeSpec &lastWriteTime = GetCalendarTime ());
 
         #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
             /// \brief

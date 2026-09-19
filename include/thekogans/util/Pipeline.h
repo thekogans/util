@@ -32,7 +32,6 @@
 #include "thekogans/util/Thread.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
-#include "thekogans/util/Event.h"
 #include "thekogans/util/JobQueue.h"
 
 namespace thekogans {

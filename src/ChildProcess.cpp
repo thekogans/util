@@ -524,7 +524,7 @@ namespace thekogans {
                 int status;
                 pid_t wpid = timeSpec == TimeSpec::Infinite ?
                     waitpid (pid, &status, WUNTRACED) :
-                    waitpid_timed (pid, &status, WUNTRACED, GetCurrentTime () + timeSpec);
+                    waitpid_timed (pid, &status, WUNTRACED, GetMonotonicTime () + timeSpec);
                 pid = THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE;
                 returnCode = -1;
                 if (wpid == THEKOGANS_UTIL_INVALID_PROCESS_ID_VALUE) {
