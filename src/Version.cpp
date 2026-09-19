@@ -159,9 +159,9 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL const Version & _LIB_THEKOGANS_UTIL_API GetVersion () {
-            util::ui32 major = 0;
-            util::ui32 minor = 0;
-            util::ui32 patch = 0;
+            ui32 major = 0;
+            ui32 minor = 0;
+            ui32 patch = 0;
         #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_MAJOR_VERSION)
             major = THEKOGANS_UTIL_MAJOR_VERSION;
         #endif
@@ -171,7 +171,7 @@ namespace thekogans {
         #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_PATCH_VERSION)
             patch = THEKOGANS_UTIL_PATCH_VERSION;
         #endif
-            static const util::Version version (major, minor, patch);
+            static const Version version (major, minor, patch);
             return version;
         }
 
