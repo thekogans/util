@@ -51,6 +51,123 @@ namespace thekogans {
             /// Alias for IntrusiveList<JobQueue>.
             using JobQueueList = IntrusiveList<JobQueue>;
 
+            /// \struct Scheduler::Context Scheduler.h thekogans/util/Scheduler.h
+            ///
+            /// \brief
+            /// Scheduler state. Since it needs to survive the Scheduler lifetime,
+            /// it's placed in it's own struct to be shared by various queues and
+            /// and jobs.
+            struct Context : public RefCounted {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Context)
+
+                /// \brief
+                /// Low priority JobQueue list.
+                JobQueueList low;
+                /// \brief
+                /// Normal priority JobQueue list.
+                JobQueueList normal;
+                /// \brief
+                /// High priority JobQueue list.
+                JobQueueList high;
+                /// \brief
+                /// Synchronization \see{SpinLock} for above lists.
+                SpinLock spinLock;
+                /// \brief
+                /// \see{JobQueuePool} executing the jobs.
+                JobQueuePool jobQueuePool;
+                /// \brief
+                /// true == Execute fair scheduling policy instread
+                /// of strict priority based. This way everyone has
+                /// a chance to make progress not just high priority
+                /// queues.
+                bool fairMode;
+                /// \brief
+                /// How much to let high priority jobs hog the CPU before
+                /// letting normal and low priority queues make progress.
+                /// It's unit of measurment is one job.
+                std::size_t highPriorityThreshold;
+                /// \brief
+                /// How much to let normal priority jobs hog the CPU before
+                /// letting low priority queues make progress.
+                /// It's unit of measurment is one job.
+                std::size_t normalPriorityThreshold;
+                /// \brief
+                /// Number of jobs high priority queues have executed
+                /// back to back.
+                std::size_t highExecutionCount;
+                /// \brief
+                /// Number of jobs normal priority queues have executed
+                /// back to back.
+                std::size_t normalExecutionCount;
+                /// \brief
+                /// The enclosing Scheduler dtor has fired. Time to
+                /// wind down and cleanup.
+                std::atomic<bool> switchingOff;
+
+                /// \brief
+                /// ctor.
+                /// Create as many active job queues as there are cpu cores.
+                /// Have as many in reserve for heavy loads.
+                /// \param[in] minJobQueues Minimum worker count to keep in the pool.
+                /// \param[in] maxJobQueues Maximum worker count to allow the pool to grow to.
+                /// \param[in] name JobQueue thread name.
+                /// \param[in] jobExecutionPolicy JobQueue \see{JobExecutionPolicy}.
+                /// \param[in] workerCount Number of worker threads servicing the queue.
+                /// \param[in] workerPriority JobQueue thread priority.
+                /// \param[in] workerAffinity JobQueue thread processor affinity.
+                /// \param[in] workerCallback Called to initialize/uninitialize the worker thread.
+                Context (
+                    std::size_t minJobQueues = SystemInfo::Instance ()->GetCPUCount (),
+                    std::size_t maxJobQueues = SystemInfo::Instance ()->GetCPUCount () * 2,
+                    const std::string name = std::string (),
+                    RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy = new RunLoop::FIFOJobExecutionPolicy,
+                    std::size_t workerCount = 1,
+                    i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                    ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
+                    RunLoop::WorkerCallback *workerCallback = nullptr,
+                    bool fairMode_ = false,
+                    std::size_t highPriorityThreshold_ = 5,
+                    std::size_t normalPriorityThreshold_ = 3) :
+                    jobQueuePool (
+                        minJobQueues,
+                        maxJobQueues,
+                        name,
+                        jobExecutionPolicy,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        workerCallback),
+                    fairMode (fairMode_),
+                    highPriorityThreshold (highPriorityThreshold_),
+                    normalPriorityThreshold (normalPriorityThreshold_),
+                    highExecutionCount (0),
+                    normalExecutionCount (0),
+                    switchingOff (false) {}
+                /// \brief
+                /// dtor.
+                ~Context ();
+
+                /// \brief
+                /// Add a JobQueue to the appropriate list (governed by it's priority)
+                /// and spin up a JobQueue to process it's head job.
+                /// \param[in] jobQueue JobQueue to add.
+                void AddJobQueue (JobQueue *jobQueue);
+                /// \brief
+                /// Remove the given JobQueue from its priority list.
+                /// \param[in] jobQueue JobQueue to remove.
+                void DeleteJobQueue (JobQueue *jobQueue);
+                /// \brief
+                /// Used by the worker to get the next appropriate
+                /// JobQueue (based on priority).
+                /// \return Highest priority JobQueue with a job ready to execute.
+                JobQueue *GetNextJobQueue ();
+            };
+            /// \brief
+            // Scheduler context.
+            Context::SharedPtr context;
+
         public:
         #if defined (TOOLCHAIN_COMPILER_cl)
             #pragma warning (push)
@@ -98,8 +215,8 @@ namespace thekogans {
 
             private:
                 /// \brief
-                /// Scheduler this JobQueue belongs to.
-                Scheduler &scheduler;
+                /// Scheduler context.
+                Scheduler::Context::SharedPtr context;
                 /// \brief
                 /// JobQueue priority.
                 const Priority priority;
@@ -115,13 +232,13 @@ namespace thekogans {
                 /// \param[in] name JobQueue name.
                 /// \param[in] jobExecutionPolicy JobQueue \see{JobExecutionPolicy}.
                 JobQueue (
-                        Scheduler &scheduler_,
+                        Scheduler &scheduler,
                         Priority priority_ = PRIORITY_NORMAL,
                         const std::string &name = std::string (),
                         JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                             new FIFOJobExecutionPolicy) :
                         RunLoop (name, jobExecutionPolicy),
-                        scheduler (scheduler_),
+                        context (scheduler.context),
                         priority (priority_),
                         inFlight (false) {
                     Start ();
@@ -214,55 +331,26 @@ namespace thekogans {
                 std::size_t workerCount = 1,
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
                 ui32 workerAffinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY,
-                RunLoop::WorkerCallback *workerCallback = nullptr) :
-                jobQueuePool (
-                    minJobQueues,
-                    maxJobQueues,
-                    name,
-                    jobExecutionPolicy,
-                    workerCount,
-                    workerPriority,
-                    workerAffinity,
-                    workerCallback) {}
+                RunLoop::WorkerCallback *workerCallback = nullptr,
+                bool fairMode = false,
+                std::size_t highPriorityThreshold = 5,
+                std::size_t normalPriorityThreshold = 3) :
+                context (
+                    new Context (
+                        minJobQueues,
+                        maxJobQueues,
+                        name,
+                        jobExecutionPolicy,
+                        workerCount,
+                        workerPriority,
+                        workerAffinity,
+                        workerCallback,
+                        fairMode,
+                        highPriorityThreshold,
+                        normalPriorityThreshold)) {}
             /// \brief
             /// dtor.
-            virtual ~Scheduler ();
-
-        private:
-            /// \brief
-            /// Low priority JobQueue list.
-            JobQueueList low;
-            /// \brief
-            /// Normal priority JobQueue list.
-            JobQueueList normal;
-            /// \brief
-            /// High priority JobQueue list.
-            JobQueueList high;
-            /// \brief
-            /// Synchronization \see{SpinLock} for above lists.
-            SpinLock spinLock;
-            /// \brief
-            /// \see{JobQueuePool} executing the jobs.
-            JobQueuePool jobQueuePool;
-
-            /// \brief
-            /// Add a JobQueue to the appropriate list (governed by it's priority)
-            /// and spin up a JobQueue to process it's head job.
-            /// \param[in] jobQueue JobQueue to add.
-            /// \param[in] scheduleJobQueue true = Schedule a \see{JobQueuePool} \see{JobQueue}
-            /// to process this job queue.
-            void AddJobQueue (
-                JobQueue *jobQueue,
-                bool scheduleJobQueue = true);
-            /// \brief
-            /// Remove the given JobQueue from its priority list.
-            /// \param[in] jobQueue JobQueue to remove.
-            void DeleteJobQueue (JobQueue *jobQueue);
-            /// \brief
-            /// Used by the worker to get the next appropriate
-            /// JobQueue (based on priority).
-            /// \return Highest priority JobQueue with a job ready to execute.
-            JobQueue *GetNextJobQueue ();
+            ~Scheduler ();
         };
 
         /// \struct GlobalScheduler Scheduler.h thekogans/util/Scheduler.h

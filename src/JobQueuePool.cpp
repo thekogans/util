@@ -194,23 +194,37 @@ namespace thekogans {
 
         void JobQueuePool::ReleaseJobQueue (JobQueue *jobQueue) {
             if (jobQueue != nullptr) {
-                LockGuard<Mutex> guard (mutex);
-                borrowedJobQueues.erase (jobQueue);
-                // Put the recently used job queue at the front of
-                // the list. With any luck the next time a job queue
-                // is borrowed from this pool, it will be the last
-                // one used, and it's cache will be nice and warm.
-                availableJobQueues.push_front (jobQueue);
-                // If the pool is idle, see if we need to remove excess job queues.
-                if (borrowedJobQueues.empty ()) {
+                // Local stack to hold queues slated for physical destruction
+                JobQueueList queuesToDelete;
+                {
+                    LockGuard<Mutex> guard (mutex);
+                    borrowedJobQueues.erase (jobQueue);
+                    // Put the recently used job queue at the front of
+                    // the list. With any luck the next time a job queue
+                    // is borrowed from this pool, it will be the last
+                    // one used, and it's cache will be nice and warm.
+                    availableJobQueues.push_front (jobQueue);
+                    // If the pool is idle, see if we need to remove excess job queues.
                     while (availableJobQueues.size () > minJobQueues) {
                         // Delete the least recently used queues. This logic
                         // guarantees that we avoid the deadlock associated
                         // with deleating the passed in jobQueue.
-                        delete availableJobQueues.pop_back ();
+                        queuesToDelete.push_back (availableJobQueues.pop_back ());
                     }
-                    idle.SignalAll ();
+                    if (borrowedJobQueues.empty ()) {
+                        idle.SignalAll ();
+                    }
                 }
+                // Heavy thread cleanup, Stop() calls, and deletions happen
+                // completely unlocked. Even if a destructor chain cascades
+                // or loops back, it cannot deadlock the pool.
+                queuesToDelete.clear (
+                    [] (JobQueueList::Callback::argument_type deadQueue) ->
+                            JobQueueList::Callback::result_type {
+                        delete deadQueue;
+                        return true;
+                    }
+                );
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

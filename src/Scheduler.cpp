@@ -29,7 +29,7 @@ namespace thekogans {
         void Scheduler::JobQueue::Start () {
             state->done = false;
             if (GetPendingJobCount () != 0) {
-                scheduler.AddJobQueue (this);
+                context->AddJobQueue (this);
             }
         }
 
@@ -40,7 +40,7 @@ namespace thekogans {
             if (cancelRunningJobs) {
                 CancelRunningJobs ();
             }
-            scheduler.DeleteJobQueue (this);
+            context->DeleteJobQueue (this);
             if (cancelPendingJobs) {
                 Job *job;
                 while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
@@ -59,7 +59,7 @@ namespace thekogans {
         void Scheduler::JobQueue::Continue () {
             RunLoop::Continue ();
             if (GetPendingJobCount () != 0) {
-                scheduler.AddJobQueue (this);
+                context->AddJobQueue (this);
             }
         }
 
@@ -69,7 +69,7 @@ namespace thekogans {
                 const TimeSpec &timeSpec) {
             bool result = RunLoop::EnqJob (job);
             if (result) {
-                scheduler.AddJobQueue (this);
+                context->AddJobQueue (this);
                 result = !wait || WaitForJob (job, timeSpec);
             }
             return result;
@@ -81,25 +81,17 @@ namespace thekogans {
                 const TimeSpec &timeSpec) {
             bool result = RunLoop::EnqJobFront (job);
             if (result) {
-                scheduler.AddJobQueue (this);
+                context->AddJobQueue (this);
                 result = !wait || WaitForJob (job, timeSpec);
             }
             return result;
         }
 
-        Scheduler::~Scheduler () {
-            {
-                LockGuard<SpinLock> guard (spinLock);
-                high.clear ();
-                normal.clear ();
-                low.clear ();
-            }
+        Scheduler::Context::~Context () {
             jobQueuePool.WaitForIdle ();
         }
 
-        void Scheduler::AddJobQueue (
-                JobQueue *jobQueue,
-                bool scheduleJobQueue) {
+        void Scheduler::Context::AddJobQueue (JobQueue *jobQueue) {
             if (jobQueue != nullptr) {
                 {
                     LockGuard<SpinLock> guard (spinLock);
@@ -132,54 +124,67 @@ namespace thekogans {
                             break;
                     }
                 }
-                if (scheduleJobQueue) {
-                    struct JobQueueJob : public RunLoop::Job {
-                        util::JobQueue::SharedPtr jobQueue;
-                        Scheduler &scheduler;
+                struct JobQueueJob : public RunLoop::Job {
+                    Scheduler::Context::SharedPtr context;
 
-                        JobQueueJob (
-                            util::JobQueue::SharedPtr jobQueue_,
-                            Scheduler &scheduler_) :
-                            jobQueue (jobQueue_),
-                            scheduler (scheduler_) {}
+                    JobQueueJob (Scheduler::Context::SharedPtr context_) :
+                        context (context_) {}
 
-                        virtual void Execute (const std::atomic<bool> &done) noexcept {
-                            JobQueue *jobQueue;
-                            while (!ShouldStop (done) &&
-                                    (jobQueue = scheduler.GetNextJobQueue ()) != nullptr) {
-                                RunLoop::Job *job = nullptr;
-                                bool cancelled = false;
-                                // Skip over cancelled jobs.
-                                do {
-                                    job = jobQueue->state->DeqJob (false);
-                                    if (job != nullptr) {
-                                        ui64 start = 0;
-                                        ui64 end = 0;
-                                        // Short circuit cancelled pending jobs.
-                                        cancelled = job->ShouldStop (jobQueue->state->done);
-                                        if (!cancelled) {
-                                            start = HRTimer::Click ();
-                                            job->SetState (Job::Running);
-                                            job->Prologue (jobQueue->state->done);
-                                            job->Execute (jobQueue->state->done);
-                                            job->Epilogue (jobQueue->state->done);
-                                            job->Succeed (jobQueue->state->done);
-                                            end = HRTimer::Click ();
-                                        }
-                                        jobQueue->state->FinishedJob (job, start, end);
+                    virtual void Execute (const std::atomic<bool> &done) noexcept {
+                        JobQueue *jobQueue;
+                        while (!ShouldStop (done) && !context->switchingOff &&
+                                (jobQueue = context->GetNextJobQueue ()) != nullptr) {
+                            RunLoop::Job *job = nullptr;
+                            bool cancelled = false;
+                            // Skip over cancelled jobs.
+                            do {
+                                job = jobQueue->state->DeqJob (false);
+                                if (job != nullptr) {
+                                    ui64 start = 0;
+                                    ui64 end = 0;
+                                    // Short circuit cancelled pending jobs.
+                                    cancelled = job->ShouldStop (jobQueue->state->done);
+                                    if (!cancelled) {
+                                        start = HRTimer::Click ();
+                                        job->SetState (Job::Running);
+                                        job->Prologue (jobQueue->state->done);
+                                        job->Execute (jobQueue->state->done);
+                                        job->Epilogue (jobQueue->state->done);
+                                        job->Succeed (jobQueue->state->done);
+                                        end = HRTimer::Click ();
                                     }
-                                } while (job != nullptr && cancelled);
-                                jobQueue->inFlight = false;
+                                    jobQueue->state->FinishedJob (job, start, end);
+                                }
+                            } while (job != nullptr && cancelled);
+                            {
+                                LockGuard<SpinLock> guard (context->spinLock);
                                 if (!jobQueue->IsPaused () && jobQueue->GetPendingJobCount () != 0) {
-                                    scheduler.AddJobQueue (jobQueue, false);
+                                    // If new jobs arrived, we push back directly while holding the lock.
+                                    // This ensures an external EnqJob cannot race our check!
+                                    switch (jobQueue->priority) {
+                                        case JobQueue::PRIORITY_LOW:
+                                            context->low.push_back (jobQueue);
+                                            break;
+                                        case JobQueue::PRIORITY_NORMAL:
+                                            context->normal.push_back (jobQueue);
+                                            break;
+                                        case JobQueue::PRIORITY_HIGH:
+                                            context->high.push_back (jobQueue);
+                                            break;
+                                    }
+                                    // Keep inFlight = true because it is safely back in circulation!
+                                }
+                                else {
+                                    // Truly empty or paused. Ground the flag.
+                                    jobQueue->inFlight = false;
                                 }
                             }
                         }
-                    };
-                    util::JobQueue::SharedPtr jobQueue = jobQueuePool.GetJobQueue (0);
-                    if (jobQueue != nullptr) {
-                        jobQueue->EnqJob (new JobQueueJob (jobQueue, *this));
                     }
+                };
+                util::JobQueue::SharedPtr jobQueue = jobQueuePool.GetJobQueue (0);
+                if (jobQueue != nullptr) {
+                    jobQueue->EnqJob (new JobQueueJob (this));
                 }
             }
             else {
@@ -188,7 +193,7 @@ namespace thekogans {
             }
         }
 
-        void Scheduler::DeleteJobQueue (JobQueue *jobQueue) {
+        void Scheduler::Context::DeleteJobQueue (JobQueue *jobQueue) {
             if (jobQueue != nullptr) {
                 LockGuard<SpinLock> guard (spinLock);
                 switch (jobQueue->priority) {
@@ -209,23 +214,74 @@ namespace thekogans {
             }
         }
 
-        Scheduler::JobQueue *Scheduler::GetNextJobQueue () {
+        Scheduler::JobQueue *Scheduler::Context::GetNextJobQueue () {
             JobQueue *jobQueue = nullptr;
             LockGuard<SpinLock> guard (spinLock);
-            // Priority based, round-robin, O(1) scheduler!
-            if (!high.empty ()) {
-                jobQueue = high.pop_front ();
-            }
-            else if (!normal.empty ()) {
-                jobQueue = normal.pop_front ();
-            }
-            else if (!low.empty ()) {
-                jobQueue = low.pop_front ();
-            }
-            if (jobQueue != nullptr) {
-                jobQueue->inFlight = true;
+            if (!switchingOff) {
+                // FAIR SCHEDULING LAW: If fairMode is on, check if
+                // normal/low are being starved.
+                if (fairMode) {
+                    // If high has hogged the CPU for highPriorityThreshold
+                    // turns in a row, force a normal/low check.
+                    if (highExecutionCount >= highPriorityThreshold &&
+                            (!normal.empty () || !low.empty ())) {
+                        highExecutionCount = 0; // Reset high counter
+                        if (!normal.empty ()) {
+                            jobQueue = normal.pop_front ();
+                            ++normalExecutionCount;
+                        }
+                        else {
+                            jobQueue = low.pop_front ();
+                            normalExecutionCount = 0;
+                        }
+                    }
+                    // If normal has hogged its share
+                    // (e.g., normalPriorityThreshold turns)
+                    // and low has work, let low leak forward.
+                    else if (normalExecutionCount >= normalPriorityThreshold &&
+                            !low.empty ()) {
+                        normalExecutionCount = 0;
+                        jobQueue = low.pop_front ();
+                    }
+                }
+                // FALLBACK TO STRICT PRIORITY: If fair mode didn't
+                // trigger, or if the starved lists were empty.
+                if (jobQueue == nullptr) {
+                    if (!high.empty ()) {
+                        jobQueue = high.pop_front ();
+                        if (fairMode) {
+                            ++highExecutionCount;
+                            normalExecutionCount = 0;
+                        }
+                    }
+                    else if (!normal.empty ()) {
+                        jobQueue = normal.pop_front ();
+                        if (fairMode) {
+                            highExecutionCount = 0;
+                            ++normalExecutionCount;
+                        }
+                    }
+                    else if (!low.empty ()) {
+                        jobQueue = low.pop_front ();
+                        if (fairMode) {
+                            highExecutionCount = 0;
+                            normalExecutionCount = 0;
+                        }
+                    }
+                }
+                if (jobQueue != nullptr) {
+                    jobQueue->inFlight = true;
+                }
             }
             return jobQueue;
+        }
+
+        Scheduler::~Scheduler () {
+            LockGuard<SpinLock> guard (context->spinLock);
+            context->high.clear ();
+            context->normal.clear ();
+            context->low.clear ();
+            context->switchingOff = true;
         }
 
     } // namespace util

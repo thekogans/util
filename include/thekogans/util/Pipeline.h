@@ -46,7 +46,6 @@ namespace thekogans {
         /// job on to the next stage (this is how modern processor
         /// architectures perform scalar, and even super-scalar
         /// execution).
-
         struct _LIB_THEKOGANS_UTIL_DECL Pipeline : public virtual RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -288,7 +287,6 @@ namespace thekogans {
             /// A helper class used to execute lambda (function) jobs. If you want to
             /// skip a stage, pass \see{RunLoop::LambdaJob::Function} () instead of a
             /// closure for that slot.
-
             struct _LIB_THEKOGANS_UTIL_DECL LambdaJob : public Job {
                 /// \brief
                 /// Alias for std::function<void (Job & /*job*/,
@@ -845,7 +843,6 @@ namespace thekogans {
         /// IMPORTANT: Don't forget to call GlobalPipeline::CreateInstance
         /// before the first call to GlobalPipeline::Instance to provide
         /// the global pipeline stages.
-
         struct _LIB_THEKOGANS_UTIL_DECL GlobalPipeline :
                 public Pipeline,
                 public RefCountedSingleton<GlobalPipeline> {
