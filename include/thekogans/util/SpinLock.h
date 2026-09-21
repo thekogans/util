@@ -32,7 +32,6 @@ namespace thekogans {
         ///
         /// This implementation was adapted from:
         /// http://www.boost.org/doc/libs/1_53_0/doc/html/atomic/usage_examples.html
-
         struct _LIB_THEKOGANS_UTIL_DECL StorageSpinLock {
         public:
             // SpinLock state type.
@@ -98,7 +97,6 @@ namespace thekogans {
         ///
         /// This implementation was adapted from:
         /// http://www.boost.org/doc/libs/1_53_0/doc/html/atomic/usage_examples.html
-
         struct _LIB_THEKOGANS_UTIL_DECL SpinLock : private StorageSpinLock {
         private:
             /// \brief

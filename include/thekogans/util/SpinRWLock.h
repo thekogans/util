@@ -31,7 +31,6 @@ namespace thekogans {
         /// with the rest of the util synchronization machinery.
         ///
         /// This implementation was adapted from Intel TBB.
-
         struct _LIB_THEKOGANS_UTIL_DECL StorageSpinRWLock {
             /// \brief
             /// Flag indicating the presence of a writer.
@@ -100,7 +99,6 @@ namespace thekogans {
         /// with the rest of the util synchronization machinery.
         ///
         /// This implementation was adapted from Intel TBB.
-
         struct _LIB_THEKOGANS_UTIL_DECL SpinRWLock : private StorageSpinRWLock {
         private:
             /// Lock state.

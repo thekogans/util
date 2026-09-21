@@ -289,6 +289,7 @@ namespace thekogans {
                 /// \brief
                 /// Default max pause iterations before giving up the time slice.
                 static const std::size_t DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+                static const std::size_t MAX_PAUSE_BEFORE_YIELD = SIZE_T_MAX / 2;
 
                 /// \brief
                 /// Max pause iterations before giving up the time slice.
@@ -301,20 +302,15 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] maxPauseBeforeYield_ Max pause iterations before giving up the time slice.
                 Backoff (std::size_t maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
-                    maxPauseBeforeYield (maxPauseBeforeYield_),
+                    maxPauseBeforeYield (MIN (maxPauseBeforeYield_, MAX_PAUSE_BEFORE_YIELD)),
                     count (1) {}
 
                 /// \brief
                 /// Pause the cpu or yield the time slice if we've been spinning too much.
                 void Pause () {
-                    if (count <= maxPauseBeforeYield) {
+                    if (count < maxPauseBeforeYield) {
                         Thread::Pause ();
-                        if (count > SIZE_T_MAX / 2) {
-                            count = maxPauseBeforeYield + 1;
-                        }
-                        else {
-                            count *= 2;
-                        }
+                        count *= 2;
                     }
                     else {
                         // Pause is so long that we might as well
