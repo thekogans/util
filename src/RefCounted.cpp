@@ -49,7 +49,6 @@ namespace thekogans {
         // because of heap corruption which happened somewhere else. This code is
         // very input sensative and as long as you give it back (Free) what it
         // gave you (Alloc) should never cause any problems.
-
         struct RefCounted::References::Heap : public Singleton<Heap> {
         private:
             struct Page {
@@ -283,11 +282,11 @@ namespace thekogans {
         }
 
         ui32 RefCounted::References::AddWeakRef () {
-            return operations::fetch_add (weak, 1, boost::memory_order_release) + 1;
+            return operations::fetch_add (weak, 1, boost::memory_order_relaxed) + 1;
         }
 
         ui32 RefCounted::References::ReleaseWeakRef () {
-            ui32 newWeak = operations::fetch_sub (weak, 1, boost::memory_order_release) - 1;
+            ui32 newWeak = operations::fetch_sub (weak, 1, boost::memory_order_acq_rel) - 1;
             if (newWeak == 0) {
                 delete this;
             }
@@ -299,11 +298,11 @@ namespace thekogans {
         }
 
         ui32 RefCounted::References::AddSharedRef () {
-            return operations::fetch_add (shared, 1, boost::memory_order_release) + 1;
+            return operations::fetch_add (shared, 1, boost::memory_order_relaxed) + 1;
         }
 
         ui32 RefCounted::References::ReleaseSharedRef (RefCounted *object) {
-            ui32 newShared = operations::fetch_sub (shared, 1, boost::memory_order_release) - 1;
+            ui32 newShared = operations::fetch_sub (shared, 1, boost::memory_order_seq_cst) - 1;
             if (newShared == 0) {
                 object->Harakiri ();
             }
@@ -325,7 +324,7 @@ namespace thekogans {
                         shared,
                         count,
                         count + 1,
-                        boost::memory_order_release,
+                        boost::memory_order_acq_rel,
                         boost::memory_order_relaxed)) {
                     return true;
                 }

@@ -748,12 +748,15 @@
     </objective_cpp_sources>
   </if>
   <cpp_tests prefix = "tests">
+    <cpp_test>test_RefCounted.cpp</cpp_test>
+    <cpp_test>test_SharedAllocator.cpp</cpp_test>
     <!--
-        <cpp_test>test_RefCounted.cpp</cpp_test>
-        <cpp_test>test_SharedAllocator.cpp</cpp_test>
         <cpp_test>test_SpinLock.cpp</cpp_test>
-        <cpp_test>test_SpinRWLock.cpp</cpp_test>
     -->
+    <cpp_test>test_SpinRWLock.cpp</cpp_test>
+    <cpp_test>test_RWLock.cpp</cpp_test>
+    <cpp_test>test_JobQueue.cpp</cpp_test>
+    <cpp_test>test_Scheduler.cpp</cpp_test>
     <cpp_test>test_Version.cpp</cpp_test>
   </cpp_tests>
   <resources prefix = "resources">

@@ -34,12 +34,18 @@ namespace thekogans {
         bool StorageSpinRWLock::TryAcquire (bool read) {
             ui32 currState = operations::load (state, boost::memory_order_seq_cst);
             if (read) {
-                if (!(currState & (WRITER | WRITER_PENDING))) {
-                    ui32 newState = operations::fetch_add (state, ONE_READER, boost::memory_order_seq_cst);
-                    if (!(newState & WRITER)) {
+                while (!(currState & (WRITER | WRITER_PENDING))) {
+                    if (operations::compare_exchange_weak (
+                            state,
+                            currState,
+                            currState + ONE_READER,
+                            boost::memory_order_seq_cst,
+                            boost::memory_order_seq_cst)) {
                         return true;
                     }
-                    operations::fetch_sub (state, ONE_READER, boost::memory_order_seq_cst);
+                    // If compare_exchange fails, currState is
+                    // automatically updated with the latest hardware
+                    // value.
                 }
             }
             else {

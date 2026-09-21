@@ -65,7 +65,6 @@ namespace thekogans {
         /// NOTE: if secure == true, you might need to call
         /// \see{SecureAllocator::ReservePages} to ensure
         /// your process has enough physical pages.
-
         struct _LIB_THEKOGANS_UTIL_DECL SharedAllocator : public Allocator {
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (SharedAllocator)
 
@@ -74,11 +73,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Heap header.
-            struct Header {
-                /// \enum
-                /// Size of header.
-                static const std::size_t SIZE = UI32_SIZE + UI32_SIZE + UI64_SIZE + UI64_SIZE;
-
+            struct alignas (64) Header {
                 /// \brief
                 /// A watermark marking this region as a SharedAllocator.
                 ui32 magic;
@@ -109,20 +104,25 @@ namespace thekogans {
                         ui64 size) :
                         magic (MAGIC32),
                         lock (StorageSpinLock::Unlocked),
-                        freeList (SIZE),
+                        freeList (sizeof (Header)),
                         rootObject (0) {
                     // Create the first block.
                     // NOTE: Theoretically, the block should be destructed in the
                     // dtor (rootBlock->~SharedAllocator::Block ();). We forgo this
                     // step because Block's dtor is trivial. If that ever changes in
                     // the future, we need to revisit this.
-                    new ((ui8 *)ptr + freeList) SharedAllocator::Block (size - SIZE);
+                    new ((ui8 *)ptr + freeList) SharedAllocator::Block (size - sizeof (Header));
                 }
 
                 /// \brief
                 /// Header is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Header)
             } *header;
+            // Cross-platform structural verification safety nets
+            static_assert (sizeof (Header) == 64,
+                "CRITICAL: SharedAllocator::Header size should pad cleanly to 64 bytes.");
+            static_assert(offsetof (Header, lock) % 4 == 0,
+                "CRITICAL: Lock variable offset must remain aligned for atomic operations.");
             /// \brief
             /// Heap lock.
             StorageSpinLock lock;
@@ -130,27 +130,17 @@ namespace thekogans {
             ///
             /// \brief
             /// Heap block.
-            struct Block {
-                /// \brief
-                /// Block header size.
-            #if defined (THEKOGANS_UTIL_CONFIG_Debug)
-                static const std::size_t HEADER_SIZE = UI64_SIZE + UI64_SIZE;
-            #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
-                static const std::size_t HEADER_SIZE = UI64_SIZE;
-            #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
-                /// \brief
-                /// Smallest block size that the SharedAllocator
-                /// can allocate.
-                static const std::size_t SMALLEST_BLOCK_SIZE = UI64_SIZE;
-                /// \brief
-                /// Free block size.
-                static const std::size_t FREE_BLOCK_SIZE = HEADER_SIZE + SMALLEST_BLOCK_SIZE;
-
-            #if defined (THEKOGANS_UTIL_CONFIG_Debug)
-                /// \brief
-                /// A block watermark. Used in ValidatePtr.
-                const ui64 magic;
-            #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+            struct alignas (16) Block {
+                union {
+                #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    /// \brief
+                    /// A block watermark. Used in ValidatePtr.
+                    const ui64 magic;
+                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    /// \brief Explicit alignment padding to keep layout stable in Release mode.
+                    const ui64 reservedPadding;
+                #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                };
                 /// \brief
                 /// Block data size.
                 ui64 size;
@@ -164,6 +154,14 @@ namespace thekogans {
                 };
 
                 /// \brief
+                /// Smallest block size that the SharedAllocator
+                /// can allocate.
+                static const std::size_t SMALLEST_BLOCK_SIZE = UI64_SIZE;
+                /// \brief
+                /// Free block size.
+                static const std::size_t FREE_BLOCK_SIZE;
+
+                /// \brief
                 /// ctor.
                 /// \param[in] size_ True block size (header + data).
                 /// \param[in] next_ Pointer to next free block.
@@ -172,14 +170,21 @@ namespace thekogans {
                     ui64 next_ = 0) :
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     magic (MAGIC64),
+                #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
+                    reservedPadding (0),
                 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
-                    size (size_ - HEADER_SIZE),
+                    size (size_ - offsetof (Block, data)),
                     next (next_) {}
 
                 /// \brief
                 /// Block is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Block)
             };
+            // Safety check to protect cross-process boundary layout.
+            static_assert (sizeof (Block) % 16 == 0,
+                "CRITICAL: SharedAllocator::Block layout size must be uniform and a multiple of 16.");
+            static_assert (offsetof (Block, data) == 16,
+                "CRITICAL: User data payload offset shifted! This will misalign memory blocks.");
             /// \brief
             /// This is the smallest valid pointer that SharedAllocator
             /// can return. Since it's constant, we calculate and cache
@@ -227,7 +232,7 @@ namespace thekogans {
                 bool secure) :
                 header ((Header *)SharedObject::Create (name, size, secure, Constructor (size))),
                 lock (header->lock),
-                smallestValidPtr ((ui8 *)header + Header::SIZE + Block::HEADER_SIZE),
+                smallestValidPtr ((ui8 *)header + sizeof (Header) + offsetof (Block, data)),
                 end ((ui8 *)header + size) {}
             /// \brief
             /// dtor.
@@ -263,8 +268,11 @@ namespace thekogans {
             /// static const std::size_t blockTableSize = THEKOGANS_UTIL_ARRAY_SIZE (blockTable);
             /// util::ui64 sharedRegionSize = SharedAllocator::GetAllocatorOverhead ();
             /// for (std::size_t i = 0; i < blockTableSize; ++i) {
-            ///     sharedRegionSize += SharedAllocator::GetAllocationOverhead () +
-            ///         std::max (blockTable[i], SharedAllocator::GetSmallestBlockSize ());
+            ///     // 1. Get the raw payload size needed.
+            ///     util::ui64 payloadSize = std::max (blockTable[i], SharedAllocator::GetSmallestBlockSize ());
+            ///     // 2. Round the payload size to a multiple of 16.
+            ///     payloadSize = (payloadSize + 15) & ~static_cast<std::size_t> (15);
+            ///     sharedRegionSize += SharedAllocator::GetAllocationOverhead () + payloadSize;
             /// }
             /// // sharedRegionSize now contains the size of the shared
             /// // region needed to accomodate the allocation requests.
@@ -274,13 +282,13 @@ namespace thekogans {
             /// Return the number of bytes used by the allocator.
             /// \return The number of bytes used by the allocator.
             static ui64 GetAllocatorOverhead () {
-                return Header::SIZE;
+                return sizeof (Header);
             }
             /// \brief
             /// Return the number of bytes used by each allocation.
             /// \return The number of bytes used by each allocation.
             static ui64 GetAllocationOverhead () {
-                return Block::HEADER_SIZE;
+                return offsetof (Block, data);
             }
             /// \brief
             /// Return the smallest block size that SharedAllocator can allocate.
@@ -339,14 +347,15 @@ namespace thekogans {
             /// \param[in] block Block pointer.
             /// \return Offset of the next block.
             inline Block *GetNextBlock (Block *block) const {
-                return (Block *)((ui8 *)block + GetTrueBlockSize (block));
+                return reinterpret_cast<Block *> (
+                    reinterpret_cast<ui8 *> (block) + GetTrueBlockSize (block));
             }
             /// \brief
             /// Given a block, return it's true size.
             /// \param[in] block Block pointer.
             /// \return Block true size.
             inline ui64 GetTrueBlockSize (Block *block) const {
-                return Block::HEADER_SIZE + block->size;
+                return offsetof (Block, data) + block->size;
             }
             /// \brief
             /// Given a pointer, validate it and return the block it came from.
@@ -354,7 +363,7 @@ namespace thekogans {
             /// \return If valid, block the pointer belongs to. 0 otherwise.
             inline Block *ValidatePtr (void *ptr) {
                 if (ptr >= smallestValidPtr && ptr < end) {
-                    Block *block = (Block *)((ui8 *)ptr - Block::HEADER_SIZE);
+                    Block *block = (Block *)((ui8 *)ptr - offsetof (Block, data));
                 #if defined (THEKOGANS_UTIL_CONFIG_Debug)
                     if (block->magic == MAGIC64) {
                 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)

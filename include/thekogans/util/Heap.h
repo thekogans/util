@@ -325,7 +325,6 @@ namespace thekogans {
         /// Heaps register themselves with the registry
         /// during construction, and unregister during
         /// destruction.
-
         struct _LIB_THEKOGANS_UTIL_DECL HeapRegistry : public Singleton<HeapRegistry> {
             /// \enum
             /// Various heap error types.
@@ -463,7 +462,7 @@ namespace thekogans {
             /// Halt compilation instantly if a user tries to build a
             /// heap for a tiny type.
             static_assert (sizeof (T) >= sizeof (void *),
-                "HEAVY FAILURE: Payload type T must be at least the size of a pointer to support in-place free-list linking!");
+                "Type T must be at least the size of a pointer/");
 
         protected:
             /// \brief
@@ -710,7 +709,7 @@ namespace thekogans {
                     // engineer the best chance of figuring out what happened.
                     std::string message =
                         FormatString (
-                            "%s : " THEKOGANS_UTIL_SIZE_T_FORMAT "\n",
+                            "%s: " THEKOGANS_UTIL_SIZE_T_FORMAT "\n",
                             GetName (),
                             itemCount);
                     Log (

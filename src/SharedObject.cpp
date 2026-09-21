@@ -40,7 +40,7 @@ namespace thekogans {
             #define NAME_MAX 255
         #endif // defined (TOOLCHAIN_OS_Windows) && !defined (NAME_MAX)
 
-            struct SharedObjectHeader {
+            struct alignas (64) SharedObjectHeader {
                 SecureFixedArray<char, NAME_MAX> name;
                 ui64 size;
                 bool secure;
@@ -55,6 +55,10 @@ namespace thekogans {
                     secure (secure_),
                     refCount (1) {}
             };
+
+            // Safety verification net
+            static_assert (sizeof (SharedObjectHeader) % 64 == 0,
+                "CRITICAL: SharedObjectHeader size must pad cleanly to a multiple of 64.");
         }
 
     #if !defined (TOOLCHAIN_OS_Windows)
@@ -103,7 +107,7 @@ namespace thekogans {
                 mode_t mode,
             #endif // defined (TOOLCHAIN_OS_Windows)
                 const TimeSpec &timeSpec) {
-            if (name != nullptr && size > 0 && timeSpec != TimeSpec::Infinite) {
+            if (name != nullptr && name[0] != '\0' && size > 0 && timeSpec != TimeSpec::Infinite) {
                 size += sizeof (SharedObjectHeader);
             #if defined (TOOLCHAIN_OS_Windows)
                 Lock lock (name, securityAttributes, timeSpec);
@@ -332,6 +336,8 @@ namespace thekogans {
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             while (handle == THEKOGANS_UTIL_POSIX_INVALID_HANDLE_VALUE) {
+                std::cout << "4\n";
+                std::cout.flush ();
                 THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
                 if (errorCode == EEXIST) {
                     Sleep (timeSpec);

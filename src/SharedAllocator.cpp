@@ -32,6 +32,9 @@
 namespace thekogans {
     namespace util {
 
+        const std::size_t SharedAllocator::Block::FREE_BLOCK_SIZE =
+            offsetof (SharedAllocator::Block, data) + SharedAllocator::Block::SMALLEST_BLOCK_SIZE;
+
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (
             thekogans::util::SharedAllocator,
             Allocator::TYPE)
@@ -42,6 +45,10 @@ namespace thekogans {
                 if (size < Block::SMALLEST_BLOCK_SIZE) {
                     size = Block::SMALLEST_BLOCK_SIZE;
                 }
+                // Round the requested size up to the next 16-byte boundary.
+                // This ensures every split block lands perfectly on a 16-byte
+                // alignment track.
+                size = (size + 15) & ~static_cast<std::size_t> (15);
                 for (Block *prev = nullptr, *block = GetBlockFromOffset (header->freeList);
                         block != nullptr;
                         prev = block, block = GetBlockFromOffset (block->next)) {

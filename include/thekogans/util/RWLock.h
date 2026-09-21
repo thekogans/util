@@ -36,7 +36,6 @@ namespace thekogans {
         /// RWLock wraps a Windows SRWLOCK and a POSIX pthread_rwlock_t
         /// so that they can be used with the rest of the util
         /// synchronization machinery.
-
         struct _LIB_THEKOGANS_UTIL_DECL RWLock {
         private:
         #if defined (TOOLCHAIN_OS_Windows)

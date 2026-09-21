@@ -42,7 +42,6 @@ namespace thekogans {
         /// NOTE: Shared objects, by their nature, cannot contain pointers as
         /// they would not be valid across process boundaries. RTTI is also not
         /// available for Shared objects.
-
         struct _LIB_THEKOGANS_UTIL_DECL SharedObject {
         #if !defined (TOOLCHAIN_OS_Windows)
             /// \brief

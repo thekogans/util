@@ -101,7 +101,7 @@ namespace thekogans {
         private:
             /// \brief
             /// SpinLock state.
-            ui32 state;
+            alignas (64) ui32 state;
 
         public:
             /// \brief

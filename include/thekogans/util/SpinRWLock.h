@@ -102,7 +102,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SpinRWLock : private StorageSpinRWLock {
         private:
             /// Lock state.
-            ui32 state;
+            alignas (64) ui32 state;
 
         public:
             /// \brief

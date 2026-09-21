@@ -273,7 +273,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Return const * for comparison.
-                /// \return true const *.
+                /// \return const *.
                 inline operator const T * () const {
                     return object;
                 }
@@ -475,6 +475,20 @@ namespace thekogans {
                 }
 
                 /// \brief
+                /// Check the pointer for nullness.
+                /// \return true if object != nullptr.
+                inline operator bool () const {
+                    return object != nullptr;
+                }
+
+                /// \brief
+                /// Return const * for comparison.
+                /// \return const *.
+                inline operator const T * () const {
+                    return object;
+                }
+
+                /// \brief
                 /// Assignment operator.
                 /// \param[in] object_ Raw pointer to reference counted object.
                 /// \return *this.
@@ -582,9 +596,12 @@ namespace thekogans {
                             references->ReleaseWeakRef ();
                         }
                         object = object_;
-                        references = object != nullptr ? object->references : nullptr;
-                        if (references != nullptr) {
+                        if (object != nullptr) {
+                            references = object->references;
                             references->AddWeakRef ();
+                        }
+                        else {
+                            references = nullptr;
                         }
                     }
                 }

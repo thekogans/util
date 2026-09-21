@@ -25,13 +25,13 @@
 #include <algorithm>
 #include <thekogans/util/Thread.h>
 #include <CppUnitXLite/CppUnitXLite.cpp>
-#include <thekogans/util/SpinRWLock.h>
+#include <thekogans/util/RWLock.h>
 
 using namespace thekogans::util;
 
 // Fixture protecting real payloads using your API
 struct ValidationFixture {
-    SpinRWLock rw_lock;
+    RWLock rw_lock;
 
     // The shared state protected by the lock
     int64_t balance = 1000;
@@ -161,7 +161,7 @@ void RunContentionHarness(int reader_threads, int writer_threads, std::chrono::s
               << "\n  -> Via TryAcquire Failures: " << try_write_fail.load() << std::endl;
 }
 
-TEST (thekogans, SpinRWLock) {
+TEST (thekogans, RWLock) {
     // Seed the randomizer for path variance
     std::srand(static_cast<unsigned>(std::time(nullptr)));
 
