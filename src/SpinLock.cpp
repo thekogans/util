@@ -37,14 +37,15 @@ namespace thekogans {
         }
 
         void StorageSpinLock::Acquire () {
-            while (operations::exchange (state, Locked, boost::memory_order_acquire) == Locked) {
+            while (operations::load (state, boost::memory_order_relaxed) == Locked ||
+                    operations::exchange (state, Locked, boost::memory_order_acquire) == Locked) {
                 // Wait for lock to become free with exponential back-off.
                 // In a heavily contested lock, this leads to fewer cache
                 // line invalidations and better performance.
                 // This code was adapted from the ideas found here:
                 // https://geidav.wordpress.com/tag/exponential-back-off/
                 Thread::Backoff backoff (maxPauseBeforeYield);
-                while (operations::load (state, boost::memory_order_relaxed) == Locked) {
+                while (operations::load (state, boost::memory_order_acquire) == Locked) {
                     backoff.Pause ();
                 }
             }

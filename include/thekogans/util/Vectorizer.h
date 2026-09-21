@@ -89,7 +89,6 @@ namespace thekogans {
         /// } job (result, vertices, xform);
         /// util::Vectorizer::Instance ()->Execute (job);
         /// \endcode
-
         struct _LIB_THEKOGANS_UTIL_DECL Vectorizer : public Singleton<Vectorizer> {
             /// \struct Vectorizer::Job Vectorizer.h thekogans/util/Vectorizer.h
             ///
@@ -202,11 +201,12 @@ namespace thekogans {
                 Worker (Vectorizer &vectorizer_,
                         std::size_t rank_,
                         const std::string &name = std::string (),
-                        i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY) :
+                        i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
+                        ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
                         Thread (name),
                         vectorizer (vectorizer_),
                         rank (rank_) {
-                    Create (priority, (ui32)rank);
+                    Create (priority, affinity);
                 }
 
             protected:

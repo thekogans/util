@@ -33,17 +33,19 @@ namespace thekogans {
                 workerCount (0),
                 chunkSize (0) {
             if (workerCount_ > 1) {
+                std::size_t masterCore = workerCount - 1;
                 // NOTE: Unlike worker threads, we deliberately do not
                 // adjust our own priority. This is done because 1) When
                 // Execute is called, we are already running, and 2) Not
                 // to cause starvation by monopolizing the processor
                 // needlessly.
-                Thread::SetThreadAffinity (Thread::GetCurrThreadHandle (), 0);
+                Thread::SetThreadAffinity (Thread::GetCurrThreadHandle (), masterCore);
                 // We are the first thread. Create workerCount_ - 1
                 // additional worker threads.
                 for (std::size_t i = 1; i < workerCount_; ++i) {
+                    std::size_t workerCore = (i - 1) % masterCore;
                     Worker::UniquePtr worker (
-                        new Worker (*this, i, FormatString ("Vectorizer-%u", i), workerPriority));
+                        new Worker (*this, i, FormatString ("Vectorizer-%u", i), workerPriority, workerCore));
                     workers.push_back (worker.get ());
                     worker.release ();
                 }
