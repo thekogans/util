@@ -77,7 +77,7 @@ namespace thekogans {
                             workerPriority,
                             workerAffinity,
                             workerCallback))),
-                state (dynamic_refcounted_sharedptr_cast<State> (RunLoop::state)) {
+                state (RunLoop::state) {
             if (workerCount > 0) {
                 Start ();
             }
@@ -95,13 +95,15 @@ namespace thekogans {
             // Rescue any active threads from the draining list instantly!
             state->workers += state->drainingWorkers;
             state->jobsNotEmpty.SignalAll (); // Wake them up to see state->done is false
-            // All we do in start is (re)create as many workers as was given.
+            // Create as many workers as needed to == state->workerCount.
             for (std::size_t i = state->workers.size (); i < state->workerCount; ++i) {
                 std::string workerName;
                 if (!state->name.empty ()) {
                     if (state->workerCount > 1) {
                         workerName = FormatString (
-                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, state->name.c_str (), i);
+                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            state->name.c_str (),
+                            state->workerCounter++);
                     }
                     else {
                         workerName = state->name;

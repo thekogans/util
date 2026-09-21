@@ -65,9 +65,17 @@ namespace thekogans {
                 }
             }
             else {
+            #if defined (TOOLCHAIN_OS_Linux)
                 timespec absolute = (GetMonotonicTime () + timeSpec).Totimespec ();
+            #elif defined (TOOLCHAIN_OS_OSX)
+                timespec relative = timeSpec.Totimespec ();
+            #endif // defined (TOOLCHAIN_OS_Linux)
                 THEKOGANS_UTIL_ERROR_CODE errorCode =
+                #if defined (TOOLCHAIN_OS_Linux)
                     pthread_cond_timedwait (&condition, &mutex.mutex, &absolute);
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    pthread_cond_timedwait_relative_np (&condition, &mutex.mutex, &relative);
+                #endif // defined (TOOLCHAIN_OS_Linux)
                 if (errorCode != 0) {
                     if (errorCode != ETIMEDOUT) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
@@ -118,11 +126,13 @@ namespace thekogans {
                     pthread_condattr_destroy (&attribute);
                 }
             } attribute;
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_condattr_setclock (&attribute.attribute, CLOCK_MONOTONIC);
+            THEKOGANS_UTIL_ERROR_CODE errorCode;
+        #if defined (TOOLCHAIN_OS_Linux)
+            errorCode = pthread_condattr_setclock (&attribute.attribute, CLOCK_MONOTONIC);
             if (errorCode != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
+        #endif // defined (TOOLCHAIN_OS_Linux)
             if (shared) {
                 errorCode = pthread_condattr_setpshared (
                     &attribute.attribute, PTHREAD_PROCESS_SHARED);

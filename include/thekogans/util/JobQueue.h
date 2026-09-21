@@ -123,8 +123,13 @@ namespace thekogans {
                 /// When Stop is called, spindown workers go here.
                 /// They will do what they need to do to finish their
                 /// current jobs and, if not rescued by Start will
-                /// remove themselves from this list.
+                /// remove themselves from this list before ending
+                /// their own lives.
                 WorkerList drainingWorkers;
+                /// \brief
+                /// Start tags each worker in a multi worker queue with a number.
+                /// This monotonicaly increasing counter servers that purpose.
+                std::size_t workerCounter;
                 /// \brief
                 /// Synchronization mutex.
                 Mutex workersMutex;
@@ -151,7 +156,8 @@ namespace thekogans {
                     workerCount (workerCount_),
                     workerPriority (workerPriority_),
                     workerAffinity (workerAffinity_),
-                    workerCallback (workerCallback_) {}
+                    workerCallback (workerCallback_),
+                    workerCounter (0) {}
             };
 
         protected:

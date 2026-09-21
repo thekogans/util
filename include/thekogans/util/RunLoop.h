@@ -27,7 +27,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <string>
-#include <list>
+#include <vector>
 #include <functional>
 #include <atomic>
 #include "pugixml/pugixml.hpp"
@@ -494,7 +494,7 @@ namespace thekogans {
 
             /// \brief
             /// Alias for std::list<Job::SharedPtr>.
-            using UserJobList = std::list<Job::SharedPtr>;
+            using UserJobList = std::vector<Job::SharedPtr>;
 
             /// \struct RunLoop::Stats RunLoop.h thekogans/util/RunLoop.h
             ///
