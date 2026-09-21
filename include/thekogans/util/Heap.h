@@ -453,13 +453,18 @@ namespace thekogans {
         ///
         /// \brief
         /// Heap template.
-
         template<
             typename T,
             typename Lock = SpinLock>
         struct Heap :
             public HeapRegistry::Diagnostics,
             public Singleton<Heap<T, Lock>> {
+            /// \brief
+            /// Halt compilation instantly if a user tries to build a
+            /// heap for a tiny type.
+            static_assert (sizeof (T) >= sizeof (void *),
+                "HEAVY FAILURE: Payload type T must be at least the size of a pointer to support in-place free-list linking!");
+
         protected:
             /// \brief
             /// Forward declaration of Page.

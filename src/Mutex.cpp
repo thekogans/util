@@ -86,6 +86,14 @@ namespace thekogans {
                         }
                         {
                             THEKOGANS_UTIL_ERROR_CODE errorCode =
+                                pthread_mutexattr_settype (&attribute, PTHREAD_MUTEX_RECURSIVE);
+                            if (errorCode != 0) {
+                                pthread_mutexattr_destroy(&attribute);
+                                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION(errorCode);
+                            }
+                        }
+                        {
+                            THEKOGANS_UTIL_ERROR_CODE errorCode =
                                 pthread_mutexattr_setpshared (&attribute, PTHREAD_PROCESS_SHARED);
                             if (errorCode != 0) {
                                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);

@@ -59,12 +59,6 @@ namespace thekogans {
         ///
         /// Thanks to the Mutex/Condition pairing, this code is simple,
         /// robust, and easily maintained.
-        ///
-        /// VERY IMPORTANT: There is a slight semantec difference between
-        /// CRITICAL_SECTION on Windows and pthread_mutex_t on POSIX.
-        /// On Windows, a single thread can acquire a CRITICAL_SECTION
-        /// as many times as it needs, while on POSIX, a single thread
-        /// HAS to release the pthread_mutex_t between every acquisition.
         struct _LIB_THEKOGANS_UTIL_DECL Mutex {
         private:
         #if defined (TOOLCHAIN_OS_Windows)

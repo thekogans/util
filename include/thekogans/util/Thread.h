@@ -288,19 +288,19 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Backoff {
                 /// \brief
                 /// Default max pause iterations before giving up the time slice.
-                static const ui32 DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+                static const std::size_t DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
 
                 /// \brief
                 /// Max pause iterations before giving up the time slice.
-                ui32 maxPauseBeforeYield;
+                std::size_t maxPauseBeforeYield;
                 /// \briwf
                 /// Current pause count.
-                ui32 count;
+                std::size_t count;
 
                 /// \brief
                 /// ctor.
                 /// \param[in] maxPauseBeforeYield_ Max pause iterations before giving up the time slice.
-                Backoff (ui32 maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                Backoff (std::size_t maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
                     maxPauseBeforeYield (maxPauseBeforeYield_),
                     count (1) {}
 
@@ -308,11 +308,13 @@ namespace thekogans {
                 /// Pause the cpu or yield the time slice if we've been spinning too much.
                 void Pause () {
                     if (count <= maxPauseBeforeYield) {
-                        for (ui32 i = 0; i < count; ++i) {
-                            Thread::Pause ();
+                        Thread::Pause ();
+                        if (count > SIZE_T_MAX / 2) {
+                            count = maxPauseBeforeYield + 1;
                         }
-                        // Pause twice as long the next time.
-                        count *= 2;
+                        else {
+                            count *= 2;
+                        }
                     }
                     else {
                         // Pause is so long that we might as well
