@@ -594,7 +594,7 @@ namespace thekogans {
                     }
                     // We are allocating from a full page!
                     assert (0);
-                    return 0;
+                    return nullptr;
                 }
 
                 /// \brief
@@ -843,7 +843,7 @@ namespace thekogans {
             /// \param[in] nothrow true = return nullptr if can't allocate,
             /// false = throw exception.
             /// \return pointer to newly allocated object.
-            void *Alloc (bool nothrow) {
+            void *Alloc (bool nothrow = false) {
                 LockGuard<Lock> guard (lock);
                 Page *page = GetPage ();
                 assert (page != nullptr);
@@ -877,7 +877,7 @@ namespace thekogans {
             /// \param[in] nothrow true = don't throw an exception on error.
             void Free (
                     void *ptr,
-                    bool nothrow) {
+                    bool nothrow = false) {
                 if (ptr != nullptr) {
                     LockGuard<Lock> guard (lock);
                     Page *page = GetPage (ptr);

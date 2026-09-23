@@ -62,10 +62,28 @@ namespace thekogans {
             /// \brief
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
-            inline void operator () (typename DefaultInstanceCreator<T>::ReturnType instance) {
+            /// \return true (Instance has been destroyed).
+            inline bool operator () (typename DefaultInstanceCreator<T>::ReturnType instance) {
                 if (instance != nullptr) {
                     delete instance;
                 }
+                return true;
+            }
+        };
+
+        /// \struct NullInstanceDestroyer Singleton.h thekogans/util/Singleton.h
+        ///
+        /// \brief
+        /// Implements the do nothing singleton destruction method. Used by singletons
+        /// that can't die.
+        template<typename T>
+        struct NullInstanceDestroyer {
+            /// \brief
+            /// Destroy the singleton instance.
+            /// \param[in] instance Singleton instance to destroy.
+            /// \return false.
+            inline bool operator () (typename DefaultInstanceCreator<T>::ReturnType /*instance*/) {
+                return false;
             }
         };
 
@@ -160,8 +178,11 @@ namespace thekogans {
                 // handled by the application.
                 LockGuard<Lock> guard (lock ());
                 if (instance () != nullptr) {
-                    typename InstanceCreator::ReturnType instance_ = nullptr;
-                    InstanceDestroyer () (EXCHANGE (instance (), instance_));
+                    InstanceDestroyer instanceDestroyer;
+                    if (instanceDestroyer (instance ())) {
+                        typename InstanceCreator::ReturnType instance_ = nullptr;
+                        EXCHANGE (instance (), instance_);
+                    }
                 }
             }
 
@@ -254,7 +275,9 @@ namespace thekogans {
             /// \return Singleton instance.
             template<typename... Args>
             inline ReturnType operator () (Args... args) {
-                return ReturnType (new T (std::forward<Args> (args)...));
+                ReturnType instance (new T (std::forward<Args> (args)...));
+                instance->AddRef ();
+                return instance;
             }
         };
 
@@ -275,8 +298,11 @@ namespace thekogans {
             /// \brief
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
-            inline void operator () (typename RefCountedInstanceCreator<T>::ReturnType /*instance*/) {
-                // Nothing to do.
+            inline bool operator () (typename RefCountedInstanceCreator<T>::ReturnType instance) {
+                if (instance != nullptr) {
+                    instance->Release ();
+                }
+                return true;
             }
         };
 

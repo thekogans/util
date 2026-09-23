@@ -155,6 +155,7 @@
     <cpp_header>$(organization)/$(project_directory)/SharedObject.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Singleton.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SizeT.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/SlabAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/StdAllocator.h</cpp_header>

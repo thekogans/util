@@ -15,7 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#ifdef _MSC_VER
+    #include <intrin.h>
+#endif
 #include <cstddef>
+#include <climits>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/AlignedAllocator.h"
 
@@ -78,72 +82,87 @@ namespace thekogans {
             return ptr;
         }
 
-        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API IsPowerOf2 (
-                std::size_t value) {
+        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API IsPowerOf2 (std::size_t value) {
             return value > 0 && (value & (value - 1)) == 0;
         }
 
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API ZeroBitCount (
-                std::size_t value) {
-            static const std::size_t nibleZeroBitCount[] = {
-                4, 3, 3, 2, 3, 2, 2, 1, 3, 2, 2, 1, 2, 1, 1, 0
-            };
-            std::size_t count = 0;
-            for (std::size_t shift = SIZE_T_SIZE * 8 - 4,
-                     mask = (std::size_t)0xf << shift; mask != 0; mask >>= 4, shift -= 4) {
-                count += nibleZeroBitCount[(value & mask) >> shift];
-            }
-            return count;
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API ZeroBitCount (std::size_t value) {
+            return BitWidth<std::size_t>::value - OneBitCount (value);
         }
 
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API OneBitCount (
-                std::size_t value) {
-            static const std::size_t nibleOneBitCount[] = {
-                0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4
-            };
-            std::size_t count = 0;
-            for (std::size_t shift = SIZE_T_SIZE * 8 - 4,
-                     mask = (std::size_t)0xf << shift; mask != 0; mask >>= 4, shift -= 4) {
-                count += nibleOneBitCount[(value & mask) >> shift];
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API OneBitCount (std::size_t value) {
+        #if defined (__GNUC__) || defined (__clang__)
+            if constexpr (sizeof (std::size_t) == 8) {
+                return __builtin_popcountll (value);
             }
-            return count;
+            else {
+                return __builtin_popcount (value);
+            }
+        #elif defined(_MSC_VER)
+            if constexpr (sizeof (std::size_t) == 8) {
+                return __popcnt64 (value));
+            }
+            else {
+                return __popcnt (value);
+            }
+        #else // defined (__GNUC__) || defined (__clang__)
+            // Fallback SWAR (SIMD Within A Register) algorithm
+            value = value - ((value >> 1) & (std::size_t)~(std::size_t)0 / 3);
+            value = (value & (std::size_t)~(std::size_t)0 / 15 * 3) + ((value >> 2) & (std::size_t)~(std::size_t)0 / 15 * 3);
+            value = (value + (value >> 4)) & (std::size_t)~(std::size_t)0 / 255 * 15;
+            return (std::size_t)(value * ((std::size_t)~(std::size_t)0 / 255)) >> (sizeof (std::size_t) - 1) * CHAR_BIT;
+        #endif // defined (__GNUC__) || defined (__clang__)
         }
 
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API Align (
-                std::size_t value) {
-            static const std::size_t nibleHighBit[] = {
-                0, 1, 2, 2, 4, 4, 4, 4, 8, 8, 8, 8, 8, 8, 8, 8
-            };
-            for (std::size_t shift = SIZE_T_SIZE * 8 - 4,
-                     mask = (std::size_t)0xf << shift; mask != 0; mask >>= 4, shift -= 4) {
-                std::size_t highBit = nibleHighBit[(value & mask) >> shift];
-                if (highBit != 0) {
-                    highBit <<= shift;
-                    if (highBit < value) {
-                        highBit <<= 1;
-                    }
-                    assert (highBit >= value);
-                    return highBit;
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API TrailingZeroBitCount (std::size_t value) {
+            if (value == 0) {
+                return sizeof (std::size_t) * 8; // Handle 0 safely
+            }
+        #if defined (__GNUC__) || defined (__clang__)
+            if constexpr (sizeof (std::size_t) == 8) {
+                return __builtin_ctzll (value);
+            }
+            else {
+                return __builtin_ctz (value);
+            }
+        #elif defined (_MSC_VER)
+            unsigned long index;
+        #if defined (_WIN64)
+            _BitScanForward64 (&index, value);
+        #else // defined (_WIN64)
+            _BitScanForward (&index, value);
+        #endif // defined (_WIN64)
+            return index;
+        #else // defined (__GNUC__) || defined (__clang__)
+            // Fallback cross-platform bit-twiddling if no intrinsic is found
+            std::size_t count = 0;
+            if constexpr (sizeof (std::size_t) >= 8) {
+                if ((value & 0xFFFFFFFF) == 0) {
+                    count += 32;
+                    value >>= 32;
                 }
             }
-            return 0;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API TrailingZeroBitCount (
-                std::size_t value) {
-            static const std::size_t trailingZeroBits[] = {
-                4, 0, 1, 0, 2, 0, 1, 0, 3, 0, 1, 0, 2, 0, 1, 0
-            };
-            std::size_t count = 0;
-            while (value != 0) {
-                std::size_t nibleCount = trailingZeroBits[value & 0xf];
-                count += nibleCount;
-                if (nibleCount < 4) {
-                    break;
-                }
+            if ((value & 0xFFFF) == 0) {
+                count += 16;
+                value >>= 16;
+            }
+            if ((value & 0xFF) == 0) {
+                count += 8;
+                value >>= 8;
+            }
+            if ((value & 0xF) == 0) {
+                count += 4;
                 value >>= 4;
             }
+            if ((value & 0x3) == 0) {
+                count += 2;
+                value >>= 2;
+            }
+            if ((value & 0x1) == 0) {
+                count += 1;
+            }
             return count;
+        #endif // defined (__GNUC__) || defined (__clang__)
         }
 
     } // namespace util

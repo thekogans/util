@@ -20,261 +20,32 @@
 #include <boost/atomic/detail/operations_lockfree.hpp>
 #include <boost/memory_order.hpp>
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Constants.h"
-#include "thekogans/util/Singleton.h"
-#include "thekogans/util/StringUtils.h"
-#include "thekogans/util/Exception.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/SlabAllocator.h"
 
 namespace thekogans {
     namespace util {
 
-    #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE)
-        #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE 8192
-    #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE)
+    #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
+        #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE 8192
+    #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
 
-        // Heap implemented from first principles because RefCounted::References
-        // is that far down in the firmament. Practically every other sub-system
-        // uses it. So I wrote this 'tuned' version to provide lightning fast
-        // RefCounted::References allocations making RefCounted a very attractive
-        // solution in many different contexts. Paired with RefCountedRegistry
-        // it's an unbeatable combination for async work that interfaces with the
-        // OS API.
-        // NOTE: Unlike other, public facing code, this heap implementation is
-        // tuned for one purpose, performance. For this reason the safe and defensive
-        // coding standards I use everywhere else do not apply here. I did this
-        // because this is not user facing code. There are no external interfaces.
-        // And in the interest of performance I removed all redundant checking and
-        // parameterezation. If there's a crash in this code it is most likely
-        // because of heap corruption which happened somewhere else. This code is
-        // very input sensative and as long as you give it back (Free) what it
-        // gave you (Alloc) should never cause any problems.
-        struct RefCounted::References::Heap : public Singleton<Heap> {
-        private:
-            struct Page {
-                // Page is designed to properly align the shared and
-                // weak counters in RefCounted::References on both 32
-                // and 64 bit architectures. It's even future proof
-                // for 128 bit architectures if they ever become common.
-                std::size_t itemsInPage;
-                std::size_t itemCount;
-                Page *next;
-                union Item {
-                    Item *next;
-                    ui8 block[sizeof (RefCounted::References)];
-                } *freeItem;
-                Item items[1];
-
-                Page (std::size_t itemsInPage_) :
-                    itemsInPage (itemsInPage_),
-                    itemCount (0),
-                    next (nullptr),
-                    freeItem (nullptr) {}
-
-                // Size of raw block of memory to allocate for the page.
-                static std::size_t Size (std::size_t itemsInPage) {
-                    // -1 is because of the items[1] above.
-                    return sizeof (Page) + sizeof (Item) * (itemsInPage - 1);
-                }
-
-                inline bool IsEmpty () const {
-                    return itemCount == 0;
-                }
-                inline bool IsFull () const {
-                    return itemCount == itemsInPage;
-                }
-                // Check to see if the given pointer belongs to this page.
-                inline bool IsItem (const void *ptr) const {
-                    return ptr >= items && ptr < items + itemsInPage;
-                }
-
-                inline void *Alloc () {
-                    // Note the lack of any and all safety features.
-                    // This code is used only by Heap::Alloc below
-                    // and it makes sure that this method is never
-                    // called on a full page.
-                    Item *item;
-                    if (freeItem != nullptr) {
-                        item = freeItem;
-                        freeItem = freeItem->next;
-                    }
-                    else {
-                        item = items + itemCount;
-                    }
-                    ++itemCount;
-                    return item->block;
-                }
-
-                inline void Free (void *ptr) {
-                    Item *item = (Item *)ptr;
-                    item->next = freeItem;
-                    freeItem = item;
-                    --itemCount;
-                }
-            };
-
-            struct PageList {
-                Page *head;
-
-                PageList () :
-                    head (nullptr) {}
-
-                inline bool empty () const {
-                    return head == nullptr;
-                }
-                inline Page *front () const {
-                    return head;
-                }
-
-                inline void push_front (Page *page) {
-                    page->next = head;
-                    head = page;
-                }
-
-                inline void erase (
-                        Page *prev,
-                        Page *page) {
-                    if (prev != nullptr) {
-                        prev->next = page->next;
-                    }
-                    else {
-                        head = page->next;
-                    }
-                }
-
-                inline Page *find (
-                        const void *ptr,
-                        Page *&prev) const {
-                    prev = nullptr;
-                    for (Page *page = head; page != nullptr; prev = page, page = page->next) {
-                        if (page->IsItem (ptr)) {
-                            return page;
-                        }
-                    }
-                    return nullptr;
-                }
-            };
-
-            std::size_t itemsInPage;
-            PageList fullPages;
-            PageList partialPages;
-            // RefCounted::References uses boost primitives to atomicaly
-            // increment/decrement the shared and weak counters. On some
-            // platforms these primitives use machine instructions to
-            // achieve good performance. Sometimes those instructins
-            // have various alignment requirements. In order to guarntee
-            // that we satisfy these requirements we allocate pages with
-            // AlignedAllocator. The alignement used is UI32_SIZE which
-            // happens to be the type of the above mentioned counters.
-            struct AlignedAllocator {
-                void *Alloc (std::size_t size) {
-                    std::size_t rawSize = UI32_SIZE + size + sizeof (ui8 *);
-                    ui8 *rawPtr = new ui8[rawSize];
-                    ui8 *ptr = rawPtr;
-                    std::size_t amountMisaligned = (std::size_t)ptr & (UI32_SIZE - 1);
-                    if (amountMisaligned > 0) {
-                        ptr += UI32_SIZE - amountMisaligned;
-                    }
-                    *(ui8 **)((std::size_t)ptr + size) = rawPtr;
-                    return ptr;
-                }
-
-                inline void Free (
-                        void *ptr,
-                        std::size_t size) {
-                    delete [] *(ui8 **)((std::size_t)ptr + size);
-                }
-            } allocator;
-            SpinLock spinLock;
-
-        public:
-            Heap (std::size_t itemsInPage_ =
-                    THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE) :
-                itemsInPage (itemsInPage_) {}
-
-            void *Alloc () {
-                LockGuard<SpinLock> guard (spinLock);
-                Page *page = GetPage ();
-                void *ptr = page->Alloc ();
-                if (page->IsFull ()) {
-                    partialPages.erase (nullptr, page);
-                    fullPages.push_front (page);
-                }
-                return ptr;
-            }
-
-            void Free (void *ptr) {
-                LockGuard<SpinLock> guard (spinLock);
-                Page *prev;
-                Page *page = GetPage (ptr, prev);
-                if (page->IsFull ()) {
-                    // If the page is full, it must have come
-                    // from the fullPages list.
-                    fullPages.erase (prev, page);
-                    // Since we're removing an item from the
-                    // page it will no longer be full and needs
-                    // to go to the head of partialPages list.
-                    partialPages.push_front (page);
-                    prev = nullptr;
-                }
-                page->Free (ptr);
-                if (page->IsEmpty ()) {
-                    partialPages.erase (prev, page);
-                    page->~Page ();
-                    // It looks weird to be accessing page members after calling the dtor,
-                    // but the page is still alive and the dtor does nothing (and we need
-                    // the member to properly free the page).
-                    allocator.Free (page, Page::Size (page->itemsInPage));
-                    itemsInPage >>= 1;
-                }
-            }
-
-        private:
-            inline Page *GetPage () {
-                if (partialPages.empty ()) {
-                    partialPages.push_front (
-                        new (allocator.Alloc (Page::Size (itemsInPage))) Page (itemsInPage));
-                    // Similar to the algorithm in RefCountedRegistry, Heap
-                    // grows the page size with every page allocation.
-                    // By growing the page size we keep the page count
-                    // relatively small for GetPage (below).
-                    // ASIDE: It has not escaped me that this is a policy and,
-                    // from the design perspective, should be treated as such and
-                    // be parametarized. Perhaps, in the future, if the need arizes
-                    // Heap can be turned in to a template taking a policy type.
-                    itemsInPage <<= 1;
-                }
-                return partialPages.front ();
-            }
-
-            // The heap has only two publc facing methods, Alloc and Free.
-            // Alloc uses the above GetPage which runs in O(1). Free uses
-            // this GetPage which runs in O(n) where n is the sum of both
-            // partial and full page lists. If you're profiling your code
-            // and you see that it spends a lot of its time here there's a
-            // knob you can tune to substantially improve performance. Rebuild
-            // util and supply your own:
-            // THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_HEAP_ITEMS_IN_PAGE.
-            // Its default is 8192 which should be acceptable in most
-            // situations. By increasing it to match the needs of your
-            // application you can greatly reduce the time it spends here.
-            inline Page *GetPage (
-                    const void *ptr,
-                    Page *&prev) const {
-                Page *page = partialPages.find (ptr, prev);
-                if (page == nullptr) {
-                    page = fullPages.find (ptr, prev);
-                }
-                return page;
-            }
-        };
+    #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD)
+        #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD 32
+    #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD)
 
         void *RefCounted::References::operator new (std::size_t) {
-            return Heap::Instance ()->Alloc ();
+            return SlabAllocator<
+                References,
+                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE,
+                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD>::Instance ()->Alloc ();
         }
 
         void RefCounted::References::operator delete (void *ptr) {
-            Heap::Instance ()->Free (ptr);
+            SlabAllocator<
+                References,
+                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE,
+                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD>::Instance ()->Free (ptr);
         }
 
         namespace {
@@ -286,11 +57,15 @@ namespace thekogans {
         }
 
         ui32 RefCounted::References::ReleaseWeakRef () {
-            ui32 newWeak = operations::fetch_sub (weak, 1, boost::memory_order_acq_rel) - 1;
-            if (newWeak == 0) {
-                delete this;
+            // 1. Use memory_order_release for the decrement to be fast on non-zero drops.
+            ui32 oldWeak = operations::fetch_sub (weak, 1, boost::memory_order_release);
+            if (oldWeak == 1) {
+                // 2. Only issue the acquire barrier if we are the thread destroying 'this'.
+                boost::atomics::detail::thread_fence (boost::memory_order_acquire);
+                delete this; // Invokes your custom operator delete
+                return 0;
             }
-            return newWeak;
+            return oldWeak - 1;
         }
 
         ui32 RefCounted::References::GetWeakCount () const {
@@ -302,11 +77,17 @@ namespace thekogans {
         }
 
         ui32 RefCounted::References::ReleaseSharedRef (RefCounted *object) {
-            ui32 newShared = operations::fetch_sub (shared, 1, boost::memory_order_seq_cst) - 1;
-            if (newShared == 0) {
+            // 1. Use memory_order_release for the decrement.
+            // fetch_sub returns the OLD value, so we subtract 1 to get the new count.
+            ui32 oldShared = operations::fetch_sub (shared, 1, boost::memory_order_release);
+            if (oldShared == 1) {
+                // 2. Only the thread that drops it to 0 issues an acquire fence.
+                // This synchronizes with all previous releasing threads.
+                boost::atomics::detail::thread_fence (boost::memory_order_acquire);
                 object->Harakiri ();
+                return 0;
             }
-            return newShared;
+            return oldShared - 1;
         }
 
         ui32 RefCounted::References::GetSharedCount () const {

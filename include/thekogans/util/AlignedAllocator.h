@@ -34,7 +34,6 @@ namespace thekogans {
         /// \brief
         /// An adaptor class used to align a block allocated by another allocator.
         /// Take a look at \see{Heap} to see an example of it's usage.
-
         struct _LIB_THEKOGANS_UTIL_DECL AlignedAllocator : public Allocator {
             /// \brief
             /// Declare DynamicCreatable boilerplate.
@@ -162,8 +161,21 @@ namespace thekogans {
         /// If value is already aligned, leave it alone.
         /// \param[in] value Value to align.
         /// \return Value aligned to power of 2 boundary.
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API Align (
-            std::size_t value);
+        inline constexpr std::size_t Align (std::size_t value) {
+            if (value > 0) {
+                --value;
+                value |= value >> 1;
+                value |= value >> 2;
+                value |= value >> 4;
+                value |= value >> 8;
+                value |= value >> 16;
+                // Conditionally shift for 64-bit platforms (where sizeof (size_t) == 8)
+                if constexpr (sizeof (std::size_t) >= 8) {
+                    value |= value >> 32;
+                }
+            }
+            return value + 1;
+        }
         /// \brief
         /// Return the count of trailing 0 bits.
         /// VERY IMPORTANT: If value == 0, return 0 NOT sizeof (std::size_t) * CHAR_BIT.

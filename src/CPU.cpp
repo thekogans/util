@@ -174,7 +174,7 @@ namespace thekogans {
         CPU::CPU () :
                 isIntel (false),
                 isAMD (false),
-                l1CacheLineSize (0),
+                l1CacheLineSize (64),
                 f_1_ECX (0),
                 f_1_EDX (0),
                 f_7_EBX (0),
@@ -312,10 +312,10 @@ namespace thekogans {
     #else // defined (TOOLCHAIN_COMPILER_cl)
     #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
         #if defined (TOOLCHAIN_OS_Linux)
-            #if (__GNUC__ > 4 && __GNUC_MINOR > 7)
+            #if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7))
                 // gcc added this intrinsic by 4.7.1
                 #define YieldProcessor __builtin_ia32_pause
-            #endif // (__GNUC__ > 4 && __GNUC_MINOR > 7)
+            #endif // (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 7))
             #if defined (__GNUC__)
                 // gcc has had this intrinsic since forever
                 #define MemoryBarrier __builtin_ia32_mfence

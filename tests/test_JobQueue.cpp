@@ -56,7 +56,7 @@ void TestUtilJobQueueWarmRecyclingDirect() {
 
     // 1. Instantiate exactly ONE standalone util::JobQueue instance.
     // Configure it with 4 worker threads to populate the internal workers list.
-    util::JobQueue poolJobQueue(
+    JobQueue poolJobQueue(
         "DirectPrimitiveQueue",
         new RunLoop::FIFOJobExecutionPolicy(),
         4,                                      // workerCount

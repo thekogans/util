@@ -69,11 +69,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Control block for the lifetime of RefCounted as well as \see{WeakPtr}.
-            struct _LIB_THEKOGANS_UTIL_DECL References {
-                /// \brief
-                /// References has a private heap to speed up (de)allocations.
-                struct Heap;
-
+            struct _LIB_THEKOGANS_UTIL_DECL alignas (16) References {
                 /// \brief
                 /// Use the private heap to allocate a References.
                 /// \param[in] size Ignored as we know exactly how much to allocate.
@@ -308,6 +304,39 @@ namespace thekogans {
                     Reset (object_);
                     return *this;
                 }
+                /// \brief
+                /// Move asssignemnet operator.
+                /// \param[in] ptr Object to move.
+                /// \return *this.
+                inline SharedPtr<T> &operator = (SharedPtr<T> &&ptr) noexcept {
+                    if (&ptr != this) {
+                        // Reset our current reference, then steal ownership from the rvalue
+                        Reset ();
+                        Swap (ptr);
+                    }
+                    return *this;
+                }
+                /// \brief
+                /// Polymorphic move asssignemnet operator.
+                /// ********* VERY IMPORTANT *********
+                /// Same warning applies as with the polymorphic ctor above.
+                /// **********************************
+                /// \param[in] ptr Object to move.
+                /// \return *this.
+                template<typename _U>
+                inline SharedPtr<T> &operator = (SharedPtr<_U> &&ptr) {
+                    T *casted = dynamic_cast<T *> (ptr.Get ());
+                    if (casted != nullptr) {
+                        Reset ();
+                        object = casted;
+                        ptr.Release ();
+                    }
+                    else {
+                        Reset ();
+                        // NOTE: As per the standard, we don't reset ptr here.
+                    }
+                    return *this;
+                }
 
                 /// \brief
                 /// Dereference operator.
@@ -394,13 +423,6 @@ namespace thekogans {
             ///    // Do something productive with shared.
             /// }
             /// \endcode
-            ///
-            /// IMPORTANT: The Get method provided by this class should not be used to
-            /// dereference the contained object. It's there in case you want to compare
-            /// two raw pointers. Dereferencing the raw pointer returned by Get can lead
-            /// to races and crashes. If you need to dereference the object pointed to
-            /// by the raw pointer, again, you must first call GetSharedPtr and check it's
-            /// return value for nullness before using it.
             template<typename T>
             struct WeakPtr {
             protected:
@@ -417,6 +439,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \paramin] object_ Raw pointer to RefCounted object.
+                /// VERY IMPORTANT: PLease see the WARNING above \see{Reset}.
                 WeakPtr (T *object_ = nullptr) :
                         object (nullptr),
                         references (nullptr) {
@@ -454,11 +477,9 @@ namespace thekogans {
                 /// \param[in] ptr WeakPtr<_U> to reference counted object.
                 template<typename _U>
                 WeakPtr (const WeakPtr<_U> &ptr) :
-                        object (dynamic_cast<T *> (ptr.object)),
-                        references (ptr.references) {
-                    if (references != nullptr) {
-                        references->AddWeakRef ();
-                    }
+                        object (nullptr),
+                        references (nullptr) {
+                    Reset (dynamic_cast<T *> (ptr.object));
                 }
                 /// \brief
                 /// move ctor.
@@ -524,7 +545,7 @@ namespace thekogans {
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr<T> &operator = (const WeakPtr<T> &ptr) {
-                    if (object != ptr.Get ()) {
+                    if (object != ptr) {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
@@ -556,10 +577,10 @@ namespace thekogans {
                 }
                 /// \brief
                 /// Move assignment operator.
-                /// \param[in] ptr WeakPtr<T> to reference counted object.
+                /// \param[in] ptr Object to move.
                 /// \return *this.
                 WeakPtr<T> &operator = (WeakPtr<T> &&ptr) {
-                    if (object != ptr.Get ()) {
+                    if (object != ptr) {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
@@ -569,18 +590,25 @@ namespace thekogans {
                     }
                     return *this;
                 }
-
                 /// \brief
-                /// Return a raw pointer to the reference counted object.
-                /// \return A raw pointer to the reference counted object.
-                /// IMPORTANT: You cannot pass on object from one WeakPtr::Get
-                /// to another WeakPtr::ctor or WeakPtr::Reset. There's no
-                /// guarantee that the pointer you get is still dereferencable.
-                /// It's very important that you practice safe WeakPtr access
-                /// method by first calling WeakPtr::GetSharedPtr below, checking
-                /// if it's not null and only then using it.
-                inline T *Get () const {
-                    return object;
+                /// Polymorphic move assignment operator.
+                /// \param[in] ptr Object to move.
+                /// \return *this.
+                template<typename _U>
+                WeakPtr<T> &operator = (WeakPtr<_U> &&ptr) {
+                    T *casted = dynamic_cast<T *> (ptr.object);
+                    if (casted != nullptr) {
+                        if (references != nullptr) {
+                            references->ReleaseWeakRef ();
+                        }
+                        object = casted;
+                        references = ptr.references;
+                        ptr.Release ();
+                    }
+                    else {
+                        Reset ();
+                    }
+                    return *this;
                 }
 
                 /// \brief

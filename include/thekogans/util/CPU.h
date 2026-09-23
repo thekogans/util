@@ -28,14 +28,13 @@
 namespace thekogans {
     namespace util {
 
+        // This class was heavily borrowed from: https://msdn.microsoft.com/en-us/library/hskdteyh.aspx
+
         /// \struct CPU CPU.h thekogans/util/CPU.h
         ///
         /// \brief
         /// CPU is a system wide singleton that provides available
         /// cpu features in a platform independent manner.
-
-        // This class was heavily borrowed from: https://msdn.microsoft.com/en-us/library/hskdteyh.aspx
-
         struct _LIB_THEKOGANS_UTIL_DECL CPU : public Singleton<CPU> {
         private:
         #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
