@@ -117,7 +117,7 @@ namespace thekogans {
         /// \tparam PageAllocator a tuning knob used for page allocation.
         /// ***************************
         /// WARNING: It is absolutely critical that your supplied page allocator
-        /// return a pointer aligned on a size boundary. Our entire architecture
+        /// return a pointer aligned on a pageSize boundary. Our entire architecture
         /// is built on that requirement. See \see{DefaultPageAllocator} for an example.
         /// ***************************
         /// \tparam Lock Any of the standard locks to use for synchronization.
@@ -166,7 +166,6 @@ namespace thekogans {
             /// \brief
             /// Validate template parameters.
             static_assert (SlotsPerPage > 0, "SlotsPerPage must be > 0.");
-            static_assert (TLCThreshold > 0, "TLCThreshold must be > 0.");
             static_assert (IsPowerOf2 (CacheLineSize), "CacheLineSize must be a power of 2.");
 
         private:
@@ -321,13 +320,15 @@ namespace thekogans {
             /// Allocate a new slot.
             /// \return Pointer to the newly allocated slot.
             void *Alloc () noexcept {
-                TLC &tlc = GetTLC ();
-                // Try the fastest route. See if we have a free slot in our local cache.
-                if (tlc.slotList != nullptr) {
-                    typename Page::Slot *slot = tlc.slotList;
-                    tlc.slotList = tlc.slotList->next;
-                    --tlc.slotCount;
-                    return reinterpret_cast<void *> (slot);
+                if constexpr (TLCThreshold > 0) {
+                    TLC &tlc = GetTLC ();
+                    // Try the fastest route. See if we have a free slot in our local cache.
+                    if (tlc.slotList != nullptr) {
+                        typename Page::Slot *slot = tlc.slotList;
+                        tlc.slotList = tlc.slotList->next;
+                        --tlc.slotCount;
+                        return reinterpret_cast<void *> (slot);
+                    }
                 }
                 // No banana. See if we have a partial page that can supply the slot.
                 LockGuard<Lock> guard (lock);
@@ -362,30 +363,31 @@ namespace thekogans {
             /// \param[in] ptr Slot pointer to free.
             void Free (void *ptr) noexcept {
                 if (ptr != nullptr) {
-                    // If we have room in our local cache, stash the slot there for fast reallocation.
-                    TLC &tlc = GetTLC ();
-                    if (tlc.slotCount < TLCThreshold) {
-                        typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
-                        slot->next = tlc.slotList;
-                        tlc.slotList = slot;
-                        ++tlc.slotCount;
-                    }
-                    else {
-                        LockGuard<Lock> guard (lock);
-                        // The magic! This is why we can guarntee wall to wall O(1) performance.
-                        // By aligning the page size to the next power of 2 and then using that
-                        // size as page memory placement alignment, we can use a simple pointer
-                        // masking trick to find the page address given any address it allocated.
-                        // After all the syntactic sugar is stripped away this line boils down
-                        // to a single 'and' instruction in hardware.
-                        Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (ptr) & ~pageMask);
-                        page->Free (ptr);
-                        // The page transitioned from full to partial.
-                        // Wire it back in to our list from the either.
-                        if (page->slotCount + 1 == maxSlots) {
-                            page->next = pageList;
-                            pageList = page;
+                    if constexpr (TLCThreshold > 0) {
+                        // If we have room in our local cache, stash the slot there for fast reallocation.
+                        TLC &tlc = GetTLC ();
+                        if (tlc.slotCount < TLCThreshold) {
+                            typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
+                            slot->next = tlc.slotList;
+                            tlc.slotList = slot;
+                            ++tlc.slotCount;
+                            return;
                         }
+                    }
+                    LockGuard<Lock> guard (lock);
+                    // The magic! This is why we can guarntee wall to wall O(1) performance.
+                    // By aligning the page size to the next power of 2 and then using that
+                    // size as page memory placement alignment, we can use a simple pointer
+                    // masking trick to find the page address given any address it allocated.
+                    // After all the syntactic sugar is stripped away this line boils down
+                    // to a single 'and' instruction in hardware.
+                    Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (ptr) & ~pageMask);
+                    page->Free (ptr);
+                    // The page transitioned from full to partial.
+                    // Wire it back in to our list from the either.
+                    if (page->slotCount + 1 == maxSlots) {
+                        page->next = pageList;
+                        pageList = page;
                     }
                 }
             }
