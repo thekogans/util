@@ -220,7 +220,7 @@ namespace thekogans {
     #elif defined (TOOLCHAIN_ENDIAN_Big)
         #define HashBuffer HashBufferBig
     #else // defined (TOOLCHAIN_ENDIAN_Big)
-        #error "Unable to determine system endianness."
+        #error Unable to determine system endianness.
     #endif // defined (TOOLCHAIN_ENDIAN_Little)
 
     } // namespace util

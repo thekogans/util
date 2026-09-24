@@ -692,6 +692,7 @@
     <cpp_source>SharedAllocator.cpp</cpp_source>
     <cpp_source>SharedObject.cpp</cpp_source>
     <cpp_source>SizeT.cpp</cpp_source>
+    <cpp_source>SlabAllocator.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
     <cpp_source>StdAllocator.cpp</cpp_source>

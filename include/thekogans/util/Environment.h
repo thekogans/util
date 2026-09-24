@@ -138,7 +138,7 @@ namespace thekogans {
             /// Host OS is IRIX.
             HostOS = IRIX
         #else // defined (TOOLCHAIN_OS_Windows)
-            #error "Unable to determine host OS."
+            #error Unable to determine host OS.
         #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
@@ -386,7 +386,7 @@ namespace thekogans {
             /// Used by \see{Serializer} to swap bytes.
             GuestEndian = LittleEndian
         #else // defined (TOOLCHAIN_ENDIAN_Big)
-            #error "Unable to determine system endianness."
+            #error Unable to determine system endianness.
         #endif // defined (TOOLCHAIN_ENDIAN_Little)
         };
 

@@ -28,9 +28,6 @@
     #include <sys/mman.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
-#if !defined (THEKOGANS_UTIL_HAVE_MMAP)
-    #include "thekogans/util/DefaultAllocator.h"
-#endif // !defined (THEKOGANS_UTIL_HAVE_MMAP)
 #include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {

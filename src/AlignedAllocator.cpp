@@ -82,10 +82,6 @@ namespace thekogans {
             return ptr;
         }
 
-        _LIB_THEKOGANS_UTIL_DECL bool _LIB_THEKOGANS_UTIL_API IsPowerOf2 (std::size_t value) {
-            return value > 0 && (value & (value - 1)) == 0;
-        }
-
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API ZeroBitCount (std::size_t value) {
             return BitWidth<std::size_t>::value - OneBitCount (value);
         }
