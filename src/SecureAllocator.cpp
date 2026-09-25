@@ -132,11 +132,17 @@ namespace thekogans {
                 volatile void *data,
                 std::size_t size) {
             if (data != nullptr && size > 0) {
-                std::memset ((void *)data, 0, size);
+                // Cast to a volatile character pointer so every byte write is legally un-optimizable.
+                volatile char *p = static_cast<volatile char *>(const_cast<void *>(data));
+                std::size_t count = size;
+                while (count--) {
+                    *p++ = 0;
+                }
                 return size;
             }
             return 0;
         }
+
 
     } // namespace util
 } // namespace thekogans

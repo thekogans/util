@@ -139,6 +139,7 @@
     <cpp_header>$(organization)/$(project_directory)/RWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RWLockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Scheduler.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/ScopedSlabAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SecureAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Semaphore.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializable.h</cpp_header>
@@ -156,6 +157,7 @@
     <cpp_header>$(organization)/$(project_directory)/Singleton.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SizeT.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SlabAllocator.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/SlabAllocatorDetail.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/StdAllocator.h</cpp_header>
@@ -692,7 +694,7 @@
     <cpp_source>SharedAllocator.cpp</cpp_source>
     <cpp_source>SharedObject.cpp</cpp_source>
     <cpp_source>SizeT.cpp</cpp_source>
-    <cpp_source>SlabAllocator.cpp</cpp_source>
+    <cpp_source>SlabAllocatorDetail.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
     <cpp_source>StdAllocator.cpp</cpp_source>
@@ -759,6 +761,8 @@
     <cpp_test>test_RWLock.cpp</cpp_test>
     <cpp_test>test_JobQueue.cpp</cpp_test>
     <cpp_test>test_Scheduler.cpp</cpp_test>
+    <cpp_test>test_ScopedSlabAllocator.cpp</cpp_test>
+    <cpp_test>test_SlabAllocator.cpp</cpp_test>
     <cpp_test>test_Version.cpp</cpp_test>
   </cpp_tests>
   <resources prefix = "resources">

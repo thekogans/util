@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_SlabAllocator_h)
-#define __thekogans_util_SlabAllocator_h
+#if !defined (__thekogans_util_ScopedSlabAllocator_h)
+#define __thekogans_util_ScopedSlabAllocator_h
 
 #include <new>
 #include <type_traits>
@@ -29,42 +29,20 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct SlabAllocator SlabAllocator.h thekogans/util/SlabAllocator.h
+        /// \struct ScopedSlabAllocator ScopedSlabAllocator.h thekogans/util/ScopedSlabAllocator.h
         ///
         /// \brief
-        /// A SlabAllocator's purpose is to allocate memory for a single type. Knowing the size
-        /// of the type it's allocating for a priori makes all the difference in the world. We
-        /// can use that information to design a highly efficient, specifically tuned allocation
-        /// engine. This one is designed with all the bells and whistles and to run in 'true' O(1)
-        /// time complexity save for the caveat that PageAllocator will do what it will do. As you
-        /// can see it's template takes up to 8! parameters. All but the first are defaulted with
-        /// sensible values so that you can just leave them alone 90% of the time. But when those
-        /// critical corner cases and specialty conditions demand it, it can be tuned to fit any
-        /// environment and need. Great care has been taken to make sure alignment requirements
-        /// are not only met but are enforced to make this code as performant as possible on modern
-        /// cache line driven architectures. Key variables have been isolated in to their own cache
-        /// lines to further protect against false sharing. By utilizing it's tuning knobs one can
-        /// build highly specific, lock free (NullLock) allocators that execute their Alloc and Free
-        /// in just a small handful of machine instructions. The use of SlabAllocator for your
-        /// types also greatly aids in avoiding global heap fragmentation as types are allocated
-        /// from contiguous pages.
-        ///
-        /// SlabAllocator is my first collaboration with an AI (Google's Gemini). I posed a question;
-        /// Is there a practical way to implement a slab allocator with 'true' O(1) performance
-        /// guarantees? I didn't want average or amortized O(1). I wanted true O(1). After many
-        /// iterations and blind alley ventures, this is what we both came up with. The architecture
-        /// is all mine. The nuts and bolts of alignment, constexpr and TLC are all AI's. This
-        /// implementation evolved over just two days of back and forth. Looking back on my earlier
-        /// efforts I can honestly say that to achieve this level of sophistication in the past would
-        /// take me significantly longer. Digging through old chats. Looking for exact documentation
-        /// I needed would have consumed an enormous amount of time and effort. On top of all this,
-        /// once we were done designing, and I was done implementing it took the AI mere seconds to
-        /// generate a burn the earth down validation suite. Again, something that would take me a
-        /// day or two to do by myself. All in all, I am absolutely sold on the idea of pair programming
-        /// with AI. To be sure it's not all roses. There were times it was missing context and tried
-        /// to lead me down blind alleys. But that's why it's a collaboration. It's not an all knowing,
-        /// all seeing oracle that will flawlessly do your work for you. It's a fantastically powerful
-        /// tool that in the right hands creates an unbeatable team.
+        /// A ScopedSlabAllocator's purpose is to allocate memory for a single type for one or more
+        /// local thread groups (workers). It's design very much parallels that of \see{SlabAllocator}.
+        /// The one big feature ScopedSlabAllocator brings to the table is cleanup. Where as
+        /// \see{SlabAllocator} is desgned to be a system wide \see{Singleton} with very strict
+        /// lifetime implications (the hard coded NullInstanceDestroyer), ScopedSlabAllocator is
+        /// designed to be used in controlled environrmnts shared by a cooperating group of threads.
+        /// When the task on which that group is working on is done, and the context that supports
+        /// and manages their work and lifetimes joins with them, it will be safe to destroy the
+        /// local ScopedSlabAllocator and reclaim the resources it used back to the OS. Otherwise,
+        /// save for managing a singly linked masterPageList, the two implementations are identical.
+        /// To learn all about the cool tuning knobs you have at your disposal, go read \see{SlabAllocator}.
         ///
         /// \tparam T The type that we are allocating for.
         /// \tparam SlotsPerPage a tuning knob to control page size.
@@ -78,7 +56,6 @@ namespace thekogans {
         /// is built on that requirement. See \see{DefaultPageAllocator} for an example.
         /// ***************************
         /// \tparam Lock Any of the standard locks to use for synchronization.
-        /// \tparam InstanceCreator A \see{Singleton} parameter to control the allocator instance creation.
         template <
             typename T,
             std::size_t SlotsPerPage = detail::DEFAULT_SLOTS_PER_PAGE,
@@ -86,40 +63,8 @@ namespace thekogans {
             std::size_t CacheLineSize = detail::DEFAULT_CACHE_LINE_SIZE,
             std::size_t Id = 0,
             typename PageAllocator = detail::DefaultPageAllocator,
-            typename Lock = SpinLock,
-            template <typename> typename InstanceCreator = DefaultInstanceCreator>
-        struct SlabAllocator : public
-            Singleton<
-                SlabAllocator<
-                    T,
-                    SlotsPerPage,
-                    TLCThreshold,
-                    CacheLineSize,
-                    Id,
-                    PageAllocator,
-                    Lock,
-                    InstanceCreator>,
-                Lock,
-                InstanceCreator<
-                    SlabAllocator<
-                        T,
-                        SlotsPerPage,
-                        TLCThreshold,
-                        CacheLineSize,
-                        Id,
-                        PageAllocator,
-                        Lock,
-                        InstanceCreator>>,
-                NullInstanceDestroyer<
-                    SlabAllocator<
-                        T,
-                        SlotsPerPage,
-                        TLCThreshold,
-                        CacheLineSize,
-                        Id,
-                        PageAllocator,
-                        Lock,
-                        InstanceCreator>>> {
+            typename Lock = SpinLock>
+        struct ScopedSlabAllocator {
             /// \brief
             /// Validate template parameters.
             static_assert (SlotsPerPage > 0, "SlotsPerPage must be > 0.");
@@ -150,7 +95,7 @@ namespace thekogans {
             /// Maximum slots per page.
             static constexpr std::size_t maxSlots = (pageSize - CacheLineSize) / slotSize;
 
-            /// \struct SlabAllocator::Page SlabAllocator.h thekogans/util/SlabAllocator.h
+            /// \struct ScopedSlabAllocator::Page ScopedSlabAllocator.h thekogans/util/ScopedSlabAllocator.h
             ///
             /// \brief
             /// The page (aka slab) from which we allocate slots. It's aligned
@@ -159,12 +104,15 @@ namespace thekogans {
             /// pageList.
             struct alignas (CacheLineSize) Page {
                 /// \brief
-                /// Next page in the list.
-                Page *next{nullptr};
+                /// Next page in the master list.
+                Page *masterNext{nullptr};
+                /// \brief
+                /// Next page in the partial list.
+                Page *partialNext{nullptr};
                 /// \brief
                 /// Number of slots allocated from this page.
                 std::size_t slotCount{0};
-                /// \struct SlabAllocator::Page::Slot SlabAllocator.h thekogans/util/SlabAllocator.h
+                /// \struct ScopedSlabAllocator::Page::Slot ScopedSlabAllocator.h thekogans/util/ScopedSlabAllocator.h
                 ///
                 /// \brief
                 /// Slot overlays our free slot list on top of released user data.
@@ -177,11 +125,12 @@ namespace thekogans {
 
                 /// \brief
                 /// Calculate exactly how many bytes are left in the single cache line.
-                /// 3 pointers/counters = 24 bytes on 64-bit systems.
+                /// 4 pointers/counters = 32 bytes on 64-bit systems.
                 ////////////////////////////// VERY IMPORTANT //////////////////////////////
                 /// If you add new members to Page you must add their sizes to metadataSize.
                 ////////////////////////////// VERY IMPORTANT //////////////////////////////
                 static constexpr std::size_t metadataSize =
+                    sizeof (Page *) +
                     sizeof (Page *) +
                     sizeof (std::size_t) +
                     sizeof (Slot *);
@@ -195,7 +144,7 @@ namespace thekogans {
                 /// \brief
                 /// Calculated padding size.
                 static constexpr std::size_t paddingSize = CacheLineSize - metadataSize;
-                /// \struct SlabAllocator::Page::EmptyTag SlabAllocator.h thekogans/util/SlabAllocator.h
+                /// \struct ScopedSlabAllocator::Page::EmptyTag ScopedSlabAllocator.h thekogans/util/ScopedSlabAllocator.h
                 ///
                 /// \brief
                 /// This empty struct is a conditional placeholder for PaddingType in case paddingSize == 0.
@@ -254,19 +203,22 @@ namespace thekogans {
             static_assert (IsPowerOf2 (pageSize), "pageSize must be a power of 2.");
 
             /// \brief
-            /// Partially allocated page list.
-            Page *pageList;
+            /// Master page list.
+            Page *masterPageList;
             /// \brief
-            /// Protect access to pageList.
-            /// Align the lock to it's own cache line to prevent false sharing with pageList.
+            /// Partially allocated page list.
+            Page *partialPageList;
+            /// \brief
+            /// Protect access to page lists.
+            /// Align the lock to it's own cache line to prevent false sharing with page lists.
             alignas (CacheLineSize) Lock lock;
 
-            /// \struct SlabAllocator::TLC SlabAllocator.h thekogans/util/SlabAllocator.h
+            /// \struct ScopedSlabAllocator::TLC ScopedSlabAllocator.h thekogans/util/ScopedSlabAllocator.h
             ///
             /// \brief
             /// Thread Local Cache (TLC). We keep a small (TLCThreshold) number of slots
             /// per thread. This optimization allows us to bypass the costly lock
-            /// acquisition. In real load testing (see test_SlabAllocator) this
+            /// acquisition. In real load testing (see test_ScopedSlabAllocator) this
             /// results in ~65% speedup!
             struct TLC {
                 /// \brief
@@ -288,12 +240,19 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            SlabAllocator () :
-                pageList (nullptr) {}
-            // No dtor. We're a singleton meant to last the lifetime of the application.
-            // Let the os cleanup after us. Even if we wanted to (and we don't) we can't
-            // get to the full pages that have been evicted from the list and are floating
-            // in either.
+            ScopedSlabAllocator () noexcept :
+                masterPageList (nullptr),
+                partialPageList (nullptr) {}
+            /// \brief
+            /// dtor.
+            ~ScopedSlabAllocator () noexcept {
+                Page *page = masterPageList;
+                while (page != nullptr) {
+                    Page *nextPage = page->masterNext;
+                    PageAllocator::Free (page, pageSize);
+                    page = nextPage;
+                }
+            }
 
             /// \brief
             /// Allocate a new slot.
@@ -311,14 +270,12 @@ namespace thekogans {
                 }
                 // No banana. See if we have a partial page that can supply the slot.
                 LockGuard<Lock> guard (lock);
-                if (pageList != nullptr) {
-                    void *ptr = pageList->Alloc ();
-                    // Page is full. Evict it from the list so that no one asks it
-                    // for slots again. Yes the page is now floating out there in
-                    // the either completely unaccessible until someone decides to
-                    // free one of it's slots.
-                    if (pageList->slotCount == maxSlots) {
-                        pageList = pageList->next;
+                if (partialPageList != nullptr) {
+                    void *ptr = partialPageList->Alloc ();
+                    // Page is full. Evict it from the partial list so that no one
+                    // asks it for slots again.
+                    if (partialPageList->slotCount == maxSlots) {
+                        partialPageList = partialPageList->partialNext;
                     }
                     return ptr;
                 }
@@ -327,11 +284,14 @@ namespace thekogans {
                 // is the worst of all possible worlds, but we can be comforted knowing that
                 // it's very rare (1 in SlotsPerPage) and will get amortized across many allocations.
                 Page *page = new (PageAllocator::Alloc (pageSize)) Page ();
+                page->masterNext = masterPageList;
+                masterPageList = page;
                 void *ptr = page->Alloc ();
-                // Unless someone decided to have one slot/page, wire it in to our page list.
+                // Unless someone decided to have one slot/page, wire it in to our partial page
+                // list for further allocation requests.
                 if (page->slotCount < maxSlots) {
-                    page->next = pageList;
-                    pageList = page;
+                    page->partialNext = partialPageList;
+                    partialPageList = page;
                 }
                 return ptr;
             }
@@ -362,17 +322,33 @@ namespace thekogans {
                     // to a single 'and' instruction in hardware.
                     Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (ptr) & ~pageMask);
                     page->Free (ptr);
+                    // NOTE: Empty pages are not given back to the OS.
+                    // they go right back on the partial list to be
+                    // recycled. To do otherwise would require me to
+                    // be able to unlink a page from the middle of the
+                    // list. Singly linked lists have O(n) complexity
+                    // to do that. To transition from a simple singly
+                    // linked list to a double one would be way too
+                    // much to pay, performance wise, for so little
+                    // gain. As it's name implies, this is a scoped
+                    // allocator. Treat it like one and it will give
+                    // top notch performance with cleanup capabilities.
+                    //
                     // The page transitioned from full to partial.
-                    // Wire it back in to our list from the either.
+                    // Wire it back in to our partial list.
                     if (page->slotCount + 1 == maxSlots) {
-                        page->next = pageList;
-                        pageList = page;
+                        page->partialNext = partialPageList;
+                        partialPageList = page;
                     }
                 }
             }
+
+            /// \brief
+            /// RefCounted is neither copy or move constructable, nor assignable.
+            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (ScopedSlabAllocator)
         };
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_SlabAllocator_h)
+#endif // !defined (__thekogans_util_ScopedSlabAllocator_h)

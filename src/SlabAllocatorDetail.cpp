@@ -24,7 +24,7 @@
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include <sys/mman.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
-#include "thekogans/util/SlabAllocator.h"
+#include "thekogans/util/SlabAllocatorDetail.h"
 
 namespace thekogans {
     namespace util {
