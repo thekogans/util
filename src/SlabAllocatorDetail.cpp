@@ -20,7 +20,7 @@
     #include "thekogans/util/os/windows/WindowsHeader.h"
 #else // defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_OS_Linux)
-        #include <sys/resource.h>
+        #include <inttypes.h>
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include <sys/mman.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -64,7 +64,7 @@ namespace thekogans {
                 std::size_t leadWaste = alignedAddress - rawAddress;
                 std::size_t trailWaste = totalMapping - pageSize - leadWaste;
                 // 4. Return the unneeded "ears" of the mapping back to the OS kernel.
-                // This leaves only your perfectly aligned, zero-filled pageSize block intact!
+                // This leaves only a perfectly aligned, zero-filled pageSize block intact!
                 if (leadWaste > 0) {
                     ::munmap (rawPtr, leadWaste);
                 }
