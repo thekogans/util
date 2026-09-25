@@ -90,6 +90,19 @@ namespace thekogans {
                 #endif // defined (TOOLCHAIN_OS_Windows)
                 }
             }
+
+            void *StdPageAllocator::Alloc (std::size_t pageSize) noexcept {
+                void *ptr = ::operator new (pageSize, std::align_val_t{pageSize});
+                SecureZeroMemory (ptr, pageSize);
+                return ptr;
+            }
+
+            void StdPageAllocator::Free (
+                    void *ptr,
+                    std::size_t pageSize) noexcept {
+                SecureZeroMemory (ptr, pageSize);
+                ::operator delete (ptr, std::align_val_t{pageSize});
+            }
         } // namespace detail
 
     } // namespace util

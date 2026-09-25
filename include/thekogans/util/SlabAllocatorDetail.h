@@ -19,6 +19,7 @@
 #define __thekogans_util_SlabAllocatorDetail_h
 
 #include <new>
+#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {
@@ -53,6 +54,27 @@ namespace thekogans {
             /// control how pages are allocated. This one uses direct OS services to
             /// return aligned and clean (0 filled) pages.
             struct DefaultPageAllocator {
+                /// \brief
+                /// Allocate a pageSize aligned and 0 filled page.
+                /// \param[in] pageSize Page size and alignement.
+                /// \return pageSize aligned and 0 filled page.
+                static void *Alloc (std::size_t pageSize) noexcept;
+                /// \brief
+                /// Free a previously Alloc'ed page.
+                /// \param[in] ptr Page pointer returned by Alloc above.
+                /// \param[in] pageSize Same pageSize you passed to Alloc.
+                static void Free (
+                    void *ptr,
+                    std::size_t pageSize) noexcept;
+            };
+
+            /// \struct StdPageAllocator SlabAllocator.h thekogans/util/SlabAllocator.h
+            ///
+            /// \brief
+            /// If the DefaultPageAllocator proves to be a bottleneck on your system,
+            /// use StdPageAllocator. It uses operator new and delete and zero fills
+            /// the buffers they return and release.
+            struct StdPageAllocator {
                 /// \brief
                 /// Allocate a pageSize aligned and 0 filled page.
                 /// \param[in] pageSize Page size and alignement.
