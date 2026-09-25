@@ -19,9 +19,7 @@
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsHeader.h"
 #else // defined (TOOLCHAIN_OS_Windows)
-    #if defined (TOOLCHAIN_OS_Linux)
-        #include <inttypes.h>
-    #endif // defined (TOOLCHAIN_OS_Linux)
+    #include <stdint.h>
     #include <sys/mman.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/SlabAllocatorDetail.h"
