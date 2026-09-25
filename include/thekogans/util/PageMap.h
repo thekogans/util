@@ -434,7 +434,7 @@ namespace thekogans {
                         PageSource *pageSource) :
                         Node (pageMap, index),
                         offset (offset_),
-                        data ((ui8 *)pageMap.pageAllocator.Alloc (pageMap.pageSize)),
+                        data (static_cast<ui8 *> (pageMap.pageAllocator.Alloc (pageMap.pageSize))),
                         dirty (false) {
                     SizeType countRead = 0;
                     if (pageSource != nullptr) {
@@ -589,15 +589,14 @@ namespace thekogans {
                         std::size_t index,
                         std::size_t childCount) :
                         Node (pageMap, index),
-                        children ((Node **)(this + 1)) {
+                        children (reinterpret_cast<Node **> (this + 1)) {
                     SecureZeroMemory (children, childCount * sizeof (Node *));
                 }
                 /// \brief
                 /// dtor.
                 virtual ~Parent () {
                     childList.clear (
-                        [&] (typename NodeList::Callback::argument_type child) ->
-                                typename NodeList::Callback::result_type {
+                        [&] (Node *child) {
                             children[child->index] = nullptr;
                             child->Release ();
                             return true;
@@ -619,8 +618,7 @@ namespace thekogans {
                 /// \return IsEmpty ().
                 virtual bool Clear (bool dirty_) override {
                     childList.for_each (
-                        [&] (typename NodeList::Callback::argument_type child) ->
-                                typename NodeList::Callback::result_type {
+                        [&] (Node *child) {
                             if (child->Clear (dirty_)) {
                                 DeleteChild (child);
                             }
@@ -638,8 +636,7 @@ namespace thekogans {
                         Serializer &log,
                         std::size_t &count) override {
                     childList.for_each (
-                        [&] (typename NodeList::Callback::argument_type child) ->
-                                typename NodeList::Callback::result_type {
+                        [&] (Node *child) {
                             child->Log (log, count);
                             return true;
                         }
@@ -655,8 +652,7 @@ namespace thekogans {
                         PageSource &pageSink,
                         bool clearCache = false) override {
                     childList.for_each (
-                        [&] (typename NodeList::Callback::argument_type child) ->
-                                typename NodeList::Callback::result_type {
+                        [&] (Node *child) {
                             if (child->Flush (pageSink, clearCache)) {
                                 DeleteChild (child);
                             }
@@ -672,8 +668,7 @@ namespace thekogans {
                 /// \return IsEmpty ().
                 virtual bool Shrink (SizeType size) override {
                     childList.for_each (
-                        [&] (typename NodeList::Callback::argument_type child) ->
-                                typename NodeList::Callback::result_type {
+                        [&] (Node *child) {
                             if (child->Shrink (size)) {
                                 DeleteChild (child);
                                 return true;
@@ -698,9 +693,10 @@ namespace thekogans {
                 /// \param[in] index Index of child to retrieve.
                 /// \param[in] factory If null, Factory to create the child.
                 /// \return Child @ the given index.
+                template<typename F>
                 Node *GetChild (
                         std::size_t index,
-                        std::function<Node * ()> factory) {
+                        F &&factory) {
                     if (children[index] == nullptr) {
                         Node *child = factory ();
                         children[index] = child;
@@ -717,8 +713,7 @@ namespace thekogans {
                             // list? This needs further profiling to get the lay
                             // of the land.
                             childList.for_each (
-                                [&] (typename NodeList::Callback::argument_type child_) ->
-                                        typename NodeList::Callback::result_type {
+                                [&] (Node *child_) {
                                     if (child->index < child_->index) {
                                         childList.insert (child, child_);
                                         return false;
@@ -808,7 +803,7 @@ namespace thekogans {
                 /// false == the \see{Page} has outstanding refereces.
                 virtual bool DeleteChild (Node *child) override {
                     if (Parent::DeleteChild (child)) {
-                        if (this->pageMap.lastGetPagePage == (Page *)child) {
+                        if (this->pageMap.lastGetPagePage == static_cast<Page *> (child)) {
                             this->pageMap.lastGetPagePage = nullptr;
                         }
                         return true;
@@ -873,7 +868,7 @@ namespace thekogans {
             Node *root;
             /// \brief
             /// Last accessed page cache promoting locality of reference.
-            Page *lastGetPagePage;
+            static thread_local Page *lastGetPagePage;
             /// \brief
             /// Synchronization lock.
             Lock lock;
@@ -978,11 +973,19 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (
                     AddressType offset,
                     PageSource *pageSource) {
+                // Clean out layout page masking exactly as you do in the helper
+                AddressType maskedOffset = offset & ~pageMask;
+                // THE ULTRA-FAST ROUTE: Zero locks, zero synchronization!
+                // If this thread is hitting the same memory spatial locality, return instantly.
+                if (lastGetPagePage != nullptr && lastGetPagePage->offset == maskedOffset) {
+                    return lastGetPagePage;
+                }
+                // THE FALLBACK SLOW ROUTE: Only lock if we must execute the tree walk
                 LockGuard<Lock> guard (lock);
-                return GetPageHelper (offset, pageSource);
+                return GetPageHelper (maskedOffset, pageSource);
             }
 
-            /// \brief
+            /// \Brief
             /// Read a block of bytes from one or more contiguous
             /// pages. We do appropriate bounds checking to make
             /// sure we don't overflow the address space.
@@ -999,7 +1002,7 @@ namespace thekogans {
                 SizeType countRead = 0;
                 if (offset < maxOffset && buffer != nullptr && count > 0) {
                     LockGuard<Lock> guard (lock);
-                    ui8 *ptr = (ui8 *)buffer;
+                    ui8 *ptr = static_cast<ui8 *> (buffer);
                     while (count > 0) {
                         typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
@@ -1037,7 +1040,7 @@ namespace thekogans {
                 // Quick bounds check.
                 if (offset < maxOffset && buffer != nullptr && count > 0) {
                     LockGuard<Lock> guard (lock);
-                    const ui8 *ptr = (const ui8 *)buffer;
+                    const ui8 *ptr = static_cast<const ui8 *> (buffer);
                     while (count > 0) {
                         typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
@@ -1114,11 +1117,12 @@ namespace thekogans {
             /// \param[in] callback Called for every page in the list.
             /// \param[in] reverse true == Walk the list tail to head.
             /// \return true == Iterated over all pages, false == callback returned false.
+            template<typename F>
             bool EnumeratePages (
-                    const typename PageList::Callback &callback,
+                    F &&callback,
                     bool reverse = false) {
                 LockGuard<Lock> guard (lock);
-                return pageList.for_each (callback, reverse);
+                return pageList.for_each (std::forward<F> (callback), reverse);
             }
 
         private:
@@ -1156,7 +1160,7 @@ namespace thekogans {
                         std::size_t index = (offset & levelMask_) >> levelShift_;
                         levelShift_ -= bitsPerLevel;
                         levelMask_ >>= bitsPerLevel;
-                        node = ((Internal *)node)->GetChild (index,
+                        node = (static_cast<Internal *> (node))->GetChild (index,
                             [&] () -> Node * {
                                 return levelMask_ == 0 ?
                                     Segment::Alloc (*this, index) :
@@ -1170,11 +1174,11 @@ namespace thekogans {
                     // call to GetPage is sufficiently close to this one
                     // (locality of reference).
                     std::size_t index = (offset & segmentMask) >> bitsPerPage;
-                    lastGetPagePage = (Page *)((Segment *)node)->GetChild (index,
-                        [&] () -> Node * {
-                            return Page::Alloc (*this, index, offset, pageSource);
-                        }
-                    );
+                    lastGetPagePage = static_cast<Page *> (
+                        static_cast<Segment *> (node)->GetChild (index,
+                            [&] () -> Node * {
+                                return Page::Alloc (*this, index, offset, pageSource);
+                            }));
                 }
                 return lastGetPagePage;
             }
@@ -1213,6 +1217,10 @@ namespace thekogans {
             /// PageMap is neither copy or move constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (PageMap)
         };
+
+        // 2. Out-of-line class definition or C++17 inline declaration:
+        template <typename T, std::size_t bitsPerAddress, typename Lock>
+        inline thread_local typename PageMap<T, bitsPerAddress, Lock>::Page *PageMap<T, bitsPerAddress, Lock>::lastGetPagePage = nullptr;
 
         /// \brief
         /// Alias for PageMap<ui32>.

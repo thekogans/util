@@ -86,7 +86,7 @@ namespace thekogans {
             WaitForIdle ();
             assert (borrowedPipelines.empty ());
             availablePipelines.clear (
-                [] (PipelineList::Callback::argument_type pipeline) -> PipelineList::Callback::result_type {
+                [] (Pipeline *pipeline) {
                     delete pipeline;
                     return true;
                 }
@@ -109,8 +109,7 @@ namespace thekogans {
                 RunLoop::UserJobList &jobs) {
             LockGuard<Mutex> guard (mutex);
             borrowedPipelines.for_each (
-                [&equalityTest, &jobs] (PipelineList::Callback::argument_type jobQueue) ->
-                        PipelineList::Callback::result_type {
+                [&equalityTest, &jobs] (Pipeline *jobQueue) {
                     jobQueue->GetJobs (equalityTest, jobs);
                     return true;
                 }
@@ -128,7 +127,7 @@ namespace thekogans {
         void PipelinePool::CancelJobs (const RunLoop::EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (mutex);
             borrowedPipelines.for_each (
-                [&equalityTest] (PipelineList::Callback::argument_type jobQueue) -> PipelineList::Callback::result_type {
+                [&equalityTest] (Pipeline *jobQueue) {
                     jobQueue->CancelJobs (equalityTest);
                     return true;
                 }

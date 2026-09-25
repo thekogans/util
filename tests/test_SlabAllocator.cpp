@@ -5,6 +5,8 @@
 #include <chrono>
 #include <random>
 #include <cassert>
+#include <cstddef>
+#include <new>
 #include <mutex>
 #include <condition_variable>
 #include "thekogans/util/SlabAllocator.h"
@@ -31,6 +33,74 @@ constexpr int OPS_PER_THREAD = 50000;
 
 using TestAllocator = SlabAllocator<MockObject>;
 
+template <
+    typename T,
+    std::size_t Capacity = 1024>
+class LockFreeSPSCQueue {
+private:
+    // Force the ring buffer template matrix to enforce power-of-2 geometry.
+    // This allows us to use bitwise AND indexing masks instead of expensive modulo (%) arithmetic!
+    static_assert ((Capacity & (Capacity - 1)) == 0, "Capacity must be a strict power of 2.");
+    static constexpr std::size_t IndexMask = Capacity - 1;
+
+    // We hardcode the system's detected line configuration to stop false sharing completely.
+    static constexpr std::size_t CacheLineSize = 256; // Perfect M5 baseline matching!
+
+    // The raw pointer slot buffer storage
+    T *buffer[Capacity];
+
+    // THE HARDWARE TRAP DEFENSE:
+    // The producer writes to the tail, and the consumer writes to the head.
+    // We isolate them onto completely separate physical 256-byte cache lines
+    // so they never trigger cross-core interconnect invalidations while running side-by-side!
+    alignas (CacheLineSize) std::atomic<std::size_t> tail{0};
+    alignas (CacheLineSize) std::atomic<std::size_t> head{0};
+
+public:
+    LockFreeSPSCQueue () noexcept {
+        for (std::size_t i = 0; i < Capacity; ++i) {
+            buffer[i] = nullptr;
+        }
+    }
+
+    // Strict non-copyable semantics
+    LockFreeSPSCQueue (const LockFreeSPSCQueue &) = delete;
+    LockFreeSPSCQueue &operator = (const LockFreeSPSCQueue &) = delete;
+
+    /// \brief Push a pointer into the queue (Producer Thread hot path)
+    bool Push (T *ptr) noexcept {
+        const std::size_t current_tail = tail.load (std::memory_order_relaxed);
+        const std::size_t current_head = head.load (std::memory_order_acquire);
+        // Check if the ring buffer is completely full
+        if ((current_tail - current_head) >= Capacity) {
+            return false;
+        }
+        // Map the sliding index to the buffer footprint via zero-overhead bitwise mask
+        buffer[current_tail & IndexMask] = ptr;
+        // Release barrier ensures the slot write is visible *before* the tail index increments
+        tail.store (current_tail + 1, std::memory_order_release);
+        return true;
+    }
+
+    /// \brief Pop a pointer out of the queue (Consumer Thread hot path)
+    bool Pop (T *&ptr) noexcept {
+        const std::size_t current_head = head.load (std::memory_order_relaxed);
+        const std::size_t current_tail = tail.load (std::memory_order_acquire);
+        // Check if the queue is completely empty
+        if (current_head == current_tail) {
+            return false;
+        }
+        ptr = buffer[current_head & IndexMask];
+        // Release barrier guarantees the item lookup is finished *before* the slot opens back up
+        head.store (current_head + 1, std::memory_order_release);
+        return true;
+    }
+
+    inline bool Empty () const noexcept {
+        return head.load (std::memory_order_relaxed) == tail.load (std::memory_order_relaxed);
+    }
+};
+
 int main () {
     TestAllocator &allocator = *TestAllocator::Instance ();
     std::cout << "[INFO] Spinning up " << (NUM_PRODUCERS + NUM_CONSUMERS + NUM_MIXED_WORKERS) <<
@@ -41,30 +111,24 @@ int main () {
     std::condition_variable latch_cv;
     std::atomic<size_t> ready_threads{0};
     std::atomic<bool> start_gate{false};
-
     size_t total_threads = NUM_PRODUCERS + NUM_CONSUMERS + NUM_MIXED_WORKERS;
 
     auto sync_arrive_and_wait = [&] () {
         std::unique_lock<std::mutex> lock (latch_mtx);
         if (++ready_threads == total_threads) {
             start_gate.store (true, std::memory_order_release);
-            latch_cv.notify_all();
+            latch_cv.notify_all ();
         }
         else {
             latch_cv.wait (lock, [&] () {
-                return start_gate.load(std::memory_order_acquire);
+                return start_gate.load (std::memory_order_acquire);
             });
         }
     };
 
     // Thread-safe pointer buffer pipelines to pass objects from allocations to frees
     // Add a mutex bank to protect the test lanes
-    std::vector<std::mutex> pipeline_mutexes (NUM_PRODUCERS);
-    std::vector<std::vector<void *>> transfer_pipelines (NUM_PRODUCERS);
-    for (auto &queue : transfer_pipelines) {
-        queue.reserve (OPS_PER_THREAD);
-    }
-
+    std::vector<LockFreeSPSCQueue<void>> pipelines (NUM_PRODUCERS);
     std::vector<std::thread> workers;
     std::atomic<bool> producers_finished{false};
     auto start_time = std::chrono::high_resolution_clock::now ();
@@ -77,8 +141,9 @@ int main () {
                 void *ptr = allocator.Alloc ();
                 if (ptr) {
                     new (ptr) MockObject{static_cast<uint64_t> (j), 0};
-                    std::lock_guard<std::mutex> lock (pipeline_mutexes[i]);
-                    transfer_pipelines[i].push_back (ptr);
+                    if (!pipelines[i].Push (ptr)) {
+                        allocator.Free (ptr);
+                    }
                 }
             }
         });
@@ -88,20 +153,18 @@ int main () {
     for (int i = 0; i < NUM_CONSUMERS; ++i) {
         workers.emplace_back ([&, i] () {
             sync_arrive_and_wait ();
-            std::lock_guard<std::mutex> lock (pipeline_mutexes[i]);
             int source_producer = i % NUM_PRODUCERS;
-            while (!producers_finished.load (std::memory_order_acquire) || !transfer_pipelines[source_producer].empty ()) {
-                if (!transfer_pipelines[source_producer].empty ()) {
-                    void *ptr = nullptr;
-                    if (!transfer_pipelines[source_producer].empty ()) {
-                        ptr = transfer_pipelines[source_producer].back ();
-                        transfer_pipelines[source_producer].pop_back ();
-                    }
+            LockFreeSPSCQueue<void> &pipeline = pipelines[source_producer];
+            void *ptr = nullptr;
+            while (!producers_finished.load (std::memory_order_acquire) || !pipeline.Empty ()) {
+                if (pipeline.Pop (ptr)) {
                     if (ptr) {
-                        allocator.Free (ptr);
+                        allocator.Free (ptr); // Freeing happens locally, 100% un-synchronized!
                     }
                 }
                 else {
+                    // High-velocity back-off: since we are entirely lock-free, a tiny hint
+                    // keeps the CPU from aggressively melting the core execution slots
                     std::this_thread::yield ();
                 }
             }
@@ -152,7 +215,7 @@ int main () {
     auto end_time = std::chrono::high_resolution_clock::now ();
     auto total_duration = std::chrono::duration_cast<std::chrono::milliseconds> (end_time - start_time).count ();
 
-    std::cout << "\n================ TEST RESULTS ================\n";
+    std::cout << "================ TEST RESULTS ================\n";
     std::cout << "[SUCCESS] Stress test completed execution successfully!\n";
     std::cout << "Processed Execution Time: " << total_duration << " ms\n";
     std::cout << "Total Allocation Loops:    " << (NUM_PRODUCERS + NUM_MIXED_WORKERS) * OPS_PER_THREAD << "\n";

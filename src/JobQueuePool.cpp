@@ -81,8 +81,7 @@ namespace thekogans {
             WaitForIdle ();
             assert (borrowedJobQueues.empty ());
             availableJobQueues.clear (
-                [] (JobQueueList::Callback::argument_type jobQueue) ->
-                        JobQueueList::Callback::result_type {
+                [] (JobQueue *jobQueue) {
                     delete jobQueue;
                     return true;
                 }
@@ -105,8 +104,7 @@ namespace thekogans {
                 RunLoop::UserJobList &jobs) {
             LockGuard<Mutex> guard (mutex);
             borrowedJobQueues.for_each (
-                [&equalityTest, &jobs] (JobQueueList::Callback::argument_type jobQueue) ->
-                        JobQueueList::Callback::result_type {
+                [&equalityTest, &jobs] (JobQueue *jobQueue) {
                     jobQueue->GetJobs (equalityTest, jobs);
                     return true;
                 }
@@ -124,8 +122,7 @@ namespace thekogans {
         void JobQueuePool::CancelJobs (const RunLoop::EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (mutex);
             borrowedJobQueues.for_each (
-                [&equalityTest] (JobQueueList::Callback::argument_type jobQueue) ->
-                        JobQueueList::Callback::result_type {
+                [&equalityTest] (JobQueue *jobQueue) {
                     jobQueue->CancelJobs (equalityTest);
                     return true;
                 }
@@ -219,8 +216,7 @@ namespace thekogans {
                 // completely unlocked. Even if a destructor chain cascades
                 // or loops back, it cannot deadlock the pool.
                 queuesToDelete.clear (
-                    [] (JobQueueList::Callback::argument_type deadQueue) ->
-                            JobQueueList::Callback::result_type {
+                    [] (JobQueue *deadQueue) {
                         delete deadQueue;
                         return true;
                     }

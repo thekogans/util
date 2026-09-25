@@ -265,8 +265,7 @@ namespace thekogans {
                 if (!state->paused) {
                     state->paused = true;
                     state->runningJobs.for_each (
-                        [cancelRunningJobs, &runningJobs] (JobList::Callback::argument_type job) ->
-                                JobList::Callback::result_type {
+                        [cancelRunningJobs, &runningJobs] (Job *job) {
                             if (cancelRunningJobs) {
                                 job->Cancel ();
                             }
@@ -438,7 +437,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (state->jobsMutex);
             Job::SharedPtr job;
             auto callback =
-                [&jobId, &job] (JobList::Callback::argument_type job_) -> JobList::Callback::result_type {
+                [&jobId, &job] (Job *job_) {
                     if (job_->GetId () == jobId) {
                         job.Reset (job_);
                         return false;
@@ -456,7 +455,7 @@ namespace thekogans {
                 RunLoop::UserJobList &jobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
             auto callback =
-                [&equalityTest, &jobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&equalityTest, &jobs] (Job *job) {
                     if (equalityTest (*job)) {
                         jobs.push_back (RunLoop::Job::SharedPtr (job));
                     }
@@ -469,7 +468,7 @@ namespace thekogans {
         void Pipeline::GetPendingJobs (RunLoop::UserJobList &pendingJobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
             state->pendingJobs.for_each (
-                [&pendingJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&pendingJobs] (Job *job) {
                     pendingJobs.push_back (RunLoop::Job::SharedPtr (job));
                     return true;
                 }
@@ -479,7 +478,7 @@ namespace thekogans {
         void Pipeline::GetRunningJobs (RunLoop::UserJobList &runningJobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
             state->runningJobs.for_each (
-                [&runningJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&runningJobs] (Job *job) {
                     runningJobs.push_back (RunLoop::Job::SharedPtr (job));
                     return true;
                 }
@@ -491,13 +490,13 @@ namespace thekogans {
                 RunLoop::UserJobList &runningJobs) {
             LockGuard<Mutex> guard (state->jobsMutex);
             state->pendingJobs.for_each (
-                [&pendingJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&pendingJobs] (Job *job) {
                     pendingJobs.push_back (RunLoop::Job::SharedPtr (job));
                     return true;
                 }
             );
             state->runningJobs.for_each (
-                [&runningJobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&runningJobs] (Job *job) {
                     runningJobs.push_back (RunLoop::Job::SharedPtr (job));
                     return true;
                 }
@@ -576,7 +575,7 @@ namespace thekogans {
                 const TimeSpec &timeSpec) {
             RunLoop::UserJobList jobs;
             auto callback =
-                [&equalityTest, &jobs] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&equalityTest, &jobs] (Job *job) {
                     if (equalityTest (*job)) {
                         jobs.push_back (RunLoop::Job::SharedPtr (job));
                     }
@@ -613,7 +612,7 @@ namespace thekogans {
         bool Pipeline::CancelJob (const Job::Id &jobId) {
             LockGuard<Mutex> guard (state->jobsMutex);
             auto callback =
-                [&jobId] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&jobId] (Job *job) {
                     if (job->GetId () == jobId) {
                         job->Cancel ();
                         return false;
@@ -634,7 +633,7 @@ namespace thekogans {
         void Pipeline::CancelJobs (const RunLoop::EqualityTest &equalityTest) {
             LockGuard<Mutex> guard (state->jobsMutex);
             auto callback =
-                [&equalityTest] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [&equalityTest] (Job *job) {
                     if (equalityTest (*job)) {
                         job->Cancel ();
                         return false;
@@ -648,7 +647,7 @@ namespace thekogans {
         void Pipeline::CancelPendingJobs () {
             LockGuard<Mutex> guard (state->jobsMutex);
             state->pendingJobs.for_each (
-                [] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [] (Job *job) {
                     job->Cancel ();
                     return true;
                 }
@@ -658,7 +657,7 @@ namespace thekogans {
         void Pipeline::CancelRunningJobs () {
             LockGuard<Mutex> guard (state->jobsMutex);
             state->runningJobs.for_each (
-                [] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [] (Job *job) {
                     job->Cancel ();
                     return true;
                 }
@@ -668,7 +667,7 @@ namespace thekogans {
         void Pipeline::CancelAllJobs () {
             LockGuard<Mutex> guard (state->jobsMutex);
             auto callback =
-                [] (JobList::Callback::argument_type job) -> JobList::Callback::result_type {
+                [] (Job *job) {
                     job->Cancel ();
                     return true;
                 };

@@ -109,9 +109,6 @@ namespace thekogans {
                     prev (nullptr),
                     next (nullptr),
                     inList (false) {}
-                /// \brief
-                /// dtor.
-                virtual ~Node () {}
             };
             /// \brief
             /// Pointer to the head of the list.
@@ -133,9 +130,9 @@ namespace thekogans {
             /// Move ctor.
             /// \param[in,out] other IntrusiveList to move.
             IntrusiveList (IntrusiveList<T, ID> &&other) :
-                head (nullptr),
-                tail (nullptr),
-                count (0) {
+                    head (nullptr),
+                    tail (nullptr),
+                    count (0) {
                 swap (other);
             }
             /// \brief
@@ -209,7 +206,15 @@ namespace thekogans {
             /// Return the previous node of the given node.
             /// \param[in] node Node whose previous node to return.
             /// \return Previous node of the given node.
-            inline T *&prev (T *node) const {
+            inline T *prev (T *node) const {
+                assert (node != nullptr);
+                return node->util::template IntrusiveList<T, ID>::Node::prev;
+            }
+            /// \brief
+            /// Return the previous node of the given node.
+            /// \param[in] node Node whose previous node to return.
+            /// \return Previous node of the given node.
+            inline T *&prev (T *node) {
                 assert (node != nullptr);
                 return node->util::template IntrusiveList<T, ID>::Node::prev;
             }
@@ -218,7 +223,15 @@ namespace thekogans {
             /// Return the next node of the given node.
             /// \param[in] node Node whose next node to return.
             /// \return Next node of the given node.
-            inline T *&next (T *node) const {
+            inline T *next (T *node) const {
+                assert (node != nullptr);
+                return node->util::template IntrusiveList<T, ID>::Node::next;
+            }
+            /// \brief
+            /// Return the next node of the given node.
+            /// \param[in] node Node whose next node to return.
+            /// \return Next node of the given node.
+            inline T *&next (T *node) {
                 assert (node != nullptr);
                 return node->util::template IntrusiveList<T, ID>::Node::next;
             }
@@ -227,7 +240,15 @@ namespace thekogans {
             /// Return true if a given node is in this list.
             /// \param[in] node Node to check for containment.
             /// \return true if a given node is in this list.
-            inline bool &contains (T *node) const {
+            inline bool contains (T *node) const {
+                assert (node != nullptr);
+                return node->util::template IntrusiveList<T, ID>::Node::inList;
+            }
+            /// \brief
+            /// Return true if a given node is in this list.
+            /// \param[in] node Node to check for containment.
+            /// \return true if a given node is in this list.
+            inline bool &contains (T *node) {
                 assert (node != nullptr);
                 return node->util::template IntrusiveList<T, ID>::Node::inList;
             }
@@ -297,30 +318,23 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Alias for std::function<bool (T * /*node*/)>.
-            /// \param[in] node T *.
-            /// \return true = continue enumeration, false = stop enumeration.
-            using Callback = std::function<bool (T * /*node*/)>;
-
-            /// \brief
             /// Remove all nodes from the list.
             /// \param[in] callback Callback to be called for every node in the list.
             /// See VERY, VERY important comment above (clear).
             /// \return true == List is cleared. false == callback returned false.
-            inline bool clear (const Callback &callback) {
-                for (T *node = head; node != nullptr;) {
-                    // After callback returns, we might not be able to access the node.
-                    // Remove it from the list first.
-                    T *temp = next (node);
+            template<typename F>
+            inline bool clear (F &&callback) {
+                while (head != nullptr) {
+                    T *node = head;
+                    head = next (node);
                     prev (node) = next (node) = nullptr;
                     contains (node) = false;
+                    --count;
                     if (!callback (node)) {
                         return false;
                     }
-                    node = temp;
                 }
-                head = tail = nullptr;
-                count = 0;
+                tail = nullptr;
                 return true;
             }
 
@@ -340,16 +354,18 @@ namespace thekogans {
             /// \brief
             /// Reverse the nodes in the list.
             inline void reverse () {
-                IntrusiveList<T, ID> list;
-                for (T *node = tail; node != nullptr;) {
-                    T *temp = prev (node);
-                    contains (node) = false;
-                    list.push_back (node);
-                    node = temp;
+                if (count > 0) {
+                    T *current = head;
+                    while (current != nullptr) {
+                        // Swap the internal intrusive links for this node
+                        T *temp = next (current);
+                        next (current) = prev (current);
+                        prev (current) = temp;
+                        // Advance using the original next pointer (which is now stored in prev!)
+                        current = temp;
+                    }
+                    std::swap (head, tail);
                 }
-                head = tail = nullptr;
-                count = 0;
-                swap (list);
             }
 
             /// \brief
@@ -468,8 +484,9 @@ namespace thekogans {
             /// \param[in] callback Called for every node in the list.
             /// \param[in] reverse true == Walk the list tail to head.
             /// \return true == Iterated over all elements, false == callback returned false.
+            template <typename F>
             inline bool for_each (
-                    const Callback &callback,
+                    F &&callback,
                     bool reverse = false) const {
                 if (reverse) {
                     for (T *node = tail; node != nullptr;) {
@@ -501,8 +518,9 @@ namespace thekogans {
             /// \param[in] reverse true == Walk the list tail to head.
             /// \return First node for which the callback returned true.
             /// nullptr if no node was found matching the criteria.
+            template <typename F>
             inline T *find (
-                    const Callback &callback,
+                    F &&callback,
                     bool reverse = false) const {
                 if (reverse) {
                     for (T *node = tail; node != nullptr; node = prev (node)) {
