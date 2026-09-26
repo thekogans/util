@@ -303,10 +303,10 @@ namespace thekogans {
                     TLC &tlc = GetTLC ();
                     // See if we have a free slot in our local cache.
                     if (tlc.slotList == nullptr) {
-                        // No banana. Let's re seed the TLC.
+                        // No banana. Let's seed the TLC.
                         static constexpr std::size_t batchTarget = TLCThreshold / 2;
                         // Persistent outer loop forces lock retention until TLC target is met.
-                        lock.Acquire ();
+                        LockGuard<Lock> guard (lock);
                         while (tlc.slotCount < batchTarget) {
                             // Inner loop aggressively drains whatever pages are currently available.
                             while (tlc.slotCount < batchTarget && pageList != nullptr) {
@@ -325,7 +325,7 @@ namespace thekogans {
                                 if (++pageList->slotCount == maxSlots) {
                                     // Page is full. Evict it from the list so that no one asks it
                                     // for slots again. Yes the page is now floating out there in
-                                    // the either completely unaccessible until someone decides to
+                                    // the either completely inaccessible until someone decides to
                                     // free one of it's slots.
                                     pageList = pageList->next;
                                 }
@@ -339,7 +339,6 @@ namespace thekogans {
                                 AllocPage ();
                             }
                         }
-                        lock.Release ();
                     }
                     ptr = tlc.slotList;
                     tlc.slotList = tlc.slotList->next;
@@ -372,9 +371,8 @@ namespace thekogans {
                         slot->next = tlc.slotList;
                         tlc.slotList = slot;
                         ++tlc.slotCount;
-                        // If we have room in our local cache batch release
-                        // a bunch of slots back to their pages so that we
-                        // have room for the incoming.
+                        // If we have no more room in our local cache batch release a bunch
+                        // of slots back to their pages so that we have room for incoming.
                         if (tlc.slotCount > TLCThreshold) {
                             LockGuard<Lock> guard (lock);
                             static constexpr std::size_t flushCount = TLCThreshold / 2;
@@ -395,6 +393,10 @@ namespace thekogans {
 
         private:
             inline void AllocPage () noexcept {
+                // Release the lock before dropping down to the OS.
+                // This wont help waiting allocators but if there are
+                // waiting freeers it will alow them to let go of their
+                // slots while we're waiting on the OS.
                 lock.Release ();
                 Page *page = new (PageAllocator::Alloc (pageSize)) Page ();
                 lock.Acquire ();
