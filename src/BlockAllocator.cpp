@@ -69,13 +69,16 @@ namespace thekogans {
             // We're going out of scope. If there are still
             // pages remaining, we have a memory leak.
             assert (fullPages.empty () && partialPages.empty ());
-            auto callback = [allocator = allocator] (Page *page) -> bool {
+            auto callback = [allocator = allocator] (
+                    PageList &list,
+                    Page *page) {
+                list.erase (page);
                 page->~Page ();
                 allocator->Free (page, Page::Size (page->blockSize, page->blocksPerPage));
                 return true;
             };
-            fullPages.clear (callback);
-            partialPages.clear (callback);
+            fullPages.for_each (callback);
+            partialPages.for_each (callback);
         }
 
         bool BlockAllocator::IsValidPtr (void *ptr) noexcept {
@@ -85,7 +88,9 @@ namespace thekogans {
                 // that it is valid (we cannot de-reference it). We
                 // therefore search through our pages to see if the
                 // given pointer lies within range.
-                auto callback = [ptr] (Page *page) -> bool {
+                auto callback = [ptr] (
+                        PageList &list,
+                        Page *page) {
                     return !page->IsValidPtr (ptr);
                 };
                 return !fullPages.for_each (callback) || !partialPages.for_each (callback);

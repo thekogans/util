@@ -225,7 +225,7 @@ namespace thekogans {
                 /// \brief
                 /// Allocate a slot.
                 /// \return A new slot.
-                void *Alloc () noexcept {
+                inline void *Alloc () noexcept {
                     if (freeList != nullptr) {
                         Slot *slot = freeList;
                         freeList = freeList->next;
@@ -238,7 +238,7 @@ namespace thekogans {
                 /// \brief
                 /// Return a previously Alloc(ated) slot back to the free list.
                 /// \param[in] ptr Slot pointer to free.
-                void Free (void *ptr) noexcept {
+                inline void Free (void *ptr) noexcept {
                     Slot *slot = reinterpret_cast<Slot *> (ptr);
                     slot->next = freeList;
                     freeList = slot;
@@ -250,7 +250,6 @@ namespace thekogans {
             static_assert (
                 sizeof (Page) == CacheLineSize,
                 "sizeof (Page) must be EXACTLY equal to CacheLineSize.");
-            static_assert (IsPowerOf2 (slotSize), "slotSize must be a power of 2.");
             static_assert (IsPowerOf2 (pageSize), "pageSize must be a power of 2.");
 
             /// \brief
@@ -296,42 +295,67 @@ namespace thekogans {
             // in either.
 
             /// \brief
-            /// Allocate a new slot.
+            /// Allocate a new slot with streamlined batch refilling.
             /// \return Pointer to the newly allocated slot.
             void *Alloc () noexcept {
+                void *ptr = nullptr;
                 if constexpr (TLCThreshold > 0) {
-                    // Try the fastest route. See if we have a free slot in our local cache.
                     TLC &tlc = GetTLC ();
-                    if (tlc.slotList != nullptr) {
-                        typename Page::Slot *slot = tlc.slotList;
-                        tlc.slotList = tlc.slotList->next;
-                        --tlc.slotCount;
-                        return reinterpret_cast<void *> (slot);
+                    // See if we have a free slot in our local cache.
+                    if (tlc.slotList == nullptr) {
+                        // No banana. Let's re seed the TLC.
+                        static constexpr std::size_t batchTarget = TLCThreshold / 2;
+                        // Persistent outer loop forces lock retention until TLC target is met.
+                        lock.Acquire ();
+                        while (tlc.slotCount < batchTarget) {
+                            // Inner loop aggressively drains whatever pages are currently available.
+                            while (tlc.slotCount < batchTarget && pageList != nullptr) {
+                                typename Page::Slot *harvested;
+                                // Path A: Rapid extraction from recycled slots.
+                                if (pageList->freeList != nullptr) {
+                                    harvested = pageList->freeList;
+                                    pageList->freeList = pageList->freeList->next;
+                                }
+                                // Path B: Linear extraction from contiguous tail space.
+                                else {
+                                    harvested = reinterpret_cast<typename Page::Slot *> (
+                                        reinterpret_cast<char *> (pageList) + CacheLineSize + pageList->slotCount * slotSize);
+                                }
+                                // Unified state increment & precise invariant rollover.
+                                if (++pageList->slotCount == maxSlots) {
+                                    // Page is full. Evict it from the list so that no one asks it
+                                    // for slots again. Yes the page is now floating out there in
+                                    // the either completely unaccessible until someone decides to
+                                    // free one of it's slots.
+                                    pageList = pageList->next;
+                                }
+                                harvested->next = tlc.slotList;
+                                tlc.slotList = harvested;
+                                ++tlc.slotCount;
+                            }
+                            // If inner loop broke but target isn't met, the pool is dry.
+                            // Seed a fresh page from the OS and let the outer loop repeat the harvest.
+                            if (tlc.slotCount < batchTarget) {
+                                AllocPage ();
+                            }
+                        }
+                        lock.Release ();
                     }
+                    ptr = tlc.slotList;
+                    tlc.slotList = tlc.slotList->next;
+                    --tlc.slotCount;
+
                 }
-                // No banana. See if we have a partial page that can supply the slot.
-                LockGuard<Lock> guard (lock);
-                if (pageList != nullptr) {
-                    void *ptr = pageList->Alloc ();
-                    // Page is full. Evict it from the list so that no one asks it
-                    // for slots again. Yes the page is now floating out there in
-                    // the either completely unaccessible until someone decides to
-                    // free one of it's slots.
+                else {
+                    // TLC compiled out: Single clean allocation tracking.
+                    LockGuard<Lock> guard (lock);
+                    if (pageList == nullptr) {
+                        AllocPage ();
+                    }
+                    ptr = pageList->Alloc ();
                     if (pageList->slotCount == maxSlots) {
                         pageList = pageList->next;
                     }
-                    return ptr;
-                }
-                // Nothing in the cache. No partial pages available that can supply the slot.
-                // Time to dip down to the os level and ask it for a new page. This of course,
-                // is the worst of all possible worlds, but we can be comforted knowing that
-                // it's very rare (1 in SlotsPerPage) and will get amortized across many allocations.
-                Page *page = new (PageAllocator::Alloc (pageSize)) Page ();
-                void *ptr = page->Alloc ();
-                // Unless someone decided to have one slot/page, wire it in to our page list.
-                if (page->slotCount < maxSlots) {
-                    page->next = pageList;
-                    pageList = page;
                 }
                 return ptr;
             }
@@ -343,31 +367,55 @@ namespace thekogans {
             void Free (void *ptr) noexcept {
                 if (ptr != nullptr) {
                     if constexpr (TLCThreshold > 0) {
-                        // If we have room in our local cache, stash the slot there for fast reallocation.
+                        typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
                         TLC &tlc = GetTLC ();
-                        if (tlc.slotCount < TLCThreshold) {
-                            typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
-                            slot->next = tlc.slotList;
-                            tlc.slotList = slot;
-                            ++tlc.slotCount;
-                            return;
+                        slot->next = tlc.slotList;
+                        tlc.slotList = slot;
+                        ++tlc.slotCount;
+                        // If we have room in our local cache batch release
+                        // a bunch of slots back to their pages so that we
+                        // have room for the incoming.
+                        if (tlc.slotCount > TLCThreshold) {
+                            LockGuard<Lock> guard (lock);
+                            static constexpr std::size_t flushCount = TLCThreshold / 2;
+                            for (std::size_t i = 0; i < flushCount; ++i) {
+                                typename Page::Slot *slot = tlc.slotList;
+                                tlc.slotList = tlc.slotList->next;
+                                --tlc.slotCount;
+                                FreeSlot (slot);
+                            }
                         }
                     }
-                    LockGuard<Lock> guard (lock);
-                    // The magic! This is why we can guarntee wall to wall O(1) performance.
-                    // By aligning the page size to the next power of 2 and then using that
-                    // size as page memory placement alignment, we can use a simple pointer
-                    // masking trick to find the page address given any address it allocated.
-                    // After all the syntactic sugar is stripped away this line boils down
-                    // to a single 'and' instruction in hardware.
-                    Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (ptr) & ~pageMask);
-                    page->Free (ptr);
-                    // The page transitioned from full to partial.
-                    // Wire it back in to our list from the either.
-                    if (page->slotCount + 1 == maxSlots) {
-                        page->next = pageList;
-                        pageList = page;
+                    else {
+                        LockGuard<Lock> guard (lock);
+                        FreeSlot (ptr);
                     }
+                }
+            }
+
+        private:
+            inline void AllocPage () noexcept {
+                lock.Release ();
+                Page *page = new (PageAllocator::Alloc (pageSize)) Page ();
+                lock.Acquire ();
+                page->next = pageList;
+                pageList = page;
+            }
+
+            inline void FreeSlot (void *slot) noexcept {
+                // The magic! This is why we can guarntee wall to wall O(1) performance.
+                // By aligning the page size to the next power of 2 and then using that
+                // size as page memory placement alignment, we can use a simple pointer
+                // masking trick to find the page address given any address it allocated.
+                // After all the syntactic sugar is stripped away this line boils down
+                // to a single 'and' instruction in hardware.
+                Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (slot) & ~pageMask);
+                page->Free (slot);
+                // The page transitioned from full to partial.
+                // Wire it back in to our list from the either.
+                if (page->slotCount + 1 == maxSlots) {
+                    page->next = pageList;
+                    pageList = page;
                 }
             }
         };

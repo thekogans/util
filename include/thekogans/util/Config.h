@@ -42,6 +42,7 @@
 /// them if they were not provided during compilation.
 
 #include <cstdlib>
+#include <new>
 #include <iostream>
 #include "thekogans/util/Environment.h"
 
@@ -142,6 +143,15 @@ public:\
 
 namespace thekogans {
     namespace util {
+
+        /// \brief
+        /// System cache line size.
+        /// It goes without saying that this value must be a power of 2.
+    #if defined (__cpp_lib_hardware_interference_size)
+        static constexpr std::size_t SYSTEM_CACHE_LINE_SIZE = std::hardware_destructive_interference_size;
+    #else // defined (__cpp_lib_hardware_interference_size)
+        static constexpr std::size_t SYSTEM_CACHE_LINE_SIZE = 64; // Safe, rock-solid industry fallback.
+    #endif // defined (__cpp_lib_hardware_interference_size)
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         /// \brief

@@ -595,8 +595,8 @@ namespace thekogans {
                 /// \brief
                 /// dtor.
                 virtual ~Parent () {
-                    childList.clear (
-                        [&] (Node *child) {
+                    childList.for_each (
+                        [&] (NodeList &/*list*/, Node *child) {
                             children[child->index] = nullptr;
                             child->Release ();
                             return true;
@@ -618,7 +618,7 @@ namespace thekogans {
                 /// \return IsEmpty ().
                 virtual bool Clear (bool dirty_) override {
                     childList.for_each (
-                        [&] (Node *child) {
+                        [&] (NodeList &/*list*/, Node *child) {
                             if (child->Clear (dirty_)) {
                                 DeleteChild (child);
                             }
@@ -636,7 +636,7 @@ namespace thekogans {
                         Serializer &log,
                         std::size_t &count) override {
                     childList.for_each (
-                        [&] (Node *child) {
+                        [&] (NodeList &/*list*/, Node *child) {
                             child->Log (log, count);
                             return true;
                         }
@@ -652,7 +652,7 @@ namespace thekogans {
                         PageSource &pageSink,
                         bool clearCache = false) override {
                     childList.for_each (
-                        [&] (Node *child) {
+                        [&] (NodeList &/*list*/, Node *child) {
                             if (child->Flush (pageSink, clearCache)) {
                                 DeleteChild (child);
                             }
@@ -668,7 +668,7 @@ namespace thekogans {
                 /// \return IsEmpty ().
                 virtual bool Shrink (SizeType size) override {
                     childList.for_each (
-                        [&] (Node *child) {
+                        [&] (NodeList &/*list*/, Node *child) {
                             if (child->Shrink (size)) {
                                 DeleteChild (child);
                                 return true;
@@ -713,9 +713,9 @@ namespace thekogans {
                             // list? This needs further profiling to get the lay
                             // of the land.
                             childList.for_each (
-                                [&] (Node *child_) {
+                                [child] (NodeList &list, Node *child_) {
                                     if (child->index < child_->index) {
-                                        childList.insert (child, child_);
+                                        list.insert (child, child_);
                                         return false;
                                     }
                                     return true;

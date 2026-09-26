@@ -739,7 +739,9 @@ namespace thekogans {
                     // that it is valid (we cannot de-reference it). We
                     // therefore search through our pages to see if the
                     // given pointer lies within range.
-                    auto callback = [ptr] (Page *page) -> bool {
+                    auto callback = [ptr] (
+                            PageList &list,
+                            Page *page) {
                         return !page->IsValidPtr (ptr);
                     };
                     return !fullPages.for_each (callback) || !partialPages.for_each (callback);

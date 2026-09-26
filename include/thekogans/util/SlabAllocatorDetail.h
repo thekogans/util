@@ -18,8 +18,7 @@
 #if !defined (__thekogans_util_SlabAllocatorDetail_h)
 #define __thekogans_util_SlabAllocatorDetail_h
 
-#include <new>
-#include "thekogans/util/SecureAllocator.h"
+#include "thekogans/util/Config.h"
 
 namespace thekogans {
     namespace util {
@@ -41,11 +40,7 @@ namespace thekogans {
             /// If, for some reason, the compiler can't get it right, you have the power to
             /// force it in to a particular value. It goes without saying that this value
             /// must be a power of 2.
-        #if defined (__cpp_lib_hardware_interference_size)
-            static constexpr std::size_t DEFAULT_CACHE_LINE_SIZE = std::hardware_destructive_interference_size;
-        #else // defined (__cpp_lib_hardware_interference_size)
-            static constexpr std::size_t DEFAULT_CACHE_LINE_SIZE = 64; // Safe, rock-solid industry fallback.
-        #endif // defined (__cpp_lib_hardware_interference_size)
+            static constexpr std::size_t DEFAULT_CACHE_LINE_SIZE = SYSTEM_CACHE_LINE_SIZE;
 
             /// \struct DefaultPageAllocator SlabAllocator.h thekogans/util/SlabAllocator.h
             ///
@@ -53,7 +48,7 @@ namespace thekogans {
             /// The default page allocator. Yet another tuning knob to allow you to
             /// control how pages are allocated. This one uses direct OS services to
             /// return aligned and clean (0 filled) pages.
-            struct DefaultPageAllocator {
+            struct _LIB_THEKOGANS_UTIL_DECL DefaultPageAllocator {
                 /// \brief
                 /// Allocate a pageSize aligned and 0 filled page.
                 /// \param[in] pageSize Page size and alignement.
@@ -74,7 +69,7 @@ namespace thekogans {
             /// If the DefaultPageAllocator proves to be a bottleneck on your system,
             /// use StdPageAllocator. It uses operator new and delete and zero fills
             /// the buffers they return and release.
-            struct StdPageAllocator {
+            struct _LIB_THEKOGANS_UTIL_DECL StdPageAllocator {
                 /// \brief
                 /// Allocate a pageSize aligned and 0 filled page.
                 /// \param[in] pageSize Page size and alignement.

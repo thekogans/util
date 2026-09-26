@@ -308,34 +308,13 @@ namespace thekogans {
             /// Remove all nodes from the list.
             inline void clear () {
                 for (T *node = head; node != nullptr;) {
-                    T *temp = next (node);
+                    T *nodeNext = next (node);
                     prev (node) = next (node) = nullptr;
                     contains (node) = false;
-                    node = temp;
+                    node = nodeNext;
                 }
                 head = tail = nullptr;
                 count = 0;
-            }
-
-            /// \brief
-            /// Remove all nodes from the list.
-            /// \param[in] callback Callback to be called for every node in the list.
-            /// See VERY, VERY important comment above (clear).
-            /// \return true == List is cleared. false == callback returned false.
-            template<typename F>
-            inline bool clear (F &&callback) {
-                while (head != nullptr) {
-                    T *node = head;
-                    head = next (node);
-                    prev (node) = next (node) = nullptr;
-                    contains (node) = false;
-                    --count;
-                    if (!callback (node)) {
-                        return false;
-                    }
-                }
-                tail = nullptr;
-                return true;
             }
 
             /// \brief
@@ -355,14 +334,14 @@ namespace thekogans {
             /// Reverse the nodes in the list.
             inline void reverse () {
                 if (count > 0) {
-                    T *current = head;
-                    while (current != nullptr) {
-                        // Swap the internal intrusive links for this node
-                        T *temp = next (current);
-                        next (current) = prev (current);
-                        prev (current) = temp;
-                        // Advance using the original next pointer (which is now stored in prev!)
-                        current = temp;
+                    T *node = head;
+                    while (node != nullptr) {
+                        // Swap the internal links for this node.
+                        T *nodeNext = next (node);
+                        next (node) = prev (node);
+                        prev (node) = nodeNext;
+                        // Advance using the original next pointer (which is now stored in prev!).
+                        node = nodeNext;
                     }
                     std::swap (head, tail);
                 }
@@ -487,25 +466,25 @@ namespace thekogans {
             template <typename F>
             inline bool for_each (
                     F &&callback,
-                    bool reverse = false) const {
+                    bool reverse = false) {
                 if (reverse) {
                     for (T *node = tail; node != nullptr;) {
                         // After callback returns, we might not be able to call prev (node).
-                        T *temp = prev (node);
-                        if (!callback (node)) {
+                        T *nodePrev = prev (node);
+                        if (!callback (*this, node)) {
                             return false;
                         }
-                        node = temp;
+                        node = nodePrev;
                     }
                 }
                 else {
                     for (T *node = head; node != nullptr;) {
                         // After callback returns, we might not be able to call next (node).
-                        T *temp = next (node);
-                        if (!callback (node)) {
+                        T *nodeNext = next (node);
+                        if (!callback (*this, node)) {
                             return false;
                         }
-                        node = temp;
+                        node = nodeNext;
                     }
                 }
                 return true;

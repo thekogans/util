@@ -51,7 +51,7 @@ namespace thekogans {
             if (!entryList.empty ()) {
                 SimpleFile file (HostEndian, path, flags);
                 entryList.for_each (
-                    [&file] (Entry *entry) {
+                    [&file] (EntryList &/*list*/, Entry *entry) {
                         if (!entry->header.empty ()) {
                             file.Write (entry->header.c_str (), entry->header.size ());
                         }
@@ -68,8 +68,9 @@ namespace thekogans {
         }
 
         void MemoryLogger::ClearEntries () {
-            entryList.clear (
-                [] (Entry *entry) {
+            entryList.for_each (
+                [] (EntryList &list, Entry *entry) {
+                    list.erase (entry);
                     delete entry;
                     return true;
                 }
