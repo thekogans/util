@@ -496,6 +496,55 @@ namespace thekogans {
         }
     #endif // !defined (MAX)
 
+        /// \brief
+        /// Return the count of '1' bits in value.
+        /// \param[in] value Value to examine.
+        /// \return Number of 1 bits in value.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API OneBitCount (
+            std::size_t value);
+        /// \brief
+        /// Return the count of trailing 0 bits.
+        /// VERY IMPORTANT: If value == 0, return 0 NOT sizeof (std::size_t) * CHAR_BIT.
+        /// \param[in] value Value to check.
+        /// \return Number of trailing bits after the first 1.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API TrailingZeroBitCount (
+            std::size_t value);
+
+        /// \brief
+        /// Return true if the value is a power of 2.
+        /// \param[in] value Value to examine.
+        /// \return true == the value is a power of 2.
+        inline constexpr bool IsPowerOf2 (std::size_t value) {
+            return value > 0 && (value & (value - 1)) == 0;
+        }
+        /// \brief
+        /// Return the count of '0' bits in value.
+        /// \param[in] value Value to examine.
+        /// \return Number of 0 bits in value.
+        inline constexpr std::size_t ZeroBitCount (std::size_t value) {
+            return BitWidth<std::size_t>::value - OneBitCount (value);
+        }
+        /// \brief
+        /// Align value to the next power of 2.
+        /// If value is already aligned, leave it alone.
+        /// \param[in] value Value to align.
+        /// \return Value aligned to power of 2 boundary.
+        inline constexpr std::size_t Align (std::size_t value) {
+            if (value > 0) {
+                --value;
+                value |= value >> 1;
+                value |= value >> 2;
+                value |= value >> 4;
+                value |= value >> 8;
+                value |= value >> 16;
+                // Conditionally shift for 64-bit platforms (where sizeof (size_t) == 8)
+                if constexpr (sizeof (std::size_t) >= 8) {
+                    value |= value >> 32;
+                }
+            }
+            return value + 1;
+        }
+
     } // namespace util
 } // namespace thekogans
 

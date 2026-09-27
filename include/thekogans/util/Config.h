@@ -141,6 +141,14 @@ public:\
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(_T)\
     THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN(_T)
 
+#if defined(__clang__) || defined(__GNUC__)
+    #define THEKOGANS_UTIL_LIKELY(x)   __builtin_expect(!!(x), 1)
+    #define THEKOGANS_UTIL_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+    #define THEKOGANS_UTIL_LIKELY(x)   (x)
+    #define THEKOGANS_UTIL_UNLIKELY(x) (x)
+#endif
+
 namespace thekogans {
     namespace util {
 

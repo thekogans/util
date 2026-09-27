@@ -20,32 +20,21 @@
 #include <boost/atomic/detail/operations_lockfree.hpp>
 #include <boost/memory_order.hpp>
 #include "thekogans/util/Types.h"
-#include "thekogans/util/RefCounted.h"
 #include "thekogans/util/SlabAllocator.h"
+#include "thekogans/util/RefCounted.h"
 
 namespace thekogans {
     namespace util {
 
-    #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
-        #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE 8192
-    #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
-
-    #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD)
-        #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD 32
-    #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD)
-
         void *RefCounted::References::operator new (std::size_t) {
-            return SlabAllocator<
-                References,
-                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE,
-                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD>::Instance ()->Alloc ();
+            return Allocator::Instance ()->Alloc ();
         }
 
         void RefCounted::References::operator delete (void *ptr) {
-            SlabAllocator<
-                References,
-                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE,
-                THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_THRESHOLD>::Instance ()->Free (ptr);
+            if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr)) {
+                return;
+            }
+            Allocator::Instance ()->Free (ptr);
         }
 
         namespace {

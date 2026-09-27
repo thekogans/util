@@ -82,10 +82,6 @@ namespace thekogans {
             return ptr;
         }
 
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API ZeroBitCount (std::size_t value) {
-            return BitWidth<std::size_t>::value - OneBitCount (value);
-        }
-
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API OneBitCount (std::size_t value) {
         #if defined (__GNUC__) || defined (__clang__)
             if constexpr (sizeof (std::size_t) == 8) {
