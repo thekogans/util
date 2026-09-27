@@ -23,6 +23,9 @@
 #include <cfloat>
 #include <type_traits>
 #include "thekogans/util/Environment.h"
+#if defined (TOOLCHAIN_OS_Windows)
+    #include <intrin.h>
+#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 
@@ -500,15 +503,84 @@ namespace thekogans {
         /// Return the count of '1' bits in value.
         /// \param[in] value Value to examine.
         /// \return Number of 1 bits in value.
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API OneBitCount (
-            std::size_t value);
+        inline constexpr std::size_t OneBitCount (std::size_t value) {
+        #if defined (__GNUC__) || defined (__clang__)
+            if constexpr (sizeof (std::size_t) == 8) {
+                return __builtin_popcountll (value);
+            }
+            else {
+                return __builtin_popcount (value);
+            }
+        #elif defined (_MSC_VER)
+            if constexpr (sizeof (std::size_t) == 8) {
+                return __popcnt64 (value));
+            }
+            else {
+                return __popcnt (value);
+            }
+        #else // defined (__GNUC__) || defined (__clang__)
+            // Fallback SWAR (SIMD Within A Register) algorithm
+            value = value - ((value >> 1) & (std::size_t)~(std::size_t)0 / 3);
+            value = (value & (std::size_t)~(std::size_t)0 / 15 * 3) + ((value >> 2) & (std::size_t)~(std::size_t)0 / 15 * 3);
+            value = (value + (value >> 4)) & (std::size_t)~(std::size_t)0 / 255 * 15;
+            return (std::size_t)(value * ((std::size_t)~(std::size_t)0 / 255)) >> (sizeof (std::size_t) - 1) * CHAR_BIT;
+        #endif // defined (__GNUC__) || defined (__clang__)
+        }
         /// \brief
         /// Return the count of trailing 0 bits.
         /// VERY IMPORTANT: If value == 0, return 0 NOT sizeof (std::size_t) * CHAR_BIT.
         /// \param[in] value Value to check.
         /// \return Number of trailing bits after the first 1.
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API TrailingZeroBitCount (
-            std::size_t value);
+        inline constexpr std::size_t TrailingZeroBitCount (std::size_t value) {
+            if (value == 0) {
+                return sizeof (std::size_t) * 8; // Handle 0 safely
+            }
+        #if defined (__GNUC__) || defined (__clang__)
+            if constexpr (sizeof (std::size_t) == 8) {
+                return __builtin_ctzll (value);
+            }
+            else {
+                return __builtin_ctz (value);
+            }
+        #elif defined (_MSC_VER)
+            unsigned long index;
+        #if defined (_WIN64)
+            _BitScanForward64 (&index, value);
+        #else // defined (_WIN64)
+            _BitScanForward (&index, value);
+        #endif // defined (_WIN64)
+            return index;
+        #else // defined (__GNUC__) || defined (__clang__)
+            // Fallback cross-platform bit-twiddling if no intrinsic is found
+            std::size_t count = 0;
+            if constexpr (sizeof (std::size_t) >= 8) {
+                if ((value & 0xFFFFFFFF) == 0) {
+                    count += 32;
+                    value >>= 32;
+                }
+            }
+            if ((value & 0xFFFF) == 0) {
+                count += 16;
+                value >>= 16;
+            }
+            if ((value & 0xFF) == 0) {
+                count += 8;
+                value >>= 8;
+            }
+            if ((value & 0xF) == 0) {
+                count += 4;
+                value >>= 4;
+            }
+            if ((value & 0x3) == 0) {
+                count += 2;
+                value >>= 2;
+            }
+            if ((value & 0x1) == 0) {
+                count += 1;
+            }
+            return count;
+        #endif // defined (__GNUC__) || defined (__clang__)
+        }
 
         /// \brief
         /// Return true if the value is a power of 2.

@@ -82,11 +82,26 @@ namespace thekogans {
         /// \tparam InstanceCreator A \see{Singleton} parameter to control the allocator instance creation.
         template <typename T, typename... Policies>
         struct SlabAllocator : public Singleton<
-            SlabAllocator<T, Policies...>, // Pass the exact pack!
-            typename detail::GetTypePolicy<Policy::Lock, SpinLock, Policies...>::type,
-            // Forward the template pack down into the InstanceCreator template mapping
-            typename detail::GetInstanceCreatorPolicy<T, Policies...>::type,
-            NullInstanceDestroyer<SlabAllocator<T, Policies...>>> {
+                SlabAllocator<T, Policies...>,
+                typename detail::GetTypePolicy<Policy::Lock, SpinLock, Policies...>::type,
+                typename detail::GetInstanceCreatorPolicy<T, Policies...>::type,
+                NullInstanceDestroyer<SlabAllocator<T, Policies...>>> {
+            static_assert (detail::ValidateSlabPolicies<Policies...> (),
+                "\n=========================================================================\n"
+                "  CRITICAL ERROR: Invalid or Typoed Policy Tag passed to SlabAllocator.\n"
+                "=========================================================================\n"
+                "  Supported Allocator Policies are exclusively:\n"
+                "    - Policy::SlotsPerPage<std::size_t>\n"
+                "    - Policy::TLCThreshold<std::size_t>\n"
+                "    - Policy::CacheLineSize<std::size_t>\n"
+                "    - Policy::Id<std::size_t>\n"
+                "    - Policy::Lock<typename>\n"
+                "    - Policy::PageAllocator<typename>\n"
+                "    - Policy::InstanceCreator<template>\n"
+                "    - Policy::Compaction::Enable\n"
+                "    - Policy::Compaction::Disable (Default Baseline)\n"
+                "=========================================================================\n");
+
         private:
             static constexpr std::size_t TLCThreshold = detail::GetValuePolicy<
                 Policy::TLCThreshold, detail::DEFAULT_TLC_THRESHOLD, Policies...>::value;
@@ -99,6 +114,10 @@ namespace thekogans {
 
             static constexpr std::size_t Id = detail::GetValuePolicy<
                 Policy::Id, 0, Policies...>::value;
+
+            static constexpr bool CompressOnZero = std::is_same_v<
+                typename detail::GetCompactionStrategy<Policy::Compaction::Disable, Policies...>::type,
+                Policy::Compaction::Enable>;
 
             // Extract policy types
             using Lock = typename detail::GetTypePolicy<Policy::Lock, SpinLock, Policies...>::type;
@@ -226,6 +245,11 @@ namespace thekogans {
                     slot->next = freeList;
                     freeList = slot;
                     --slotCount;
+                    if constexpr (CompressOnZero) {
+                        if (THEKOGANS_UTIL_UNLIKELY (slotCount == 0)) {
+                            freeList = nullptr;
+                        }
+                    }
                 }
             };
 
@@ -317,37 +341,18 @@ namespace thekogans {
                             // If inner loop broke but target isn't met, the pool is dry.
                             // Seed a fresh page from the OS and let the outer loop repeat the harvest.
                             if (tlc.slotCount < batchTarget) {
-                                while (pageList == nullptr && pageAllocationInFlight) {
-                                    lock.Release ();
-                                    Thread::YieldSlice ();
-                                    lock.Acquire ();
-                                }
-                                // After the wait loop, we re-verify under the lock.
-                                // If the pool is STILL dry, and NO ONE is allocating, we claim the gate.
-                                if (pageList == nullptr) {
-                                    AllocPage ();
-                                }
+                                AllocPage ();
                             }
                         }
                     }
                     ptr = tlc.slotList;
                     tlc.slotList = tlc.slotList->next;
                     --tlc.slotCount;
-
                 }
                 else {
                     // TLC compiled out: Single clean allocation tracking.
                     LockGuard<Lock> guard (lock);
-                    // Loop persistently until a page is guaranteed to be available or...
-                    while (pageList == nullptr && pageAllocationInFlight) {
-                        lock.Release ();
-                        Thread::YieldSlice ();
-                        lock.Acquire ();
-                    }
-                    // ...we need to allocate it.
-                    if (pageList == nullptr) {
-                        AllocPage ();
-                    }
+                    AllocPage ();
                     ptr = pageList->Alloc ();
                     if (pageList->slotCount == maxSlots) {
                         pageList = pageList->next;
@@ -390,28 +395,37 @@ namespace thekogans {
 
         private:
             inline void AllocPage () noexcept {
-                // Set the in flight flag before releasing the lock so that no other thread
-                // tries to call AllocPage.
-                pageAllocationInFlight = true;
-                // Release the lock before dropping down to the OS.
-                // This wont help waiting allocators but if there are
-                // waiting freeers it will alow them to let go of their
-                // slots while we're waiting on the OS.
-                lock.Release ();
-                Page *page = new (PageAllocator::Alloc (pageSize)) Page ();
-                // We're back from the OS land. Reaquire the lock so that we
-                // can wire the freshly minted page in to the list.
-                lock.Acquire ();
-                // Wire the newly minted page in to our page list.
-                page->next = pageList;
-                pageList = page;
-                // Now that a fresh page is available the upstream Alloc will be able
-                // to satisfy harvesting or allocating. Since we hold the lock there's
-                // no chance that this page will be stolen from under us by another thread.
-                // We can now safely clear the in flight flag so that the spinning waiters
-                // drop out and either have a fresh page to harvest/allocate from or permission
-                // to allocate.
-                pageAllocationInFlight = false;
+                // Loop persistently until a page is guaranteed to be available or...
+                while (pageList == nullptr && pageAllocationInFlight) {
+                    lock.Release ();
+                    Thread::YieldSlice ();
+                    lock.Acquire ();
+                }
+                // ...we need to allocate it.
+                if (pageList == nullptr) {
+                    // Set the in flight flag before releasing the lock so that no other thread
+                    // tries to call AllocPage.
+                    pageAllocationInFlight = true;
+                    // Release the lock before dropping down to the OS.
+                    // This wont help waiting allocators but if there are
+                    // waiting freeers it will alow them to let go of their
+                    // slots while we're waiting on the OS.
+                    lock.Release ();
+                    Page *page = new (PageAllocator::Alloc (pageSize)) Page ();
+                    // We're back from the OS land. Reaquire the lock so that we
+                    // can wire the freshly minted page in to the list.
+                    lock.Acquire ();
+                    // Wire the newly minted page in to our page list.
+                    page->next = pageList;
+                    pageList = page;
+                    // Now that a fresh page is available the upstream Alloc will be able
+                    // to satisfy harvesting or allocating. Since we hold the lock there's
+                    // no chance that this page will be stolen from under us by another thread.
+                    // We can now safely clear the in flight flag so that the spinning waiters
+                    // drop out and either have a fresh page to harvest/allocate from or permission
+                    // to allocate.
+                    pageAllocationInFlight = false;
+                }
             }
 
             inline void FreeSlot (void *slot) noexcept {

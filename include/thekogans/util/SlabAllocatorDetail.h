@@ -44,6 +44,11 @@ namespace thekogans {
             struct InstanceCreator {
                 template <typename U> using template_type = T<U>;
             };
+
+            namespace Compaction {
+                struct Disable { static constexpr bool value = false; };
+                struct Enable  { static constexpr bool value = true; };
+            }
         }
 
         namespace detail {
@@ -117,6 +122,40 @@ namespace thekogans {
                     DefaultInstanceCreator<SlabAllocator<T, Policies...>>,
                     Policies...>::type;
             };
+
+            // Extractor trait for boolean compaction policy
+            template <typename DefaultType, typename... Policies>
+            struct GetCompactionStrategy { using type = DefaultType; };
+
+            template <typename DefaultType, typename... Rest>
+            struct GetCompactionStrategy<DefaultType, Policy::Compaction::Enable, Rest...> {
+                using type = Policy::Compaction::Enable;
+            };
+
+            template <typename DefaultType, typename... Rest>
+            struct GetCompactionStrategy<DefaultType, Policy::Compaction::Disable, Rest...> {
+                using type = Policy::Compaction::Disable;
+            };
+
+            // A compile-time trait to check if a type is a valid policy for our allocator
+            template <typename P> struct IsValidSlabPolicy : std::false_type {};
+
+            // Explicitly whitelist every supported tag right here in the detail namespace!
+            template <std::size_t V> struct IsValidSlabPolicy<Policy::SlotsPerPage<V>> : std::true_type {};
+            template <std::size_t V> struct IsValidSlabPolicy<Policy::TLCThreshold<V>> : std::true_type {};
+            template <std::size_t V> struct IsValidSlabPolicy<Policy::CacheLineSize<V>> : std::true_type {};
+            template <std::size_t V> struct IsValidSlabPolicy<Policy::Id<V>>            : std::true_type {};
+            template <typename L>    struct IsValidSlabPolicy<Policy::Lock<L>>          : std::true_type {};
+            template <typename A>    struct IsValidSlabPolicy<Policy::PageAllocator<A>> : std::true_type {};
+            template <template <typename> typename C> struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
+            template <> struct IsValidSlabPolicy<Policy::Compaction::Enable>  : std::true_type {};
+            template <> struct IsValidSlabPolicy<Policy::Compaction::Disable> : std::true_type {};
+
+            // Helper to evaluate the entire variadic pack at once
+            template <typename... Policies>
+            constexpr bool ValidateSlabPolicies() {
+                return (IsValidSlabPolicy<Policies>::value && ...);
+            }
 
             /// \struct DefaultPageAllocator SlabAllocator.h thekogans/util/SlabAllocator.h
             ///
