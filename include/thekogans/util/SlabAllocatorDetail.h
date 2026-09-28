@@ -154,37 +154,37 @@ namespace thekogans {
         namespace detail {
             /// \brief
             /// Forward declaration needed by the GetInstanceCreatorPolicy extractor below.
-            template <typename T, typename... Policies>
+            template<typename T, typename... Policies>
             struct SlabAllocator;
 
             // --- bool EXTRACTOR MECHANICS ---
-            template <template <bool> typename TargetPolicy, bool DefaultValue, typename... Policies>
+            template<template<bool> typename TargetPolicy, bool DefaultValue, typename... Policies>
             struct GetBoolPolicy {
                 static constexpr bool value = DefaultValue; // Base case: fallback to default
             };
 
-            template <template <bool> typename TargetPolicy, bool DefaultValue, bool CurrentValue, typename... Rest>
+            template<template<bool> typename TargetPolicy, bool DefaultValue, bool CurrentValue, typename... Rest>
             struct GetBoolPolicy<TargetPolicy, DefaultValue, TargetPolicy<CurrentValue>, Rest...> {
                 static constexpr bool value = CurrentValue; // Found it: extract the template value
             };
 
-            template <template <bool> typename TargetPolicy, bool DefaultValue, typename Head, typename... Rest>
+            template<template<bool> typename TargetPolicy, bool DefaultValue, typename Head, typename... Rest>
             struct GetBoolPolicy<TargetPolicy, DefaultValue, Head, Rest...> {
                 static constexpr bool value = GetBoolPolicy<TargetPolicy, DefaultValue, Rest...>::value; // Skip and keep looking
             };
 
             // --- std::size_t EXTRACTOR MECHANICS ---
-            template <template <std::size_t> typename TargetPolicy, std::size_t DefaultValue, typename... Policies>
+            template<template<std::size_t> typename TargetPolicy, std::size_t DefaultValue, typename... Policies>
             struct GetValuePolicy {
                 static constexpr std::size_t value = DefaultValue; // Base case: fallback to default
             };
 
-            template <template <std::size_t> typename TargetPolicy, std::size_t DefaultValue, std::size_t CurrentValue, typename... Rest>
+            template<template<std::size_t> typename TargetPolicy, std::size_t DefaultValue, std::size_t CurrentValue, typename... Rest>
             struct GetValuePolicy<TargetPolicy, DefaultValue, TargetPolicy<CurrentValue>, Rest...> {
                 static constexpr std::size_t value = CurrentValue; // Found it: extract the template value
             };
 
-            template <template <std::size_t> typename TargetPolicy, std::size_t DefaultValue, typename Head, typename... Rest>
+            template<template<std::size_t> typename TargetPolicy, std::size_t DefaultValue, typename Head, typename... Rest>
             struct GetValuePolicy<TargetPolicy, DefaultValue, Head, Rest...> {
                 static constexpr std::size_t value = GetValuePolicy<TargetPolicy, DefaultValue, Rest...>::value; // Skip and keep looking
             };
@@ -192,17 +192,17 @@ namespace thekogans {
             // --------------------------------------------------------------------
             // Unpacker for SlotsPerPage
             // --------------------------------------------------------------------
-            template <std::size_t Default, typename... Policies>
+            template<std::size_t Default, typename... Policies>
             struct GetSlotsPerPage;
 
             // Base Case: Empty pack, return default baseline
-            template <std::size_t Default>
+            template<std::size_t Default>
             struct GetSlotsPerPage<Default> {
                 static constexpr std::size_t value = Default;
             };
 
             // Match Case A: Standard explicit Policy::SlotsPerPage found
-            template <std::size_t Default, std::size_t N, typename... Rest>
+            template<std::size_t Default, std::size_t N, typename... Rest>
             struct GetSlotsPerPage<Default, Policy::SlotsPerPage<N>, Rest...> {
                 static constexpr std::size_t value = N;
             };
@@ -214,7 +214,7 @@ namespace thekogans {
             };
 
             // Fallthrough Case: Skip unrelated tags
-            template <std::size_t Default, typename T, typename... Rest>
+            template<std::size_t Default, typename T, typename... Rest>
             struct GetSlotsPerPage<Default, T, Rest...> {
                 static constexpr std::size_t value = GetSlotsPerPage<Default, Rest...>::value;
             };
@@ -250,17 +250,17 @@ namespace thekogans {
             };
 
             // --- TYPE EXTRACTOR MECHANICS ---
-            template<template <typename> typename TargetPolicy, typename DefaultType, typename... Policies>
+            template<template<typename> typename TargetPolicy, typename DefaultType, typename... Policies>
             struct GetTypePolicy {
                 using type = DefaultType;
             };
 
-            template<template <typename> typename TargetPolicy, typename DefaultType, typename CurrentType, typename... Rest>
+            template<template<typename> typename TargetPolicy, typename DefaultType, typename CurrentType, typename... Rest>
             struct GetTypePolicy<TargetPolicy, DefaultType, TargetPolicy<CurrentType>, Rest...> {
                 using type = CurrentType;
             };
 
-            template<template <typename> typename TargetPolicy, typename DefaultType, typename Head, typename... Rest>
+            template<template<typename> typename TargetPolicy, typename DefaultType, typename Head, typename... Rest>
             struct GetTypePolicy<TargetPolicy, DefaultType, Head, Rest...> {
                 using type = typename GetTypePolicy<TargetPolicy, DefaultType, Rest...>::type;
             };
@@ -443,8 +443,7 @@ namespace thekogans {
                     Policy::Id, 0, Policies...>::value;
                 static constexpr bool CompressOnZero = GetBoolPolicy<
                     Policy::IsCompaction, false, Policies...>::value;
-
-                // Extract policy types
+                // Extract policy types.
                 using Lock = typename GetTypePolicy<
                     Policy::Lock, SpinLock, Policies...>::type;
                 using PageAllocator = typename GetTypePolicy<
