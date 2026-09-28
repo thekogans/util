@@ -26,15 +26,29 @@
 namespace thekogans {
     namespace util {
 
+        #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
+            #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE 256
+        #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
+
+        #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD)
+            #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD 64
+        #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD)
+
+        using ReferencesAllocator = GlobalSlabAllocator<
+            RefCounted::References,
+            Policy::IsSingleton<true>,
+            Policy::SlotsPerPage<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE>,
+            Policy::TLCThreshold<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD>>;
+
         void *RefCounted::References::operator new (std::size_t) {
-            return Allocator::Instance ()->Alloc ();
+            return ReferencesAllocator::Instance ()->Alloc ();
         }
 
         void RefCounted::References::operator delete (void *ptr) {
             if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr)) {
                 return;
             }
-            Allocator::Instance ()->Free (ptr);
+            ReferencesAllocator::Instance ()->Free (ptr);
         }
 
         namespace {

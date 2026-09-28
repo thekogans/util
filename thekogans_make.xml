@@ -139,7 +139,6 @@
     <cpp_header>$(organization)/$(project_directory)/RWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RWLockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Scheduler.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/ScopedSlabAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SecureAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Semaphore.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializable.h</cpp_header>
@@ -761,7 +760,6 @@
     <cpp_test>test_RWLock.cpp</cpp_test>
     <cpp_test>test_JobQueue.cpp</cpp_test>
     <cpp_test>test_Scheduler.cpp</cpp_test>
-    <cpp_test>test_ScopedSlabAllocator.cpp</cpp_test>
     <cpp_test>test_SlabAllocator.cpp</cpp_test>
     <cpp_test>test_Version.cpp</cpp_test>
   </cpp_tests>

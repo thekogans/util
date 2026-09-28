@@ -18,40 +18,92 @@
 #if !defined (__thekogans_util_SlabAllocatorDetail_h)
 #define __thekogans_util_SlabAllocatorDetail_h
 
+#include <new>
+#include <type_traits>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/Constants.h"
+#include "thekogans/util/Singleton.h"
+#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/LockGuard.h"
+#include "thekogans/util/Thread.h"
 
 namespace thekogans {
     namespace util {
 
-        // 1. Forward declare the master template struct first
-        template <typename T, typename... Policies>
-        struct SlabAllocator;
-
-        template<typename T>
-        struct DefaultInstanceCreator;
-
         namespace Policy {
-            // Value policies use a standard template wrapper
-            template <std::size_t Value> struct TLCThreshold { static constexpr std::size_t value = Value; };
-            template <std::size_t Value> struct SlotsPerPage { static constexpr std::size_t value = Value; };
-            template <std::size_t Value> struct CacheLineSize { static constexpr std::size_t value = Value; };
-            template <std::size_t Value> struct Id             { static constexpr std::size_t value = Value; };
+            /// \brief
+            /// This is a very interesting policy because it defines the allocator's tear down
+            /// behavior. If IsSingleton == false (the default), the allocator will execute a
+            /// dtor reclaiming all contained pages back to the PageAllocator. Together with the
+            /// PageAllocator policy, this policy gives you the ability to build tennant allocators.
+            /// Tenant allocators borrow resources. They don't own them. By passing
+            /// Policy::IsSingleton<true> to your scoped allocators (\see{ScopedSlabAllocator}),
+            /// combined with a Policy::PageAllocator<Type> (Default is DefaultPageAllocator) that
+            /// will outlive the tenant, you create a performant allocator that doesn't waste CPU
+            /// cycles.
+            template<bool Value>
+            struct IsSingleton {
+                static constexpr bool value = Value;
+            };
+            /// \brief
+            /// Thread Local Cache size.
+            template<std::size_t Value>
+            struct TLCThreshold {
+                static constexpr std::size_t value = Value;
+            };
+            template<std::size_t Value>
+            struct SlotsPerPage {
+                static constexpr std::size_t value = Value;
+            };
+            template<std::size_t Value>
+            struct CacheLineSize {
+                static constexpr std::size_t value = Value;
+            };
+            template<std::size_t Value>
+            struct Id {
+                static constexpr std::size_t value = Value;
+            };
+            template<bool Value>
+            struct IsCompaction {
+                static constexpr bool value = Value;
+            };
 
             // Type policies hold the raw type definition
-            template <typename T> struct Lock { using type = T; };
-            template <typename T> struct PageAllocator { using type = T; };
+            template<typename T>
+            struct Lock {
+                using type = T;
+            };
+            template<typename T>
+            struct PageAllocator {
+                using type = T;
+            };
+            /// \brief
+            /// This policy is not used by the SlabAllocator. It is used by the
+            /// \see{GlobalSlabAllocator} (SlabAllocator.h) as a template parameter
+            /// for \see{Singleton} (from which it is derived). If you're deriving
+            /// your allocator from SlabAllocator (aka ScopedSlabAllocator), it is
+            /// completely ignored.
             template <template <typename> typename T>
             struct InstanceCreator {
                 template <typename U> using template_type = T<U>;
             };
 
-            namespace Compaction {
-                struct Disable { static constexpr bool value = false; };
-                struct Enable  { static constexpr bool value = true; };
-            }
+            /// \brief
+            /// Compile-time policy helper to calculate optimal TLC threshold
+            /// \param SlotsPerPage The configured slots per page boundary.
+            /// \param RawThreshold The raw threshold passed by the user (0 = Auto-Tune).
+            template <std::size_t SlotsPerPageValue, std::size_t RawThreshold = 0>
+            using DeriveTLCThreshold = TLCThreshold<
+                ((RawThreshold == 0 ? (SlotsPerPageValue / 8 * 2 < 8 ? 8 : SlotsPerPageValue / 8 * 2) : RawThreshold) / 2 >= SlotsPerPageValue) ?
+                SlotsPerPageValue : (RawThreshold == 0 ? (SlotsPerPageValue / 8 * 2 < 8 ? 8 : SlotsPerPageValue / 8 * 2) : RawThreshold)>;
         }
 
         namespace detail {
+            /// \brief
+            /// Forward declaration needed by the GetInstanceCreatorPolicy extractor below.
+            template <typename T, typename... Policies>
+            struct SlabAllocator;
+
             /// \brief
             /// Default slots per page. A tuning knob meant to limit page
             /// allocations for a heavily allocated type.
@@ -70,7 +122,23 @@ namespace thekogans {
             /// must be a power of 2.
             static constexpr std::size_t DEFAULT_CACHE_LINE_SIZE = SYSTEM_CACHE_LINE_SIZE;
 
-            // --- VALUE EXTRACTOR MECHANICS ---
+            // --- BOOL EXTRACTOR MECHANICS ---
+            template <template <bool> typename TargetPolicy, bool DefaultValue, typename... Policies>
+            struct GetBoolPolicy {
+                static constexpr bool value = DefaultValue; // Base case: fallback to default
+            };
+
+            template <template <bool> typename TargetPolicy, bool DefaultValue, bool CurrentValue, typename... Rest>
+            struct GetBoolPolicy<TargetPolicy, DefaultValue, TargetPolicy<CurrentValue>, Rest...> {
+                static constexpr bool value = CurrentValue; // Found it: extract the template value
+            };
+
+            template <template <bool> typename TargetPolicy, bool DefaultValue, typename Head, typename... Rest>
+            struct GetBoolPolicy<TargetPolicy, DefaultValue, Head, Rest...> {
+                static constexpr bool value = GetBoolPolicy<TargetPolicy, DefaultValue, Rest...>::value; // Skip and keep looking
+            };
+
+            // --- SIZE_T EXTRACTOR MECHANICS ---
             template <template <std::size_t> typename TargetPolicy, std::size_t DefaultValue, typename... Policies>
             struct GetValuePolicy {
                 static constexpr std::size_t value = DefaultValue; // Base case: fallback to default
@@ -88,19 +156,26 @@ namespace thekogans {
 
             // --- TYPE EXTRACTOR MECHANICS ---
             template <template <typename> typename TargetPolicy, typename DefaultType, typename... Policies>
-            struct GetTypePolicy { using type = DefaultType; };
+            struct GetTypePolicy {
+                using type = DefaultType;
+            };
 
             template <template <typename> typename TargetPolicy, typename DefaultType, typename CurrentType, typename... Rest>
-            struct GetTypePolicy<TargetPolicy, DefaultType, TargetPolicy<CurrentType>, Rest...> { using type = CurrentType; };
+            struct GetTypePolicy<TargetPolicy, DefaultType, TargetPolicy<CurrentType>, Rest...> {
+                using type = CurrentType;
+            };
 
             template <template <typename> typename TargetPolicy, typename DefaultType, typename Head, typename... Rest>
             struct GetTypePolicy<TargetPolicy, DefaultType, Head, Rest...> {
                 using type = typename GetTypePolicy<TargetPolicy, DefaultType, Rest...>::type;
             };
 
+            // --- InstanceCreator EXTRACTOR MECHANICS ---
             // Base Case: Fallback to the engine's default allocator creator if the tag is missing
             template <typename T, typename DefaultType, typename... Policies>
-            struct GetInstanceCreatorPolicyHelper { using type = DefaultType; };
+            struct GetInstanceCreatorPolicyHelper {
+                using type = DefaultType;
+            };
 
             // Match Case: If we encounter the InstanceCreator type tag wrapper, extract its template type!
             template <typename T, typename DefaultType, template <typename> typename CurrentTemplate, typename... Rest>
@@ -123,41 +198,28 @@ namespace thekogans {
                     Policies...>::type;
             };
 
-            // Extractor trait for boolean compaction policy
-            template <typename DefaultType, typename... Policies>
-            struct GetCompactionStrategy { using type = DefaultType; };
-
-            template <typename DefaultType, typename... Rest>
-            struct GetCompactionStrategy<DefaultType, Policy::Compaction::Enable, Rest...> {
-                using type = Policy::Compaction::Enable;
-            };
-
-            template <typename DefaultType, typename... Rest>
-            struct GetCompactionStrategy<DefaultType, Policy::Compaction::Disable, Rest...> {
-                using type = Policy::Compaction::Disable;
-            };
-
+            // --- SlabAllocator policy validation static_asssert helpers.
             // A compile-time trait to check if a type is a valid policy for our allocator
             template <typename P> struct IsValidSlabPolicy : std::false_type {};
 
             // Explicitly whitelist every supported tag right here in the detail namespace!
-            template <std::size_t V> struct IsValidSlabPolicy<Policy::SlotsPerPage<V>> : std::true_type {};
-            template <std::size_t V> struct IsValidSlabPolicy<Policy::TLCThreshold<V>> : std::true_type {};
-            template <std::size_t V> struct IsValidSlabPolicy<Policy::CacheLineSize<V>> : std::true_type {};
-            template <std::size_t V> struct IsValidSlabPolicy<Policy::Id<V>>            : std::true_type {};
-            template <typename L>    struct IsValidSlabPolicy<Policy::Lock<L>>          : std::true_type {};
-            template <typename A>    struct IsValidSlabPolicy<Policy::PageAllocator<A>> : std::true_type {};
-            template <template <typename> typename C> struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
-            template <> struct IsValidSlabPolicy<Policy::Compaction::Enable>  : std::true_type {};
-            template <> struct IsValidSlabPolicy<Policy::Compaction::Disable> : std::true_type {};
+            template<std::size_t V> struct IsValidSlabPolicy<Policy::IsSingleton<V>> : std::true_type {};
+            template<std::size_t V> struct IsValidSlabPolicy<Policy::SlotsPerPage<V>> : std::true_type {};
+            template<std::size_t V> struct IsValidSlabPolicy<Policy::TLCThreshold<V>> : std::true_type {};
+            template<std::size_t V> struct IsValidSlabPolicy<Policy::CacheLineSize<V>> : std::true_type {};
+            template<std::size_t V> struct IsValidSlabPolicy<Policy::Id<V>>            : std::true_type {};
+            template<std::size_t V> struct IsValidSlabPolicy<Policy::IsCompaction<V>>  : std::true_type {};
+            template<typename L>    struct IsValidSlabPolicy<Policy::Lock<L>>          : std::true_type {};
+            template<typename A>    struct IsValidSlabPolicy<Policy::PageAllocator<A>> : std::true_type {};
+            template<template <typename> typename C> struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
 
             // Helper to evaluate the entire variadic pack at once
             template <typename... Policies>
-            constexpr bool ValidateSlabPolicies() {
+            constexpr bool ValidateSlabPolicies () {
                 return (IsValidSlabPolicy<Policies>::value && ...);
             }
 
-            /// \struct DefaultPageAllocator SlabAllocator.h thekogans/util/SlabAllocator.h
+            /// \struct DefaultPageAllocator SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
             ///
             /// \brief
             /// The default page allocator. Yet another tuning knob to allow you to
@@ -178,7 +240,7 @@ namespace thekogans {
                     std::size_t pageSize) noexcept;
             };
 
-            /// \struct StdPageAllocator SlabAllocator.h thekogans/util/SlabAllocator.h
+            /// \struct StdPageAllocator SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
             ///
             /// \brief
             /// If the DefaultPageAllocator proves to be a bottleneck on your system,
@@ -197,6 +259,434 @@ namespace thekogans {
                 static void Free (
                     void *ptr,
                     std::size_t pageSize) noexcept;
+            };
+
+            /// \struct SlabAllocator SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+            ///
+            /// \brief
+            /// A SlabAllocator's purpose is to allocate memory for a single type. Knowing the size
+            /// of the type it's allocating for a priori makes all the difference in the world. We
+            /// can use that information to design a highly efficient, specifically tuned allocation
+            /// engine. This one is designed with all the bells and whistles and to run in 'true' O(1)
+            /// time complexity save for the caveat that PageAllocator will do what it will do. As you
+            /// can see it's template takes up to 8! parameters. All but the first are defaulted with
+            /// sensible values so that you can just leave them alone 90% of the time. But when those
+            /// critical corner cases and specialty conditions demand it, it can be tuned to fit any
+            /// environment and need. Great care has been taken to make sure alignment requirements
+            /// are not only met but are enforced to make this code as performant as possible on modern
+            /// cache line driven architectures. Key variables have been isolated in to their own cache
+            /// lines to further protect against false sharing. By utilizing it's tuning knobs one can
+            /// build highly specific, lock free (NullLock) allocators that execute their Alloc and Free
+            /// in just a small handful of machine instructions. The use of SlabAllocator for your
+            /// types also greatly aids in avoiding global heap fragmentation as types are allocated
+            /// from contiguous pages.
+            ///
+            /// SlabAllocator is my first collaboration with an AI (Google's Gemini). I posed a question;
+            /// Is there a practical way to implement a slab allocator with 'true' O(1) performance
+            /// guarantees? I didn't want average or amortized O(1). I wanted true O(1). After many
+            /// iterations and blind alley ventures, this is what we both came up with. The architecture
+            /// is all mine. The nuts and bolts of alignment, constexpr and TLC are all AI's. This
+            /// implementation evolved over just two days of back and forth. Looking back on my earlier
+            /// efforts I can honestly say that to achieve this level of sophistication in the past would
+            /// take me significantly longer. Digging through old chats. Looking for exact documentation
+            /// I needed would have consumed an enormous amount of time and effort. On top of all this,
+            /// once we were done designing, and I was done implementing it took the AI mere seconds to
+            /// generate a burn the earth down validation suite. Again, something that would take me a
+            /// day or two to do by myself. All in all, I am absolutely sold on the idea of pair programming
+            /// with AI. To be sure it's not all roses. There were times it was missing context and tried
+            /// to lead me down blind alleys. But that's why it's a collaboration. It's not an all knowing,
+            /// all seeing oracle that will flawlessly do your work for you. It's a fantastically powerful
+            /// tool that in the right hands creates an unbeatable team.
+            ///
+            /// \tparam T The type that we are allocating for.
+            /// \tparam Policies A pack of policies you want to modify. The order is irrelevant!
+            template <typename T, typename... Policies>
+            struct SlabAllocator {
+            private:
+                static_assert (ValidateSlabPolicies<Policies...> (),
+                    "\n=========================================================================\n"
+                    "  CRITICAL ERROR: Invalid or Typoed Policy Tag passed to SlabAllocator.\n"
+                    "=========================================================================\n"
+                    "  Supported Allocator Policies are exclusively:\n"
+                    "    - Policy::IsSingleton<bool> (Default false)\n"
+                    "    - Policy::SlotsPerPage<std::size_t> (Default detail::DEFAULT_SLOTS_PER_PAGE)\n"
+                    "    - Policy::TLCThreshold<std::size_t> (Default detail::DEFAULT_TLC_THRESHOLD)\n"
+                    "    - Policy::CacheLineSize<std::size_t> (Default detail::DEFAULT_CACHE_LINE_SIZE)\n"
+                    "    - Policy::Id<std::size_t> (Default 0)\n"
+                    "    - Policy::Lock<typename> (Default SpinLock)\n"
+                    "    - Policy::PageAllocator<typename> (Default detail::DefaultPageAllocator\n"
+                    "    - Policy::InstanceCreator<template> (only used if derived from Singleton)\n"
+                    "    - Policy::IsCompaction<bool> (Default false)\n"
+                    "=========================================================================\n");
+
+                static constexpr bool IsSingleton = GetBoolPolicy<
+                    Policy::IsSingleton, false, Policies...>::value;
+                static constexpr std::size_t TLCThreshold = GetValuePolicy<
+                    Policy::TLCThreshold, DEFAULT_TLC_THRESHOLD, Policies...>::value;
+                static constexpr std::size_t SlotsPerPage = GetValuePolicy<
+                    Policy::SlotsPerPage, DEFAULT_SLOTS_PER_PAGE, Policies...>::value;
+                static constexpr std::size_t CacheLineSize = GetValuePolicy<
+                    Policy::CacheLineSize, DEFAULT_CACHE_LINE_SIZE, Policies...>::value;
+                static constexpr std::size_t Id = GetValuePolicy<
+                    Policy::Id, 0, Policies...>::value;
+                static constexpr bool CompressOnZero = GetBoolPolicy<
+                    Policy::IsCompaction, false, Policies...>::value;
+
+                // Extract policy types
+                using Lock = typename GetTypePolicy<
+                    Policy::Lock, SpinLock, Policies...>::type;
+                using PageAllocator = typename GetTypePolicy<
+                    Policy::PageAllocator, DefaultPageAllocator, Policies...>::type;
+
+                /// \brief
+                /// Validate template parameters.
+                static_assert (SlotsPerPage > 0, "SlotsPerPage must be > 0.");
+                static_assert (IsPowerOf2 (CacheLineSize), "CacheLineSize must be a power of 2.");
+
+                /// \brief
+                /// Compile time function to calculate the slot size.
+                /// Wrapped in a function because of the compiler scope evaluation rules.
+                /// \return Slot size.
+                static constexpr std::size_t calcSlotSize () noexcept {
+                    return std::max ((sizeof (T) + alignof (T) - 1) & ~(alignof (T) - 1), sizeof (typename Page::Slot));
+                }
+
+                // The following consts are allocator invariants. We calculate them
+                // once at compile time and use them at run time as 'magic' numbers.
+
+                /// \brief
+                /// Slot size.
+                static constexpr std::size_t slotSize = calcSlotSize ();
+                /// \brief
+                /// Page size (header + slots). Aligned to the next power of 2.
+                static constexpr std::size_t pageSize = Align (CacheLineSize + slotSize * SlotsPerPage);
+                /// \brief
+                /// Page mask used to turn raw void * in to Page * (see Free).
+                static constexpr std::size_t pageMask = pageSize - 1;
+                /// \brief
+                /// Maximum slots per page.
+                static constexpr std::size_t maxSlots = (pageSize - CacheLineSize) / slotSize;
+
+                /// \struct SlabAllocator::Page SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+                ///
+                /// \brief
+                /// The page (aka slab) from which we allocate slots. It's aligned
+                /// on and occupies an entire cache line to prevent false sharing
+                /// and cache thrashing. Pages form a singly linked list rooted in
+                /// pageList.
+                struct alignas (CacheLineSize) Page {
+                    struct SingletonMasterNext {};
+                    struct ScopedMasterNext {
+                        Page *masterNext{nullptr};
+                    };
+                    using MasterNext = std::conditional_t<IsSingleton, SingletonMasterNext, ScopedMasterNext>;
+                    [[no_unique_address]] MasterNext masterNext;
+                    /// \brief
+                    /// Next page in the list.
+                    Page *partialNext{nullptr};
+                    /// \brief
+                    /// Number of slots allocated from this page.
+                    std::size_t slotCount{0};
+                    /// \struct SlabAllocator::Page::Slot SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+                    ///
+                    /// \brief
+                    /// Slot overlays our free slot list on top of released user data.
+                    struct Slot {
+                        /// \brief
+                        /// Free slots form a singly linked list rooted at freeList.
+                        /// Pointer to the next free slot in the list.
+                        Slot *next;
+                    } *freeList{nullptr};
+
+                    /// \brief
+                    /// Calculate exactly how many bytes are left in the single cache line.
+                    /// 3 pointers/counters = 24 bytes on 64-bit systems.
+                    ////////////////////////////// VERY IMPORTANT //////////////////////////////
+                    /// If you add new members to Page you must add their sizes to metadataSize.
+                    ////////////////////////////// VERY IMPORTANT //////////////////////////////
+                    static constexpr std::size_t metadataSize =
+                        (IsSingleton ? 0 : sizeof (Page *)) +
+                        sizeof (Page *) +
+                        sizeof (std::size_t) +
+                        sizeof (Slot *);
+                    // Guard the Metadata Header Block
+                    static_assert (
+                        metadataSize <= CacheLineSize,
+                        "Page metadata header size has exceeded a single CacheLineSize block.");
+
+                    // ************************************************************************
+                    // The following bit of c++foo was all Gemini.
+                    /// \brief
+                    /// Calculated padding size.
+                    static constexpr std::size_t paddingSize = CacheLineSize - metadataSize;
+                    /// \struct SlabAllocator::Page::EmptyTag SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+                    ///
+                    /// \brief
+                    /// This empty struct is a conditional placeholder for PaddingType in case paddingSize == 0.
+                    struct EmptyTag {};
+                    /// \brief
+                    /// Declare padding type to be either char[] if paddingSize > 0, or EmptyTag if paddingSize == 0.
+                    using PaddingType = std::conditional_t<(paddingSize > 0), char[paddingSize], EmptyTag>;
+                    /// \brief
+                    /// Declare a conditional PaddingType using a standards compliant (c++17 and >) compiler attribute.
+                    /// [[no_unique_address]] ensures EmptyTag takes up absolutely zero bytes of space!
+                    [[no_unique_address]] PaddingType padding;
+                    // ************************************************************************
+
+                    /// \brief
+                    /// ctor.
+                    /// if paddingSize is > 0, this ctor will generate code to clear it.
+                    /// if paddingSize is == 0, this ctor will be a constexpr noop and
+                    /// removed entirely by the compiler.
+                    constexpr Page () noexcept {
+                        if constexpr (paddingSize > 0) {
+                            for (std::size_t i = 0; i < paddingSize; ++i) {
+                                reinterpret_cast<char *> (&padding)[i] = 0;
+                            }
+                        }
+                    }
+
+                    /// \brief
+                    /// Allocate a slot.
+                    /// \return A new slot.
+                    inline void *Alloc () noexcept {
+                        if (freeList != nullptr) {
+                            Slot *slot = freeList;
+                            freeList = freeList->next;
+                            ++slotCount;
+                            return reinterpret_cast<void *> (slot);
+                        }
+                        return reinterpret_cast<char *> (this) + CacheLineSize + slotCount++ * slotSize;
+                    }
+
+                    /// \brief
+                    /// Return a previously Alloc(ated) slot back to the free list.
+                    /// \param[in] ptr Slot pointer to free.
+                    inline void Free (void *ptr) noexcept {
+                        Slot *slot = reinterpret_cast<Slot *> (ptr);
+                        slot->next = freeList;
+                        freeList = slot;
+                        --slotCount;
+                        if constexpr (CompressOnZero) {
+                            if (THEKOGANS_UTIL_UNLIKELY (slotCount == 0)) {
+                                freeList = nullptr;
+                            }
+                        }
+                    }
+                };
+
+                // Validate our assumptions and perform sanity checks.
+                static_assert (
+                    sizeof (Page) == CacheLineSize,
+                    "sizeof (Page) must be EXACTLY equal to CacheLineSize.");
+
+                template<typename PageAllocator, std::size_t pageSize, typename PageType>
+                struct ScopedSlabAllocatorStorageBase {
+                    PageType *masterPageList{nullptr};
+                    ~ScopedSlabAllocatorStorageBase () noexcept {
+                        PageType *page = masterPageList;
+                        while (page != nullptr) {
+                            PageType *nextPage = page->masterNext.masterNext;
+                            PageAllocator::Free (page, pageSize);
+                            page = nextPage;
+                        }
+                    }
+                };
+                template<typename PageAllocator, std::size_t pageSize, typename PageType>
+                struct SingletonSlabAllocatorStorageBase {};
+                using StorageBase = std::conditional_t<
+                    IsSingleton,
+                    SingletonSlabAllocatorStorageBase<PageAllocator, pageSize, Page>,
+                    ScopedSlabAllocatorStorageBase<PageAllocator, pageSize, Page>>;
+
+                struct Storage : public StorageBase {
+                    /// \brief
+                    /// Partially allocated page list.
+                    Page *partialPageList{nullptr};
+                    /// \brief
+                    /// Flag to protect multiple threads from calling the page allocator.
+                    bool pageAllocationInFlight{false};
+                    /// \brief
+                    /// Protect access to storage.
+                    /// Align the lock to it's own cache line to prevent false sharing with pageList.
+                    alignas (CacheLineSize) Lock lock;
+                } storage;
+
+                /// \struct SlabAllocator::TLC SlabAllocator.h thekogans/util/SlabAllocator.h
+                ///
+                /// \brief
+                /// Thread Local Cache (TLC). We keep a small (TLCThreshold) number of slots
+                /// per thread. This optimization allows us to bypass the costly lock
+                /// acquisition. In real load testing (see test_SlabAllocator) this
+                /// results in ~65% speedup!
+                struct TLC {
+                    /// \brief
+                    /// Our own local slot list.
+                    typename Page::Slot *slotList{nullptr};
+                    /// \brief
+                    /// Number of slots currently in the slotList.
+                    std::size_t slotCount{0};
+                };
+
+                /// \brief
+                /// Return the TLC.
+                /// \return tlc.
+                static TLC &GetTLC () noexcept {
+                    thread_local TLC tlc;
+                    return tlc;
+                }
+
+            public:
+                /// \brief
+                /// Allocate a new slot with streamlined batch refilling.
+                /// \return Pointer to the newly allocated slot.
+                void *Alloc () noexcept {
+                    void *ptr = nullptr;
+                    if constexpr (TLCThreshold > 0) {
+                        TLC &tlc = GetTLC ();
+                        // See if we have a free slot in our local cache.
+                        if (THEKOGANS_UTIL_UNLIKELY (tlc.slotList == nullptr)) {
+                            // No banana. Let's seed the TLC.
+                            static constexpr std::size_t batchTarget = TLCThreshold / 2;
+                            // Persistent outer loop forces lock retention until TLC target is met.
+                            LockGuard<Lock> guard (storage.lock);
+                            while (tlc.slotCount < batchTarget) {
+                                // Inner loop aggressively drains whatever pages are currently available.
+                                while (tlc.slotCount < batchTarget && storage.partialPageList != nullptr) {
+                                    typename Page::Slot *harvested;
+                                    // Path A: Rapid extraction from recycled slots.
+                                    if (storage.partialPageList->freeList != nullptr) {
+                                        harvested = storage.partialPageList->freeList;
+                                        storage.partialPageList->freeList = storage.partialPageList->freeList->next;
+                                    }
+                                    // Path B: Linear extraction from contiguous tail space.
+                                    else {
+                                        harvested = reinterpret_cast<typename Page::Slot *> (
+                                            reinterpret_cast<char *> (storage.partialPageList) +
+                                            CacheLineSize + storage.partialPageList->slotCount * slotSize);
+                                    }
+                                    // Unified state increment & precise invariant rollover.
+                                    if (THEKOGANS_UTIL_UNLIKELY (++storage.partialPageList->slotCount == maxSlots)) {
+                                        // Page is full. Evict it from the list so that no one asks it
+                                        // for slots again. Yes the page is now floating out there in
+                                        // the either completely inaccessible until someone decides to
+                                        // free one of it's slots.
+                                        storage.partialPageList = storage.partialPageList->partialNext;
+                                    }
+                                    harvested->next = tlc.slotList;
+                                    tlc.slotList = harvested;
+                                    ++tlc.slotCount;
+                                }
+                                // If inner loop broke but target isn't met, the pool is dry.
+                                // Seed a fresh page from the OS and let the outer loop repeat the harvest.
+                                if (tlc.slotCount < batchTarget) {
+                                    AllocPage ();
+                                }
+                            }
+                        }
+                        ptr = tlc.slotList;
+                        tlc.slotList = tlc.slotList->next;
+                        --tlc.slotCount;
+                    }
+                    else {
+                        // TLC compiled out: Single clean allocation tracking.
+                        LockGuard<Lock> guard (storage.lock);
+                        AllocPage ();
+                        ptr = storage.partialPageList->Alloc ();
+                        if (THEKOGANS_UTIL_UNLIKELY (storage.partialPageList->slotCount == maxSlots)) {
+                            storage.partialPageList = storage.partialPageList->partialNext;
+                        }
+                    }
+                    return ptr;
+                }
+
+                /// \brief
+                /// Try to cache a previously allocated slot. If our cache is full,
+                /// return it back to the page it came from.
+                /// \param[in] ptr Slot pointer to free.
+                void Free (void *ptr) noexcept {
+                    if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
+                        if constexpr (TLCThreshold > 0) {
+                            typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
+                            TLC &tlc = GetTLC ();
+                            slot->next = tlc.slotList;
+                            tlc.slotList = slot;
+                            ++tlc.slotCount;
+                            // If we have no more room in our local cache batch release a bunch
+                            // of slots back to their pages so that we have room for incoming.
+                            if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount > TLCThreshold)) {
+                                LockGuard<Lock> guard (storage.lock);
+                                static constexpr std::size_t flushCount = TLCThreshold / 2;
+                                for (std::size_t i = 0; i < flushCount; ++i) {
+                                    typename Page::Slot *slot = tlc.slotList;
+                                    tlc.slotList = tlc.slotList->next;
+                                    --tlc.slotCount;
+                                    FreeSlot (slot);
+                                }
+                            }
+                        }
+                        else {
+                            LockGuard<Lock> guard (storage.lock);
+                            FreeSlot (ptr);
+                        }
+                    }
+                }
+
+            private:
+                inline void AllocPage () noexcept {
+                    // Loop persistently until a page is guaranteed to be available or...
+                    while (THEKOGANS_UTIL_UNLIKELY (storage.partialPageList == nullptr && storage.pageAllocationInFlight)) {
+                        storage.lock.Release ();
+                        Thread::YieldSlice ();
+                        storage.lock.Acquire ();
+                    }
+                    // ...we need to allocate it.
+                    if (storage.partialPageList == nullptr) {
+                        // Set the in flight flag before releasing the lock so that no other thread
+                        // tries to call AllocPage.
+                        storage.pageAllocationInFlight = true;
+                        // Release the lock before dropping down to the OS.
+                        // This wont help waiting allocators but if there are
+                        // waiting freeers it will alow them to let go of their
+                        // slots while we're waiting on the OS.
+                        storage.lock.Release ();
+                        Page *page = new (PageAllocator::Alloc (pageSize)) Page ();
+                        // We're back from the OS land. Reaquire the lock so that we
+                        // can wire the freshly minted page in to the list.
+                        storage.lock.Acquire ();
+                        // Wire the newly minted page in to our page list.
+                        if constexpr (!IsSingleton) {
+                            page->masterNext.masterNext = storage.masterPageList;
+                            storage.masterPageList = page;
+                        }
+                        page->partialNext = storage.partialPageList;
+                        storage.partialPageList = page;
+                        // Now that a fresh page is available the upstream Alloc will be able
+                        // to satisfy harvesting or allocating. Since we hold the lock there's
+                        // no chance that this page will be stolen from under us by another thread.
+                        // We can now safely clear the in flight flag so that the spinning waiters
+                        // drop out and either have a fresh page to harvest/allocate from or permission
+                        // to allocate.
+                        storage.pageAllocationInFlight = false;
+                    }
+                }
+
+                inline void FreeSlot (void *slot) noexcept {
+                    // The magic! This is why we can guarntee wall to wall O(1) performance.
+                    // By aligning the page size to the next power of 2 and then using that
+                    // size as page memory placement alignment, we can use a simple pointer
+                    // masking trick to find the page address given any address it allocated.
+                    // After all the syntactic sugar is stripped away this line boils down
+                    // to a single 'and' instruction in hardware.
+                    Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (slot) & ~pageMask);
+                    page->Free (slot);
+                    // The page transitioned from full to partial.
+                    // Wire it back in to our list from the either.
+                    if (THEKOGANS_UTIL_UNLIKELY (page->slotCount + 1 == maxSlots)) {
+                        page->partialNext = storage.partialPageList;
+                        storage.partialPageList = page;
+                    }
+                }
             };
         } // namespace detail
 

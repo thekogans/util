@@ -22,7 +22,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/SlabAllocatorDetail.h"
 
 namespace thekogans {
     namespace util {
@@ -65,25 +64,11 @@ namespace thekogans {
         /// to ward off the dreaded diamond pattern that can result from
         /// multiple inheritance.
         struct _LIB_THEKOGANS_UTIL_DECL RefCounted {
-        private:
             /// \struct RefCounted::References RefCounted.h thekogans/util/RefCounted.h
             ///
             /// \brief
             /// Control block for the lifetime of RefCounted as well as \see{WeakPtr}.
             struct _LIB_THEKOGANS_UTIL_DECL alignas (16) References {
-            #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
-                #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE 8192
-            #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE)
-
-            #if !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD)
-                #define THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD 128
-            #endif // !defined (THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD)
-
-                using Allocator = SlabAllocator<
-                    References,
-                    Policy::SlotsPerPage<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE>,
-                    Policy::TLCThreshold<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD>>;
-
                 /// \brief
                 /// Use the private heap to allocate a References.
                 /// \param[in] size Ignored as we know exactly how much to allocate.
@@ -147,7 +132,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (References)
             } *references;
 
-        public:
             /// \brief
             /// ctor.
             RefCounted () :
