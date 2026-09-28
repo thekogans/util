@@ -87,12 +87,12 @@ option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 add_library(thekogans_util)
 
 # 1. Define flat lists per compiler toolchain
-set(GCC_CLANG_NO_WARN "-Wno-unused-parameter" "-Wno-interference-size")
+set(GCC_NO_WARN "-Wno-unused-parameter" "-Wno-interference-size")
 set(MSVC_NO_WARN      "/wd4100" "/wd4018")
 
 # 2. ENFORCE QUOTES around the generator expressions so lists expand cleanly
 target_compile_options(thekogans_util PUBLIC
-    "$<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:${GCC_CLANG_NO_WARN}>"
+    "$<$<OR:$<CXX_COMPILER_ID:GNU>>:${GCC_CLANG_NO_WARN}>"
     "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>"
 )
 
