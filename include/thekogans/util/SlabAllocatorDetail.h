@@ -22,13 +22,39 @@
 #include <type_traits>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Thread.h"
 
 namespace thekogans {
     namespace util {
+
+        namespace detail {
+            /// \brief
+            /// Default slots per page. A tuning knob meant to limit page
+            /// allocations for a heavily allocated type.
+            static constexpr std::size_t DEFAULT_SLOTS_PER_PAGE = 512;
+            /// \brief
+            /// Default Thread Local Cache (TLC) size.
+            /// A tuning knob meant to limit lock contention on a heavily contested type.
+            static constexpr std::size_t DEFAULT_TLC_THRESHOLD = 128;
+
+            // We evaluate your exact cascading fall-through logic cleanly in one place
+            constexpr std::size_t CalculateThreshold (
+                    std::size_t slots,
+                    std::size_t threads) noexcept {
+                // Target harvest per thread = slots / threads
+                std::size_t harvest = slots / threads;
+                std::size_t threshold = harvest * 2;
+                // Apply your floor clamp
+                if (threshold < 8) threshold = 8;
+                // Apply your cascading safety cap
+                if ((threshold / 2) >= slots) {
+                    threshold = slots;
+                }
+                return threshold;
+            }
+        }
 
         namespace Policy {
             /// \brief
@@ -89,31 +115,28 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Compile-time policy helper to calculate optimal TLC threshold
+            /// Policy helper to calculate optimal TLC threshold
             /// \param SlotsPerPage The configured slots per page boundary.
-            /// \param RawThreshold The raw threshold passed by the user (0 = Auto-Tune).
-            namespace detail {
-                // We evaluate your exact cascading fall-through logic cleanly in one place
-                constexpr std::size_t CalculateThreshold(std::size_t slots, std::size_t threads) noexcept {
-                    // Target harvest per thread = slots / threads
-                    std::size_t harvest = slots / threads;
-                    std::size_t threshold = harvest * 2;
-                    // Apply your floor clamp
-                    if (threshold < 8) threshold = 8;
-                    // Apply your cascading safety cap
-                    if ((threshold / 2) >= slots) {
-                        threshold = slots;
-                    }
-                    return threshold;
-                }
-            }
-
+            /// \param ThreadDensity The number of threads sharing this allocator.
             template<
                 std::size_t SlotsPerPage,
                 std::size_t ThreadDensity = 16>
             struct DeriveTLCThreshold {
                 static constexpr std::size_t TLCThreshold =
                     detail::CalculateThreshold (SlotsPerPage, ThreadDensity);
+            };
+
+            template<
+                std::size_t TLCThreshold,
+                std::size_t ThreadDensity = 16>
+            struct DeriveSlotsPerPage {
+                static constexpr std::size_t SlotsPerPage = TLCThreshold * ThreadDensity;
+            };
+
+            template<std::size_t ThreadDensity = 16>
+            struct DeriveSlotsPerPageAndTLCThreshold {
+                static constexpr std::size_t SlotsPerPage = detail::DEFAULT_TLC_THRESHOLD * ThreadDensity;
+                static constexpr std::size_t TLCThreshold = detail::DEFAULT_TLC_THRESHOLD;
             };
         }
 
@@ -123,25 +146,7 @@ namespace thekogans {
             template <typename T, typename... Policies>
             struct SlabAllocator;
 
-            /// \brief
-            /// Default slots per page. A tuning knob meant to limit page
-            /// allocations for a heavily allocated type.
-            static constexpr std::size_t DEFAULT_SLOTS_PER_PAGE = 512;
-            /// \brief
-            /// Default Thread Local Cache (TLC) size.
-            /// A tuning knob meant to limit lock contention on a heavily contested type.
-            static constexpr std::size_t DEFAULT_TLC_THRESHOLD = 128;
-            /// \brief
-            /// Default cache line size.
-            /// VERY IMPORTANT: This is a very critical parameter. On modern megacore
-            /// architectures (M5) cache eviction is perhaps the single biggest drain
-            /// on application performance. This is why it's exposed as a template parameter.
-            /// If, for some reason, the compiler can't get it right, you have the power to
-            /// force it in to a particular value. It goes without saying that this value
-            /// must be a power of 2.
-            static constexpr std::size_t DEFAULT_CACHE_LINE_SIZE = SYSTEM_CACHE_LINE_SIZE;
-
-            // --- BOOL EXTRACTOR MECHANICS ---
+            // --- bool EXTRACTOR MECHANICS ---
             template <template <bool> typename TargetPolicy, bool DefaultValue, typename... Policies>
             struct GetBoolPolicy {
                 static constexpr bool value = DefaultValue; // Base case: fallback to default
@@ -157,7 +162,7 @@ namespace thekogans {
                 static constexpr bool value = GetBoolPolicy<TargetPolicy, DefaultValue, Rest...>::value; // Skip and keep looking
             };
 
-            // --- SIZE_T EXTRACTOR MECHANICS ---
+            // --- std::size_t EXTRACTOR MECHANICS ---
             template <template <std::size_t> typename TargetPolicy, std::size_t DefaultValue, typename... Policies>
             struct GetValuePolicy {
                 static constexpr std::size_t value = DefaultValue; // Base case: fallback to default
@@ -279,8 +284,8 @@ namespace thekogans {
 
             // --- SlabAllocator policy validation static_asssert helpers.
             // A compile-time trait to check if a type is a valid policy for our allocator
-            template<typename P> struct IsValidSlabPolicy : std::false_type {};
-
+            template<typename P>
+            struct IsValidSlabPolicy : std::false_type {};
             // Explicitly whitelist every supported tag right here in the detail namespace!
             template<std::size_t V>
             struct IsValidSlabPolicy<Policy::IsSingleton<V>> : std::true_type {};
@@ -302,7 +307,6 @@ namespace thekogans {
             struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
             template <std::size_t S, std::size_t T>
             struct IsValidSlabPolicy<Policy::DeriveTLCThreshold<S, T>> : std::true_type {};
-
             // Helper to evaluate the entire variadic pack at once
             template <typename... Policies>
             constexpr bool ValidateSlabPolicies () {
@@ -401,12 +405,13 @@ namespace thekogans {
                     "    - Policy::IsSingleton<bool> (Default false)\n"
                     "    - Policy::SlotsPerPage<std::size_t> (Default detail::DEFAULT_SLOTS_PER_PAGE)\n"
                     "    - Policy::TLCThreshold<std::size_t> (Default detail::DEFAULT_TLC_THRESHOLD)\n"
-                    "    - Policy::CacheLineSize<std::size_t> (Default detail::DEFAULT_CACHE_LINE_SIZE)\n"
+                    "    - Policy::CacheLineSize<std::size_t> (Default SYSTEM_CACHE_LINE_SIZE)\n"
                     "    - Policy::Id<std::size_t> (Default 0)\n"
                     "    - Policy::Lock<typename> (Default SpinLock)\n"
                     "    - Policy::PageAllocator<typename> (Default detail::DefaultPageAllocator\n"
                     "    - Policy::InstanceCreator<template> (only used if derived from Singleton)\n"
                     "    - Policy::IsCompaction<bool> (Default false)\n"
+                    "    - Policy::DeriveTLCThreshold<std::size_t, std::size_t>\n"
                     "=========================================================================\n");
 
                 static constexpr bool IsSingleton = GetBoolPolicy<
@@ -416,7 +421,7 @@ namespace thekogans {
                 static constexpr std::size_t SlotsPerPage = GetSlotsPerPage<
                     DEFAULT_SLOTS_PER_PAGE, Policies...>::value;
                 static constexpr std::size_t CacheLineSize = GetValuePolicy<
-                    Policy::CacheLineSize, DEFAULT_CACHE_LINE_SIZE, Policies...>::value;
+                    Policy::CacheLineSize, SYSTEM_CACHE_LINE_SIZE, Policies...>::value;
                 static constexpr std::size_t Id = GetValuePolicy<
                     Policy::Id, 0, Policies...>::value;
                 static constexpr bool CompressOnZero = GetBoolPolicy<

@@ -19,6 +19,7 @@
 #define __thekogans_util_SlabAllocator_h
 
 #include "thekogans/util/SlabAllocatorDetail.h"
+#include "thekogans/util/Singleton.h"
 
 namespace thekogans {
     namespace util {
