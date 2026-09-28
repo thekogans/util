@@ -36,7 +36,6 @@ namespace thekogans {
 
         using ReferencesAllocator = GlobalSlabAllocator<
             RefCounted::References,
-            Policy::IsSingleton<true>,
             Policy::SlotsPerPage<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE>,
             Policy::TLCThreshold<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD>>;
 
