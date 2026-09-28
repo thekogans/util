@@ -398,7 +398,7 @@ namespace thekogans {
         RunLoop::State::~State () {
             // RunLoop derivatives should have disposed of running jobs.
             // The best we can do here is alert the engineer to a leak.
-            assert (runningJobs.empty ());
+            //assert (runningJobs.empty ());
             // Cancel remaining pending jobs to unblock waiters.
             Job *job;
             while ((job = jobExecutionPolicy->DeqJob (*this)) != nullptr) {

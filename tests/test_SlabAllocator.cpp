@@ -31,7 +31,7 @@ constexpr int NUM_CONSUMERS  = 8;
 constexpr int NUM_MIXED_WORKERS = 16;
 constexpr int OPS_PER_THREAD = 50000;
 
-using TestAllocator = SlabAllocator<MockObject>;
+using TestAllocator = ScopedSlabAllocator<MockObject>;
 
 template <
     typename T,
@@ -102,7 +102,7 @@ public:
 };
 
 int main () {
-    TestAllocator &allocator = *TestAllocator::Instance ();
+    TestAllocator allocator;
     std::cout << "[INFO] Spinning up " << (NUM_PRODUCERS + NUM_CONSUMERS + NUM_MIXED_WORKERS) <<
         " highly-contended worker threads...\n";
 

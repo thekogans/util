@@ -24,9 +24,15 @@ project(thekogans_util
     LANGUAGES C CXX
 )
 
-# Enable Objective-C++ if compiling on macOS
-if(APPLE)
+if(WIN32)
+elseif(APPLE)
     enable_language(OBJCXX)
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+else()
+    # ==========================================================================
+    # Fallback / Other OS Logic (e.g., FreeBSD, Android)
+    # ==========================================================================
+    message(STATUS "Configuring for unhandled platform: ${CMAKE_SYSTEM_NAME}")
 endif()
 
 # ==============================================================================
@@ -80,6 +86,16 @@ endif()
 option(BUILD_SHARED_LIBS "Build shared libraries instead of static" ON)
 add_library(thekogans_util)
 
+# 1. Define flat lists per compiler toolchain
+set(GCC_CLANG_NO_WARN "-Wno-unused-parameter" "-Wno-interference-size")
+set(MSVC_NO_WARN      "/wd4100" "/wd4018")
+
+# 2. ENFORCE QUOTES around the generator expressions so lists expand cleanly
+target_compile_options(thekogans_util PUBLIC
+    "$<$<OR:$<CXX_COMPILER_ID:GNU>,$<CXX_COMPILER_ID:Clang>,$<CXX_COMPILER_ID:AppleClang>>:${GCC_CLANG_NO_WARN}>"
+    "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>"
+)
+
 # Define explicit version flags
 target_compile_definitions(thekogans_util PUBLIC
     THEKOGANS_UTIL_MAJOR_VERSION=${THEKOGANS_UTIL_MAJOR_VERSION}
@@ -101,7 +117,7 @@ target_compile_definitions(thekogans_util PUBLIC
 )
 
 # Feature and platform baseline additions
-target_compile_definitions(thekogans_util PRIVATE ${UTIL_FEATURES})
+target_compile_definitions(thekogans_util PUBLIC ${UTIL_FEATURES})
 
 if(WIN32)
     target_compile_definitions(thekogans_util PRIVATE
@@ -201,24 +217,37 @@ configure_file(
 )
 
 # ==============================================================================
-# 6. Test Suite Generation
+# 6. Test Suite Generation (Isolated Standalone Runners)
 # ==============================================================================
 option(BUILD_TESTING "Build the CppUnitXLite test suite" ON)
+
 if(BUILD_TESTING)
-    add_executable(thekogans_util_tests
-        include/3rdparty/CppUnitXLite/CppUnitXLite.cpp
-        tests/test_RefCounted.cpp
-        tests/test_SharedAllocator.cpp
-        tests/test_SpinRWLock.cpp
-        tests/test_RWLock.cpp
-        tests/test_JobQueue.cpp
-        tests/test_Scheduler.cpp
-        tests/test_SlabAllocator.cpp
-        tests/test_Version.cpp
+    # 1. Define a clean list of your individual test source file names
+    set(TEST_FILES
+        test_RefCounted
+        test_SharedAllocator
+        test_SpinRWLock
+        test_RWLock
+        test_JobQueue
+        test_Scheduler
+        test_SlabAllocator
+        test_Version
     )
 
-    target_link_libraries(thekogans_util_tests PRIVATE thekogans_util)
-    target_include_directories(thekogans_util_tests PRIVATE include/3rdparty/CppUnitXLite)
+    # 2. Loop through and instantiate an independent binary target for each file
+    foreach(TEST_NAME IN LISTS TEST_FILES)
+
+        # Creates a standalone executable target (e.g., test_Version_runner)
+        add_executable(${TEST_NAME}_runner
+            tests/${TEST_NAME}.cpp
+        )
+
+        # Link the core library (implicitly grabs include directories & C++17 flags)
+        target_link_libraries(${TEST_NAME}_runner PRIVATE thekogans_util)
+
+        # Point to the 3rdparty folder so #include <CppUnitXLite/CppUnitXLite.hpp> resolves
+        target_include_directories(${TEST_NAME}_runner PRIVATE include/3rdparty)
+    endforeach()
 endif()
 
 # ==============================================================================
