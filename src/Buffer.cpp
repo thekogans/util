@@ -38,7 +38,7 @@ namespace thekogans {
             thekogans::util::Buffer,
             Serializer::TYPE)
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Buffer)
+        //THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Buffer)
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_EX (
             SecureBuffer,
             SpinLock,

@@ -360,6 +360,14 @@ namespace thekogans {
             YieldProcessor ();
         }
 
+        void CPU::YieldSlice () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            SwitchToThread ();
+        #else // defined (TOOLCHAIN_OS_Windows)
+            sched_yield ();
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
         void CPU::Barrier () {
             MemoryBarrier ();
         }

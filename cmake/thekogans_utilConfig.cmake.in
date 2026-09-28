@@ -1,0 +1,12 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# If zlib was active during compile time, enforce that downstream users search for it too
+if("@ZLIB_FOUND@")
+    find_dependency(ZLIB REQUIRED)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/thekogans_utilTargets.cmake")
+
+check_required_components(thekogans_util)

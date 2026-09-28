@@ -24,7 +24,8 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/Thread.h"
+#include "thekogans/util/Singleton.h"
+#include "thekogans/util/CPU.h"
 
 namespace thekogans {
     namespace util {
@@ -37,18 +38,20 @@ namespace thekogans {
             /// \brief
             /// Default Thread Local Cache (TLC) size.
             /// A tuning knob meant to limit lock contention on a heavily contested type.
-            static constexpr std::size_t DEFAULT_TLC_THRESHOLD = 128;
+            static constexpr std::size_t DEFAULT_TLC_THRESHOLD = 64;
 
-            // We evaluate your exact cascading fall-through logic cleanly in one place
+            // Our target harvest is slots / threads.
             constexpr std::size_t CalculateThreshold (
                     std::size_t slots,
                     std::size_t threads) noexcept {
                 // Target harvest per thread = slots / threads
                 std::size_t harvest = slots / threads;
                 std::size_t threshold = harvest * 2;
-                // Apply your floor clamp
-                if (threshold < 8) threshold = 8;
-                // Apply your cascading safety cap
+                // Apply the floor clamp.
+                if (threshold < (threads / 2)) {
+                    threshold = (threads / 2);
+                }
+                // Apply the cascading safety cap.
                 if ((threshold / 2) >= slots) {
                     threshold = slots;
                 }
@@ -115,7 +118,7 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Policy helper to calculate optimal TLC threshold
+            /// Policy helper to calculate an optimal TLC threshold.
             /// \param SlotsPerPage The configured slots per page boundary.
             /// \param ThreadDensity The number of threads sharing this allocator.
             template<
@@ -126,6 +129,10 @@ namespace thekogans {
                     detail::CalculateThreshold (SlotsPerPage, ThreadDensity);
             };
 
+            /// \brief
+            /// Policy helper to calculate an optimal slots per page.
+            /// \param TLCThreshold The configured thread local cache boundary.
+            /// \param ThreadDensity The number of threads sharing this allocator.
             template<
                 std::size_t TLCThreshold,
                 std::size_t ThreadDensity = 16>
@@ -133,9 +140,13 @@ namespace thekogans {
                 static constexpr std::size_t SlotsPerPage = TLCThreshold * ThreadDensity;
             };
 
+            /// \brief
+            /// Policy helper to calculate an optimal slots per page and tlc threshold.
+            /// \param ThreadDensity The number of threads sharing this allocator.
             template<std::size_t ThreadDensity = 16>
             struct DeriveSlotsPerPageAndTLCThreshold {
-                static constexpr std::size_t SlotsPerPage = detail::DEFAULT_TLC_THRESHOLD * ThreadDensity;
+                static constexpr std::size_t SlotsPerPage =
+                    DeriveSlotsPerPage<detail::DEFAULT_TLC_THRESHOLD, ThreadDensity>::SlotsPerPage;
                 static constexpr std::size_t TLCThreshold = detail::DEFAULT_TLC_THRESHOLD;
             };
         }
@@ -287,7 +298,7 @@ namespace thekogans {
             template<typename P>
             struct IsValidSlabPolicy : std::false_type {};
             // Explicitly whitelist every supported tag right here in the detail namespace!
-            template<std::size_t V>
+            template<bool V>
             struct IsValidSlabPolicy<Policy::IsSingleton<V>> : std::true_type {};
             template<std::size_t V>
             struct IsValidSlabPolicy<Policy::SlotsPerPage<V>> : std::true_type {};
@@ -297,7 +308,7 @@ namespace thekogans {
             struct IsValidSlabPolicy<Policy::CacheLineSize<V>> : std::true_type {};
             template<std::size_t V>
             struct IsValidSlabPolicy<Policy::Id<V>> : std::true_type {};
-            template<std::size_t V>
+            template<bool V>
             struct IsValidSlabPolicy<Policy::IsCompaction<V>> : std::true_type {};
             template<typename L>
             struct IsValidSlabPolicy<Policy::Lock<L>> : std::true_type {};
@@ -305,8 +316,12 @@ namespace thekogans {
             struct IsValidSlabPolicy<Policy::PageAllocator<A>> : std::true_type {};
             template<template <typename> typename C>
             struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
-            template <std::size_t S, std::size_t T>
-            struct IsValidSlabPolicy<Policy::DeriveTLCThreshold<S, T>> : std::true_type {};
+            template <std::size_t SlotsPerPage, std::size_t ThreadDensity>
+            struct IsValidSlabPolicy<Policy::DeriveTLCThreshold<SlotsPerPage, ThreadDensity>> : std::true_type {};
+            template <std::size_t TLCThreshold, std::size_t ThreadDensity>
+            struct IsValidSlabPolicy<Policy::DeriveSlotsPerPage<TLCThreshold, ThreadDensity>> : std::true_type {};
+            template <std::size_t ThreadDensity>
+            struct IsValidSlabPolicy<Policy::DeriveSlotsPerPageAndTLCThreshold<ThreadDensity>> : std::true_type {};
             // Helper to evaluate the entire variadic pack at once
             template <typename... Policies>
             constexpr bool ValidateSlabPolicies () {
@@ -412,6 +427,8 @@ namespace thekogans {
                     "    - Policy::InstanceCreator<template> (only used if derived from Singleton)\n"
                     "    - Policy::IsCompaction<bool> (Default false)\n"
                     "    - Policy::DeriveTLCThreshold<std::size_t, std::size_t>\n"
+                    "    - Policy::DeriveSlotsPerPage<std::size_t, std::size_t>\n"
+                    "    - Policy::DeriveSlotsPerPageAndTLCThreshold<std::size_t>\n"
                     "=========================================================================\n");
 
                 static constexpr bool IsSingleton = GetBoolPolicy<
@@ -732,7 +749,7 @@ namespace thekogans {
                     // Loop persistently until a page is guaranteed to be available or...
                     while (THEKOGANS_UTIL_UNLIKELY (storage.partialPageList == nullptr && storage.pageAllocationInFlight)) {
                         storage.lock.Release ();
-                        Thread::YieldSlice ();
+                        CPU::YieldSlice ();
                         storage.lock.Acquire ();
                     }
                     // ...we need to allocate it.

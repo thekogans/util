@@ -386,11 +386,7 @@ namespace thekogans {
         }
 
         void Thread::YieldSlice () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            SwitchToThread ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            sched_yield ();
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            CPU::YieldSlice ();
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

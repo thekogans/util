@@ -223,7 +223,7 @@ namespace thekogans {
         }\
         void *_T::operator new (\
                 std::size_t size,\
-                std::nothrow_t) noexcept {\
+                const std::nothrow_t &) noexcept {\
             assert (size == sizeof (_T));\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
@@ -231,25 +231,27 @@ namespace thekogans {
         }\
         void *_T::operator new (\
                 std::size_t size,\
-                void *ptr) {\
+                void *ptr) noexcept {\
             assert (size == sizeof (_T));\
-            return ptr;\
+            return ::operator new (size, ptr);\
         }\
-        void _T::operator delete (void *ptr) {\
+        void _T::operator delete (void *ptr) noexcept {\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
             heap->Free (ptr, false);\
         }\
         void _T::operator delete (\
                 void *ptr,\
-                std::nothrow_t) noexcept {\
+                const std::nothrow_t &) noexcept {\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
             heap->Free (ptr, true);\
         }\
         void _T::operator delete (\
-            void *,\
-            void *) {}
+                void *ptr,\
+                void *target) noexcept {\
+            ::operator delete (ptr, target);\
+        }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS(_T)
         /// Macro to implement heap functions using heap ctor defaults.
@@ -276,7 +278,7 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
                 std::size_t size,\
-                std::nothrow_t) noexcept {\
+                const std::nothrow_t &) noexcept {\
             assert (size == sizeof (_T));\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
@@ -285,12 +287,12 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void *_T::operator new (\
                 std::size_t size,\
-                void *ptr) {\
+                void *ptr) noexcept {\
             assert (size == sizeof (_T));\
-            return ptr;\
+            return ::operator new (size, ptr);\
         }\
         template<>\
-        THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) {\
+        THEKOGANS_UTIL_EXPORT void _T::operator delete (void *ptr) noexcept {\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
             heap->Free (ptr, false);\
@@ -298,15 +300,17 @@ namespace thekogans {
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
                 void *ptr,\
-                std::nothrow_t) noexcept {\
+                const std::nothrow_t &) noexcept {\
             static thekogans::util::Heap<_T, lock> *heap =\
                 thekogans::util::Heap<_T, lock>::CreateInstance (itemsInPage, allocator);\
             heap->Free (ptr, true);\
         }\
         template<>\
         THEKOGANS_UTIL_EXPORT void _T::operator delete (\
-            void *,\
-            void *) {}
+                void *ptr,\
+                void *target) noexcept {\
+            ::operator delete (ptr, target);\
+        }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T(_T)
         /// Macro to implement heap functions using heap ctor defaults.

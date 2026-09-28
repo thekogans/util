@@ -287,8 +287,10 @@ namespace thekogans {
             /// avoid the 'Thundering Herd' problem.
             struct _LIB_THEKOGANS_UTIL_DECL Backoff {
                 /// \brief
-                /// Default max pause iterations before giving up the time slice.
-                static const std::size_t DEFAULT_MAX_PAUSE_BEFORE_YIELD = 16;
+                /// Default pause iterations before giving up the time slice.
+                static const std::size_t DEFAULT_PAUSE_BEFORE_YIELD = 16;
+                /// \brief
+                /// Max pause before yield.
                 static const std::size_t MAX_PAUSE_BEFORE_YIELD = SIZE_T_MAX / 2;
 
                 /// \brief
@@ -301,7 +303,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] maxPauseBeforeYield_ Max pause iterations before giving up the time slice.
-                Backoff (std::size_t maxPauseBeforeYield_ = DEFAULT_MAX_PAUSE_BEFORE_YIELD) :
+                Backoff (std::size_t maxPauseBeforeYield_ = DEFAULT_PAUSE_BEFORE_YIELD) :
                     maxPauseBeforeYield (MIN (maxPauseBeforeYield_, MAX_PAUSE_BEFORE_YIELD)),
                     count (1) {}
 

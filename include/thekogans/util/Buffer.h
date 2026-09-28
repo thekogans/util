@@ -34,6 +34,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/JSON.h"
+#include "thekogans/util/SlabAllocator.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/SecureAllocator.h"
 #include "thekogans/util/NullAllocator.h"
@@ -88,7 +89,8 @@ namespace thekogans {
             /// \brief
             /// Buffer has a private heap to help with memory
             /// management, performance, and global heap fragmentation.
-            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+            //THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (Buffer)
 
             /// \brief
             /// Buffer data.
