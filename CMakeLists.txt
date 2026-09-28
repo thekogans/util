@@ -92,7 +92,7 @@ set(MSVC_NO_WARN      "/wd4100" "/wd4018")
 
 # 2. ENFORCE QUOTES around the generator expressions so lists expand cleanly
 target_compile_options(thekogans_util PUBLIC
-    "$<$<OR:$<CXX_COMPILER_ID:GNU>>:${GCC_CLANG_NO_WARN}>"
+    "$<$<OR:$<CXX_COMPILER_ID:GNU>>:${GCC_NO_WARN}>"
     "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>"
 )
 
