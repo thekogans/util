@@ -92,10 +92,29 @@ namespace thekogans {
             /// Compile-time policy helper to calculate optimal TLC threshold
             /// \param SlotsPerPage The configured slots per page boundary.
             /// \param RawThreshold The raw threshold passed by the user (0 = Auto-Tune).
-            template <std::size_t SlotsPerPageValue, std::size_t RawThreshold = 0>
-            using DeriveTLCThreshold = TLCThreshold<
-                ((RawThreshold == 0 ? (SlotsPerPageValue / 8 * 2 < 8 ? 8 : SlotsPerPageValue / 8 * 2) : RawThreshold) / 2 >= SlotsPerPageValue) ?
-                SlotsPerPageValue : (RawThreshold == 0 ? (SlotsPerPageValue / 8 * 2 < 8 ? 8 : SlotsPerPageValue / 8 * 2) : RawThreshold)>;
+            namespace detail {
+                // We evaluate your exact cascading fall-through logic cleanly in one place
+                constexpr std::size_t CalculateThreshold(std::size_t slots, std::size_t threads) noexcept {
+                    // Target harvest per thread = slots / threads
+                    std::size_t harvest = slots / threads;
+                    std::size_t threshold = harvest * 2;
+                    // Apply your floor clamp
+                    if (threshold < 8) threshold = 8;
+                    // Apply your cascading safety cap
+                    if ((threshold / 2) >= slots) {
+                        threshold = slots;
+                    }
+                    return threshold;
+                }
+            }
+
+            template<
+                std::size_t SlotsPerPage,
+                std::size_t ThreadDensity = 16>
+            struct DeriveTLCThreshold {
+                static constexpr std::size_t TLCThreshold =
+                    detail::CalculateThreshold (SlotsPerPage, ThreadDensity);
+            };
         }
 
         namespace detail {
@@ -154,43 +173,103 @@ namespace thekogans {
                 static constexpr std::size_t value = GetValuePolicy<TargetPolicy, DefaultValue, Rest...>::value; // Skip and keep looking
             };
 
+            // --------------------------------------------------------------------
+            // Unpacker for SlotsPerPage
+            // --------------------------------------------------------------------
+            template <std::size_t Default, typename... Policies>
+            struct GetSlotsPerPage;
+
+            // Base Case: Empty pack, return default baseline
+            template <std::size_t Default>
+            struct GetSlotsPerPage<Default> {
+                static constexpr std::size_t value = Default;
+            };
+
+            // Match Case A: Standard explicit Policy::SlotsPerPage found
+            template <std::size_t Default, std::size_t N, typename... Rest>
+            struct GetSlotsPerPage<Default, Policy::SlotsPerPage<N>, Rest...> {
+                static constexpr std::size_t value = N;
+            };
+
+            // Match Case B: Unified Policy::Derive tag found! Dig inside it.
+            template <std::size_t Default, std::size_t S, std::size_t T, typename... Rest>
+            struct GetSlotsPerPage<Default, Policy::DeriveTLCThreshold<S, T>, Rest...> {
+                static constexpr std::size_t value = S; // Pull out the slots configuration
+            };
+
+            // Fallthrough Case: Skip unrelated tags
+            template <std::size_t Default, typename T, typename... Rest>
+            struct GetSlotsPerPage<Default, T, Rest...> {
+                static constexpr std::size_t value = GetSlotsPerPage<Default, Rest...>::value;
+            };
+
+            // --------------------------------------------------------------------
+            // Unpacker for TLCThreshold
+            // --------------------------------------------------------------------
+            template<std::size_t Default, typename... Policies>
+            struct GetTLCThreshold;
+
+            // Base Case: Empty pack, return your default baseline value
+            template<std::size_t Default>
+            struct GetTLCThreshold<Default> {
+                static constexpr std::size_t value = Default;
+            };
+
+            // Match Case A: Standard explicit Policy::TLCThreshold found
+            template<std::size_t Default, std::size_t N, typename... Rest>
+            struct GetTLCThreshold<Default, Policy::TLCThreshold<N>, Rest...> {
+                static constexpr std::size_t value = N;
+            };
+
+            // Match Case B: Unified Policy::Derive tag found! Pull out the COMPUTED value
+            template<std::size_t Default, std::size_t S, std::size_t T, typename... Rest>
+            struct GetTLCThreshold<Default, Policy::DeriveTLCThreshold<S, T>, Rest...> {
+                static constexpr std::size_t value = Policy::DeriveTLCThreshold<S, T>::TLCThreshold;
+            };
+
+            // Fallthrough Case: Skip unrelated tags
+            template<std::size_t Default, typename T, typename... Rest>
+            struct GetTLCThreshold<Default, T, Rest...> {
+                static constexpr std::size_t value = GetTLCThreshold<Default, Rest...>::value;
+            };
+
             // --- TYPE EXTRACTOR MECHANICS ---
-            template <template <typename> typename TargetPolicy, typename DefaultType, typename... Policies>
+            template<template <typename> typename TargetPolicy, typename DefaultType, typename... Policies>
             struct GetTypePolicy {
                 using type = DefaultType;
             };
 
-            template <template <typename> typename TargetPolicy, typename DefaultType, typename CurrentType, typename... Rest>
+            template<template <typename> typename TargetPolicy, typename DefaultType, typename CurrentType, typename... Rest>
             struct GetTypePolicy<TargetPolicy, DefaultType, TargetPolicy<CurrentType>, Rest...> {
                 using type = CurrentType;
             };
 
-            template <template <typename> typename TargetPolicy, typename DefaultType, typename Head, typename... Rest>
+            template<template <typename> typename TargetPolicy, typename DefaultType, typename Head, typename... Rest>
             struct GetTypePolicy<TargetPolicy, DefaultType, Head, Rest...> {
                 using type = typename GetTypePolicy<TargetPolicy, DefaultType, Rest...>::type;
             };
 
             // --- InstanceCreator EXTRACTOR MECHANICS ---
             // Base Case: Fallback to the engine's default allocator creator if the tag is missing
-            template <typename T, typename DefaultType, typename... Policies>
+            template<typename T, typename DefaultType, typename... Policies>
             struct GetInstanceCreatorPolicyHelper {
                 using type = DefaultType;
             };
 
             // Match Case: If we encounter the InstanceCreator type tag wrapper, extract its template type!
-            template <typename T, typename DefaultType, template <typename> typename CurrentTemplate, typename... Rest>
+            template<typename T, typename DefaultType, template <typename> typename CurrentTemplate, typename... Rest>
             struct GetInstanceCreatorPolicyHelper<T, DefaultType, Policy::InstanceCreator<CurrentTemplate>, Rest...> {
                 using type = typename Policy::InstanceCreator<CurrentTemplate>::template template_type<T>;
             };
 
             // Traversal Case: Skip unrelated tags and keep looking down the pack
-            template <typename T, typename DefaultType, typename Head, typename... Rest>
+            template<typename T, typename DefaultType, typename Head, typename... Rest>
             struct GetInstanceCreatorPolicyHelper<T, DefaultType, Head, Rest...> {
                 using type = typename GetInstanceCreatorPolicyHelper<T, DefaultType, Rest...>::type;
             };
 
             // Publicly exposed extractor helper mapping for your main inheritance block
-            template <typename T, typename... Policies>
+            template<typename T, typename... Policies>
             struct GetInstanceCreatorPolicy {
                 using type = typename GetInstanceCreatorPolicyHelper<
                     SlabAllocator<T, Policies...>,
@@ -200,18 +279,29 @@ namespace thekogans {
 
             // --- SlabAllocator policy validation static_asssert helpers.
             // A compile-time trait to check if a type is a valid policy for our allocator
-            template <typename P> struct IsValidSlabPolicy : std::false_type {};
+            template<typename P> struct IsValidSlabPolicy : std::false_type {};
 
             // Explicitly whitelist every supported tag right here in the detail namespace!
-            template<std::size_t V> struct IsValidSlabPolicy<Policy::IsSingleton<V>> : std::true_type {};
-            template<std::size_t V> struct IsValidSlabPolicy<Policy::SlotsPerPage<V>> : std::true_type {};
-            template<std::size_t V> struct IsValidSlabPolicy<Policy::TLCThreshold<V>> : std::true_type {};
-            template<std::size_t V> struct IsValidSlabPolicy<Policy::CacheLineSize<V>> : std::true_type {};
-            template<std::size_t V> struct IsValidSlabPolicy<Policy::Id<V>>            : std::true_type {};
-            template<std::size_t V> struct IsValidSlabPolicy<Policy::IsCompaction<V>>  : std::true_type {};
-            template<typename L>    struct IsValidSlabPolicy<Policy::Lock<L>>          : std::true_type {};
-            template<typename A>    struct IsValidSlabPolicy<Policy::PageAllocator<A>> : std::true_type {};
-            template<template <typename> typename C> struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
+            template<std::size_t V>
+            struct IsValidSlabPolicy<Policy::IsSingleton<V>> : std::true_type {};
+            template<std::size_t V>
+            struct IsValidSlabPolicy<Policy::SlotsPerPage<V>> : std::true_type {};
+            template<std::size_t V>
+            struct IsValidSlabPolicy<Policy::TLCThreshold<V>> : std::true_type {};
+            template<std::size_t V>
+            struct IsValidSlabPolicy<Policy::CacheLineSize<V>> : std::true_type {};
+            template<std::size_t V>
+            struct IsValidSlabPolicy<Policy::Id<V>> : std::true_type {};
+            template<std::size_t V>
+            struct IsValidSlabPolicy<Policy::IsCompaction<V>> : std::true_type {};
+            template<typename L>
+            struct IsValidSlabPolicy<Policy::Lock<L>> : std::true_type {};
+            template<typename A>
+            struct IsValidSlabPolicy<Policy::PageAllocator<A>> : std::true_type {};
+            template<template <typename> typename C>
+            struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
+            template <std::size_t S, std::size_t T>
+            struct IsValidSlabPolicy<Policy::DeriveTLCThreshold<S, T>> : std::true_type {};
 
             // Helper to evaluate the entire variadic pack at once
             template <typename... Policies>
@@ -321,10 +411,10 @@ namespace thekogans {
 
                 static constexpr bool IsSingleton = GetBoolPolicy<
                     Policy::IsSingleton, false, Policies...>::value;
-                static constexpr std::size_t TLCThreshold = GetValuePolicy<
-                    Policy::TLCThreshold, DEFAULT_TLC_THRESHOLD, Policies...>::value;
-                static constexpr std::size_t SlotsPerPage = GetValuePolicy<
-                    Policy::SlotsPerPage, DEFAULT_SLOTS_PER_PAGE, Policies...>::value;
+                static constexpr std::size_t TLCThreshold = GetTLCThreshold<
+                    DEFAULT_TLC_THRESHOLD, Policies...>::value;
+                static constexpr std::size_t SlotsPerPage = GetSlotsPerPage<
+                    DEFAULT_SLOTS_PER_PAGE, Policies...>::value;
                 static constexpr std::size_t CacheLineSize = GetValuePolicy<
                     Policy::CacheLineSize, DEFAULT_CACHE_LINE_SIZE, Policies...>::value;
                 static constexpr std::size_t Id = GetValuePolicy<
@@ -602,7 +692,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Try to cache a previously allocated slot. If our cache is full,
-                /// return it back to the page it came from.
+                /// return half back to the pages the slots came from.
                 /// \param[in] ptr Slot pointer to free.
                 void Free (void *ptr) noexcept {
                     if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
