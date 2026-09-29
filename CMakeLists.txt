@@ -278,7 +278,7 @@ install(DIRECTORY include/
 
 install(DIRECTORY include/3rdparty/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.cpp"
     PATTERN "private" EXCLUDE
 )
 
@@ -304,6 +304,16 @@ install(FILES
     DESTINATION ${UTIL_CMAKE_INSTALL_DIR}
 )
 
+if(NOT TARGET uninstall)
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake/cmake_uninstall.cmake.in" # Updated path
+        "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+        IMMEDIATE @ONLY)
+
+    add_custom_target(uninstall
+        COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+endif()
+
 # ==============================================================================
 # 8. Automated Pkg-Config Generation (.pc File)
 # ==============================================================================
@@ -316,7 +326,13 @@ if(ZLIB_FOUND)
     set(PC_REQUIRES_PRIVATE "zlib")
 endif()
 
-file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/thekogans_util.pc.in"
+# Loop through your features list and format them with -D
+set(PC_UTIL_FEATURES "")
+foreach(feature IN LISTS UTIL_FEATURES)
+    string(APPEND PC_UTIL_FEATURES " -D${feature}")
+endforeach()
+
+file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/thekogans_util.pc.in"
 "prefix=@CMAKE_INSTALL_PREFIX@
 exec_prefix=\${prefix}
 libdir=\${prefix}/@CMAKE_INSTALL_LIBDIR@
@@ -328,11 +344,12 @@ Version: @PROJECT_VERSION@
 Requires.private: @PC_REQUIRES_PRIVATE@
 Libs: -L\${libdir} -lthekogans_util
 Libs.private: @PC_LIBS_PRIVATE@
-Cflags: -I\${includedir} -I\${includedir}/3rdparty
+Cflags: -I\${includedir}@PC_UTIL_FEATURES@
 ")
 
+# Generate the .pc file using configure_file
 configure_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/thekogans_util.pc.in"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/thekogans_util.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_util.pc"
     @ONLY
 )

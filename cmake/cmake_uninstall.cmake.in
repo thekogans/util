@@ -1,0 +1,53 @@
+if(NOT EXISTS "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+    message(FATAL_ERROR "Cannot find install manifest: @CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt")
+endif()
+
+file(READ "@CMAKE_CURRENT_BINARY_DIR@/install_manifest.txt" files)
+string(REGEX REPLACE "\n" ";" files "${files}")
+
+# Track unique directories to clean up later
+set(dirs_to_clean "")
+
+# 1. First pass: Remove all installed files
+foreach(file ${files})
+    if(NOT "${file}" STREQUAL "")
+        message(STATUS "Uninstalling $ENV{DESTDIR}${file}")
+
+        # Capture the parent directory of this file
+        get_filename_component(file_dir "$ENV{DESTDIR}${file}" DIRECTORY)
+        list(APPEND dirs_to_clean "${file_dir}")
+
+        if(IS_SYMLINK "$ENV{DESTDIR}${file}" OR EXISTS "$ENV{DESTDIR}${file}")
+            execute_process(
+                COMMAND "${CMAKE_COMMAND}" -E remove "$ENV{DESTDIR}${file}"
+                OUTPUT_VARIABLE rm_out
+                RESULT_VARIABLE rm_retval
+            )
+            if(NOT "${rm_retval}" STREQUAL 0)
+                message(FATAL_ERROR "Problem tearing down $ENV{DESTDIR}${file}")
+            endif()
+        endif()
+    endif()
+endforeach()
+
+# 2. Second pass: Remove empty parent directories
+if(dirs_to_clean)
+    list(REMOVE_DUPLICATES dirs_to_clean)
+    # Sort in reverse order so deep subdirectories are checked and removed before their parents
+    list(SORT dirs_to_clean ORDER DESCENDING)
+
+    foreach(dir ${dirs_to_clean})
+        # Check if the directory exists and is empty
+        if(IS_DIRECTORY "${dir}")
+            file(GLOB dir_contents "${dir}/*")
+            if(NOT dir_contents)
+                message(STATUS "Removing empty directory ${dir}")
+                execute_process(
+                    COMMAND "${CMAKE_COMMAND}" -E remove_directory "${dir}"
+                    OUTPUT_VARIABLE rm_out
+                    RESULT_VARIABLE rm_retval
+                )
+            endif()
+        endif()
+    endforeach()
+endif()
