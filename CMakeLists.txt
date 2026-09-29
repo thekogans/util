@@ -24,17 +24,6 @@ project(thekogans_util
     LANGUAGES C CXX
 )
 
-if(WIN32)
-elseif(APPLE)
-    enable_language(OBJCXX)
-elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-else()
-    # ==========================================================================
-    # Fallback / Other OS Logic (e.g., FreeBSD, Android)
-    # ==========================================================================
-    message(STATUS "Configuring for unhandled platform: ${CMAKE_SYSTEM_NAME}")
-endif()
-
 # ==============================================================================
 # 2. Package & Feature Probing
 # ==============================================================================
@@ -61,6 +50,7 @@ elseif(LINUX OR CMAKE_SYSTEM_NAME STREQUAL "Linux")
 
     set(PLATFORM_LIBS rt dl)
 elseif(APPLE)
+    enable_language(OBJCXX)
     list(APPEND UTIL_FEATURES THEKOGANS_UTIL_HAVE_MMAP)
     # Gather targeted macOS frameworks
     find_library(FOUNDATION_FRAMEWORK Foundation REQUIRED)
