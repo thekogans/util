@@ -12,4 +12,8 @@ find_package(thekogans_util 0.39 REQUIRED)
 # 2. Sequential Example Project Registration (Isolated Scopes)
 # ==============================================================================
 # Register all util-dependent example programs here
+add_subdirectory(genguid)
+add_subdirectory(hash)
 add_subdirectory(pathfinder)
+add_subdirectory(printtree)
+add_subdirectory(systeminfo)
