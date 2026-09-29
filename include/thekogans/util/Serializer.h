@@ -355,6 +355,7 @@ namespace thekogans {
             /// \return *this.
             Serializer &operator >> (std::wstring &value);
 
+        #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
             /// \brief
             /// Return serialized size of \see{SecureString}.
             /// \param[in] value \see{SecureString} whose size to return.
@@ -373,6 +374,7 @@ namespace thekogans {
             /// \param[out] value Where to place the extracted \see{SecureString}.
             /// \return *this.
             Serializer &operator >> (SecureString &value);
+        #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
             /// \brief
             /// Return serialized size of \see{i8}.
@@ -682,6 +684,7 @@ namespace thekogans {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
+        #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
             /// \brief
             /// Return serialized size of const \see{SecureVector}<T> &.
             /// \return Serialized size of const \see{SecureVector}<T> &.
@@ -743,6 +746,7 @@ namespace thekogans {
             static std::size_t Size (const SecureVector<ui8> &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
+        #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
             /// \brief
             /// Return serialized size of const std::list<T> &.
@@ -940,6 +944,7 @@ namespace thekogans {
             return *this;
         }
 
+    #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
         /// \brief
         /// Serialize a const \see{SecureVector}<i8>.
         /// \param[in] value Value to serialize.
@@ -1031,6 +1036,7 @@ namespace thekogans {
             }
             return *this;
         }
+    #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
     } // namespace util
 } // namespace thekogans

@@ -295,6 +295,7 @@ namespace thekogans {
             return *this;
         }
 
+    #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
         Serializer &Serializer::operator << (const SecureString &value) {
             *this << SizeT (value.size ());
             if (value.size () > 0) {
@@ -328,6 +329,7 @@ namespace thekogans {
             }
             return *this;
         }
+    #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
         Serializer &Serializer::operator << (i8 value) {
             if (Write (&value, I8_SIZE) != I8_SIZE) {
