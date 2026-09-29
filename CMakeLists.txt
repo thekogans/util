@@ -134,9 +134,8 @@ target_compile_features(thekogans_util PUBLIC cxx_std_17)
 target_include_directories(thekogans_util
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty>
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty
         ${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty/private
 )
 
@@ -277,6 +276,12 @@ install(DIRECTORY include/
     PATTERN "3rdparty" EXCLUDE
 )
 
+install(DIRECTORY include/3rdparty/
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+    PATTERN "private" EXCLUDE
+)
+
 install(FILES resources/mime_types.txt
     DESTINATION ${CMAKE_INSTALL_DATADIR}/thekogans_util
 )
@@ -323,7 +328,7 @@ Version: @PROJECT_VERSION@
 Requires.private: @PC_REQUIRES_PRIVATE@
 Libs: -L\${libdir} -lthekogans_util
 Libs.private: @PC_LIBS_PRIVATE@
-Cflags: -I\${includedir}
+Cflags: -I\${includedir} -I\${includedir}/3rdparty
 ")
 
 configure_file(
