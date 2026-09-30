@@ -272,17 +272,8 @@ namespace thekogans {
             stdSecureAllocator<wchar_t>>;
         /// \brief
         /// Alias for std::vector<T, stdSecureAllocator<T>>.
-        template<typename T> using SecureVector = std::vector<T, stdSecureAllocator<T>>;
-
-        /// \brief
-        /// Zero out the given memory block.
-        /// Its volatile so that the optimizer leaves it alone.
-        /// \param[in] data Block t zero out.
-        /// \param[in] size Block size (in bytes).
-        /// \return if data != nullptr && size > 0, size oterwise 0.
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
-            volatile void *data,
-            std::size_t size);
+        template<typename T>
+        using SecureVector = std::vector<T, stdSecureAllocator<T>>;
 
     } // namespace util
 } // namespace thekogans

@@ -34,8 +34,6 @@
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Producer.h"
-#include "thekogans/util/AlignedAllocator.h"
-#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {

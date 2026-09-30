@@ -36,7 +36,6 @@ namespace thekogans {
         /// various LoggerMgr pluggins. See ConsoleLogger, FileLogger,
         /// and RemoteLogger for concrete implementations of this
         /// interface.
-
         struct _LIB_THEKOGANS_UTIL_DECL Logger : public DynamicCreatable {
             /// \brief
             /// Logger is a \see{util::DynamicCreatable} abstract base.

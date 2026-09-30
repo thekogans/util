@@ -28,7 +28,6 @@
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/SecureAllocator.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsUtils.h"
 #endif // defined (TOOLCHAIN_OS_Windows)

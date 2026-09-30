@@ -79,7 +79,6 @@ namespace thekogans {
         /// intended. If you can't process the buffer during the
         /// callback and you don't know if there are other event
         /// recipients it's best to make a copy.
-
         struct _LIB_THEKOGANS_UTIL_DECL Buffer : public Serializer {
             /// \brief
             /// Buffer participates in the \see{DynamicCreatable}
@@ -414,6 +413,7 @@ namespace thekogans {
                     std::wstring ();
             }
 
+        #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
             /// \brief
             /// Convert the buffer to a \see{SecureString}.
             /// \return see{SecureString} containing the buffers contents.
@@ -431,6 +431,7 @@ namespace thekogans {
                     SecureWString (GetReadPtr (), GetReadPtrEnd ()) :
                     SecureWString ();
             }
+        #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
             /// \brief
             /// Convert the buffer to a std::vector.
@@ -441,6 +442,7 @@ namespace thekogans {
                     std::vector<ui8> ();
             }
 
+        #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
             /// \brief
             /// Convert the buffer to a SecureVector.
             /// \return SecureVector containing the buffers contents.
@@ -449,6 +451,7 @@ namespace thekogans {
                     SecureVector<ui8> (GetReadPtr (), GetReadPtrEnd ()) :
                     SecureVector<ui8> ();
             }
+        #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
@@ -459,6 +462,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
+    #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
         /// \struct SecureBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
@@ -604,12 +608,12 @@ namespace thekogans {
                 Allocator::SharedPtr /*allocator*/ = nullptr) const override;
         #endif // defined (THEKOGANS_UTIL_HAVE_ZLIB)
         };
+    #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
         /// \struct TenantReadBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
         /// TenantReadBuffer is used to wrap a raw byte stream for reading.
-
         struct TenantReadBuffer : public Buffer {
             /// \brief
             /// ctor.
@@ -675,7 +679,6 @@ namespace thekogans {
         ///
         /// \brief
         /// TenantWriteBuffer is used to wrap a raw byte stream for writing.
-
         struct TenantWriteBuffer : public Buffer {
             /// \brief
             /// ctor for wrapping a raw data pointer.
@@ -701,7 +704,6 @@ namespace thekogans {
         ///
         /// \brief
         /// A convenience class to obviate the need to provide NetworkEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL NetworkBuffer : public Buffer {
             /// \brief
             /// Copy ctor.
@@ -755,11 +757,11 @@ namespace thekogans {
                 Buffer (NetworkEndian, begin, end, readOffset, writeOffset, allocator) {}
         };
 
+    #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
         /// \struct SecureNetworkBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
         /// A convenience class to obviate the need to provide NetworkEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL SecureNetworkBuffer : public SecureBuffer {
             /// \brief
             /// Copy ctor.
@@ -809,12 +811,12 @@ namespace thekogans {
                 std::size_t writeOffset = SIZE_T_MAX) :
                 SecureBuffer (NetworkEndian, begin, end, readOffset, writeOffset) {}
         };
+    #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
         /// \struct HostBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
         /// A convenience class to obviate the need to provide HostEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL HostBuffer : public Buffer {
             /// \brief
             /// Copy ctor.
@@ -868,11 +870,11 @@ namespace thekogans {
                 Buffer (HostEndian, begin, end, readOffset, writeOffset, allocator) {}
         };
 
+    #if defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
         /// \struct SecureHostBuffer Buffer.h thekogans/util/Buffer.h
         ///
         /// \brief
         /// A convenience class to obviate the need to provide HostEndian all the time.
-
         struct _LIB_THEKOGANS_UTIL_DECL SecureHostBuffer : public SecureBuffer {
             /// \brief
             /// Copy ctor.
@@ -922,6 +924,7 @@ namespace thekogans {
                 std::size_t writeOffset = SIZE_T_MAX) :
                 SecureBuffer (HostEndian, begin, end, readOffset, writeOffset) {}
         };
+    #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
 
         /// \brief
         /// Write the given buffer to the given \see{Serializer}.

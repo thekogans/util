@@ -551,7 +551,11 @@ namespace thekogans {
         /// A global logger manager instance.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalLoggerMgr :
                 public LoggerMgr,
-                public Singleton<GlobalLoggerMgr> {
+                public Singleton<
+                    GlobalLoggerMgr,
+                    SpinLock,
+                    DefaultInstanceCreator<GlobalLoggerMgr>,
+                    NullInstanceDestroyer<GlobalLoggerMgr>> {
             /// \brief
             /// Create a global job queue with custom ctor arguments.
             /// \param[in] level Level at which to log.
@@ -920,7 +924,6 @@ namespace thekogans {
         /// LogStream is an adapter which converts LoggerMgr::Log from c printf
         /// style interface in to a c++ stream style interface. Use the macros
         /// below instead of the ones above to achieve this effect.
-
         struct _LIB_THEKOGANS_UTIL_DECL LogStream : public std::stringstream {
             /// \brief
             /// Subsystem to log to.

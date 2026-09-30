@@ -164,18 +164,10 @@ namespace thekogans {
         static constexpr std::size_t SYSTEM_CACHE_LINE_SIZE = 64; // Safe, rock-solid industry fallback.
     #endif // defined (__cpp_lib_hardware_interference_size)
 
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \brief
-        /// If you're linking to thekogans_util statically, call this
-        /// method early on in main to initialize dynamically creatable
-        /// (\see{DynamicCreatable}) types. If you don't call this method
-        /// the only types that will be available to your application are
-        /// the ones you explicitly link to.
-        /// NOTE: This is the root and the only StaticInit that needs to
-        /// be called. It takes care of the rest.
-        void StaticInit ();
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
+        /// \enum
+        /// Log levels. Each successive level builds on the previous ones.
+        /// IMPORTANT: These constants are mirrored in Config.h. If we
+        /// change this list, we need to update that one too.
         enum {
             /// \brief
             /// Log nothing.
@@ -200,115 +192,27 @@ namespace thekogans {
             MaxLevel = Development
         };
 
-        /// \enum
-        /// Log entry decorations.
-        enum {
-            /// \brief
-            /// Log messages only.
-            NoDecorations = 0,
-            /// \brief
-            /// Add a '*' separator between log entries.
-            EntrySeparator = 1,
-            /// \brief
-            /// Add a sub-system to log entries.
-            Subsystem = 2,
-            /// \brief
-            /// Add a log level to log entries.
-            Level = 4,
-            /// \brief
-            /// Add a date to log entries.
-            Date = 8,
-            /// \brief
-            /// Add a time to log entries.
-            Time = 16,
-            /// \brief
-            /// Add a host name to log entries.
-            HostName = 32,
-            /// \brief
-            /// Add a process id to log entries.
-            ProcessId = 64,
-            /// \brief
-            /// Add a process path to log entries.
-            ProcessPath = 128,
-            /// \brief
-            /// Add a high resolution timer since process start to log entries.
-            ProcessStartTime = 256,
-            /// \brief
-            /// Add a high resolution timer since process start to log entries.
-            ProcessUpTime = 512,
-            /// \brief
-            /// Add a thread id to log entries.
-            ThreadId = 1024,
-            /// \brief
-            /// Add a location to log entries.
-            Location = 2048,
-            /// \brief
-            /// Format log entries accross multiple lines.
-            Multiline = 4096,
-            /// \brief
-            /// Add every decoration to log entries.
-            All = EntrySeparator |
-                Level |
-                Date |
-                Time |
-                HostName |
-                ProcessId |
-                ProcessPath |
-                ProcessStartTime |
-                ProcessUpTime |
-                ThreadId |
-                Location |
-                Multiline,
-            /// \brief
-            /// Add subsystem to all log entries.
-            SubsystemAll = Subsystem | All
-        };
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        /// \brief
+        /// If you're linking to thekogans_util statically, call this
+        /// method early on in main to initialize dynamically creatable
+        /// (\see{DynamicCreatable}) types. If you don't call this method
+        /// the only types that will be available to your application are
+        /// the ones you explicitly link to.
+        /// NOTE: This is the root and the only StaticInit that needs to
+        /// be called. It takes care of the rest.
+        void StaticInit ();
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         /// \brief
-        /// Helper functions to get around circular headers. They mirror the
-        /// two primary log functions in \see{LoggerMgr}. There exist a
-        /// handful of low level classes (\see{Heap}, \see{RefCounted}) that
-        /// greatly benefit from being able to log extended error messages.
-        /// Since \see{LoggerMgr} is higher level (it depends on \see{Heap}
-        /// and \see{RefCounted}) they cannot use it directly.
-
-        /// \brief
-        /// Force log a message to the \see{GlobalLoggerMgr} irrespective of it's level.
-        /// \param[in] decorations Decorations to use to format the entry header.
-        /// \param[in] subsystem Subsystem to log to.
-        /// \param[in] level Level at which to log.
-        /// \param[in] file Translation unit of this entry.
-        /// \param[in] function Function of the translation unit of this entry.
-        /// \param[in] line Translation unit line number of this entry.
-        /// \param[in] buildTime Translation unit build time of this entry.
-        /// \param[in] format A printf format string followed by a
-        /// variable number of arguments.
-        _LIB_THEKOGANS_UTIL_DECL void Log (
-            unsigned int decorations,
-            const char *subsystem,
-            unsigned int level,
-            const char *file,
-            const char *function,
-            unsigned int line,
-            const char *buildTime,
-        #if defined (TOOLCHAIN_OS_Windows)
-            _Printf_format_string_ const char *format,
-            ...);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            const char *format,
-            ...) __attribute__ ((__format__ (__printf__, 8, 9)));
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        /// \brief
-        /// Force log a message to the \see{GlobalLoggerMgr} irrespective of it's level.
-        /// \param[in] subsystem Subsystem to log to.
-        /// \param[in] level Level at which to log.
-        /// \param[in] header Entry header.
-        /// \param[in] message Entry message.
-        _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Log (
-            const char *subsystem,
-            unsigned int level,
-            const std::string &header,
-            const std::string &message);
+        /// Zero out the given memory block.
+        /// Its volatile so that the optimizer leaves it alone.
+        /// \param[in] data Block t zero out.
+        /// \param[in] size Block size (in bytes).
+        /// \return if data != nullptr && size > 0, size oterwise 0.
+        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
+            volatile void *data,
+            std::size_t size);
 
     } // namespace util
 } // namespace thekogans

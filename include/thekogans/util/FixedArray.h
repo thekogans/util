@@ -24,7 +24,6 @@
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/SecureAllocator.h"
 
 namespace thekogans {
     namespace util {
