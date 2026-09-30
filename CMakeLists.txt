@@ -21,8 +21,7 @@ set(THEKOGANS_UTIL_VERSION_HEX "0x${HEX_STRING}")
 
 project(thekogans_util
     VERSION ${THEKOGANS_UTIL_MAJOR_VERSION}.${THEKOGANS_UTIL_MINOR_VERSION}.${THEKOGANS_UTIL_PATCH_VERSION}
-    LANGUAGES C CXX
-)
+    LANGUAGES C CXX)
 
 # ==============================================================================
 # 2. Package & Feature Probing
@@ -65,8 +64,7 @@ elseif(APPLE)
     set(PLATFORM_LIBS
         ${FOUNDATION_FRAMEWORK} ${SECURITY_FRAMEWORK} ${COCOA_FRAMEWORK}
         ${CORE_FOUNDATION_FRAMEWORK} ${CORE_SERVICES_FRAMEWORK} ${CORE_GRAPHICS_FRAMEWORK}
-        ${SYSTEM_CONFIGURATION_FRAMEWORK} ${IOKIT_FRAMEWORK}
-    )
+        ${SYSTEM_CONFIGURATION_FRAMEWORK} ${IOKIT_FRAMEWORK})
 endif()
 
 # ==============================================================================
@@ -100,8 +98,7 @@ target_compile_definitions(thekogans_util PUBLIC
 # Maps THEKOGANS_UTIL_TYPE_Shared or THEKOGANS_UTIL_TYPE_Static automatically
 target_compile_definitions(thekogans_util PUBLIC
     $<$<BOOL:${BUILD_SHARED_LIBS}>:THEKOGANS_UTIL_TYPE_Shared>
-    $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:THEKOGANS_UTIL_TYPE_Static>
-)
+    $<$<NOT:$<BOOL:${BUILD_SHARED_LIBS}>>:THEKOGANS_UTIL_TYPE_Static>)
 
 # Feature and platform baseline additions
 target_compile_definitions(thekogans_util PUBLIC ${UTIL_FEATURES})
@@ -123,8 +120,7 @@ target_include_directories(thekogans_util
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty>
     PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty/private
-)
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/3rdparty/private)
 
 # Core Source Units
 target_sources(thekogans_util PRIVATE
@@ -157,8 +153,7 @@ target_sources(thekogans_util PRIVATE
 
     # Integrated 3rdparty code
     src/3rdparty/pugixml/pugixml.cpp
-    src/3rdparty/boost/atomic/lockpool.cpp
-)
+    src/3rdparty/boost/atomic/lockpool.cpp)
 
 # Platform Conditional Sources
 if(WIN32)
@@ -167,13 +162,11 @@ if(WIN32)
         src/os/windows/HeapAllocator.cpp
         src/os/windows/OutputDebugStringLogger.cpp
         src/os/windows/WindowsFirewall.cpp
-        src/os/windows/WindowsUtils.cpp
-    )
+        src/os/windows/WindowsUtils.cpp)
 elseif(APPLE)
     target_sources(thekogans_util PRIVATE
         src/os/osx/NSLogLogger.cpp
-        src/os/osx/OSXUtils.mm
-    )
+        src/os/osx/OSXUtils.mm)
 else() # Linux branch
     if(X11_FOUND)
         target_sources(thekogans_util PRIVATE src/os/linux/XlibUtils.cpp)
@@ -199,13 +192,12 @@ target_link_libraries(thekogans_util PUBLIC ${PLATFORM_LIBS})
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/resources/mime_types.txt
     ${CMAKE_CURRENT_BINARY_DIR}/resources/mime_types.txt
-    COPYONLY
-)
+    COPYONLY)
 
 # ==============================================================================
 # 6. Test Suite Generation (Isolated Standalone Runners)
 # ==============================================================================
-option(BUILD_TESTING "Build the CppUnitXLite test suite" ON)
+option(BUILD_TESTING "Build the test suite." ON)
 
 if(BUILD_TESTING)
     # 1. Define a clean list of your individual test source file names
@@ -217,22 +209,14 @@ if(BUILD_TESTING)
         test_JobQueue
         test_Scheduler
         test_SlabAllocator
-        test_Version
-    )
+        test_Version)
 
     # 2. Loop through and instantiate an independent binary target for each file
     foreach(TEST_NAME IN LISTS TEST_FILES)
-
         # Creates a standalone executable target (e.g., test_Version_runner)
-        add_executable(${TEST_NAME}_runner
-            tests/${TEST_NAME}.cpp
-        )
-
+        add_executable(${TEST_NAME}_runner tests/${TEST_NAME}.cpp)
         # Link the core library (implicitly grabs include directories & C++17 flags)
         target_link_libraries(${TEST_NAME}_runner PRIVATE thekogans_util)
-
-        # Point to the 3rdparty folder so #include <CppUnitXLite/CppUnitXLite.hpp> resolves
-        target_include_directories(${TEST_NAME}_runner PRIVATE include/3rdparty)
     endforeach()
 endif()
 
@@ -248,48 +232,40 @@ install(TARGETS thekogans_util
     EXPORT thekogans_util_targets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
 
 install(EXPORT thekogans_util_targets
     FILE thekogans_utilTargets.cmake
     NAMESPACE thekogans::
-    DESTINATION ${UTIL_CMAKE_INSTALL_DIR}
-)
+    DESTINATION ${UTIL_CMAKE_INSTALL_DIR})
 
 install(DIRECTORY include/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
-    PATTERN "3rdparty" EXCLUDE
-)
+    PATTERN "3rdparty" EXCLUDE)
 
 install(DIRECTORY include/3rdparty/
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
     FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp" PATTERN "*.cpp"
-    PATTERN "private" EXCLUDE
-)
+    PATTERN "private" EXCLUDE)
 
 install(FILES resources/mime_types.txt
-    DESTINATION ${CMAKE_INSTALL_DATADIR}/thekogans_util
-)
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/thekogans_util)
 
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_utilConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
-    COMPATIBILITY SameMajorVersion
-)
+    COMPATIBILITY SameMajorVersion)
 
 configure_package_config_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/thekogans_utilConfig.cmake.in"
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_utilConfig.cmake"
-    INSTALL_DESTINATION ${UTIL_CMAKE_INSTALL_DIR}
-)
+    INSTALL_DESTINATION ${UTIL_CMAKE_INSTALL_DIR})
 
 install(FILES
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_utilConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_utilConfigVersion.cmake"
-    DESTINATION ${UTIL_CMAKE_INSTALL_DIR}
-)
+    DESTINATION ${UTIL_CMAKE_INSTALL_DIR})
 
 if(NOT TARGET uninstall)
     configure_file(
