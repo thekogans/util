@@ -82,23 +82,20 @@ set(MSVC_NO_WARN      "/wd4100" "/wd4018")
 
 # 2. ENFORCE QUOTES around the generator expressions so lists expand cleanly
 target_compile_options(thekogans_util PUBLIC
-    "$<$<OR:$<CXX_COMPILER_ID:GNU>>:${GCC_NO_WARN}>"
-    "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>"
-)
+    "$<$<CXX_COMPILER_ID:GNU>:${GCC_NO_WARN}>"
+    "$<$<CXX_COMPILER_ID:MSVC>:${MSVC_NO_WARN}>")
 
 # Define explicit version flags
 target_compile_definitions(thekogans_util PUBLIC
     THEKOGANS_UTIL_MAJOR_VERSION=${THEKOGANS_UTIL_MAJOR_VERSION}
     THEKOGANS_UTIL_MINOR_VERSION=${THEKOGANS_UTIL_MINOR_VERSION}
     THEKOGANS_UTIL_PATCH_VERSION=${THEKOGANS_UTIL_PATCH_VERSION}
-    THEKOGANS_UTIL_VERSION=${THEKOGANS_UTIL_VERSION_HEX}
-)
+    THEKOGANS_UTIL_VERSION=${THEKOGANS_UTIL_VERSION_HEX})
 
 # Automated Configuration Context Definitions via Generator Expressions
 # Maps THEKOGANS_UTIL_CONFIG_Release or THEKOGANS_UTIL_CONFIG_Debug dynamically based on active build target
 target_compile_definitions(thekogans_util PUBLIC
-    THEKOGANS_UTIL_CONFIG_$<CONFIG>
-)
+    THEKOGANS_UTIL_CONFIG_$<CONFIG>)
 
 # Maps THEKOGANS_UTIL_TYPE_Shared or THEKOGANS_UTIL_TYPE_Static automatically
 target_compile_definitions(thekogans_util PUBLIC
@@ -114,7 +111,7 @@ if(WIN32)
         _CRT_SECURE_NO_WARNINGS
         _CRT_SECURE_NO_DEPRECATE
         _CRT_NONSTDC_NO_DEPRECATE
-    )
+        _LIB_THEKOGANS_UTIL_BUILD)
 endif()
 
 # Enforce C++17 transitively to downstream users
@@ -316,34 +313,17 @@ if(ZLIB_FOUND)
     set(PC_REQUIRES_PRIVATE "zlib")
 endif()
 
-# Loop through your features list and format them with -D
+# Loop through features list and format them with -D
 set(PC_UTIL_FEATURES "")
 foreach(feature IN LISTS UTIL_FEATURES)
     string(APPEND PC_UTIL_FEATURES " -D${feature}")
 endforeach()
 
-file(WRITE "${CMAKE_CURRENT_SOURCE_DIR}/cmake/thekogans_util.pc.in"
-"prefix=@CMAKE_INSTALL_PREFIX@
-exec_prefix=\${prefix}
-libdir=\${prefix}/@CMAKE_INSTALL_LIBDIR@
-includedir=\${prefix}/@CMAKE_INSTALL_INCLUDEDIR@
-
-Name: thekogans_util
-Description: Standalone Core Utilities, JobQueues, and Slab Allocators
-Version: @PROJECT_VERSION@
-Requires.private: @PC_REQUIRES_PRIVATE@
-Libs: -L\${libdir} -lthekogans_util
-Libs.private: @PC_LIBS_PRIVATE@
-Cflags: -I\${includedir}@PC_UTIL_FEATURES@
-")
-
 # Generate the .pc file using configure_file
 configure_file(
     "${CMAKE_CURRENT_SOURCE_DIR}/cmake/thekogans_util.pc.in"
     "${CMAKE_CURRENT_BINARY_DIR}/thekogans_util.pc"
-    @ONLY
-)
+    @ONLY)
 
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/thekogans_util.pc"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
-)
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig)

@@ -336,21 +336,52 @@ namespace thekogans {
     #define TOOLCHAIN_TRIPLET TOOLCHAIN_OS "-" TOOLCHAIN_ARCH "-" TOOLCHAIN_COMPILER
 #endif // !defined (TOOLCHAIN_TRIPLET)
 
+// TOOLCHAIN_NAMING_CONVENTION
+#if !defined (TOOLCHAIN_NAMING_CONVENTION)
+    #define TOOLCHAIN_NAMING_CONVENTION "Hierarchical"
+#endif // !defined (TOOLCHAIN_NAMING_CONVENTION)
+
 // TOOLCHAIN_ENDIAN
 #if !defined (TOOLCHAIN_ENDIAN_Little) && !defined (TOOLCHAIN_ENDIAN_Big)
-    #define THEKOGANS_UTIL_LITTLE_ENDIAN 0x41424344UL
-    #define THEKOGANS_UTIL_BIG_ENDIAN    0x44434241UL
-    #define THEKOGANS_UTIL_ENDIAN_ORDER  0x41424344UL
-    #if THEKOGANS_UTIL_ENDIAN_ORDER == THEKOGANS_UTIL_LITTLE_ENDIAN
+    // ==========================================
+    // LAYER 1: Modern Compiler Intrinsics (GCC, Clang, ICC)
+    // Covers x86, ARM/AArch64, PPC, MIPS on modern toolchains
+    // ==========================================
+    #if defined (__BYTE_ORDER__) && defined (__ORDER_BIG_ENDIAN__)
+        #if (__BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+            #define TOOLCHAIN_ENDIAN_Big
+        #else
+            #define TOOLCHAIN_ENDIAN_Little
+        #endif
+        // ==========================================
+        // LAYER 2: Architecture-Specific Fallbacks
+        // Handles legacy, embedded, and specialized toolchains
+        // ==========================================
+        // 1. ARM / AArch64
+    #elif defined (__ARMEL__) || defined (_M_ARM) || defined (_M_ARM64)
         #define TOOLCHAIN_ENDIAN_Little
-    #elif THEKOGANS_UTIL_ENDIAN_ORDER == THEKOGANS_UTIL_BIG_ENDIAN
+    #elif defined (__ARMEB__)
         #define TOOLCHAIN_ENDIAN_Big
-    #else // THEKOGANS_UTIL_ENDIAN_ORDER == THEKOGANS_UTIL_LITTLE_ENDIAN
-        #error Unknown TOOLCHAIN_ENDIAN
-    #endif // THEKOGANS_UTIL_ENDIAN_ORDER == THEKOGANS_UTIL_LITTLE_ENDIAN
-    #undef THEKOGANS_UTIL_LITTLE_ENDIAN
-    #undef THEKOGANS_UTIL_BIG_ENDIAN
-    #undef THEKOGANS_UTIL_ENDIAN_ORDER
+        // 2. PowerPC (PPC / PPC64)
+    #elif defined (__AARCH64EL__)
+        #define TOOLCHAIN_ENDIAN_Little
+    #elif defined (__AARCH64EB__) || defined (__ppc__) || defined (__powerpc__) || defined (_ARCH_PPC)
+        #define TOOLCHAIN_ENDIAN_Big
+        // 3. MIPS
+    #elif defined (__MIPSEL__) || defined (_MIPSEL) || defined (__MIPSEL)
+        #define TOOLCHAIN_ENDIAN_Little
+    #elif defined (__MIPSEB__) || defined (_MIPSEB) || defined (__MIPSEB)
+        #define TOOLCHAIN_ENDIAN_Big
+        // 4. Windows / MSVC (Fallback)
+    #elif defined (_MSC_VER)
+        // Windows historically forces Little Endian even on ARM/ARM64
+        #define TOOLCHAIN_ENDIAN_Little
+        // ==========================================
+        // LAYER 3: Catch-all Guard
+        // ==========================================
+    #else
+        #error Target architecture/endianness could not be resolved at compile time.
+    #endif
 #endif // !defined (TOOLCHAIN_ENDIAN_Little) && !defined (TOOLCHAIN_ENDIAN_Big)
 
 namespace thekogans {
@@ -378,15 +409,13 @@ namespace thekogans {
             /// \brief
             /// Used by \see{Serializer} to swap bytes.
             GuestEndian = BigEndian
-        #elif defined (TOOLCHAIN_ENDIAN_Big)
+        #else // defined (TOOLCHAIN_ENDIAN_Little)
             /// \brief
             /// Host endian is big endian.
             HostEndian = BigEndian,
             /// \brief
             /// Used by \see{Serializer} to swap bytes.
             GuestEndian = LittleEndian
-        #else // defined (TOOLCHAIN_ENDIAN_Big)
-            #error Unable to determine system endianness.
         #endif // defined (TOOLCHAIN_ENDIAN_Little)
         };
 
