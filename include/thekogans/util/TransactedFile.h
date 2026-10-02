@@ -456,7 +456,7 @@ namespace thekogans {
                 return Write (buffer, count);
             }
 
-            TransactionParticipant::SharedPtr ReadTransactionParticipant (
+            Serializable::SharedPtr ReadTransactionParticipant (
                 Allocator::PtrType offset,
                 const SerializableHeader &context = SerializableHeader (),
                 DynamicCreatable::FactoryType factory = DynamicCreatable::FactoryType ());
@@ -516,10 +516,6 @@ namespace thekogans {
             /// TransactedFile is neither copy or move constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
-
-        /// \brief
-        /// Implement \see{TransactedFile::TransactionParticipant} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::TransactionParticipant)
 
         /// \brief
         /// Implement \see{TransactedFile::Allocator} extraction operators.

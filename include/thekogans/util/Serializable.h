@@ -492,7 +492,7 @@ namespace thekogans {
             inline thekogans::util::Serializer & _LIB_THEKOGANS_UTIL_API operator >> (\
                     thekogans::util::Serializer &serializer,\
                     _T::SharedPtr &serializable) {\
-                Serializable::SharedPtr base;\
+                thekogans::util::Serializable::SharedPtr base;\
                 serializer >> base;\
                 serializable = base;\
                 return serializer;\
@@ -500,7 +500,7 @@ namespace thekogans {
             inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const pugi::xml_node &node,\
                     _T::SharedPtr &serializable) {\
-                Serializable::SharedPtr base;\
+                thekogans::util::Serializable::SharedPtr base;\
                 node >> base;\
                 serializable = base;\
                 return node;\
@@ -508,7 +508,7 @@ namespace thekogans {
             inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
                     const thekogans::util::JSON::Object &object,\
                     _T::SharedPtr &serializable) {\
-                Serializable::SharedPtr base;\
+                thekogans::util::Serializable::SharedPtr base;\
                 object >> base;\
                 serializable = base;\
                 return object;\
