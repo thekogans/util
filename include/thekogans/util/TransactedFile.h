@@ -229,7 +229,7 @@ namespace thekogans {
                 void SetDirty (bool dirty);
 
                 /// \brief
-                /// TransactedFile::ReadTransactionParticipant sets the file.
+                /// TransactedFile::Init sets the file.
                 friend struct TransactedFile;
 
                 /// \brief
@@ -456,10 +456,6 @@ namespace thekogans {
                 return Write (buffer, count);
             }
 
-            Serializable::SharedPtr ReadTransactionParticipant (
-                Allocator::PtrType offset,
-                const SerializableHeader &context = SerializableHeader (),
-                DynamicCreatable::FactoryType factory = DynamicCreatable::FactoryType ());
             /// \brief
             /// Called during file open. If the file is empty and an
             /// \see{Allocator} and an optional \see{Registry} were

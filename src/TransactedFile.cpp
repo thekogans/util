@@ -301,25 +301,6 @@ namespace thekogans {
             }
         }
 
-        Serializable::SharedPtr TransactedFile::ReadTransactionParticipant (
-                Allocator::PtrType offset,
-                const SerializableHeader &context,
-                DynamicCreatable::FactoryType factory) {
-            Serializable::SharedPtr transactionParticipant;
-            BlockRange range (*this, offset);
-            ContextGuard guard (range, context, factory,
-                [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
-                    TransactionParticipant::SharedPtr transactionParticipant = dynamicCreatable;
-                    if (transactionParticipant != nullptr) {
-                        transactionParticipant->file = this;
-                    }
-                }
-            );
-            range >> transactionParticipant;
-            assert (transactionParticipant->file == this);
-            return transactionParticipant;
-        }
-
         void TransactedFile::Init (
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_) {
@@ -344,8 +325,18 @@ namespace thekogans {
                 Range range (*this, block.GetOffset (), block.GetSize (), false);
                 range << *allocator_;
             }
-            allocator = ReadTransactionParticipant (Allocator::Block::HEADER_SIZE);
-            assert (allocator != nullptr);
+            {
+                BlockRange range (*this, Allocator::Block::HEADER_SIZE);
+                ContextGuard guard (range, SerializableHeader (), DynamicCreatable::FactoryType (),
+                    [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                        Allocator::SharedPtr allocator = dynamicCreatable;
+                        if (allocator != nullptr) {
+                            allocator->file = this;
+                        }
+                    });
+                range >> allocator;
+                assert (allocator != nullptr && allocator->file == this);
+            }
             if (allocator->GetRegistryOffset () == 0) {
                 if (registry_ != nullptr) {
                     registry_.Reset (new TransactedFileBTreeRegistry);
@@ -355,8 +346,18 @@ namespace thekogans {
                 BlockRange range (*this, allocator->GetRegistryOffset (), false);
                 range << *registry_;
             }
-            registry = ReadTransactionParticipant (allocator->GetRegistryOffset ());
-            assert (registry != nullptr);
+            {
+                BlockRange range (*this, allocator->GetRegistryOffset ());
+                ContextGuard guard (range, SerializableHeader (), DynamicCreatable::FactoryType (),
+                    [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                        Registry::SharedPtr registry = dynamicCreatable;
+                        if (registry != nullptr) {
+                            registry->file = this;
+                        }
+                    });
+                range >> registry;
+                assert (registry != nullptr && registry->file == this);
+            }
             transaction.Commit ();
         }
 
