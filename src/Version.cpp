@@ -162,13 +162,13 @@ namespace thekogans {
             ui32 major = 0;
             ui32 minor = 0;
             ui32 patch = 0;
-        #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_MAJOR_VERSION)
+        #if defined (THEKOGANS_UTIL_MAJOR_VERSION)
             major = THEKOGANS_UTIL_MAJOR_VERSION;
         #endif
-        #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_MINOR_VERSION)
+        #if defined (THEKOGANS_UTIL_MINOR_VERSION)
             minor = THEKOGANS_UTIL_MINOR_VERSION;
         #endif
-        #if !THEKOGANS_UTIL_IS_MACRO_EMPTY (THEKOGANS_UTIL_PATCH_VERSION)
+        #if defined (THEKOGANS_UTIL_PATCH_VERSION)
             patch = THEKOGANS_UTIL_PATCH_VERSION;
         #endif
             static const Version version (major, minor, patch);

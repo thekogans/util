@@ -19,7 +19,6 @@
 #define __thekogans_util_Flags_h
 
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Serializer.h"
 
 namespace thekogans {
     namespace util {
@@ -31,7 +30,6 @@ namespace thekogans {
         /// standard bit test/set/flip api's are provided. The aliases
         /// below instantiate the template for four of the most common
         /// types (ui8, ui16, ui32, ui64).
-
         template<typename T>
         struct Flags {
         private:
@@ -50,7 +48,7 @@ namespace thekogans {
             /// Return serialized size of flags.
             /// \return Serialized size of flags.
             inline std::size_t Size () const {
-                return Serializer::Size (flags);
+                return Width<T>::value;
             }
 
             /// \brief
@@ -222,35 +220,6 @@ namespace thekogans {
                 const Flags<T> &flags1,
                 const Flags<T> &flags2) {
             return (const T)flags1 != (const T)flags2;
-        }
-
-        /// \brief
-        /// Serialize a Flags<T>. endianness is used to properly
-        /// convert between serializer and host byte order.
-        /// \param[in] serializer Where to write Flags<T>.
-        /// \param[in] flags Flags<T> to serialize.
-        /// \return serializer.
-        template<typename T>
-        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
-                Serializer &serializer,
-                const Flags<T> &flags) {
-            return serializer << (const T)flags;
-        }
-
-        /// \brief
-        /// Extract a Flags<T>. endianness is used to properly
-        /// convert between serializer and host byte order.
-        /// \param[in] serializer Where to read the Flags<T> from.
-        /// \param[out] value Where to place the extracted value.
-        /// \return serializer.
-        template<typename T>
-        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-                Serializer &serializer,
-                Flags<T> &flags) {
-            T t;
-            serializer >> t;
-            flags = Flags<T> (t);
-            return serializer;
         }
 
     } // namespace util

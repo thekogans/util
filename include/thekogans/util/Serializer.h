@@ -30,6 +30,7 @@
 #include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/SerializableHeader.h"
 #include "thekogans/util/SecureAllocator.h"
+#include "thekogans/util/Flags.h"
 #include "thekogans/util/XMLUtils.h"
 
 namespace thekogans {
@@ -1037,6 +1038,36 @@ namespace thekogans {
             return *this;
         }
     #endif // defined (TOOLCHAIN_OS_Windows) || defined (THEKOGANS_UTIL_HAVE_MMAP)
+
+
+        /// \brief
+        /// Serialize a Flags<T>. endianness is used to properly
+        /// convert between serializer and host byte order.
+        /// \param[in] serializer Where to write Flags<T>.
+        /// \param[in] flags Flags<T> to serialize.
+        /// \return serializer.
+        template<typename T>
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator << (
+                Serializer &serializer,
+                const Flags<T> &flags) {
+            return serializer << (const T)flags;
+        }
+
+        /// \brief
+        /// Extract a Flags<T>. endianness is used to properly
+        /// convert between serializer and host byte order.
+        /// \param[in] serializer Where to read the Flags<T> from.
+        /// \param[out] value Where to place the extracted value.
+        /// \return serializer.
+        template<typename T>
+        inline Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
+                Serializer &serializer,
+                Flags<T> &flags) {
+            T t;
+            serializer >> t;
+            flags = Flags<T> (t);
+            return serializer;
+        }
 
     } // namespace util
 } // namespace thekogans

@@ -96,37 +96,37 @@ namespace thekogans {
 
         /// \brief
         /// bool type size.
-        const std::size_t BOOL_SIZE = sizeof (ui8);
+        static constexpr std::size_t BOOL_SIZE = sizeof (ui8);
         /// \brief
         /// Signed 8 bit type size.
-        const std::size_t I8_SIZE = sizeof (i8);
+        static constexpr std::size_t I8_SIZE = sizeof (i8);
         /// \brief
         /// Unsigned 8 bit type size.
-        const std::size_t UI8_SIZE = sizeof (ui8);
+        static constexpr std::size_t UI8_SIZE = sizeof (ui8);
         /// \brief
         /// Signed 16 bit type size.
-        const std::size_t I16_SIZE = sizeof (i16);
+        static constexpr std::size_t I16_SIZE = sizeof (i16);
         /// \brief
         /// Unsigned 16 bit type size.
-        const std::size_t UI16_SIZE = sizeof (ui16);
+        static constexpr std::size_t UI16_SIZE = sizeof (ui16);
         /// \brief
         /// Signed 32 bit type size.
-        const std::size_t I32_SIZE = sizeof (i32);
+        static constexpr std::size_t I32_SIZE = sizeof (i32);
         /// \brief
         /// Unsigned 32 bit type size.
-        const std::size_t UI32_SIZE = sizeof (ui32);
+        static constexpr std::size_t UI32_SIZE = sizeof (ui32);
         /// \brief
         /// Signed 64 bit type size.
-        const std::size_t I64_SIZE = sizeof (i64);
+        static constexpr std::size_t I64_SIZE = sizeof (i64);
         /// \brief
         /// Unsigned 64 bit type size.
-        const std::size_t UI64_SIZE = sizeof (ui64);
+        static constexpr std::size_t UI64_SIZE = sizeof (ui64);
         /// \brief
         /// 32 bit float type size.
-        const std::size_t F32_SIZE = sizeof (f32);
+        static constexpr std::size_t F32_SIZE = sizeof (f32);
         /// \brief
         /// 64 bit float type size.
-        const std::size_t F64_SIZE = sizeof (f64);
+        static constexpr std::size_t F64_SIZE = sizeof (f64);
 
         /// \struct Width Types.h thekogans/util/Types.h
         ///
@@ -135,7 +135,7 @@ namespace thekogans {
         /// \tparam T Type whose width in bytes we need.
         template<typename T>
         struct Width {
-            static const std::size_t value = sizeof (T);
+            static constexpr std::size_t value = sizeof (T);
         };
         /// \struct BitWidth Types.h thekogans/util/Types.h
         ///
@@ -144,7 +144,7 @@ namespace thekogans {
         /// \tparam T Type whose width in bits we need.
         template<typename T>
         struct BitWidth {
-            static const std::size_t value = Width<T>::value * CHAR_BIT;
+            static constexpr std::size_t value = Width<T>::value * CHAR_BIT;
         };
 
     } // namespace util
@@ -184,23 +184,23 @@ namespace thekogans {
 
         /// \brief
         /// Natural machine word size.
-        const std::size_t MACHINE_WORD_SIZE = sizeof (MachineWord);
+        static constexpr std::size_t MACHINE_WORD_SIZE = sizeof (MachineWord);
         /// \brief
         /// ssize_t type size.
-        const std::size_t SSIZE_T_SIZE = sizeof (ssize_t);
+        static constexpr std::size_t SSIZE_T_SIZE = sizeof (ssize_t);
         /// \brief
         /// std::size_t type size.
-        const std::size_t SIZE_T_SIZE = sizeof (std::size_t);
+        static constexpr std::size_t SIZE_T_SIZE = sizeof (std::size_t);
         /// \brief
         /// wchar_t type size.
-        const std::size_t CHAR_SIZE = sizeof (char);
+        static constexpr std::size_t CHAR_SIZE = sizeof (char);
         /// \brief
         /// wchar_t type size.
-        const std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
+        static constexpr std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
 
         /// \brief
         /// Serialized size of Endianness.
-        const std::size_t ENDIANNESS_SIZE = UI8_SIZE;
+        static constexpr std::size_t ENDIANNESS_SIZE = UI8_SIZE;
 
         /// \brief
         /// Error code type.
@@ -420,12 +420,6 @@ namespace thekogans {
         /// Given a prefix, create a unique name using __LINE__.
         /// \param[in] prefix Name prefix.
         #define THEKOGANS_UTIL_UNIQUE_NAME(prefix) THEKOGANS_UTIL_LABEL (prefix, __LINE__)
-
-        #define THEKOGANS_UTIL_ARG_PLACEHOLDER_1 ,
-        #define THEKOGANS_UTIL_TAKE_SECOND_ARG(a, b, ...) b
-        #define THEKOGANS_UTIL_IS_EMPTY_CHECK(...) THEKOGANS_UTIL_TAKE_SECOND_ARG (__VA_ARGS__)
-        #define THEKOGANS_UTIL_IS_MACRO_EMPTY(macro)\
-            THEKOGANS_UTIL_IS_EMPTY_CHECK (THEKOGANS_UTIL_ARG_PLACEHOLDER_##macro 0, 1)
 
     } // namespace util
 } // namespace thekogans
