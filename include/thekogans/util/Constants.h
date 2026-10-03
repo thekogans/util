@@ -533,7 +533,7 @@ namespace thekogans {
         /// \return Number of trailing bits after the first 1.
         inline constexpr std::size_t TrailingZeroBitCount (std::size_t value) {
             if (value == 0) {
-                return sizeof (std::size_t) * 8; // Handle 0 safely
+                return BitWidth<std::size_t>::value;
             }
         #if defined (__GNUC__) || defined (__clang__)
             if constexpr (sizeof (std::size_t) == 8) {
@@ -544,12 +544,13 @@ namespace thekogans {
             }
         #elif defined (_MSC_VER)
             unsigned long index;
-        #if defined (_WIN64)
-            _BitScanForward64 (&index, value);
-        #else // defined (_WIN64)
-            _BitScanForward (&index, value);
-        #endif // defined (_WIN64)
-            return index;
+            if constexpr (sizeof (std::size_t) == 8) {
+                _BitScanForward64 (&index, value);
+            }
+            else {
+                _BitScanForward (&index, value);
+            }
+            return static_cast<std::size_t> (index);
         #else // defined (__GNUC__) || defined (__clang__)
             // Fallback cross-platform bit-twiddling if no intrinsic is found
             std::size_t count = 0;

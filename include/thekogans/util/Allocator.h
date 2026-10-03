@@ -68,6 +68,12 @@ namespace thekogans {
                 std::size_t size) = 0;
         };
 
+        void *thekogans_malloc (std::size_t size);
+        void thekogans_free (void *ptr);
+        void thekogans_free (
+            void *ptr,
+            std::size_t size);
+
     } // namespace util
 } // namespace thekogans
 

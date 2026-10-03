@@ -15,9 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include <cstddef>
+#include <cstdint>
+#include <bit>
+#include <algorithm>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/Allocator.h"
+#include "thekogans/util/SlabAllocator.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/DefaultAllocator.h"
     #include "thekogans/util/SecureAllocator.h"
@@ -55,6 +60,144 @@ namespace thekogans {
                 type = DefaultAllocator::TYPE;
             }
             return type;
+        }
+
+        namespace {
+            // --- Configuration Knobs ---
+            constexpr size_t MIN_ALIGN = sizeof (void *); // 8 Bytes
+            constexpr size_t MIN_EXP   = 3;             // 2^3 = 8 Bytes
+            constexpr size_t MAX_EXP   = 22;            // 2^22 = 4 MiB
+            constexpr size_t NUM_POOLS = MAX_EXP - MIN_EXP + 1; // 20 Pools
+
+            // The Tuning Knob: Defines the ideal memory footprint target for a pool's page
+            // Small pools target standard OS pages (4KB), large pools scale up to avoid OS overhead.
+            constexpr size_t get_target_page_footprint (size_t slot_size) {
+                if (slot_size <= 128)      return 4 * 1024;       // 4 KiB target (~512 to 32 slots)
+                if (slot_size <= 2048)     return 16 * 1024;      // 16 KiB target
+                if (slot_size <= 65536)    return 256 * 1024;     // 256 KiB target
+                if (slot_size <= 1048576)  return 4 * 1024 * 1024;// 4 MiB target (~4 slots)
+                return 16 * 1024 * 1024;                          // 16 MiB target for >= 2MB slots (4 slots)
+            }
+
+            // --- Compile-Time Pool Configuration Generator ---
+            template <size_t PoolIdx>
+            struct PoolConfig {
+                static constexpr size_t SLOT_SIZE = 1ULL << (PoolIdx + MIN_EXP);
+                static constexpr size_t TARGET_FOOTPRINT = get_target_page_footprint (SLOT_SIZE);
+                // Calculate how many slots fit. Ensure at least 2 slots per page for large objects
+                static constexpr size_t SLOT_COUNT = std::max (size_t (2), TARGET_FOOTPRINT / SLOT_SIZE);
+                // The exact allocation size needed from the OS for this page type
+                static constexpr size_t PAGE_SIZE = SLOT_COUNT * SLOT_SIZE;
+            };
+
+            // Base interface so the master allocator can hold an array of different pools uniformly
+            struct IPool {
+                virtual ~IPool () = default;
+                virtual void *Alloc () = 0;
+                virtual void Free (void *ptr) = 0;
+            };
+
+            template <size_t PoolIdx>
+            class StaticPool : public IPool {
+                using Config = PoolConfig<PoolIdx>;
+                using SlotType = std::byte[Config::SLOT_SIZE];
+                using AllocatorType = ScopedSlabAllocator<
+                    SlotType,
+                    Policy::IsSingleton<true>,
+                    Policy::SlotsPerPage<Config::SLOT_COUNT>,
+                    Policy::DeriveTLCThreshold<Config::SLOT_COUNT>>;
+                AllocatorType allocator;
+
+            public:
+                void *Alloc () override {
+                    return allocator.Alloc ();
+                }
+
+                void Free (void *ptr) override {
+                    allocator.Free (ptr);
+                }
+            };
+
+            class MasterAllocator {
+            private:
+                StaticPool<0> pool0;
+                StaticPool<1> pool1;
+                StaticPool<2> pool2;
+                StaticPool<3> pool3;
+                StaticPool<4> pool4;
+                StaticPool<5> pool5;
+                StaticPool<6> pool6;
+                StaticPool<7> pool7;
+                StaticPool<8> pool8;
+                StaticPool<9> pool9;
+                StaticPool<10> pool10;
+                StaticPool<11> pool11;
+                StaticPool<12> pool12;
+                StaticPool<13> pool13;
+                StaticPool<14> pool14;
+                StaticPool<15> pool15;
+                StaticPool<16> pool16;
+                StaticPool<17> pool17;
+                StaticPool<18> pool18;
+                StaticPool<19> pool19;
+                IPool *pools[NUM_POOLS];
+
+            public:
+                MasterAllocator () {
+                    pools[0] = &pool0;
+                    pools[1] = &pool1;
+                    pools[2] = &pool2;
+                    pools[3] = &pool3;
+                    pools[4] = &pool4;
+                    pools[5] = &pool5;
+                    pools[6] = &pool6;
+                    pools[7] = &pool7;
+                    pools[8] = &pool8;
+                    pools[9] = &pool9;
+                    pools[10] = &pool10;
+                    pools[11] = &pool11;
+                    pools[12] = &pool12;
+                    pools[13] = &pool13;
+                    pools[14] = &pool14;
+                    pools[15] = &pool15;
+                    pools[16] = &pool16;
+                    pools[17] = &pool17;
+                    pools[18] = &pool18;
+                    pools[19] = &pool19;
+                }
+
+                void *Alloc (size_t size) {
+                    if (size > (1ULL << MAX_EXP)) {
+                        // Use standard malloc/calloc instead of operator new to prevent cross-talk routing loops
+                        return std::malloc (size);
+                    }
+                    if (size < MIN_ALIGN) {
+                        size = MIN_ALIGN;
+                    }
+                    size_t idx = TrailingZeroBitCount (size) - MIN_EXP;
+                    return pools[idx]->Alloc ();
+                }
+
+                static MasterAllocator &Instance () {
+                    static MasterAllocator instance;
+                    return instance;
+                }
+            };
+        }
+
+        void *thekogans_malloc (std::size_t size) {
+            return MasterAllocator::Instance ().Alloc (Align (size));
+        }
+
+        void thekogans_free (void *ptr) {
+            using DummySlabAllocator = detail::SlabAllocator<void *>;
+            DummySlabAllocator::FreeSlot (ptr);
+        }
+
+        void thekogans_free (
+                void *ptr,
+                std::size_t size) {
+            thekogans_free (ptr);
         }
 
     } // namespace util

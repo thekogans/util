@@ -509,16 +509,22 @@ namespace thekogans {
                         /// Pointer to the next free slot in the list.
                         Slot *next;
 
-                        void Free (Page *&head) {
+                        inline Page *GetPage () noexcept {
                             // The magic! This is why we can guarntee wall to wall O(1) performance.
                             // By aligning the page size to the next power of 2 and then using that
                             // size as page memory placement alignment, we can use a simple pointer
                             // masking trick to find the page address given any address it allocated.
                             // After all the syntactic sugar is stripped away this line boils down
                             // to a single 'and' instruction in hardware.
-                            Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
-                            // Niw that we know the slot's page, freeing it is childs play.
-                            page->Free (this, head);
+                            return reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
+                        }
+
+                        inline void Free () noexcept {
+                            GetPage ()->Free (this);
+                        }
+                        inline static void Free (void *ptr) noexcept {
+                            Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (ptr) & ~pageMask);
+                            page->header.allocator.Free (ptr);
                         }
                     };
                     /// \struct SlabAllocator::Page::Header SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
@@ -530,9 +536,10 @@ namespace thekogans {
                     /// false sharing. By padding out the page header to a cache line size we
                     /// guarantee to prevent sharing it with slots.
                     struct Header {
+                        SlabAllocator &allocator;
                         struct EmptyMasterNext {};
                         using MasterNext = std::conditional_t<!IsSingleton, Page *, EmptyMasterNext>;
-                        [[no_unique_address]] MasterNext masterNext{nullptr};
+                        [[no_unique_address]] MasterNext masterNext = {};
                         /// \brief
                         /// Next page in the list.
                         Page *partialNext{nullptr};
@@ -541,8 +548,9 @@ namespace thekogans {
                         std::size_t slotCount{0};
                         Slot *freeList{nullptr};
 
-                        Header (Page *partialNext_) noexcept :
-                            partialNext (partialNext_) {}
+                        Header (SlabAllocator &allocator_) noexcept :
+                            allocator (allocator_),
+                            partialNext (allocator.storage.partialPageList) {}
                     } header;
 
                     /// \brief
@@ -572,15 +580,15 @@ namespace thekogans {
                     /// \brief
                     /// ctor.
                     /// \param[in, out] head Head of the partial list.
-                    Page (Page *&head) noexcept :
-                            header (head) {
-                        head = this;
+                    Page (SlabAllocator &allocator) noexcept :
+                            header (allocator) {
+                        allocator.storage.partialPageList = this;
                     }
 
                     /// \brief
                     /// Allocate a slot.
                     /// \return A new slot.
-                    inline Slot *Alloc (Page *&head) noexcept {
+                    inline Slot *Alloc () noexcept {
                         Slot *slot;
                         if (header.freeList != nullptr) {
                             slot = header.freeList;
@@ -597,7 +605,7 @@ namespace thekogans {
                             // free one of it's slots or if the allocator is scoped and it's
                             // dtor fires. Either way full pages get evicted from the partial
                             // list so as not to waste time traversion over them when allocating.
-                            head = header.partialNext;
+                            header.allocator.storage.partialPageList = header.partialNext;
                             header.partialNext = nullptr;
                         }
                         return slot;
@@ -606,9 +614,7 @@ namespace thekogans {
                     /// \brief
                     /// Return a previously Alloc(ated) slot back to the free list.
                     /// \param[in] ptr Slot pointer to free.
-                    inline void Free (
-                            Slot *slot,
-                            Page *&head) noexcept {
+                    inline void Free (Slot *slot) noexcept {
                         slot->next = header.freeList;
                         header.freeList = slot;
                         --header.slotCount;
@@ -620,8 +626,8 @@ namespace thekogans {
                         // The page transitioned from full to partial.
                         // Wire it back in to our list from the either.
                         if (THEKOGANS_UTIL_UNLIKELY (header.slotCount + 1 == maxSlots)) {
-                            header.partialNext = head;
-                            head = this;
+                            header.partialNext = header.allocator.storage.partialPageList;
+                            header.allocator.storage.partialPageList = this;
                         }
                     }
                 };
@@ -706,11 +712,8 @@ namespace thekogans {
 
             public:
                 /// \brief
-                /// Allocate a new slot with streamlined batch refilling.
-                /// \param[in] size We don't use size. This is just to
-                /// make the signature compatible with \see{Allocator}.
-                /// \return Pointer to the newly allocated slot.
-                void *Alloc (std::size_t /*size*/ = sizeof (T)) {
+                /// Allocate a new slot.
+                void *Alloc () {
                     void *ptr = nullptr;
                     if constexpr (TLCThreshold > 0) {
                         TLC &tlc = GetTLC ();
@@ -723,7 +726,7 @@ namespace thekogans {
                             while (tlc.slotCount < batchTarget) {
                                 // Inner loop aggressively drains whatever pages are currently available.
                                 while (tlc.slotCount < batchTarget && storage.partialPageList != nullptr) {
-                                    tlc.Push (storage.partialPageList->Alloc (storage.partialPageList));
+                                    tlc.Push (storage.partialPageList->Alloc ());
                                 }
                                 // If inner loop broke but target isn't met, the pool is dry.
                                 // Seed a fresh page from the OS and let the outer loop repeat the harvest.
@@ -740,7 +743,7 @@ namespace thekogans {
                         if (THEKOGANS_UTIL_UNLIKELY (storage.partialPageList == nullptr)) {
                             AllocPage ();
                         }
-                        ptr = storage.partialPageList->Alloc (storage.partialPageList);
+                        ptr = storage.partialPageList->Alloc ();
                     }
                     return ptr;
                 }
@@ -748,10 +751,7 @@ namespace thekogans {
                 /// \brief
                 /// Try to cache a previously allocated slot. If our cache is full,
                 /// return half back to the pages the slots came from.
-                /// \param[in] ptr Slot pointer to free.
-                void Free (
-                        void *ptr,
-                        std::size_t /*size*/ = sizeof (T)) noexcept {
+                void Free (void *ptr) noexcept {
                     if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                         typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
                         if constexpr (TLCThreshold > 0) {
@@ -763,15 +763,19 @@ namespace thekogans {
                                 LockGuard<Lock> guard (storage.lock);
                                 static constexpr std::size_t flushCount = TLCThreshold / 2;
                                 for (std::size_t i = 0; i < flushCount; ++i) {
-                                    tlc.Pop ()->Free (storage.partialPageList);
+                                    tlc.Pop ()->Free ();
                                 }
                             }
                         }
                         else {
                             LockGuard<Lock> guard (storage.lock);
-                            slot->Free (storage.partialPageList);
+                            slot->Free ();
                         }
                     }
+                }
+
+                static void FreeSlot (void *ptr) noexcept {
+                    Page::Slot::Free (ptr);
                 }
 
             private:
@@ -802,7 +806,7 @@ namespace thekogans {
                         // give back this page is 1. It takes time to check and 2.
                         // even if a page or two are back with one or two empty slots
                         // having a completely empty page is better for cache harvesting.
-                        Page *page = new (ptr) Page (storage.partialPageList);
+                        Page *page = new (ptr) Page (*this);
                         // Wire the newly minted page in to the master page list.
                         if constexpr (!IsSingleton) {
                             page->header.masterNext = storage.masterPageList;
