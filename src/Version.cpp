@@ -31,17 +31,12 @@ namespace thekogans {
                 std::size_t i = 0;
                 auto ExtractVersion = [&] (ui32 &version) {
                     for (; i < value.size (); ++i) {
-                        if (value[i] == '.') {
-                            ++i;
-                            return;
-                        }
-                        else if (isdigit (value[i])) {
+                        if (isdigit (value[i])) {
                             version *= 10;
                             version += value[i] - '0';
                         }
                         else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Unrecognized version format: %s, should be [%%u[.%%u[.%%u]]]", value.c_str ());
+                            ++i;
                             return;
                         }
                     }

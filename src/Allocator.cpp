@@ -104,8 +104,8 @@ namespace thekogans {
                 using AllocatorType = ScopedSlabAllocator<
                     SlotType,
                     Policy::IsSingleton<true>,
-                    Policy::SlotsPerPage<Config::SLOT_COUNT>,
-                    Policy::DeriveTLCThreshold<Config::SLOT_COUNT>>;
+                    Policy::SlotsPerPage<Config::SLOT_COUNT * 100>,
+                    Policy::DeriveTLCThreshold<Config::SLOT_COUNT * 40>>;
                 AllocatorType allocator;
 
             public:
@@ -118,7 +118,7 @@ namespace thekogans {
                 }
             };
 
-            class MasterAllocator {
+            class MasterAllocator : public Singleton<MasterAllocator> {
             private:
                 StaticPool<0> pool0;
                 StaticPool<1> pool1;
@@ -140,64 +140,45 @@ namespace thekogans {
                 StaticPool<17> pool17;
                 StaticPool<18> pool18;
                 StaticPool<19> pool19;
-                IPool *pools[NUM_POOLS];
+                IPool *pools[NUM_POOLS] = {
+                    &pool0, &pool1, &pool2, &pool3, &pool4, &pool5, &pool6, &pool7, &pool8, &pool9,
+                    &pool10, &pool11, &pool12, &pool13, &pool14, &pool15, &pool16, &pool17, &pool18, &pool19
+                };
 
             public:
-                MasterAllocator () {
-                    pools[0] = &pool0;
-                    pools[1] = &pool1;
-                    pools[2] = &pool2;
-                    pools[3] = &pool3;
-                    pools[4] = &pool4;
-                    pools[5] = &pool5;
-                    pools[6] = &pool6;
-                    pools[7] = &pool7;
-                    pools[8] = &pool8;
-                    pools[9] = &pool9;
-                    pools[10] = &pool10;
-                    pools[11] = &pool11;
-                    pools[12] = &pool12;
-                    pools[13] = &pool13;
-                    pools[14] = &pool14;
-                    pools[15] = &pool15;
-                    pools[16] = &pool16;
-                    pools[17] = &pool17;
-                    pools[18] = &pool18;
-                    pools[19] = &pool19;
-                }
-
                 void *Alloc (size_t size) {
-                    if (size > (1ULL << MAX_EXP)) {
-                        // Use standard malloc/calloc instead of operator new to prevent cross-talk routing loops
+                    if (THEKOGANS_UTIL_UNLIKELY (size > (1ULL << MAX_EXP))) {
                         return std::malloc (size);
                     }
-                    if (size < MIN_ALIGN) {
+                    if (THEKOGANS_UTIL_UNLIKELY (size < MIN_ALIGN)) {
                         size = MIN_ALIGN;
                     }
-                    size_t idx = TrailingZeroBitCount (size) - MIN_EXP;
-                    return pools[idx]->Alloc ();
+                    return pools[TrailingZeroBitCount (Align (size)) - MIN_EXP]->Alloc ();
                 }
-
-                static MasterAllocator &Instance () {
-                    static MasterAllocator instance;
-                    return instance;
+                void Free (
+                        void *ptr,
+                        size_t size) {
+                    if (THEKOGANS_UTIL_UNLIKELY (size > (1ULL << MAX_EXP))) {
+                        std::free (ptr);
+                    }
+                    if (THEKOGANS_UTIL_UNLIKELY (size < MIN_ALIGN)) {
+                        size = MIN_ALIGN;
+                    }
+                    return pools[TrailingZeroBitCount (Align (size)) - MIN_EXP]->Free (ptr);
                 }
             };
         }
 
         void *thekogans_malloc (std::size_t size) {
-            return MasterAllocator::Instance ().Alloc (Align (size));
-        }
-
-        void thekogans_free (void *ptr) {
-            using DummySlabAllocator = detail::SlabAllocator<void *>;
-            DummySlabAllocator::FreeSlot (ptr);
+            static MasterAllocator &allocator = *MasterAllocator::Instance ();
+            return allocator.Alloc (size);
         }
 
         void thekogans_free (
                 void *ptr,
                 std::size_t size) {
-            thekogans_free (ptr);
+            static MasterAllocator &allocator = *MasterAllocator::Instance ();
+            allocator.Free (ptr, size);
         }
 
     } // namespace util

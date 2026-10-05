@@ -509,22 +509,17 @@ namespace thekogans {
                         /// Pointer to the next free slot in the list.
                         Slot *next;
 
-                        inline Page *GetPage () noexcept {
-                            // The magic! This is why we can guarntee wall to wall O(1) performance.
-                            // By aligning the page size to the next power of 2 and then using that
-                            // size as page memory placement alignment, we can use a simple pointer
-                            // masking trick to find the page address given any address it allocated.
-                            // After all the syntactic sugar is stripped away this line boils down
-                            // to a single 'and' instruction in hardware.
-                            return reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
-                        }
-
                         inline void Free () noexcept {
-                            GetPage ()->Free (this);
+                            Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
+                            page->Free (this);
                         }
-                        inline static void Free (void *ptr) noexcept {
+                        inline static bool Free (void *ptr) noexcept {
                             Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (ptr) & ~pageMask);
-                            page->header.allocator.Free (ptr);
+                            if (page->header.magic == MAGIC64) {
+                                page->header.allocator.Free (ptr);
+                                return true;
+                            }
+                            return false;
                         }
                     };
                     /// \struct SlabAllocator::Page::Header SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
@@ -536,6 +531,7 @@ namespace thekogans {
                     /// false sharing. By padding out the page header to a cache line size we
                     /// guarantee to prevent sharing it with slots.
                     struct Header {
+                        ui64 magic = MAGIC64;
                         SlabAllocator &allocator;
                         struct EmptyMasterNext {};
                         using MasterNext = std::conditional_t<!IsSingleton, Page *, EmptyMasterNext>;
@@ -589,7 +585,7 @@ namespace thekogans {
                     /// Allocate a slot.
                     /// \return A new slot.
                     inline Slot *Alloc () noexcept {
-                        Slot *slot;
+                        Slot *slot = nullptr;
                         if (header.freeList != nullptr) {
                             slot = header.freeList;
                             header.freeList = header.freeList->next;
@@ -723,14 +719,14 @@ namespace thekogans {
                             static constexpr std::size_t batchTarget = TLCThreshold / 2;
                             // Persistent outer loop forces lock retention until TLC target is met.
                             LockGuard<Lock> guard (storage.lock);
-                            while (tlc.slotCount < batchTarget) {
+                            while (tlc.slotCount == 0 /*< batchTarget*/) {
                                 // Inner loop aggressively drains whatever pages are currently available.
                                 while (tlc.slotCount < batchTarget && storage.partialPageList != nullptr) {
                                     tlc.Push (storage.partialPageList->Alloc ());
                                 }
                                 // If inner loop broke but target isn't met, the pool is dry.
                                 // Seed a fresh page from the OS and let the outer loop repeat the harvest.
-                                if (tlc.slotCount < batchTarget) {
+                                if (tlc.slotCount == 0 /*< batchTarget*/) {
                                     AllocPage ();
                                 }
                             }
@@ -759,7 +755,7 @@ namespace thekogans {
                             tlc.Push (slot);
                             // If we have no more room in our local cache batch release a bunch
                             // of slots back to their pages so that we have room for more.
-                            if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount > TLCThreshold)) {
+                            if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == TLCThreshold)) {
                                 LockGuard<Lock> guard (storage.lock);
                                 static constexpr std::size_t flushCount = TLCThreshold / 2;
                                 for (std::size_t i = 0; i < flushCount; ++i) {
@@ -774,8 +770,11 @@ namespace thekogans {
                     }
                 }
 
-                static void FreeSlot (void *ptr) noexcept {
-                    Page::Slot::Free (ptr);
+                static bool FreeSlot (void *ptr) noexcept {
+                    if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
+                        return Page::Slot::Free (ptr);
+                    }
+                    return true;
                 }
 
             private:

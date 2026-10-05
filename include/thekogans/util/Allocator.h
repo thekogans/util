@@ -69,7 +69,6 @@ namespace thekogans {
         };
 
         void *thekogans_malloc (std::size_t size);
-        void thekogans_free (void *ptr);
         void thekogans_free (
             void *ptr,
             std::size_t size);
