@@ -20,10 +20,9 @@
 #include <bit>
 #include <algorithm>
 #include "thekogans/util/Environment.h"
+#include "thekogans/util/Exception.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/Allocator.h"
-#include "thekogans/util/SlabAllocatorImpl.h"
-#include "thekogans/util/SlabAllocatorDetail.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/DefaultAllocator.h"
     #include "thekogans/util/SecureAllocator.h"
@@ -63,94 +62,61 @@ namespace thekogans {
             return type;
         }
 
+        MasterAllocator::MasterAllocator (
+                std::size_t minExp_,
+                std::size_t maxExp_,
+                const std::pair<std::size_t, std::size_t> poolConfig[],
+                std::size_t sizeCap_) :
+                minExp (minExp_),
+                maxExp (maxExp_),
+                numPools (maxExp - minExp),
+                minSize (1ULL << minExp),
+                maxSize (1ULL << maxExp),
+                sizeCap (sizeCap_) {
+            // Validate input.
+            if (minExp < DEFAULT_MIN_EXP || minExp > MAX_POOLS || minExp >= maxExp ||
+                    maxExp > MAX_POOLS || numPools > MAX_POOLS || sizeCap < maxSize) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+            for (std::size_t i = 0, slotSize = minSize; i < numPools; ++i) {
+                pools[i] = new SlabAllocatorImpl (slotSize, poolConfig[i].first, poolConfig[i].second);
+                slotSize <<= 1;
+            }
+        }
+
+        void *MasterAllocator::Alloc (size_t size) {
+            if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > maxSize)) {
+                if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > sizeCap)) {
+                    return nullptr;
+                }
+                return ::operator new (size);
+            }
+            if (THEKOGANS_UTIL_UNLIKELY (size < minSize)) {
+                size = minSize;
+            }
+            return pools[TrailingZeroBitCount (Align (size)) - minExp]->Alloc ();
+        }
+
+        void MasterAllocator::Free (
+                void *ptr,
+                std::size_t size) {
+            if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr)) {
+                return;
+            }
+            if (THEKOGANS_UTIL_UNLIKELY (size > maxSize)) {
+                if (THEKOGANS_UTIL_LIKELY (size <= sizeCap)) {
+                    ::operator delete (ptr);
+                }
+                return;
+            }
+            if (THEKOGANS_UTIL_UNLIKELY (size < minSize)) {
+                size = minSize;
+            }
+            pools[TrailingZeroBitCount (Align (size)) - minExp]->Free (ptr);
+        }
+
         namespace {
-            constexpr size_t MIN_EXP = 3; // 2^3
-            constexpr size_t MAX_EXP = 22; // 2^22
-            constexpr size_t NUM_POOLS = MAX_EXP - MIN_EXP + 1; // 20 Pools
-            constexpr size_t MIN_SIZE = 1ULL << MIN_EXP; // 8 Bytes
-            constexpr size_t MAX_SIZE = 1ULL << MAX_EXP; // 4 MiB
-            constexpr size_t ABSOLUTE_POLICY_CAP = 4ULL * 1024ULL * 1024ULL * 1024ULL; // 4 GB
-
-            struct PoolConfig {
-                std::size_t slotsPerPage;
-                std::size_t TLCThreshold;
-            };
-
-            constexpr PoolConfig POOL_CONFIG[NUM_POOLS] = {
-                {512, 64},
-                {512, 64},
-                {512, 64},
-                {512, 64},
-                {512, 64}, // 8B - 128B
-                {512, 64},
-                {512, 64}, // 256B - 512B
-                {256, 32},
-                {128, 16},
-                {64,  8},
-                {32,  4},  // 1KiB - 8KiB
-                {32,  4},
-                {16,  2},
-                {16,  2},  // 16KiB - 64KiB
-                {8,   1},
-                {8,   1},  // 128KiB - 256KiB
-                {4,   0},
-                {2,   0},
-                {2,   0},
-                {2,   0}   // 512KiB - 4MiB
-            };
-
-            class MasterAllocator : public Singleton<MasterAllocator> {
-            private:
-                SlabAllocatorImpl *pools[NUM_POOLS];
-
-                inline std::size_t SizeToPoolIndex (std::size_t size) const noexcept {
-                    // This executes size alignment ceiling check and pool index calculation
-                    // simultaneously in exactly ONE native hardware 'CLZ' clock cycle!
-                    unsigned long long leading_zeros = __builtin_clzll (size - 1);
-                    return (63ULL - leading_zeros) - MIN_EXP;
-                }
-
-            public:
-                MasterAllocator () {
-                    for (std::size_t i = 0, slotSize = MIN_SIZE; i < NUM_POOLS; ++i) {
-                        pools[i] = new SlabAllocatorImpl (
-                            slotSize,
-                            POOL_CONFIG[i].slotsPerPage,
-                            POOL_CONFIG[i].TLCThreshold);
-                        slotSize <<= 1;
-                    }
-                }
-
-                void *Alloc (std::size_t size) {
-                    if (THEKOGANS_UTIL_LIKELY (size > 0 && size <= MAX_SIZE)) {
-                        if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
-                            size = MIN_SIZE;
-                        }
-                        std::size_t idx = SizeToPoolIndex (size);
-                        return pools[idx]->Alloc ();
-                    }
-                    return THEKOGANS_UTIL_LIKELY (size > 0 && size <= ABSOLUTE_POLICY_CAP) ?
-                        ::operator new (size) : nullptr;
-                }
-
-                void Free (
-                        void *ptr,
-                        std::size_t size) {
-                    if (THEKOGANS_UTIL_LIKELY (ptr != nullptr && size > 0)) {
-                        if (THEKOGANS_UTIL_LIKELY (size <= MAX_SIZE)) {
-                            if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
-                                size = MIN_SIZE;
-                            }
-                            std::size_t idx = SizeToPoolIndex (size);
-                            pools[idx]->Free (ptr);
-                        }
-                        else if (THEKOGANS_UTIL_LIKELY (size <= ABSOLUTE_POLICY_CAP)) {
-                            ::operator delete (ptr, size);
-                        }
-                    }
-                }
-            };
-
             static MasterAllocator *allocator = MasterAllocator::Instance ();
         }
 

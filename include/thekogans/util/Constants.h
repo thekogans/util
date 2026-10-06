@@ -244,44 +244,44 @@ namespace thekogans {
 
         /// \brief
         /// PI / 180
-        const f32 PIOVER180 = 1.74532925199433E-002f;
+        static constexpr f32 PIOVER180 = 1.74532925199433E-002f;
         /// \brief
         /// 180 / PI
-        const f32 PIUNDER180 = 5.72957795130823E+001f;
+        static constexpr f32 PIUNDER180 = 5.72957795130823E+001f;
 
         /// \brief
         /// Convert radians to degrees.
         /// \param[in] x Angle in radians.
         /// \return Angle in degrees.
-        inline f32 DEG (f32 x) {
+        inline constexpr f32 DEG (f32 x) {
             return x * PIUNDER180;
         }
         /// \brief
         /// Convert degrees to radians.
         /// \param[in] x Angle in degrees.
         /// \return Angle in radians.
-        inline f32 RAD (f32 x) {
+        inline constexpr f32 RAD (f32 x) {
             return x * PIOVER180;
         }
         /// \brief
         /// Round a float to the nearest integer.
         /// \param[in] x float to round.
         /// \return Nearest integer.
-        inline i32 ROUND (f32 x) {
+        inline constexpr i32 ROUND (f32 x) {
             return x > 0 ? (i32)(x + 0.5f) : -(i32)(0.5f - x);
         }
         /// \brief
         /// Return the sign of the given float.
         /// \param[in] x float whose sign to test.
         /// \return -1 = negative, 0 = zero, 1 = positive.
-        inline i32 SIGN (f32 x) {
+        inline constexpr i32 SIGN (f32 x) {
             return x < 0.0f ? -1 : x > 0.0f ? 1 : 0;
         }
         /// \brief
         /// Return the sign of the given float.
         /// \param[in] x float whose sign to test.
         /// \return -1 = negative, 1 = positive or zero.
-        inline i32 SIGN2 (f32 x) {
+        inline constexpr i32 SIGN2 (f32 x) {
             return x < 0.0f ? -1 : 1;
         }
 
@@ -290,7 +290,7 @@ namespace thekogans {
         /// \param[in] x Value to test.
         /// \param[in] eps Tolerance to test to.
         /// \return true = zero, false = not zero.
-        inline bool IS_ZERO (
+        inline constexpr bool IS_ZERO (
                 f32 x,
                 f32 eps = EPSILON) {
             return x > -eps && x < eps;
@@ -301,7 +301,7 @@ namespace thekogans {
         /// \param[in] x2 Second value to test.
         /// \param[in] eps Tolerance to test to.
         /// \return true = equal, false = not equal.
-        inline bool IS_EQ (
+        inline constexpr bool IS_EQ (
                 f32 x1,
                 f32 x2,
                 f32 eps = EPSILON) {
@@ -313,7 +313,7 @@ namespace thekogans {
         /// \param[in] x2 second value to test.
         /// \param[in] eps Tolerance to test to.
         /// \return true = not equal, false = equal.
-        inline bool IS_NE (
+        inline constexpr bool IS_NE (
                 f32 x1,
                 f32 x2,
                 f32 eps = EPSILON) {
@@ -325,7 +325,7 @@ namespace thekogans {
         /// \param[in] x2 Second value to test.
         /// \param[in] eps Tolerance to test to.
         /// \return true = x1 < x2, false = x1 >= x2.
-        inline bool IS_LT (
+        inline constexpr bool IS_LT (
                 f32 x1,
                 f32 x2,
                 f32 eps = EPSILON) {
@@ -337,7 +337,7 @@ namespace thekogans {
         /// \param[in] x2 second value to test.
         /// \param[in] eps Tolerance to test to.
         /// \return true = x1 <= x2, false = x1 > x2.
-        inline bool IS_LE (
+        inline constexpr bool IS_LE (
                 f32 x1,
                 f32 x2,
                 f32 eps = EPSILON) {
@@ -349,7 +349,7 @@ namespace thekogans {
         /// \param[in] x2 Second value to test.
         /// \param[in] eps Tolerance to test to.
         /// \return true = x1 > x2, false = x1 <= x2.
-        inline bool IS_GT (
+        inline constexpr bool IS_GT (
                 f32 x1,
                 f32 x2,
                 f32 eps = EPSILON) {
@@ -361,7 +361,7 @@ namespace thekogans {
         /// \param[in] x2 Second value to test.
         /// \param[in] eps Tolerance to test to.
         /// \return true = x1 >= x2, false = x1 < x2.
-        inline bool IS_GE (
+        inline constexpr bool IS_GE (
                 f32 x1,
                 f32 x2,
                 f32 eps = EPSILON) {
@@ -373,7 +373,7 @@ namespace thekogans {
         /// \param[in] min Minimum range value.
         /// \param[in] max Maximum range value.
         /// \return true = min < x < max, false = x <= min or x >= max.
-        inline bool IS_BETWEEN (
+        inline constexpr bool IS_BETWEEN (
                 f32 x,
                 f32 min,
                 f32 max) {
@@ -386,7 +386,7 @@ namespace thekogans {
         /// \param[in] max Maximum range value.
         /// \param[in] eps Tolerance to test to.
         /// \return true = min <= x <= max, false = x < min or x > max.
-        inline bool IS_BETWEEN_EQ (
+        inline constexpr bool IS_BETWEEN_EQ (
                 f32 x,
                 f32 min,
                 f32 max,
@@ -399,7 +399,7 @@ namespace thekogans {
         /// \param[in] x2 Second value to compare.
         /// \param[in] eps Tolerance to test to.
         /// \return true = x1 == x2, false = x1 != x2.
-        inline i32 COMPARE (
+        inline constexpr i32 COMPARE (
                 f32 x1,
                 f32 x2,
                 f32 eps = EPSILON) {
@@ -453,7 +453,7 @@ namespace thekogans {
         /// \param[in] value Arithmetic value to test.
         /// \return true if the given arithmetic value is even.
         template<typename T>
-        bool IS_EVEN (T value) {
+        constexpr bool IS_EVEN (T value) {
             // Ensure value is an arithmetic type.
             static_assert (
                 std::is_arithmetic<T>::value || my_is_arithmetic_v<T>,
@@ -466,7 +466,7 @@ namespace thekogans {
         /// \param[in] value Arithmetic value to test.
         /// \return true if the given arithmetic value is odd.
         template<typename T>
-        bool IS_ODD (T value) {
+        constexpr bool IS_ODD (T value) {
             // Ensure value is an arithmetic type.
             static_assert (
                 std::is_arithmetic<T>::value || my_is_arithmetic_v<T>,
@@ -478,7 +478,7 @@ namespace thekogans {
         template<
             typename _T,
             typename _U>
-        _T MIN (_T t, _U u) {
+        constexpr _T MIN (_T t, _U u) {
             static_assert (
                 (std::is_arithmetic<_T>::value || my_is_arithmetic_v<_T>) &&
                 (std::is_arithmetic<_U>::value || my_is_arithmetic_v<_U>),
@@ -491,7 +491,7 @@ namespace thekogans {
         template<
             typename _T,
             typename _U>
-        _T MAX (_T t, _U u) {
+        constexpr _T MAX (_T t, _U u) {
             static_assert (
                 (std::is_arithmetic<_T>::value || my_is_arithmetic_v<_T>) &&
                 (std::is_arithmetic<_U>::value || my_is_arithmetic_v<_U>),

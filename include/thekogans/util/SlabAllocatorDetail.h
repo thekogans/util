@@ -379,9 +379,9 @@ namespace thekogans {
             struct SlotSize {
                 static constexpr std::size_t calcSlotSize () noexcept {
                     // 1. Determine the maximum alignment required by either the object or the free list pointer
-                    constexpr std::size_t requiredAlign = std::max (alignof (T), alignof (void *));
+                    constexpr std::size_t requiredAlign = MAX (alignof (T), alignof (void *));
                     // 2. Determine the maximum size required by either object
-                    constexpr std::size_t rawSize = std::max (sizeof (T), sizeof (void *));
+                    constexpr std::size_t rawSize = MAX (sizeof (T), sizeof (void *));
                     // 3. Round up the size to a clean multiple of our highest alignment requirement
                     return (rawSize + requiredAlign - 1) / requiredAlign * requiredAlign;
                 }

@@ -96,7 +96,6 @@ namespace thekogans {
                 ptr = tlc.Pop ();
             }
             else {
-                // TLC compiled out: Single clean allocation tracking.
                 LockGuard<SpinLock> guard (lock);
                 if (THEKOGANS_UTIL_UNLIKELY (partialPageList == nullptr)) {
                     AllocPage ();
