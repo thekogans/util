@@ -371,6 +371,23 @@ namespace thekogans {
                     std::size_t pageSize) noexcept;
             };
 
+            /// \struct SlotSize SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+            ///
+            /// \brief
+            /// Compile time template to calculate the slot size for a given type T.
+            template<typename T>
+            struct SlotSize {
+                static constexpr std::size_t calcSlotSize () noexcept {
+                    // 1. Determine the maximum alignment required by either the object or the free list pointer
+                    constexpr std::size_t requiredAlign = std::max (alignof (T), alignof (void *));
+                    // 2. Determine the maximum size required by either object
+                    constexpr std::size_t rawSize = std::max (sizeof (T), sizeof (void *));
+                    // 3. Round up the size to a clean multiple of our highest alignment requirement
+                    return (rawSize + requiredAlign - 1) / requiredAlign * requiredAlign;
+                }
+                static constexpr std::size_t value = calcSlotSize ();
+            };
+
             /// \struct SlabAllocator SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
             ///
             /// \brief
@@ -461,10 +478,6 @@ namespace thekogans {
                     "Please decrease TLCThreshold or increase SlotsPerPage.");
                 static_assert (IsPowerOf2 (CacheLineSize), "CacheLineSize must be a power of 2.");
 
-                /// \brief
-                /// Compile time function to calculate the slot size.
-                /// Wrapped in a function because of the compiler scope evaluation rules.
-                /// \return Slot size.
                 static constexpr std::size_t calcSlotSize () noexcept {
                     // 1. Determine the maximum alignment required by either the object or the free list pointer
                     constexpr std::size_t requiredAlign = std::max (alignof (T), alignof (typename Page::Slot));
@@ -480,7 +493,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Slot size.
-                static constexpr std::size_t slotSize = calcSlotSize ();
+                static constexpr std::size_t slotSize = SlotSize<T>::value;
                 /// \brief
                 /// Page size (header + slots). Aligned to the next power of 2.
                 static constexpr std::size_t pageSize = Align (CacheLineSize + slotSize * SlotsPerPage);

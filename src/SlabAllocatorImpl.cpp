@@ -1,0 +1,170 @@
+// Copyright 2011 Boris Kogan (boris@thekogans.net)
+//
+// This file is part of libthekogans_util.
+//
+// libthekogans_util is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
+// the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// libthekogans_util is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+// GNU General Public License for more details.
+//
+// You should have received a copy of the GNU General Public License
+// along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
+
+#include <new>
+#include "thekogans/util/LockGuard.h"
+#include "thekogans/util/CPU.h"
+#include "thekogans/util/SlabAllocatorDetail.h"
+#include "thekogans/util/SlabAllocatorImpl.h"
+
+namespace thekogans {
+    namespace util {
+
+        SlabAllocatorImpl::Page::Slot *SlabAllocatorImpl::Page::Alloc () noexcept {
+            Slot *slot = nullptr;
+            if (header.freeList != nullptr) {
+                slot = header.freeList;
+                header.freeList = slot->next;
+            }
+            else {
+                slot = reinterpret_cast<Slot *> (
+                    reinterpret_cast<std::byte *> (this + 1) + header.slotCount * header.allocator.slotSize);
+            }
+            if (THEKOGANS_UTIL_UNLIKELY (++header.slotCount == header.allocator.maxSlots)) {
+                // Page is full. Evict it from the list so that no one asks it
+                // for slots again. Yes the page is now floating out there in
+                // the either completely inaccessible until someone decides to
+                // free one of it's slots or if the allocator is scoped and it's
+                // dtor fires. Either way full pages get evicted from the partial
+                // list so as not to waste time traversion over them when allocating.
+                header.allocator.partialPageList = header.partialNext;
+                header.partialNext = nullptr;
+            }
+            return slot;
+        }
+
+        void SlabAllocatorImpl::Page::Free (Slot *slot) noexcept {
+            slot->next = header.freeList;
+            header.freeList = slot;
+            --header.slotCount;
+            if (THEKOGANS_UTIL_UNLIKELY (header.slotCount == 0)) {
+                header.freeList = nullptr;
+            }
+            // The page transitioned from full to partial.
+            // Wire it back in to our list from the either.
+            if (THEKOGANS_UTIL_UNLIKELY (header.slotCount + 1 == header.allocator.maxSlots)) {
+                header.partialNext = header.allocator.partialPageList;
+                header.allocator.partialPageList = this;
+            }
+        }
+
+        SlabAllocatorImpl::~SlabAllocatorImpl () noexcept {
+            Page *page = masterPageList;
+            while (page != nullptr) {
+                Page *next = page->header.masterNext;
+                detail::DefaultPageAllocator::Free (page, pageSize);
+                page = next;
+            }
+        }
+
+        void *SlabAllocatorImpl::Alloc () {
+            void *ptr = nullptr;
+            if (THEKOGANS_UTIL_LIKELY (TLCThreshold != 0)) {
+                TLC &tlc = GetTLC ();
+                // See if we have a free slot in our local cache.
+                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == 0)) {
+                    // No banana. Let's seed the TLC.
+                    std::size_t batchTarget = TLCThreshold / 2;
+                    // Persistent outer loop forces lock retention until TLC target is met.
+                    LockGuard<SpinLock> guard (lock);
+                    while (tlc.slotCount == 0 /*< batchTarget*/) {
+                        // Inner loop aggressively drains whatever pages are currently available.
+                        while (tlc.slotCount < batchTarget && partialPageList != nullptr) {
+                            tlc.Push (partialPageList->Alloc ());
+                        }
+                        // If inner loop broke but target isn't met, the pool is dry.
+                        // Seed a fresh page from the OS and let the outer loop repeat the harvest.
+                        if (tlc.slotCount == 0 /*< batchTarget*/) {
+                            AllocPage ();
+                        }
+                    }
+                }
+                ptr = tlc.Pop ();
+            }
+            else {
+                // TLC compiled out: Single clean allocation tracking.
+                LockGuard<SpinLock> guard (lock);
+                if (THEKOGANS_UTIL_UNLIKELY (partialPageList == nullptr)) {
+                    AllocPage ();
+                }
+                ptr = partialPageList->Alloc ();
+            }
+            return ptr;
+        }
+
+        void SlabAllocatorImpl::Free (void *ptr) noexcept {
+            if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
+                Page::Slot *slot = reinterpret_cast<Page::Slot *> (ptr);
+                if (THEKOGANS_UTIL_LIKELY (TLCThreshold != 0)) {
+                    TLC &tlc = GetTLC ();
+                    tlc.Push (slot);
+                    // If we have no more room in our local cache batch release a bunch
+                    // of slots back to their pages so that we have room for more.
+                    if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == TLCThreshold)) {
+                        LockGuard<SpinLock> guard (lock);
+                        for (std::size_t i = 0, flushCount = TLCThreshold / 2; i < flushCount; ++i) {
+                            tlc.Pop ()->Free (pageMask);
+                        }
+                    }
+                }
+                else {
+                    LockGuard<SpinLock> guard (lock);
+                    slot->Free (pageMask);
+                }
+            }
+        }
+
+        void SlabAllocatorImpl::AllocPage () noexcept {
+            // Wait until a page is guaranteed to be available or...
+            while (THEKOGANS_UTIL_UNLIKELY (partialPageList == nullptr && pageAllocationInFlight)) {
+                lock.Release ();
+                CPU::YieldSlice ();
+                lock.Acquire ();
+            }
+            // ...we need to allocate it.
+            if (partialPageList == nullptr) {
+                // Set the in flight flag before releasing the lock so that no other thread
+                // tries to allocate a page too.
+                pageAllocationInFlight = true;
+                // Release the lock before dropping down to the OS.
+                // This wont help waiting allocators but if there are
+                // waiting freeers it will alow them to let go of their
+                // slots while we're waiting on the OS.
+                lock.Release ();
+                void *ptr = detail::DefaultPageAllocator::Alloc (pageSize);
+                // We're back from the OS land. Reaquire the lock so that we
+                // can wire the freshly minted page in to the list.
+                lock.Acquire ();
+                // NOTE: Between the Release and Acquire above other threads
+                // could have released slots and rewired partial pages back
+                // in to the pool. The reason we don't check and potentially
+                // give back this page is 1. It takes time to check and 2.
+                // even if a page or two are back with one or two empty slots
+                // having a completely empty page is better for cache harvesting.
+                new (ptr) Page (*this);
+                // Now that a fresh page is available the upstream Alloc will be able
+                // to satisfy harvesting or allocating. Since we hold the lock there's
+                // no chance that this page will be stolen from under us by another thread.
+                // We can now safely clear the in flight flag so that the spinning waiters
+                // drop out and either have a fresh page to harvest/allocate from or permission
+                // to allocate.
+                pageAllocationInFlight = false;
+            }
+        }
+
+    } // namespace util
+} // namespace thekogans

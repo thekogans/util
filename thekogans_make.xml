@@ -157,6 +157,7 @@
     <cpp_header>$(organization)/$(project_directory)/SizeT.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SlabAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SlabAllocatorDetail.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/SlabAllocatorImpl.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/StdAllocator.h</cpp_header>
@@ -694,6 +695,7 @@
     <cpp_source>SharedObject.cpp</cpp_source>
     <cpp_source>SizeT.cpp</cpp_source>
     <cpp_source>SlabAllocatorDetail.cpp</cpp_source>
+    <cpp_source>SlabAllocatorImpl.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>
     <cpp_source>StdAllocator.cpp</cpp_source>
