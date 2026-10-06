@@ -36,11 +36,8 @@ namespace thekogans {
             }
             if (THEKOGANS_UTIL_UNLIKELY (++header.slotCount == header.allocator.maxSlots)) {
                 // Page is full. Evict it from the list so that no one asks it
-                // for slots again. Yes the page is now floating out there in
-                // the either completely inaccessible until someone decides to
-                // free one of it's slots or if the allocator is scoped and it's
-                // dtor fires. Either way full pages get evicted from the partial
-                // list so as not to waste time traversion over them when allocating.
+                // for slots again. This works because Alloc is only called on
+                // header.allocator.partialPageList in SlabAllocatorImpl::Alloc.
                 header.allocator.partialPageList = header.partialNext;
                 header.partialNext = nullptr;
             }
@@ -52,6 +49,9 @@ namespace thekogans {
             header.freeList = slot;
             --header.slotCount;
             if (THEKOGANS_UTIL_UNLIKELY (header.slotCount == 0)) {
+                // If the page is empty reset the free list pointer
+                // so that Alloc grabs contiguous, cache friendly
+                // slots instead of pointer hoping.
                 header.freeList = nullptr;
             }
             // The page transitioned from full to partial.

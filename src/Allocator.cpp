@@ -156,15 +156,15 @@ namespace thekogans {
         }
 
         void *thekogans_malloc (std::size_t size) {
-            static MasterAllocator &allocator = *MasterAllocator::Instance ();
-            return allocator.Alloc (size);
+            static MasterAllocator *allocator = MasterAllocator::Instance ();
+            return allocator->Alloc (size);
         }
 
         void thekogans_free (
                 void *ptr,
                 std::size_t size) {
-            static MasterAllocator &allocator = *MasterAllocator::Instance ();
-            allocator.Free (ptr, size);
+            static MasterAllocator *allocator = MasterAllocator::Instance ();
+            allocator->Free (ptr, size);
         }
 
     } // namespace util

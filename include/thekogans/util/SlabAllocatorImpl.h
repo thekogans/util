@@ -33,7 +33,7 @@ namespace thekogans {
 
         struct SlabAllocatorImpl {
         private:
-            /// \struct SlabAllocator::Page SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
+            /// \struct SlabAllocatorImpl::Page SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
             ///
             /// \brief
             /// The page (aka slab) from which we allocate slots. It's aligned
@@ -41,7 +41,7 @@ namespace thekogans {
             /// and cache thrashing. Pages form a singly linked list rooted in
             /// pageList.
             struct alignas (SYSTEM_CACHE_LINE_SIZE) Page {
-                /// \struct SlabAllocator::Page::Slot SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
+                /// \struct SlabAllocatorImpl::Page::Slot SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
                 ///
                 /// \brief
                 /// Slot overlays our free slot list on top of released user data.
@@ -53,10 +53,13 @@ namespace thekogans {
 
                     inline void Free (std::size_t pageMask) noexcept {
                         Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & pageMask);
-                        page->Free (this);
+                        if (THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64)) {
+                            page->Free (this);
+                        }
                     }
                 };
-                /// \struct SlabAllocator::Page::Header SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
+
+                /// \struct SlabAllocatorImpl::Page::Header SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
                 ///
                 /// \brief
                 /// We put our metadata in to a header to allow the compiler to align
@@ -151,7 +154,7 @@ namespace thekogans {
             /// Align the lock to it's own cache line to prevent false sharing with pageList.
             alignas (SYSTEM_CACHE_LINE_SIZE) SpinLock lock;
 
-            /// \struct SlabAllocator::TLC SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
+            /// \struct SlabAllocatorImpl::TLC SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
             ///
             /// \brief
             /// Thread Local Cache (TLC). We keep a small (TLCThreshold) number of slots
@@ -187,14 +190,8 @@ namespace thekogans {
             };
 
             inline TLC &GetTLC () const noexcept {
-                // Flat, thread-isolated storage registry.
-                // It expands once per thread and runs entirely in user-space registers!
-                // thread_local std::vector<TLC> caches;
-                // if (THEKOGANS_UTIL_UNLIKELY (caches.size () <= instanceId)) {
-                //     caches.resize (instanceId + 1);
-                // }
-                // return caches[instanceId];
-                thread_local TLC caches[100];
+                static constexpr std::size_t MAX_ALLOCATORS = 100;
+                thread_local TLC caches[MAX_ALLOCATORS];
                 return caches[instanceId];
             }
 
