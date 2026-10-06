@@ -20,6 +20,7 @@
 
 #include <cstddef>
 #include <new>
+#include <atomic>
 #include <type_traits>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Constants.h"
@@ -211,7 +212,7 @@ namespace thekogans {
                 std::size_t TLCThreshold_ = DEFAULT_TLC_THRESHOLD) :
                 instanceId (instanceCounter.fetch_add (1, std::memory_order_relaxed)),
                 slotSize (MAX (slotSize_, sizeof (Page::Slot *))),
-                slotsPerPage (MAX (slotsPerPage_, 2)),
+                slotsPerPage (MAX (slotsPerPage_, 2ULL)),
                 TLCThreshold (TLCThreshold_ < slotsPerPage ? TLCThreshold_ : slotsPerPage / 2),
                 pageSize (Align (sizeof (Page) + slotSize * slotsPerPage)),
                 pageMask (~(pageSize - 1)),

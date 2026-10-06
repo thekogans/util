@@ -24,6 +24,7 @@
 #include <type_traits>
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
+    #include "thekogans/util/os/windows/WindowsHeader.h"
     #include <intrin.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
@@ -499,6 +500,82 @@ namespace thekogans {
         }
     #endif // !defined (MAX)
 
+    #if defined (TOOLCHAIN_OS_Windows)
+        /// \brief
+        /// Emulate __builtin_clzll on Windows.
+        /// \param[in] value Value whose leading zero count to return.
+        /// \return Leading zero count of the given value.
+        inline constexpr std::size_t __builtin_clzll (ui64 value) {
+            unsigned long mostSignificantOneBit = 0;
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
+            defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+            if (_BitScanReverse (
+                    &mostSignificantOneBit,
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 0)) == 0 &&
+                _BitScanReverse (
+                    &mostSignificantOneBit,
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1)) != 0) {
+                mostSignificantOneBit += 32;
+            }
+        #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
+            defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
+            _BitScanReverse64 (&mostSignificantOneBit, value);
+        #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+              // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+            #error Unknown TOOLCHAIN_ARCH.
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+               // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+            return 63 - mostSignificantOneBit;
+        }
+
+        /// \brief
+        /// Emulate __builtin_clz on Windows.
+        /// \param[in] value Value whose leading zero count to return.
+        /// \return Leading zero count of the given value.
+        inline constexpr std::size_t __builtin_clz (ui32 value) {
+            unsigned long mostSignificantOneBit = 0;
+            _BitScanReverse (&mostSignificantOneBit, value);
+            return 32 - mostSignificantOneBit;
+        }
+
+        /// \brief
+        /// Emulate __builtin_ctzll on Windows.
+        /// \param[in] value Value whose trailing zero count to return.
+        /// \return Trailing zero count of the given value.
+        inline constexpr std::size_t __builtin_ctzll (ui64 value) {
+            unsigned long leasetSignificantOneBit = 0;
+        #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||\
+            defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+            if (_BitScanForward (
+                    &leasetSignificantOneBit,
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 1)) == 0 &&
+                _BitScanForward (
+                    &leasetSignificantOneBit,
+                    THEKOGANS_UTIL_UI64_GET_UI32_AT_INDEX (value, 0)) != 0) {
+                leasetSignificantOneBit += 32;
+            }
+        #elif defined (TOOLCHAIN_ARCH_x86_64) || defined (TOOLCHAIN_ARCH_ppc64) ||\
+            defined (TOOLCHAIN_ARCH_arm64) || defined (TOOLCHAIN_ARCH_mips64)
+            _BitScanForward64 (&leasetSignificantOneBit, value);
+        #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+              // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+            #error Unknown TOOLCHAIN_ARCH.
+        #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_ppc32) ||
+               // defined (TOOLCHAIN_ARCH_arm32) || defined (TOOLCHAIN_ARCH_mips32)
+            return leasetSignificantOneBit;
+        }
+
+        /// \brief
+        /// Emulate __builtin_ctz on Windows.
+        /// \param[in] value Value whose trailing zero count to return.
+        /// \return Trailing zero count of the given value.
+        inline constexpr std::size_t __builtin_ctz (ui32 value) {
+            unsigned long leasetSignificantOneBit = 0;
+            _BitScanForward (&leasetSignificantOneBit, value);
+            return leasetSignificantOneBit;
+        }
+    #endif // defined (TOOLCHAIN_OS_Windows)
+
         /// \brief
         /// Return the count of '1' bits in value.
         /// \param[in] value Value to examine.
@@ -526,9 +603,10 @@ namespace thekogans {
             return (std::size_t)(value * ((std::size_t)~(std::size_t)0 / 255)) >> (sizeof (std::size_t) - 1) * CHAR_BIT;
         #endif // defined (__GNUC__) || defined (__clang__)
         }
+
         /// \brief
         /// Return the count of trailing 0 bits.
-        /// VERY IMPORTANT: If value == 0, return 0 NOT sizeof (std::size_t) * CHAR_BIT.
+        /// VERY IMPORTANT: If value == 0, return BitWidth<std::size_t>::value.
         /// \param[in] value Value to check.
         /// \return Number of trailing bits after the first 1.
         inline constexpr std::size_t TrailingZeroBitCount (std::size_t value) {

@@ -141,9 +141,9 @@ target_sources(thekogans_util PRIVATE
     src/SerializableHeader.cpp src/SerializableString.cpp src/SerializableValues.cpp
     src/Serializer.cpp src/SHA1.cpp src/SHA2.cpp src/SHA2_224_256.cpp
     src/SHA2_384_512.cpp src/SHA3.cpp src/SharedAllocator.cpp src/SharedObject.cpp
-    src/SizeT.cpp src/SlabAllocatorDetail.cpp src/SpinLock.cpp src/SpinRWLock.cpp
-    src/StdAllocator.cpp src/StringUtils.cpp src/SystemInfo.cpp src/Thread.cpp
-    src/ThreadRunLoop.cpp src/Timer.cpp src/TimeSpec.cpp src/TransactedFile.cpp
+    src/SizeT.cpp src/SlabAllocatorDetail.cpp src/SlabAllocatorImpl.cpp src/SpinLock.cpp
+    src/SpinRWLock.cpp src/StdAllocator.cpp src/StringUtils.cpp src/SystemInfo.cpp
+    src/Thread.cpp src/ThreadRunLoop.cpp src/Timer.cpp src/TimeSpec.cpp src/TransactedFile.cpp
     src/TransactedFileAllocator.cpp src/TransactedFileBTree.cpp
     src/TransactedFileBTreeAllocator.cpp src/TransactedFileBTreeAllocatorBTree.cpp
     src/TransactedFileBTreeKeys.cpp src/TransactedFileBTreeRegistry.cpp

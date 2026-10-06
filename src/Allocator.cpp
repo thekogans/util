@@ -103,10 +103,10 @@ namespace thekogans {
             private:
                 SlabAllocatorImpl *pools[NUM_POOLS];
 
-                inline std::size_t SizeToPoolIndex(std::size_t size) const noexcept {
-                    // This executes your size alignment ceiling check and your pool index calculation
+                inline std::size_t SizeToPoolIndex (std::size_t size) const noexcept {
+                    // This executes size alignment ceiling check and pool index calculation
                     // simultaneously in exactly ONE native hardware 'CLZ' clock cycle!
-                    unsigned long long leading_zeros = __builtin_clzll(size - 1);
+                    unsigned long long leading_zeros = __builtin_clzll (size - 1);
                     return (63ULL - leading_zeros) - MIN_EXP;
                 }
 
@@ -121,49 +121,46 @@ namespace thekogans {
                     }
                 }
 
-                void *Alloc (size_t size) {
-                    // 1. Consolidated Gate: Reject 0 or overflow sizes all at once
-                    if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > MAX_SIZE)) {
-                        if (size > ABSOLUTE_POLICY_CAP || size == 0) return nullptr;
-                        return ::operator new (size);
+                void *Alloc (std::size_t size) {
+                    if (THEKOGANS_UTIL_LIKELY (size > 0 && size <= MAX_SIZE)) {
+                        if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
+                            size = MIN_SIZE;
+                        }
+                        std::size_t idx = SizeToPoolIndex (size);
+                        return pools[idx]->Alloc ();
                     }
-                    // 2. Fast Clamp for Sub-8 Byte Requests
-                    if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
-                        size = MIN_SIZE;
-                    }
-                    // 3. Perfect Branchless Alignment + Index Resolution Matrix
-                    std::size_t idx = SizeToPoolIndex (size);
-                    return pools[idx]->Alloc ();
+                    return THEKOGANS_UTIL_LIKELY (size > 0 && size <= ABSOLUTE_POLICY_CAP) ?
+                        ::operator new (size) : nullptr;
                 }
 
-                void Free (void *ptr, size_t size) {
-                    if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr)) {
-                        return;
+                void Free (
+                        void *ptr,
+                        std::size_t size) {
+                    if (THEKOGANS_UTIL_LIKELY (ptr != nullptr && size > 0)) {
+                        if (THEKOGANS_UTIL_LIKELY (size <= MAX_SIZE)) {
+                            if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
+                                size = MIN_SIZE;
+                            }
+                            std::size_t idx = SizeToPoolIndex (size);
+                            pools[idx]->Free (ptr);
+                        }
+                        else if (THEKOGANS_UTIL_LIKELY (size <= ABSOLUTE_POLICY_CAP)) {
+                            ::operator delete (ptr, size);
+                        }
                     }
-                    // 1. Clear Large OS Fallback Allocations First
-                    if (THEKOGANS_UTIL_UNLIKELY (size > MAX_SIZE)) {
-                        ::operator delete (ptr);
-                        return;
-                    }
-                    if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
-                        size = MIN_SIZE;
-                    }
-                    // 2. Exact Symmetric Alignment + Index Mapping Loop
-                    std::size_t idx = SizeToPoolIndex (size);
-                    pools[idx]->Free (ptr);
                 }
             };
+
+            static MasterAllocator *allocator = MasterAllocator::Instance ();
         }
 
         void *thekogans_malloc (std::size_t size) {
-            static MasterAllocator *allocator = MasterAllocator::Instance ();
             return allocator->Alloc (size);
         }
 
         void thekogans_free (
                 void *ptr,
                 std::size_t size) {
-            static MasterAllocator *allocator = MasterAllocator::Instance ();
             allocator->Free (ptr, size);
         }
 
