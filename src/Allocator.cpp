@@ -76,7 +76,7 @@ namespace thekogans {
                 std::size_t TLCThreshold;
             };
 
-            constexpr PoolConfig CONFIG_MATRIX[NUM_POOLS] = {
+            constexpr PoolConfig POOL_CONFIG[NUM_POOLS] = {
                 {512, 64},
                 {512, 64},
                 {512, 64},
@@ -96,64 +96,51 @@ namespace thekogans {
                 {4,   0},
                 {2,   0},
                 {2,   0},
-                {1,   0}   // 512KiB - 4MiB
+                {2,   0}   // 512KiB - 4MiB
             };
 
             class MasterAllocator : public Singleton<MasterAllocator> {
             private:
                 SlabAllocatorImpl *pools[NUM_POOLS];
 
+                inline std::size_t SizeToPoolIndex(std::size_t size) const noexcept {
+                    // This executes your size alignment ceiling check and your pool index calculation
+                    // simultaneously in exactly ONE native hardware 'CLZ' clock cycle!
+                    unsigned long long leading_zeros = __builtin_clzll(size - 1);
+                    return (63ULL - leading_zeros) - MIN_EXP;
+                }
+
             public:
                 MasterAllocator () {
                     for (std::size_t i = 0, slotSize = MIN_SIZE; i < NUM_POOLS; ++i) {
                         pools[i] = new SlabAllocatorImpl (
                             slotSize,
-                            CONFIG_MATRIX[i].slotsPerPage,
-                            CONFIG_MATRIX[i].TLCThreshold);
+                            POOL_CONFIG[i].slotsPerPage,
+                            POOL_CONFIG[i].TLCThreshold);
                         slotSize <<= 1;
                     }
                 }
 
                 void *Alloc (size_t size) {
-                    // 1. Guard against zero-size or negative underflow/wrap conditions
-                    if (THEKOGANS_UTIL_UNLIKELY (size == 0)) {
-                        return nullptr;
-                    }
-                    // 2. The Absolute Architecture Policy Cap (e.g., 4 Gigabytes)
-                    // If an application thread genuinely needs more than 4GB in a single contiguous chunk,
-                    // it should be managing its own custom virtual file map, not hammering a concurrent slab heap.
-                    if (THEKOGANS_UTIL_UNLIKELY (size > ABSOLUTE_POLICY_CAP)) {
-                        return nullptr; // Just say NO!
-                    }
-                    // 3. Fallback for large allocations outside your native 4MB slab boundaries
-                    if (THEKOGANS_UTIL_UNLIKELY (size > MAX_SIZE)) {
-                        // Enforce safe memory allocation routing using pure OS pages,
-                        // which naturally returns nullptr if the system is completely out of RAM.
+                    // 1. Consolidated Gate: Reject 0 or overflow sizes all at once
+                    if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > MAX_SIZE)) {
+                        if (size > ABSOLUTE_POLICY_CAP || size == 0) return nullptr;
                         return ::operator new (size);
                     }
+                    // 2. Fast Clamp for Sub-8 Byte Requests
                     if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
                         size = MIN_SIZE;
                     }
-                    // 4. Safe, verified Pool Range Index Calculation
-                    // We are now 100% guaranteed that: MIN_SIZE <= size <= MAX_SIZE
-                    return pools[TrailingZeroBitCount (Align (size)) - MIN_EXP]->Alloc ();
+                    // 3. Perfect Branchless Alignment + Index Resolution Matrix
+                    std::size_t idx = SizeToPoolIndex (size);
+                    return pools[idx]->Alloc ();
                 }
 
-                void Free (
-                        void *ptr,
-                        size_t size) {
-                    // 1. Instantly exit on null pointers (standard compliant behavior)
+                void Free (void *ptr, size_t size) {
                     if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr)) {
                         return;
                     }
-                    // 2. Enforce the identical Policy Ceiling guard
-                    // If a size tries to pretend it's larger than our hard limit, reject it
-                    if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > ABSOLUTE_POLICY_CAP)) {
-                        return;
-                    }
-                    // 3. The OS Page Bypass Routing Guard
-                    // If the size is greater than 4MB, it bypassed your pools during Alloc.
-                    // Therefore, it MUST bypass the pools during Free and return straight to the OS.
+                    // 1. Clear Large OS Fallback Allocations First
                     if (THEKOGANS_UTIL_UNLIKELY (size > MAX_SIZE)) {
                         ::operator delete (ptr);
                         return;
@@ -161,9 +148,9 @@ namespace thekogans {
                     if (THEKOGANS_UTIL_UNLIKELY (size < MIN_SIZE)) {
                         size = MIN_SIZE;
                     }
-                    // 4. Safe, verified Pool Range Index Calculation
-                    // We are now 100% guaranteed that: MIN_SIZE <= size <= MAX_SIZE
-                    pools[TrailingZeroBitCount (Align (size)) - MIN_EXP]->Free (ptr);
+                    // 2. Exact Symmetric Alignment + Index Mapping Loop
+                    std::size_t idx = SizeToPoolIndex (size);
+                    pools[idx]->Free (ptr);
                 }
             };
         }

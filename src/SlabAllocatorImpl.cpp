@@ -81,14 +81,14 @@ namespace thekogans {
                     std::size_t batchTarget = TLCThreshold / 2;
                     // Persistent outer loop forces lock retention until TLC target is met.
                     LockGuard<SpinLock> guard (lock);
-                    while (tlc.slotCount == 0 /*< batchTarget*/) {
+                    while (tlc.slotCount < batchTarget) {
                         // Inner loop aggressively drains whatever pages are currently available.
                         while (tlc.slotCount < batchTarget && partialPageList != nullptr) {
                             tlc.Push (partialPageList->Alloc ());
                         }
                         // If inner loop broke but target isn't met, the pool is dry.
                         // Seed a fresh page from the OS and let the outer loop repeat the harvest.
-                        if (tlc.slotCount == 0 /*< batchTarget*/) {
+                        if (tlc.slotCount < batchTarget) {
                             AllocPage ();
                         }
                     }

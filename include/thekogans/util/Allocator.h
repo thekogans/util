@@ -68,7 +68,15 @@ namespace thekogans {
                 std::size_t size) = 0;
         };
 
+        /// \brief
+        /// Direct replacement for std malloc. Uses a pool of \see{SlabAllocatorImpl}.
+        /// \param[in] size Size of block to allocate,
+        /// \return Allocated block.
         void *thekogans_malloc (std::size_t size);
+        /// \brief
+        /// Companion to thekogans_malloc.
+        /// \param[in] ptr Pointer return by thekogans_malloc.
+        /// \param[in] size Same value passed to thekogans_malloc.
         void thekogans_free (
             void *ptr,
             std::size_t size);

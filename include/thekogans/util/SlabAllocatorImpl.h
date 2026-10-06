@@ -189,10 +189,12 @@ namespace thekogans {
             inline TLC &GetTLC () const noexcept {
                 // Flat, thread-isolated storage registry.
                 // It expands once per thread and runs entirely in user-space registers!
-                thread_local std::vector<TLC> caches;
-                if (THEKOGANS_UTIL_UNLIKELY (caches.size () <= instanceId)) {
-                    caches.resize (instanceId + 1);
-                }
+                // thread_local std::vector<TLC> caches;
+                // if (THEKOGANS_UTIL_UNLIKELY (caches.size () <= instanceId)) {
+                //     caches.resize (instanceId + 1);
+                // }
+                // return caches[instanceId];
+                thread_local TLC caches[100];
                 return caches[instanceId];
             }
 
