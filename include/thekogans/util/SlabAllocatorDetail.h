@@ -26,6 +26,7 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/SlabAllocatorImpl.h"
 #include "thekogans/util/CPU.h"
 
 namespace thekogans {
@@ -524,15 +525,9 @@ namespace thekogans {
 
                         inline void Free () noexcept {
                             Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
-                            page->Free (this);
-                        }
-                        inline static bool Free (void *ptr) noexcept {
-                            Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (ptr) & ~pageMask);
-                            if (page->header.magic == MAGIC64) {
-                                page->header.allocator.Free (ptr);
-                                return true;
+                            if (THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64)) {
+                                page->Free (this);
                             }
-                            return false;
                         }
                     };
                     /// \struct SlabAllocator::Page::Header SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
@@ -781,13 +776,6 @@ namespace thekogans {
                             slot->Free ();
                         }
                     }
-                }
-
-                static bool FreeSlot (void *ptr) noexcept {
-                    if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
-                        return Page::Slot::Free (ptr);
-                    }
-                    return true;
                 }
 
             private:

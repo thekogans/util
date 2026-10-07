@@ -25,6 +25,7 @@
 #include "thekogans/util/Allocator.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/DefaultAllocator.h"
+    #include "thekogans/util/GlobalSlabAllocator.h"
     #include "thekogans/util/SecureAllocator.h"
     #if defined (TOOLCHAIN_OS_Windows)
         #include "thekogans/util/os/windows/HGLOBALAllocator.h"
@@ -43,6 +44,7 @@ namespace thekogans {
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Allocator::StaticInit () {
             DefaultAllocator::StaticInit ();
+            GlobalSlabAllocator::StaticInit ();
             SecureAllocator::StaticInit ();
         #if defined (TOOLCHAIN_OS_Windows)
             os::windows::HGLOBALAllocator::StaticInit ();
@@ -60,74 +62,6 @@ namespace thekogans {
                 type = DefaultAllocator::TYPE;
             }
             return type;
-        }
-
-        MasterAllocator::MasterAllocator (
-                std::size_t minExp_,
-                std::size_t maxExp_,
-                const std::pair<std::size_t, std::size_t> poolConfig[],
-                std::size_t sizeCap_) :
-                minExp (minExp_),
-                maxExp (maxExp_),
-                numPools (maxExp - minExp),
-                minSize (1ULL << minExp),
-                maxSize (1ULL << maxExp),
-                sizeCap (sizeCap_) {
-            // Validate input.
-            if (minExp < DEFAULT_MIN_EXP || minExp > MAX_POOLS || minExp >= maxExp ||
-                    maxExp > MAX_POOLS || numPools > MAX_POOLS || sizeCap < maxSize) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-            for (std::size_t i = 0, slotSize = minSize; i < numPools; ++i) {
-                pools[i] = new SlabAllocatorImpl (slotSize, poolConfig[i].first, poolConfig[i].second);
-                slotSize <<= 1;
-            }
-        }
-
-        void *MasterAllocator::Alloc (size_t size) {
-            if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > maxSize)) {
-                if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > sizeCap)) {
-                    return nullptr;
-                }
-                return ::operator new (size);
-            }
-            if (THEKOGANS_UTIL_UNLIKELY (size < minSize)) {
-                size = minSize;
-            }
-            return pools[TrailingZeroBitCount (Align (size)) - minExp]->Alloc ();
-        }
-
-        void MasterAllocator::Free (
-                void *ptr,
-                std::size_t size) {
-            if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr)) {
-                return;
-            }
-            if (THEKOGANS_UTIL_UNLIKELY (size > maxSize)) {
-                if (THEKOGANS_UTIL_LIKELY (size <= sizeCap)) {
-                    ::operator delete (ptr);
-                }
-                return;
-            }
-            if (THEKOGANS_UTIL_UNLIKELY (size < minSize)) {
-                size = minSize;
-            }
-            pools[TrailingZeroBitCount (Align (size)) - minExp]->Free (ptr);
-        }
-
-        namespace {
-            static MasterAllocator *allocator = MasterAllocator::Instance ();
-        }
-
-        void *thekogans_malloc (std::size_t size) {
-            return allocator->Alloc (size);
-        }
-
-        void thekogans_free (
-                void *ptr,
-                std::size_t size) {
-            allocator->Free (ptr, size);
         }
 
     } // namespace util

@@ -21,8 +21,6 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/DynamicCreatable.h"
-#include "thekogans/util/Singleton.h"
-#include "thekogans/util/SlabAllocatorImpl.h"
 
 namespace thekogans {
     namespace util {
@@ -69,71 +67,6 @@ namespace thekogans {
                 void *ptr,
                 std::size_t size) = 0;
         };
-
-        struct _LIB_THEKOGANS_UTIL_DECL MasterAllocator : public Singleton<MasterAllocator> {
-        private:
-            std::size_t minExp;
-            std::size_t maxExp;
-            std::size_t numPools;
-            std::size_t minSize;
-            std::size_t maxSize;
-            std::size_t sizeCap;
-            static constexpr std::size_t MAX_POOLS = 32;
-            SlabAllocatorImpl *pools[MAX_POOLS] = {};
-
-        public:
-            static constexpr std::size_t DEFAULT_MIN_EXP = 3; // 2^3
-            static constexpr std::size_t DEFAULT_MAX_EXP = 22; // 2^22
-            static constexpr std::size_t DEFAULT_MIN_SIZE = 1ULL << DEFAULT_MIN_EXP; // 8 Bytes
-            static constexpr std::size_t DEFAULT_MAX_SIZE = 1ULL << DEFAULT_MAX_EXP; // 4 MB
-            static constexpr std::size_t DEFAULT_SIZE_CAP = 4ULL * 1024ULL * 1024ULL * 1024ULL; // 4 GB
-            static constexpr std::pair<std::size_t, std::size_t> DEFAULT_POOL_CONFIG[] = {
-                {512, 64},
-                {512, 64},
-                {512, 64},
-                {512, 64},
-                {512, 64}, // 8B - 128B
-                {512, 64},
-                {512, 64}, // 256B - 512B
-                {256, 32},
-                {128, 16},
-                {64,  8},
-                {32,  4},  // 1KiB - 8KiB
-                {32,  4},
-                {16,  2},
-                {16,  2},  // 16KiB - 64KiB
-                {8,   1},
-                {8,   1},  // 128KiB - 256KiB
-                {4,   0},
-                {2,   0},
-                {2,   0},
-                {2,   0}   // 512KiB - 4MiB
-            };
-
-            explicit MasterAllocator (
-                std::size_t minExp_ = DEFAULT_MIN_EXP,
-                std::size_t maxExp_ = DEFAULT_MAX_EXP,
-                const std::pair<std::size_t, std::size_t> poolConfig[] = DEFAULT_POOL_CONFIG,
-                std::size_t sizeCap_ = DEFAULT_SIZE_CAP);
-
-            void *Alloc (size_t size);
-            void Free (
-                void *ptr,
-                size_t size);
-        };
-
-        /// \brief
-        /// Direct replacement for std malloc. Uses a pool of \see{SlabAllocatorImpl}.
-        /// \param[in] size Size of block to allocate,
-        /// \return Allocated block.
-        void *thekogans_malloc (std::size_t size);
-        /// \brief
-        /// Companion to thekogans_malloc.
-        /// \param[in] ptr Pointer return by thekogans_malloc.
-        /// \param[in] size Same value passed to thekogans_malloc.
-        void thekogans_free (
-            void *ptr,
-            std::size_t size);
 
     } // namespace util
 } // namespace thekogans

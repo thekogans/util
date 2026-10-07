@@ -129,14 +129,14 @@ target_sources(thekogans_util PRIVATE
     src/CommandLineOptions.cpp src/Condition.cpp src/Config.cpp src/Console.cpp
     src/ConsoleLogger.cpp src/CPU.cpp src/CRC32.cpp src/DefaultAllocator.cpp
     src/Directory.cpp src/DynamicCreatable.cpp src/DynamicLibrary.cpp src/Event.cpp
-    src/Exception.cpp src/File.cpp src/FileLogger.cpp src/Fraction.cpp src/GUID.cpp
-    src/HRTimer.cpp src/HRTimerMgr.cpp src/Hash.cpp src/Heap.cpp src/JSON.cpp
-    src/JobQueue.cpp src/JobQueuePool.cpp src/Logger.cpp src/LoggerMgr.cpp
-    src/MD5.cpp src/MemoryLogger.cpp src/MimeTypeMapper.cpp src/Mutex.cpp
-    src/NullAllocator.cpp src/NullLock.cpp src/NullLogger.cpp src/PageMap.cpp
-    src/Path.cpp src/Pipeline.cpp src/PipelinePool.cpp src/Plugins.cpp src/Point.cpp
-    src/RandomSeekSerializer.cpp src/RandomSource.cpp src/Rectangle.cpp
-    src/RefCounted.cpp src/RunLoop.cpp src/RunLoopScheduler.cpp src/RWLock.cpp
+    src/Exception.cpp src/File.cpp src/FileLogger.cpp src/Fraction.cpp
+    src/GlobalSlabAllocator.cpp src/GUID.cpp src/HRTimer.cpp src/HRTimerMgr.cpp
+    src/Hash.cpp src/Heap.cpp src/JSON.cpp src/JobQueue.cpp src/JobQueuePool.cpp
+    src/Logger.cpp src/LoggerMgr.cpp src/MD5.cpp src/MemoryLogger.cpp
+    src/MimeTypeMapper.cpp src/Mutex.cpp src/NullAllocator.cpp src/NullLock.cpp
+    src/NullLogger.cpp src/PageMap.cpp src/Path.cpp src/Pipeline.cpp src/PipelinePool.cpp
+    src/Plugins.cpp src/Point.cpp src/RandomSeekSerializer.cpp src/RandomSource.cpp
+    src/Rectangle.cpp src/RefCounted.cpp src/RunLoop.cpp src/RunLoopScheduler.cpp src/RWLock.cpp
     src/Scheduler.cpp src/SecureAllocator.cpp src/Semaphore.cpp src/Serializable.cpp
     src/SerializableHeader.cpp src/SerializableString.cpp src/SerializableValues.cpp
     src/Serializer.cpp src/SHA1.cpp src/SHA2.cpp src/SHA2_224_256.cpp
