@@ -19,6 +19,7 @@
 #define __thekogans_util_SlabAllocatorImpl_h
 
 #include <cstddef>
+#include <cassert>
 #include <new>
 #include <atomic>
 #include <type_traits>
@@ -57,6 +58,10 @@ namespace thekogans {
                         if (THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64)) {
                             page->Free (this);
                         }
+                        else {
+                            // FIXME: throw something.
+                            assert (0);
+                        }
                     }
                 };
 
@@ -67,9 +72,9 @@ namespace thekogans {
                 /// the fields as it sees fit and to make our padding calculations below
                 /// bulletproof. One of the most important performance knobs is preventing
                 /// false sharing. By padding out the page header to a cache line size we
-                /// guarantee to prevent sharing it with slots.
+                /// prevent sharing it with slots.
                 struct Header {
-                    ui64 magic = MAGIC64;
+                    const ui64 magic = MAGIC64;
                     SlabAllocatorImpl &allocator;
                     Page *masterNext{nullptr};
                     /// \brief
@@ -114,7 +119,7 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in, out] head Head of the partial list.
                 Page (SlabAllocatorImpl &allocator) noexcept :
-                    header (allocator) {
+                        header (allocator) {
                     allocator.masterPageList = this;
                     allocator.partialPageList = this;
                 }
@@ -138,11 +143,11 @@ namespace thekogans {
             inline static std::atomic<std::size_t> instanceCounter{0};
             const std::size_t instanceId;
             const std::size_t slotSize;
-            const std::size_t slotsPerPage;
-            const std::size_t TLCThreshold;
             const std::size_t pageSize;
             const std::size_t pageMask;
-            const std::size_t maxSlots;
+            const std::size_t slotsPerPage;
+            const std::size_t tlcSize;
+            const std::size_t tlcBatchSize;
             Page *masterPageList{nullptr};
             /// \brief
             /// Partially allocated page list.
@@ -151,14 +156,14 @@ namespace thekogans {
             /// Flag to protect multiple threads from calling the page allocator.
             bool pageAllocationInFlight{false};
             /// \brief
-            /// Protect access to
-            /// Align the lock to it's own cache line to prevent false sharing with pageList.
+            /// Protect access to page lists.
+            /// Align the lock to it's own cache line to prevent false sharing.
             alignas (SYSTEM_CACHE_LINE_SIZE) SpinLock lock;
 
             /// \struct SlabAllocatorImpl::TLC SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
             ///
             /// \brief
-            /// Thread Local Cache (TLC). We keep a small (TLCThreshold) number of slots
+            /// Thread Local Cache (TLC). We keep a small (tlcSize) number of slots
             /// per thread. This optimization allows us to bypass the costly lock
             /// acquisition. In real load testing (see test_SlabAllocator) this
             /// results in ~65% speedup!
@@ -209,14 +214,7 @@ namespace thekogans {
             SlabAllocatorImpl (
                 std::size_t slotSize_,
                 std::size_t slotsPerPage_ = DEFAULT_SLOTS_PER_PAGE,
-                std::size_t TLCThreshold_ = DEFAULT_TLC_THRESHOLD) :
-                instanceId (instanceCounter.fetch_add (1, std::memory_order_relaxed)),
-                slotSize (MAX (slotSize_, sizeof (Page::Slot *))),
-                slotsPerPage (MAX (slotsPerPage_, 2ULL)),
-                TLCThreshold (TLCThreshold_ < slotsPerPage ? TLCThreshold_ : slotsPerPage / 2),
-                pageSize (Align (sizeof (Page) + slotSize * slotsPerPage)),
-                pageMask (~(pageSize - 1)),
-                maxSlots ((pageSize - sizeof (Page)) / slotSize) {}
+                std::size_t tlcSize_ = DEFAULT_TLC_THRESHOLD);
             ~SlabAllocatorImpl () noexcept;
 
             /// \brief
