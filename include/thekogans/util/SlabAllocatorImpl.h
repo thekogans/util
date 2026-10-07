@@ -32,7 +32,7 @@
 namespace thekogans {
     namespace util {
 
-        struct SlabAllocatorImpl {
+        struct _LIB_THEKOGANS_UTIL_DECL SlabAllocatorImpl {
         private:
             /// \struct SlabAllocatorImpl::Page SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
             ///

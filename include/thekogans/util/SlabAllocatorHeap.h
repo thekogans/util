@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_GlobalSlabAllocator_h)
-#define __thekogans_util_GlobalSlabAllocator_h
+#if !defined (__thekogans_util_SlabAllocatorHeap_h)
+#define __thekogans_util_SlabAllocatorHeap_h
 
 #include <cstddef>
 #include "thekogans/util/Config.h"
@@ -28,19 +28,11 @@
 namespace thekogans {
     namespace util {
 
-        /// \struct GlobalSlabAllocator GlobalSlabAllocator.h thekogans/util/GlobalSlabAllocator.h
+        /// \struct SlabAllocatorHeap SlabAllocatorHeap.h thekogans/util/SlabAllocatorHeap.h
         ///
         /// \brief
-        /// Uses system new/delete to allocate from the global heap.
-        /// GlobalSlabAllocator is part of the \see{Allocator} framework.
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalSlabAllocator :
-                public Allocator,
-                public RefCountedSingleton<GlobalSlabAllocator> {
-            /// \brief
-            /// GlobalSlabAllocator participates in the \see{DynamicCreatable}
-            /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (GlobalSlabAllocator)
-
+        /// SlabAllocatorHeap is part of the \see{Allocator} framework.
+        struct _LIB_THEKOGANS_UTIL_DECL SlabAllocatorHeap {
         private:
             std::size_t minExp;
             std::size_t maxExp;
@@ -78,39 +70,78 @@ namespace thekogans {
                 {2,   0}   // 512KiB - 4MiB
             };
 
-            explicit GlobalSlabAllocator (
+            explicit SlabAllocatorHeap (
                 std::size_t minExp_ = DEFAULT_MIN_EXP,
                 std::size_t maxExp_ = DEFAULT_MAX_EXP,
                 const std::pair<std::size_t, std::size_t> poolConfig[] = DEFAULT_POOL_CONFIG);
+            ~SlabAllocatorHeap ();
 
             /// \brief
             /// Allocate a block from system heap.
             /// \param[in] size Size of block to allocate.
             /// \return Pointer to the allocated block (0 if out of memory).
-            virtual void *Alloc (std::size_t size) override;
+            void *Alloc (std::size_t size);
+            /// \brief
+            /// Free a previously Alloc(ated) block.
+            /// \param[in] ptr Pointer to the block returned by Alloc.
+            /// \param[in] size Same size parameter previously passed in to Alloc.
+            void Free (
+                void *ptr,
+                std::size_t size);
+        };
+
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalSlabAllocatorHeap :
+                public Allocator,
+                public SlabAllocatorHeap,
+                public
+            Singleton<
+                    GlobalSlabAllocatorHeap,
+                    SpinLock,
+                    RefCountedInstanceCreator<GlobalSlabAllocatorHeap>,
+                    NullInstanceDestroyer<GlobalSlabAllocatorHeap>> {
+            /// \brief
+            /// SlabAllocatorHeap participates in the \see{DynamicCreatable}
+            /// dynamic discovery and creation.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (GlobalSlabAllocatorHeap)
+
+            explicit GlobalSlabAllocatorHeap (
+                std::size_t minExp = DEFAULT_MIN_EXP,
+                std::size_t maxExp = DEFAULT_MAX_EXP,
+                const std::pair<std::size_t, std::size_t> poolConfig[] = DEFAULT_POOL_CONFIG) :
+                SlabAllocatorHeap (minExp, maxExp, poolConfig) {}
+
+            /// \brief
+            /// Allocate a block from system heap.
+            /// \param[in] size Size of block to allocate.
+            /// \return Pointer to the allocated block (0 if out of memory).
+            virtual void *Alloc (std::size_t size) override {
+                return SlabAllocatorHeap::Alloc (size);
+            }
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] ptr Pointer to the block returned by Alloc.
             /// \param[in] size Same size parameter previously passed in to Alloc.
             virtual void Free (
-                void *ptr,
-                std::size_t size) override;
+                    void *ptr,
+                    std::size_t size) override {
+                SlabAllocatorHeap::Free (ptr, size);
+            }
         };
 
         /// \brief
         /// Direct replacement for std malloc. Uses a pool of \see{SlabAllocatorImpl}.
         /// \param[in] size Size of block to allocate,
         /// \return Allocated block.
-        void *thekogans_malloc (std::size_t size);
+        void *tk_malloc (std::size_t size);
         /// \brief
         /// Companion to thekogans_malloc.
         /// \param[in] ptr Pointer return by thekogans_malloc.
         /// \param[in] size Same value passed to thekogans_malloc.
-        void thekogans_free (
+        void tk_free (
             void *ptr,
             std::size_t size);
 
     } // namespace util
 } // namespace thekogans
 
-#endif // !defined (__thekogans_util_GlobalSlabAllocator_h)
+#endif // !defined (__thekogans_util_SlabAllocatorHeap_h)

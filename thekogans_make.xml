@@ -98,7 +98,6 @@
     <cpp_header>$(organization)/$(project_directory)/FixedBuffer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Flags.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Fraction.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/GlobalSlabAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/GUID.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/HRTimer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/HRTimerMgr.h</cpp_header>
@@ -158,6 +157,7 @@
     <cpp_header>$(organization)/$(project_directory)/SizeT.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SlabAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SlabAllocatorDetail.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/SlabAllocatorHeap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SlabAllocatorImpl.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SpinRWLock.h</cpp_header>
@@ -649,7 +649,6 @@
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
     <cpp_source>Fraction.cpp</cpp_source>
-    <cpp_source>GlobalSlabAllocator.cpp</cpp_source>
     <cpp_source>GUID.cpp</cpp_source>
     <cpp_source>HRTimer.cpp</cpp_source>
     <cpp_source>HRTimerMgr.cpp</cpp_source>
@@ -697,6 +696,7 @@
     <cpp_source>SharedObject.cpp</cpp_source>
     <cpp_source>SizeT.cpp</cpp_source>
     <cpp_source>SlabAllocatorDetail.cpp</cpp_source>
+    <cpp_source>SlabAllocatorHeap.cpp</cpp_source>
     <cpp_source>SlabAllocatorImpl.cpp</cpp_source>
     <cpp_source>SpinLock.cpp</cpp_source>
     <cpp_source>SpinRWLock.cpp</cpp_source>

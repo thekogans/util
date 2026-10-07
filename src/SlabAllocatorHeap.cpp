@@ -17,16 +17,12 @@
 
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/GlobalSlabAllocator.h"
+#include "thekogans/util/SlabAllocatorHeap.h"
 
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
-            thekogans::util::GlobalSlabAllocator,
-            Allocator::TYPE)
-
-        GlobalSlabAllocator::GlobalSlabAllocator (
+        SlabAllocatorHeap::SlabAllocatorHeap (
                 std::size_t minExp_,
                 std::size_t maxExp_,
                 const std::pair<std::size_t, std::size_t> poolConfig[]) :
@@ -46,14 +42,20 @@ namespace thekogans {
             }
         }
 
-        void *GlobalSlabAllocator::Alloc (size_t size) {
+        SlabAllocatorHeap::~SlabAllocatorHeap () {
+            for (std::size_t i = 0; i < numPools; ++i) {
+                delete pools[i];
+            }
+        }
+
+        void *SlabAllocatorHeap::Alloc (std::size_t size) {
             if (THEKOGANS_UTIL_UNLIKELY (size < minSize || size > maxSize)) {
                 return nullptr;
             }
             return pools[TrailingZeroBitCount (Align (size)) - minExp]->Alloc ();
         }
 
-        void GlobalSlabAllocator::Free (
+        void SlabAllocatorHeap::Free (
                 void *ptr,
                 std::size_t size) {
             if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr || size < minSize || size > maxSize)) {
@@ -62,15 +64,19 @@ namespace thekogans {
             pools[TrailingZeroBitCount (Align (size)) - minExp]->Free (ptr);
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
+            thekogans::util::GlobalSlabAllocatorHeap,
+            Allocator::TYPE)
+
         namespace {
-            static GlobalSlabAllocator &allocator = *GlobalSlabAllocator::Instance ();
+            static GlobalSlabAllocatorHeap &allocator = *GlobalSlabAllocatorHeap::Instance ();
         }
 
-        void *thekogans_malloc (std::size_t size) {
+        void *tk_malloc (std::size_t size) {
             return allocator.Alloc (size);
         }
 
-        void thekogans_free (
+        void tk_free (
                 void *ptr,
                 std::size_t size) {
             allocator.Free (ptr, size);

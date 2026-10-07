@@ -130,7 +130,7 @@ target_sources(thekogans_util PRIVATE
     src/ConsoleLogger.cpp src/CPU.cpp src/CRC32.cpp src/DefaultAllocator.cpp
     src/Directory.cpp src/DynamicCreatable.cpp src/DynamicLibrary.cpp src/Event.cpp
     src/Exception.cpp src/File.cpp src/FileLogger.cpp src/Fraction.cpp
-    src/GlobalSlabAllocator.cpp src/GUID.cpp src/HRTimer.cpp src/HRTimerMgr.cpp
+    src/SlabAllocatorHeap.cpp src/GUID.cpp src/HRTimer.cpp src/HRTimerMgr.cpp
     src/Hash.cpp src/Heap.cpp src/JSON.cpp src/JobQueue.cpp src/JobQueuePool.cpp
     src/Logger.cpp src/LoggerMgr.cpp src/MD5.cpp src/MemoryLogger.cpp
     src/MimeTypeMapper.cpp src/Mutex.cpp src/NullAllocator.cpp src/NullLock.cpp
