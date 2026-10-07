@@ -36,8 +36,7 @@ namespace thekogans {
                 minSize (1ULL << minExp),
                 maxSize (1ULL << maxExp) {
             // Validate input.
-            if (minExp < DEFAULT_MIN_EXP || minExp > MAX_POOLS || minExp >= maxExp ||
-                    maxExp > MAX_POOLS || numPools > MAX_POOLS) {
+            if (minExp < DEFAULT_MIN_EXP || minExp >= maxExp || numPools > MAX_POOLS) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -48,11 +47,8 @@ namespace thekogans {
         }
 
         void *GlobalSlabAllocator::Alloc (size_t size) {
-            if (THEKOGANS_UTIL_UNLIKELY (size == 0 || size > maxSize)) {
+            if (THEKOGANS_UTIL_UNLIKELY (size < minSize || size > maxSize)) {
                 return nullptr;
-            }
-            if (THEKOGANS_UTIL_UNLIKELY (size < minSize)) {
-                size = minSize;
             }
             return pools[TrailingZeroBitCount (Align (size)) - minExp]->Alloc ();
         }
@@ -60,11 +56,8 @@ namespace thekogans {
         void GlobalSlabAllocator::Free (
                 void *ptr,
                 std::size_t size) {
-            if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr || size == 0 || size > maxSize)) {
+            if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr || size < minSize || size > maxSize)) {
                 return;
-            }
-            if (THEKOGANS_UTIL_UNLIKELY (size < minSize)) {
-                size = minSize;
             }
             pools[TrailingZeroBitCount (Align (size)) - minExp]->Free (ptr);
         }
