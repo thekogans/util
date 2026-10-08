@@ -137,18 +137,30 @@ namespace thekogans {
             }
         };
 
+        inline void tk_malloc_init (
+                 std::size_t minExp,
+                 std::size_t maxExp,
+                 const std::pair<std::size_t, std::size_t> poolConfig[]) {
+            GlobalSlabAllocatorHeap::CreateInstance (minExp, maxExp, poolConfig);
+        }
         /// \brief
         /// Direct replacement for std malloc. Uses the \see{GlobalSlabAllocatorHeap}.
         /// \param[in] size Size of block to allocate,
         /// \return Allocated block.
-        void *tk_malloc (std::size_t size);
+        inline void *tk_malloc (std::size_t size) {
+            static SlabAllocatorHeap &allocator = *GlobalSlabAllocatorHeap::Instance ();
+            return allocator.Alloc (size);
+        }
         /// \brief
         /// Companion to thekogans_malloc.
         /// \param[in] ptr Pointer return by tk_malloc.
         /// \param[in] size Same value passed to tk_malloc.
-        void tk_free (
-            void *ptr,
-            std::size_t size);
+        inline void tk_free (
+                void *ptr,
+                std::size_t size) {
+            static SlabAllocatorHeap &allocator = *GlobalSlabAllocatorHeap::Instance ();
+            allocator.Free (ptr, size);
+        }
 
     } // namespace util
 } // namespace thekogans
