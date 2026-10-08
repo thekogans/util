@@ -63,6 +63,10 @@ namespace thekogans {
             }
         }
 
+        namespace {
+            std::atomic<std::size_t> instanceCounter{0};
+        }
+
         SlabAllocatorImpl::SlabAllocatorImpl (
                 std::size_t slotSize_,
                 std::size_t slotsPerPage_,
@@ -75,7 +79,8 @@ namespace thekogans {
                 tlcSize (tlcSize_),
                 tlcBatchSize (tlcSize / 2) {
             // Validate input.
-            if (slotSize < sizeof (Page::Slot *) || slotsPerPage == 0 || tlcSize > slotsPerPage) {
+            if (slotSize < sizeof (Page::Slot *) || slotsPerPage == 0 ||
+                    tlcSize == 0 || tlcSize > slotsPerPage) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -91,54 +96,40 @@ namespace thekogans {
         }
 
         void *SlabAllocatorImpl::Alloc () {
-            void *ptr = nullptr;
-            if (THEKOGANS_UTIL_LIKELY (tlcSize != 0)) {
-                TLC &tlc = GetTLC ();
-                // See if we have a free slot in our local cache.
-                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == 0)) {
-                    // No banana. Let's seed the TLC.
-                    LockGuard<SpinLock> guard (lock);
-                    while (tlc.slotCount < tlcBatchSize) {
-                        while (tlc.slotCount < tlcBatchSize && partialPageList != nullptr) {
-                            tlc.Push (partialPageList->Alloc ());
-                        }
-                        // If inner loop broke but target isn't met, the pool is dry. Seed a
-                        // fresh page from the OS and let the outer loop repeat the harvest.
-                        if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount < tlcBatchSize)) {
-                            AllocPage ();
-                        }
+            TLC &tlc = GetTLC ();
+            // See if we have a free slot in our local cache.
+            if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == 0)) {
+                // No banana. Let's seed it.
+                LockGuard<SpinLock> guard (lock);
+                while (tlc.slotCount < tlcBatchSize) {
+                    // As long as there are partial pages to harvest and
+                    // we haven't drank are fill...
+                    while (tlc.slotCount < tlcBatchSize && partialPageList != nullptr) {
+                        tlc.Push (partialPageList->Alloc ());
+                    }
+                    // ...the above loop broke because, a) we're full or
+                    // b) no more partial pages to harvest. If it's the
+                    // later, grab a fresh page from the OS.
+                    if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount < tlcBatchSize)) {
+                        AllocPage ();
                     }
                 }
-                ptr = tlc.Pop ();
             }
-            else {
-                LockGuard<SpinLock> guard (lock);
-                if (THEKOGANS_UTIL_UNLIKELY (partialPageList == nullptr)) {
-                    AllocPage ();
-                }
-                ptr = partialPageList->Alloc ();
-            }
-            return ptr;
+            return tlc.Pop ();
         }
 
         void SlabAllocatorImpl::Free (void *ptr) noexcept {
             if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                 Page::Slot *slot = reinterpret_cast<Page::Slot *> (ptr);
-                if (THEKOGANS_UTIL_LIKELY (tlcSize != 0)) {
-                    TLC &tlc = GetTLC ();
-                    tlc.Push (slot);
-                    // If we have no more room in our local cache batch release a bunch
-                    // of slots back to their pages so that we have room for more.
-                    if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == tlcSize)) {
-                        LockGuard<SpinLock> guard (lock);
-                        for (std::size_t i = 0; i < tlcBatchSize; ++i) {
-                            tlc.Pop ()->Free (pageMask);
-                        }
-                    }
-                }
-                else {
+                TLC &tlc = GetTLC ();
+                tlc.Push (slot);
+                // If we have no more room in our local cache batch
+                // release a batch of slots back to their pages.
+                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == tlcSize)) {
                     LockGuard<SpinLock> guard (lock);
-                    slot->Free (pageMask);
+                    for (std::size_t i = 0; i < tlcBatchSize; ++i) {
+                        tlc.Pop ()->Free (pageMask);
+                    }
                 }
             }
         }

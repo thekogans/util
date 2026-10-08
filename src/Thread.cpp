@@ -444,7 +444,12 @@ namespace thekogans {
             thread->joined = false;
         #endif // !defined (TOOLCHAIN_OS_Windows)
             thread->exited = false;
-            thread->Run ();
+            if (thread->callable) {
+                thread->callable ();
+            }
+            else {
+                thread->Run ();
+            }
             AtExit (thread->GetThreadHandle ());
             thread->exited = true;
             return 0;

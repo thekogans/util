@@ -22,12 +22,12 @@ using namespace thekogans::util;
 
 struct MockObject {
     uint64_t id;
-    uint64_t payload; // 32 bytes total
+    uint64_t payload;
 };
 
 // Configuration Parameters for the Stress Test
-constexpr int NUM_PRODUCERS  = 8;
-constexpr int NUM_CONSUMERS  = 8;
+constexpr int NUM_PRODUCERS = 8;
+constexpr int NUM_CONSUMERS = 8;
 constexpr int NUM_MIXED_WORKERS = 16;
 constexpr int OPS_PER_THREAD = 50000;
 
@@ -43,9 +43,6 @@ private:
     static_assert ((Capacity & (Capacity - 1)) == 0, "Capacity must be a strict power of 2.");
     static constexpr std::size_t IndexMask = Capacity - 1;
 
-    // We hardcode the system's detected line configuration to stop false sharing completely.
-    static constexpr std::size_t CacheLineSize = 256; // Perfect M5 baseline matching!
-
     // The raw pointer slot buffer storage
     T *buffer[Capacity];
 
@@ -53,8 +50,8 @@ private:
     // The producer writes to the tail, and the consumer writes to the head.
     // We isolate them onto completely separate physical 256-byte cache lines
     // so they never trigger cross-core interconnect invalidations while running side-by-side!
-    alignas (CacheLineSize) std::atomic<std::size_t> tail{0};
-    alignas (CacheLineSize) std::atomic<std::size_t> head{0};
+    alignas (SYSTEM_CACHE_LINE_SIZE) std::atomic<std::size_t> tail{0};
+    alignas (SYSTEM_CACHE_LINE_SIZE) std::atomic<std::size_t> head{0};
 
 public:
     LockFreeSPSCQueue () noexcept {

@@ -33,6 +33,10 @@
 namespace thekogans {
     namespace util {
 
+        /// \struct SlabAllocatorImpl SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
+        ///
+        /// \brief
+        /// SlabAllocatorImpl
         struct _LIB_THEKOGANS_UTIL_DECL SlabAllocatorImpl {
         private:
             /// \struct SlabAllocatorImpl::Page SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
@@ -53,6 +57,9 @@ namespace thekogans {
                     /// Pointer to the next free slot in the list.
                     Slot *next;
 
+                    /// \brief
+                    /// Validate that the slot is in fact ours and call its Page::Free.
+                    /// \param[in] pageMask Mask to turn the Slot * in to a Page *.
                     inline void Free (std::size_t pageMask) noexcept {
                         Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & pageMask);
                         if (THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64)) {
@@ -74,17 +81,28 @@ namespace thekogans {
                 /// false sharing. By padding out the page header to a cache line size we
                 /// prevent sharing it with slots.
                 struct Header {
+                    /// \brief
+                    /// Watermark used by Slot::Free for sanity check.
                     const ui64 magic = MAGIC64;
+                    /// \brief
+                    /// Backpointer to allocator.
                     SlabAllocatorImpl &allocator;
+                    /// \brief
+                    /// Master page list structural link.
                     Page *masterNext{nullptr};
                     /// \brief
-                    /// Next page in the list.
+                    /// Partial page list structural link.
                     Page *partialNext{nullptr};
                     /// \brief
                     /// Number of slots allocated from this page.
                     std::size_t slotCount{0};
+                    /// \brief
+                    /// Head of the free slot list.
                     Slot *freeList{nullptr};
 
+                    /// \brief
+                    /// ctor.
+                    /// \param[in] allocator_ Backpointer to allocator.
                     Header (SlabAllocatorImpl &allocator_) noexcept :
                         allocator (allocator_),
                         masterNext (allocator.masterPageList),
@@ -94,7 +112,7 @@ namespace thekogans {
                 /// \brief
                 /// Calculate the size of the header.
                 static constexpr std::size_t headerSize = sizeof (Header);
-                // Guard the Header Header Block
+                // Validate our assumptions.
                 static_assert (
                     headerSize <= SYSTEM_CACHE_LINE_SIZE,
                     "Page header header size has exceeded a single SYSTEM_CACHE_LINE_SIZE block.");
@@ -102,7 +120,7 @@ namespace thekogans {
                 /// \brief
                 /// Calculated padding size.
                 static constexpr std::size_t paddingSize = SYSTEM_CACHE_LINE_SIZE - headerSize;
-                /// \struct SlabAllocator::Page::EmptyPadding SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
+                /// \struct SlabAllocatorImpl::Page::EmptyPadding SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
                 ///
                 /// \brief
                 /// This empty struct is a conditional placeholder for PaddingType in case paddingSize == 0.
@@ -117,7 +135,7 @@ namespace thekogans {
 
                 /// \brief
                 /// ctor.
-                /// \param[in, out] head Head of the partial list.
+                /// \param[in, out] allocator Backpointer to allocator.
                 Page (SlabAllocatorImpl &allocator) noexcept :
                         header (allocator) {
                     allocator.masterPageList = this;
@@ -131,29 +149,44 @@ namespace thekogans {
 
                 /// \brief
                 /// Return a previously Alloc(ated) slot back to the free list.
-                /// \param[in] ptr Slot pointer to free.
+                /// \param[in] slot Slot to free.
                 void Free (Slot *slot) noexcept;
             };
 
             // Validate our assumptions and perform sanity checks.
             static_assert (
                 sizeof (Page) == SYSTEM_CACHE_LINE_SIZE,
-                "sizeof (Page) must be EXACTLY equal to CacheLineSize.");
+                "sizeof (Page) must be EXACTLY equal to SYSTEM_CACHE_LINE_SIZE.");
 
-            inline static std::atomic<std::size_t> instanceCounter{0};
+            /// \brief
+            /// Our index in to the tlc array.
             const std::size_t instanceId;
+            /// \brief
+            /// Slot size.
             const std::size_t slotSize;
+            /// \brief
+            /// Page size.
             const std::size_t pageSize;
+            /// \brief
+            /// Mask that turns slots in to pages.
             const std::size_t pageMask;
+            /// \brief
+            /// Number of slots per page.
             const std::size_t slotsPerPage;
+            /// \brief
+            /// TLC size.
             const std::size_t tlcSize;
+            /// \brief
+            /// Precomputed tlcSize / 2.
             const std::size_t tlcBatchSize;
+            /// \brief
+            /// Master immutable page list.
             Page *masterPageList{nullptr};
             /// \brief
             /// Partially allocated page list.
             Page *partialPageList{nullptr};
             /// \brief
-            /// Flag to protect multiple threads from calling the page allocator.
+            /// Flag to protect from multiple threads calling the page allocator.
             bool pageAllocationInFlight{false};
             /// \brief
             /// Protect access to page lists.
@@ -195,6 +228,8 @@ namespace thekogans {
                 }
             };
 
+            /// \brief
+            /// Return the TLC associated with this allocator.
             inline TLC &GetTLC () const noexcept {
                 static constexpr std::size_t MAX_ALLOCATORS = 100;
                 thread_local TLC caches[MAX_ALLOCATORS];
@@ -203,30 +238,43 @@ namespace thekogans {
 
         public:
             /// \brief
-            /// Default slots per page. A tuning knob meant to limit page
-            /// allocations for a heavily allocated type.
+            /// Default slots per page.
+            /// A tuning knob meant to limit page allocations for a
+            /// heavily allocated type.
             static constexpr std::size_t DEFAULT_SLOTS_PER_PAGE = 512;
             /// \brief
             /// Default Thread Local Cache (TLC) size.
-            /// A tuning knob meant to limit lock contention on a heavily contested type.
-            static constexpr std::size_t DEFAULT_TLC_THRESHOLD = 64;
+            /// A tuning knob meant to limit lock contention on a heavily
+            /// contested type.
+            static constexpr std::size_t DEFAULT_TLC_SIZE = 64;
 
+            /// \brief
+            /// ctor.
+            /// \param[in] slotSize_ Slot size.
+            /// \param[in] slotsPerPage_ Number of slots per page.
+            /// \param[in] tlcSize_ TLC size.
             SlabAllocatorImpl (
                 std::size_t slotSize_,
                 std::size_t slotsPerPage_ = DEFAULT_SLOTS_PER_PAGE,
-                std::size_t tlcSize_ = DEFAULT_TLC_THRESHOLD);
+                std::size_t tlcSize_ = DEFAULT_TLC_SIZE);
+            /// \brief
+            /// dtor. Return pages back to the DefaultPageAllocator.
             ~SlabAllocatorImpl () noexcept;
 
             /// \brief
             /// Allocate a new slot.
+            /// \return A new slot.
             void *Alloc ();
 
             /// \brief
             /// Try to cache a previously allocated slot. If our cache is full,
             /// return half back to the pages the slots came from.
+            /// \param[in] ptr Slot to free.
             void Free (void *ptr) noexcept;
 
         private:
+            /// \brief
+            /// Allocate a new page.
             void AllocPage () noexcept;
         };
 

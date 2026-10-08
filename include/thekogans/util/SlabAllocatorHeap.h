@@ -31,7 +31,6 @@ namespace thekogans {
         /// \struct SlabAllocatorHeap SlabAllocatorHeap.h thekogans/util/SlabAllocatorHeap.h
         ///
         /// \brief
-        /// SlabAllocatorHeap is part of the \see{Allocator} framework.
         struct _LIB_THEKOGANS_UTIL_DECL SlabAllocatorHeap {
         private:
             std::size_t minExp;
@@ -64,10 +63,10 @@ namespace thekogans {
                 {16,  2},  // 16KiB - 64KiB
                 {8,   1},
                 {8,   1},  // 128KiB - 256KiB
-                {4,   0},
-                {2,   0},
-                {2,   0},
-                {2,   0}   // 512KiB - 4MiB
+                {4,   1},
+                {2,   1},
+                {2,   1},
+                {2,   1}   // 512KiB - 4MiB
             };
 
             explicit SlabAllocatorHeap (
@@ -90,11 +89,14 @@ namespace thekogans {
                 std::size_t size);
         };
 
+        /// \struct GlobalSlabAllocatorHeap SlabAllocatorHeap.h thekogans/util/SlabAllocatorHeap.h
+        ///
+        /// \brief
+        /// GlobalSlabAllocatorHeap is part of the \see{Allocator} framework.
         struct _LIB_THEKOGANS_UTIL_DECL GlobalSlabAllocatorHeap :
                 public Allocator,
                 public SlabAllocatorHeap,
-                public
-            Singleton<
+                public Singleton<
                     GlobalSlabAllocatorHeap,
                     SpinLock,
                     RefCountedInstanceCreator<GlobalSlabAllocatorHeap>,
@@ -104,6 +106,13 @@ namespace thekogans {
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (GlobalSlabAllocatorHeap)
 
+            /// \brief
+            /// ctor.
+            /// Define the parameters of the global heap allocator.
+            /// \param[in] minExp The smallest object (2^minExp).
+            /// \param[in] maxExp The largest object (2^maxExp).
+            /// \param[in] poolConfig An array of maxExp - minExp + 1
+            /// std::pair<std::size_t /*SlotsPerPage*/, std::size_t /*TLCSize*/>.
             explicit GlobalSlabAllocatorHeap (
                 std::size_t minExp = DEFAULT_MIN_EXP,
                 std::size_t maxExp = DEFAULT_MAX_EXP,
@@ -129,14 +138,14 @@ namespace thekogans {
         };
 
         /// \brief
-        /// Direct replacement for std malloc. Uses a pool of \see{SlabAllocatorImpl}.
+        /// Direct replacement for std malloc. Uses the \see{GlobalSlabAllocatorHeap}.
         /// \param[in] size Size of block to allocate,
         /// \return Allocated block.
         void *tk_malloc (std::size_t size);
         /// \brief
         /// Companion to thekogans_malloc.
-        /// \param[in] ptr Pointer return by thekogans_malloc.
-        /// \param[in] size Same value passed to thekogans_malloc.
+        /// \param[in] ptr Pointer return by tk_malloc.
+        /// \param[in] size Same value passed to tk_malloc.
         void tk_free (
             void *ptr,
             std::size_t size);

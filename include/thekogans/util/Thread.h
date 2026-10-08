@@ -27,6 +27,9 @@
     #include <sched.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
+#include <functional>
+#include <utility>
+#include <tuple>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/StringUtils.h"
@@ -118,14 +121,11 @@ namespace thekogans {
         ///
         /// NOTE: On POSIX systems, threads are created with signals disabled.
         struct _LIB_THEKOGANS_UTIL_DECL Thread {
-            /// \brief
-            /// Alias for std::unique_ptr<Thread>.
-            using UniquePtr = std::unique_ptr<Thread>;
-
         protected:
             /// \brief
             /// Thread name.
-            const std::string name;
+            std::string name;
+            std::function<void ()> callable;
             /// \brief
             /// OS specific thread handle.
             THEKOGANS_UTIL_THREAD_HANDLE thread;
@@ -136,7 +136,7 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// true = thread is joinable (waitable).
-            const bool joinable;
+            bool joinable;
             /// \brief
             /// true = Wait was called.
             volatile bool joined;
@@ -167,18 +167,6 @@ namespace thekogans {
             static THEKOGANS_UTIL_THREAD_HANDLE mainThread;
 
         public:
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// ctor.
-            /// \param[in] name_ Thread name.
-            /// \param[in] joinable_ A dummy param meant to make Windows and POSIX implementations identical.
-            Thread (
-                const std::string &name_ = std::string (),
-                bool /*joinable_*/ = true) :
-                name (name_),
-                thread (THEKOGANS_UTIL_INVALID_HANDLE_VALUE),
-                exited (true) {}
-        #else // defined (TOOLCHAIN_OS_Windows)
             /// \brief
             /// ctor.
             /// \param[in] name_ Thread name.
@@ -187,13 +175,42 @@ namespace thekogans {
                 const std::string &name_ = std::string (),
                 bool joinable_ = true) :
                 name (name_),
+            #if defined (TOOLCHAIN_OS_Windows)
+                thread (THEKOGANS_UTIL_INVALID_HANDLE_VALUE),
+                exited (true) {}
+            #else // defined (TOOLCHAIN_OS_Windows)
                 joinable (joinable_),
                 joined (true),
                 exited (true) {}
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            Thread (Thread &&other) noexcept;
+            template<
+                    class F,
+                    class... Args,
+                    typename = std::enable_if_t<std::is_invocable_v<F, Args...>>>
+            explicit Thread (
+                    F &&f_,
+                    Args &&... args_) :
+                #if defined (TOOLCHAIN_OS_Windows)
+                    thread (THEKOGANS_UTIL_INVALID_HANDLE_VALUE),
+                    exited (true) {
+                #else // defined (TOOLCHAIN_OS_Windows)
+                    joinable (true),
+                    joined (true),
+                    exited (true) {
+                #endif // defined (TOOLCHAIN_OS_Windows)
+                // Move/forward everything safely into a captured tuple
+                callable = [f = std::forward<F> (f_), args = std::make_tuple (std::forward<Args> (args_)...)] () mutable {
+                    // std::apply unpacks the tuple back into a variadic sequence of arguments
+                    std::apply (std::move (f), std::move (args));
+                };
+                Create ();
+            }
             /// \brief
             /// Virtual dtor.
             virtual ~Thread ();
+
+            Thread &operator = (Thread &&other) noexcept;
 
             /// \brief
             /// Register an at exit function to be called when each thread terminates.
