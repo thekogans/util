@@ -37,8 +37,7 @@ namespace thekogans {
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
             for (std::size_t i = 0, slotSize = minSize; i < numPools; ++i) {
-                pools[i] = new SlabAllocatorImpl (
-                    slotSize, poolConfig[i].first, poolConfig[i].second);
+                pools[i] = new SlabAllocatorImpl (slotSize, poolConfig[i].first, poolConfig[i].second);
                 slotSize <<= 1;
             }
         }
@@ -68,6 +67,27 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
             thekogans::util::GlobalSlabAllocatorHeap,
             Allocator::TYPE)
+
+        void tk_malloc_init (
+                std::size_t minExp,
+                std::size_t maxExp,
+                const std::pair<std::size_t, std::size_t> poolConfig[]) {
+            GlobalSlabAllocatorHeap::CreateInstance (minExp, maxExp, poolConfig);
+        }
+
+        namespace {
+            static GlobalSlabAllocatorHeap &allocator = *GlobalSlabAllocatorHeap::Instance ();
+        }
+
+        void *tk_malloc (std::size_t size) {
+            return allocator.Alloc (size);
+        }
+
+        void tk_free (
+                void *ptr,
+                std::size_t size) {
+            allocator.Free (ptr, size);
+        }
 
     } // namespace util
 } // namespace thekogans

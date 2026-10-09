@@ -137,30 +137,28 @@ namespace thekogans {
             }
         };
 
-        inline void tk_malloc_init (
-                 std::size_t minExp,
-                 std::size_t maxExp,
-                 const std::pair<std::size_t, std::size_t> poolConfig[]) {
-            GlobalSlabAllocatorHeap::CreateInstance (minExp, maxExp, poolConfig);
-        }
+        /// \brief
+        /// Initialize the GlobalSlabAllocatorHeap.
+        /// \param[in] minExp The smallest object (2^minExp).
+        /// \param[in] maxExp The largest object (2^maxExp).
+        /// \param[in] poolConfig An array of maxExp - minExp + 1
+        /// std::pair<std::size_t /*SlotsPerPage*/, std::size_t /*TLCSize*/>.
+        void tk_malloc_init (
+            std::size_t minExp,
+            std::size_t maxExp,
+            const std::pair<std::size_t, std::size_t> poolConfig[]);
         /// \brief
         /// Direct replacement for std malloc. Uses the \see{GlobalSlabAllocatorHeap}.
         /// \param[in] size Size of block to allocate,
         /// \return Allocated block.
-        inline void *tk_malloc (std::size_t size) {
-            static SlabAllocatorHeap &allocator = *GlobalSlabAllocatorHeap::Instance ();
-            return allocator.Alloc (size);
-        }
+        void *tk_malloc (std::size_t size);
         /// \brief
         /// Companion to thekogans_malloc.
         /// \param[in] ptr Pointer return by tk_malloc.
         /// \param[in] size Same value passed to tk_malloc.
-        inline void tk_free (
-                void *ptr,
-                std::size_t size) {
-            static SlabAllocatorHeap &allocator = *GlobalSlabAllocatorHeap::Instance ();
-            allocator.Free (ptr, size);
-        }
+        void tk_free (
+            void *ptr,
+            std::size_t size);
 
     } // namespace util
 } // namespace thekogans
