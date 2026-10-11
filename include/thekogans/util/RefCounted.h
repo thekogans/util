@@ -253,6 +253,16 @@ namespace thekogans {
                     Swap (ptr);
                 }
                 /// \brief
+                /// Polymorphic move ctor.
+                /// \param[in] ptr Pointer to move.
+                template<typename _U>
+                SharedPtr (SharedPtr<_U> &&ptr) :
+                        object (dynamic_cast<T *> (ptr.Get ())) {
+                    if (object != nullptr) {
+                        ptr.Release ();
+                    }
+                }
+                /// \brief
                 /// dtor.
                 ~SharedPtr () {
                     Reset ();

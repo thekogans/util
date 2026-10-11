@@ -230,24 +230,15 @@ namespace thekogans {
             /// \brief
             /// Convert this TimeSpec to milliseconds.
             /// \return TimeSpec as milliseconds.
-            inline i64 ToMilliseconds () const {
-                return seconds == -1 && nanoseconds == -1 ?
-                    I64_MAX : seconds * 1000 + nanoseconds / 1000000;
-            }
+            i64 ToMilliseconds () const;
             /// \brief
             /// Convert this TimeSpec to microseconds.
             /// \return TimeSpec as microseconds.
-            inline i64 ToMicroseconds () const {
-                return seconds == -1 && nanoseconds == -1 ?
-                    I64_MAX : seconds * 1000000 + nanoseconds / 1000;
-            }
+            i64 ToMicroseconds () const;
             /// \brief
             /// Convert this TimeSpec to nanoseconds.
             /// \return TimeSpec as nanoseconds.
-            inline i64 ToNanoseconds () const {
-                return seconds == -1 && nanoseconds == -1 ?
-                    I64_MAX : seconds * 1000000000 + nanoseconds;
-            }
+            i64 ToNanoseconds () const;
 
         #if defined (TOOLCHAIN_OS_Windows)
             /// \brief

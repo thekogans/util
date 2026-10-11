@@ -130,6 +130,54 @@ namespace thekogans {
             return *this;
         }
 
+        i64 TimeSpec::ToMilliseconds () const {
+            // 1. Explicitly check for infinity sentinel.
+            if (seconds == -1 && nanoseconds == -1) {
+                return I64_MAX; // Maps directly to INFINITE down the line
+            }
+            // 2. Prevent multiplication overflow: check if 'seconds' exceeds safe bounds
+            // (INT64_MAX / 1000 is 9223372036854775)
+            const i64 MAX_SAFE_SECONDS = I64_MAX / 1000;
+            if (seconds >= MAX_SAFE_SECONDS) {
+                return I64_MAX;
+            }
+            if (seconds <= -MAX_SAFE_SECONDS) {
+                return I64_MIN;
+            }
+            i64 ms_from_seconds = seconds * 1000;
+            i64 ms_from_nanoseconds = nanoseconds / 1000000;
+            // 3. Prevent addition overflow
+            if (ms_from_seconds > 0 && ms_from_nanoseconds > I64_MAX - ms_from_seconds) {
+                return I64_MAX;
+            }
+            if (ms_from_seconds < 0 && ms_from_nanoseconds < I64_MIN - ms_from_seconds) {
+                return I64_MIN;
+            }
+            return ms_from_seconds + ms_from_nanoseconds;
+        }
+
+        i64 TimeSpec::ToMicroseconds () const {
+            if (seconds == -1 && nanoseconds == -1) {
+                return I64_MAX;
+            }
+            // INT64_MAX / 1,000,000 is 9223372036854
+            const i64 MAX_SAFE_SECONDS = I64_MAX / 1000000;
+            if (seconds >= MAX_SAFE_SECONDS) return I64_MAX;
+            if (seconds <= -MAX_SAFE_SECONDS) return I64_MIN;
+            return (seconds * 1000000) + (nanoseconds / 1000);
+        }
+
+        i64 TimeSpec::ToNanoseconds () const {
+            if (seconds == -1 && nanoseconds == -1) {
+                return I64_MAX;
+            }
+            // INT64_MAX / 1,000,000,000 is 9223372036
+            const i64 MAX_SAFE_SECONDS = I64_MAX / 1000000000;
+            if (seconds >= MAX_SAFE_SECONDS) return I64_MAX;
+            if (seconds <= -MAX_SAFE_SECONDS) return I64_MIN;
+            return (seconds * 1000000000) + nanoseconds;
+        }
+
         TimeSpec TimeSpec::AddHours (i64 hours) const {
             return *this + FromHours (hours);
         }
@@ -253,12 +301,35 @@ namespace thekogans {
             inline TimeSpec AddWithCarry (
                     const TimeSpec &timeSpec1,
                     const TimeSpec &timeSpec2) {
-                i64 seconds = timeSpec1.seconds + timeSpec2.seconds;
-                i32 nanoseconds = timeSpec1.nanoseconds + timeSpec2.nanoseconds;
-                if (nanoseconds > 999999999) {
-                    seconds += nanoseconds / 1000000000;
-                    nanoseconds %= 1000000000;
+                // 1. Safe Nanosecond Addition & Normalization
+                i64 carrySeconds = 0;
+                i64 totalNanos = static_cast<i64> (timeSpec1.nanoseconds) + static_cast<i64> (timeSpec2.nanoseconds);
+                if (totalNanos >= 1000000000) {
+                    carrySeconds = totalNanos / 1000000000;
+                    totalNanos %= 1000000000;
                 }
+                else if (totalNanos < 0) {
+                    // Handle negative nanosecond normalization safely
+                    carrySeconds = (totalNanos / 1000000000) - 1;
+                    totalNanos = 1000000000 + (totalNanos %= 1000000000);
+                    if (totalNanos == 1000000000) {
+                        totalNanos = 0;
+                        ++carrySeconds;
+                    }
+                }
+                i32 nanoseconds = static_cast<i32> (totalNanos);
+                // 2. Safe Signed Overflow Check for Seconds
+                i64 s1 = timeSpec1.seconds;
+                i64 s2 = timeSpec2.seconds;
+                // Prevent undefined behavior on s1 + s2 + carrySeconds
+                if (s2 > 0 && s1 > (I64_MAX - s2 - carrySeconds)) {
+                    return TimeSpec::Infinite; // Saturate to infinite on overflow
+                }
+                if (s2 < 0 && s1 < (I64_MIN - s2 - carrySeconds)) {
+                    // If the system handles negative time saturation, return minimum baseline here
+                    return TimeSpec (I64_MIN, 0);
+                }
+                i64 seconds = s1 + s2 + carrySeconds;
                 return TimeSpec (seconds, nanoseconds);
             }
         }
@@ -288,14 +359,18 @@ namespace thekogans {
             inline TimeSpec SubWithBorrow (
                     const TimeSpec &timeSpec1,
                     const TimeSpec &timeSpec2) {
+                // 1. Safe Signed Overflow Check BEFORE doing the subtraction
+                // If subtracting s2 would push s1 past maximum i64 limits:
+                if (timeSpec2.seconds < 0 && timeSpec1.seconds > (I64_MAX + timeSpec2.seconds)) {
+                    return TimeSpec::Infinite;
+                }
                 i64 seconds = timeSpec1.seconds - timeSpec2.seconds;
-                i32 nanoseconds = timeSpec1.nanoseconds - timeSpec2.nanoseconds;
+                i64 nanoseconds = static_cast<i64> (timeSpec1.nanoseconds) - timeSpec2.nanoseconds;
                 if (nanoseconds < 0) {
                     --seconds;
-                    assert (seconds >= 0);
                     nanoseconds += 1000000000;
                 }
-                return TimeSpec (seconds, nanoseconds);
+                return seconds < 0 ? TimeSpec::Zero : TimeSpec (seconds, static_cast<i32> (nanoseconds));
             }
         }
 
@@ -314,14 +389,16 @@ namespace thekogans {
                     timeSpec2.seconds,
                     timeSpec2.nanoseconds));
         #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
-            return
-                timeSpec1 < timeSpec2 ?
-                    TimeSpec::Zero :
-                    timeSpec1 == TimeSpec::Infinite ?
-                        timeSpec2 == TimeSpec::Infinite ?
-                            TimeSpec::Zero :
-                            TimeSpec::Infinite :
-                        SubWithBorrow (timeSpec1, timeSpec2);
+            if (timeSpec1.seconds < timeSpec2.seconds) {
+                return TimeSpec::Zero;
+            }
+            if (timeSpec1.seconds == timeSpec2.seconds && timeSpec1.nanoseconds <= timeSpec2.nanoseconds) {
+                return TimeSpec::Zero;
+            }
+            if (timeSpec1 == TimeSpec::Infinite) {
+                return timeSpec2 == TimeSpec::Infinite ? TimeSpec::Zero : TimeSpec::Infinite;
+            }
+            return SubWithBorrow (timeSpec1, timeSpec2);
         }
 
     #if defined (TOOLCHAIN_OS_OSX)

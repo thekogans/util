@@ -80,6 +80,7 @@
     <cpp_header>$(organization)/$(project_directory)/ChildProcess.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CommandLineOptions.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Condition.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Condition2.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Config.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Console.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ConsoleLogger.h</cpp_header>
@@ -115,6 +116,8 @@
     <cpp_header>$(organization)/$(project_directory)/MemoryLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MimeTypeMapper.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Mutex.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Mutex2.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/NormalMutex.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLogger.h</cpp_header>
@@ -167,6 +170,7 @@
     <cpp_header>$(organization)/$(project_directory)/SystemInfo.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SystemRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Thread.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Thread2.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ThreadRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TimeSpec.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
@@ -184,6 +188,7 @@
     <cpp_header>$(organization)/$(project_directory)/ValueParser.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Vectorizer.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Vectorizer2.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/XMLUtils.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/os/RunLoop.h</cpp_header>
@@ -635,6 +640,7 @@
     <cpp_source>ChildProcess.cpp</cpp_source>
     <cpp_source>CommandLineOptions.cpp</cpp_source>
     <cpp_source>Condition.cpp</cpp_source>
+    <cpp_source>Condition2.cpp</cpp_source>
     <cpp_source>Config.cpp</cpp_source>
     <cpp_source>Console.cpp</cpp_source>
     <cpp_source>ConsoleLogger.cpp</cpp_source>
@@ -663,6 +669,8 @@
     <cpp_source>MemoryLogger.cpp</cpp_source>
     <cpp_source>MimeTypeMapper.cpp</cpp_source>
     <cpp_source>Mutex.cpp</cpp_source>
+    <cpp_source>Mutex2.cpp</cpp_source>
+    <cpp_source>NormalMutex.cpp</cpp_source>
     <cpp_source>NullAllocator.cpp</cpp_source>
     <cpp_source>NullLock.cpp</cpp_source>
     <cpp_source>NullLogger.cpp</cpp_source>
@@ -704,6 +712,7 @@
     <cpp_source>StringUtils.cpp</cpp_source>
     <cpp_source>SystemInfo.cpp</cpp_source>
     <cpp_source>Thread.cpp</cpp_source>
+    <cpp_source>Thread2.cpp</cpp_source>
     <cpp_source>ThreadRunLoop.cpp</cpp_source>
     <cpp_source>Timer.cpp</cpp_source>
     <cpp_source>TimeSpec.cpp</cpp_source>
@@ -720,6 +729,7 @@
     <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>
+    <cpp_source>Vectorizer2.cpp</cpp_source>
     <cpp_source>Version.cpp</cpp_source>
     <cpp_source>XMLUtils.cpp</cpp_source>
     <choose>
