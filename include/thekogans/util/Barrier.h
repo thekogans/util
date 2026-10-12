@@ -35,8 +35,8 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #if !defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER) && !defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
-    #include "thekogans/util/NormalMutex.h"
-    #include "thekogans/util/Condition2.h"
+    #include "thekogans/util/Mutex.h"
+    #include "thekogans/util/Condition.h"
 #endif // !defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER) && !defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
 #include <dispatch/dispatch.h>
 #include <atomic>

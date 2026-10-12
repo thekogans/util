@@ -25,7 +25,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/IntrusiveList.h"
-#include "thekogans/util/Thread.h"
 #include "thekogans/util/Pipeline.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/SpinLock.h"

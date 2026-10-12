@@ -128,7 +128,7 @@ target_sources(thekogans_util PRIVATE
     src/BitSet.cpp src/BlockAllocator.cpp src/Buffer.cpp src/ChildProcess.cpp
     src/CommandLineOptions.cpp src/Condition.cpp src/Config.cpp src/Console.cpp
     src/ConsoleLogger.cpp src/CPU.cpp src/CRC32.cpp src/DefaultAllocator.cpp
-    src/Directory.cpp src/DynamicCreatable.cpp src/DynamicLibrary.cpp src/Event.cpp
+    src/Directory.cpp src/DynamicCreatable.cpp src/DynamicLibrary.cpp
     src/Exception.cpp src/File.cpp src/FileLogger.cpp src/Fraction.cpp
     src/SlabAllocatorHeap.cpp src/GUID.cpp src/HRTimer.cpp src/HRTimerMgr.cpp
     src/Hash.cpp src/Heap.cpp src/JSON.cpp src/JobQueue.cpp src/JobQueuePool.cpp
@@ -137,13 +137,13 @@ target_sources(thekogans_util PRIVATE
     src/NullLogger.cpp src/PageMap.cpp src/Path.cpp src/Pipeline.cpp src/PipelinePool.cpp
     src/Plugins.cpp src/Point.cpp src/RandomSeekSerializer.cpp src/RandomSource.cpp
     src/Rectangle.cpp src/RefCounted.cpp src/RunLoop.cpp src/RunLoopScheduler.cpp src/RWLock.cpp
-    src/Scheduler.cpp src/SecureAllocator.cpp src/Semaphore.cpp src/Serializable.cpp
+    src/Scheduler.cpp src/SecureAllocator.cpp src/Serializable.cpp
     src/SerializableHeader.cpp src/SerializableString.cpp src/SerializableValues.cpp
     src/Serializer.cpp src/SHA1.cpp src/SHA2.cpp src/SHA2_224_256.cpp
     src/SHA2_384_512.cpp src/SHA3.cpp src/SharedAllocator.cpp src/SharedObject.cpp
     src/SizeT.cpp src/SlabAllocatorDetail.cpp src/SlabAllocatorImpl.cpp src/SpinLock.cpp
     src/SpinRWLock.cpp src/StdAllocator.cpp src/StringUtils.cpp src/SystemInfo.cpp
-    src/Thread.cpp src/ThreadRunLoop.cpp src/Timer.cpp src/TimeSpec.cpp src/TransactedFile.cpp
+    src/Thread.cpp src/Thread2.cpp src/ThreadRunLoop.cpp src/Timer.cpp src/TimeSpec.cpp src/TransactedFile.cpp
     src/TransactedFileAllocator.cpp src/TransactedFileBTree.cpp
     src/TransactedFileBTreeAllocator.cpp src/TransactedFileBTreeAllocatorBTree.cpp
     src/TransactedFileBTreeKeys.cpp src/TransactedFileBTreeRegistry.cpp

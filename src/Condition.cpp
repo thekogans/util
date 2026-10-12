@@ -18,134 +18,137 @@
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 
 namespace thekogans {
     namespace util {
 
-        Condition::Condition (Mutex &mutex_) :
-                mutex (mutex_) {
+        Condition::Impl::Impl () {
         #if defined (TOOLCHAIN_OS_Windows)
             InitializeConditionVariable (&cv);
         #else // defined (TOOLCHAIN_OS_Windows)
-            Init (false);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        Condition::~Condition () {
-        #if defined (TOOLCHAIN_OS_Windows)
-        #else // defined (TOOLCHAIN_OS_Windows)
-            pthread_cond_destroy (&condition);
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        bool Condition::Wait (const TimeSpec &timeSpec) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            if (timeSpec == TimeSpec::Infinite) {
-                if (!SleepConditionVariableCS (&cv, &mutex.cs, INFINITE)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE);
-                }
-            }
-            else {
-                if (!SleepConditionVariableCS (&cv, &mutex.cs, (DWORD)timeSpec.ToMilliseconds ())) {
-                    if (THEKOGANS_UTIL_OS_ERROR_CODE != ERROR_TIMEOUT) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                            THEKOGANS_UTIL_OS_ERROR_CODE);
-                    }
-                    return false;
-                }
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            if (timeSpec == TimeSpec::Infinite) {
-                THEKOGANS_UTIL_ERROR_CODE errorCode =
-                    pthread_cond_wait (&condition, &mutex.mutex);
-                if (errorCode != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-            }
-            else {
-            #if defined (TOOLCHAIN_OS_Linux)
-                timespec absolute = (GetMonotonicTime () + timeSpec).Totimespec ();
-            #elif defined (TOOLCHAIN_OS_OSX)
-                timespec relative = timeSpec.Totimespec ();
-            #endif // defined (TOOLCHAIN_OS_Linux)
-                THEKOGANS_UTIL_ERROR_CODE errorCode =
-                #if defined (TOOLCHAIN_OS_Linux)
-                    pthread_cond_timedwait (&condition, &mutex.mutex, &absolute);
-                #elif defined (TOOLCHAIN_OS_OSX)
-                    pthread_cond_timedwait_relative_np (&condition, &mutex.mutex, &relative);
-                #endif // defined (TOOLCHAIN_OS_Linux)
-                if (errorCode != 0) {
-                    if (errorCode != ETIMEDOUT) {
-                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                    }
-                    return false;
-                }
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            return true;
-        }
-
-        void Condition::Signal () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            WakeConditionVariable (&cv);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_cond_signal (&condition);
-            if (errorCode != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-        void Condition::SignalAll () {
-        #if defined (TOOLCHAIN_OS_Windows)
-            WakeAllConditionVariable (&cv);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_cond_broadcast (&condition);
-            if (errorCode != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-            }
-        #endif // defined (TOOLCHAIN_OS_Windows)
-        }
-
-    #if !defined (TOOLCHAIN_OS_Windows)
-        void Condition::Init (bool shared) {
             struct Attribute {
                 pthread_condattr_t attribute;
                 Attribute () {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode =
-                        pthread_condattr_init (&attribute);
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_condattr_init (&attribute);
                     if (errorCode != 0) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                     }
+                #if defined (TOOLCHAIN_OS_Linux)
+                    errorCode = pthread_condattr_setclock (&attribute, CLOCK_MONOTONIC);
+                    if (errorCode != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                #endif // defined (TOOLCHAIN_OS_Linux)
                 }
                 ~Attribute () {
                     pthread_condattr_destroy (&attribute);
                 }
             } attribute;
-            THEKOGANS_UTIL_ERROR_CODE errorCode;
-        #if defined (TOOLCHAIN_OS_Linux)
-            errorCode = pthread_condattr_setclock (&attribute.attribute, CLOCK_MONOTONIC);
+            THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_cond_init (&cv, &attribute.attribute);
             if (errorCode != 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
-        #endif // defined (TOOLCHAIN_OS_Linux)
-            if (shared) {
-                errorCode = pthread_condattr_setpshared (
-                    &attribute.attribute, PTHREAD_PROCESS_SHARED);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
+
+        Condition::Impl::~Impl () {
+        #if !defined (TOOLCHAIN_OS_Windows)
+            pthread_cond_destroy (&cv);
+        #endif // !defined (TOOLCHAIN_OS_Windows)
+        }
+
+        Condition &Condition::operator = (Condition &&other) noexcept {
+            if (this != &other) {
+                impl = std::move (other.impl);
+            }
+            return *this;
+        }
+
+        bool Condition::Wait (
+                Mutex &mutex,
+                const TimeSpec &timeSpec) {
+            if (impl != nullptr) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                DWORD timeout = timeSpec == TimeSpec::Infinite ? INFINITE : timeSpec.ToMilliseconds ();
+                if (mutex.impl->type == Mutex::Normal) {
+                    // Normal Mode uses our fixed 4-argument Sleep variant for SRWLocks
+                    if (!SleepConditionVariableSRW (&impl->cv, &mutex.impl->lock.srwLock, timeout, 0)) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        if (errorCode != ERROR_TIMEOUT) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
+                        return false;
+                    }
+                }
+                else {
+                    // Recursive Mode drops down to the native Critical Section wait API
+                    if (!SleepConditionVariableCS (&impl->cv, &mutex.impl->lock.criticalSection, timeout)) {
+                        THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                        if (errorCode != ERROR_TIMEOUT) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
+                        return false;
+                    }
+                }
+            #else // defined (TOOLCHAIN_OS_Windows)
+                if (timeSpec == TimeSpec::Infinite) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                        pthread_cond_wait (&impl->cv, &mutex.impl->mutex);
+                    if (errorCode != 0) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                }
+                else {
+                #if defined (TOOLCHAIN_OS_Linux)
+                    timespec absolute = (GetMonotonicTime () + timeSpec).Totimespec ();
+                #elif defined (TOOLCHAIN_OS_OSX)
+                    timespec relative = timeSpec.Totimespec ();
+                #endif // defined (TOOLCHAIN_OS_Linux)
+                    THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    #if defined (TOOLCHAIN_OS_Linux)
+                        pthread_cond_timedwait (&impl->cv, &mutex.impl->mutex, &absolute);
+                    #elif defined (TOOLCHAIN_OS_OSX)
+                        pthread_cond_timedwait_relative_np (&impl->cv, &mutex.impl->mutex, &relative);
+                    #endif // defined (TOOLCHAIN_OS_Linux)
+                    if (errorCode != 0) {
+                        if (errorCode != ETIMEDOUT) {
+                            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                        }
+                        return false;
+                    }
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+            return true;
+        }
+
+        void Condition::Signal () {
+            if (impl != nullptr) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                WakeConditionVariable (&impl->cv);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_cond_signal (&impl->cv);
                 if (errorCode != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
-            }
-            errorCode = pthread_cond_init (&condition, &attribute.attribute);
-            if (errorCode != 0) {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
         }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
+
+        void Condition::SignalAll () {
+            if (impl != nullptr) {
+            #if defined (TOOLCHAIN_OS_Windows)
+                WakeAllConditionVariable (&impl->cv);
+            #else // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_cond_broadcast (&impl->cv);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
+            }
+        }
 
     } // namespace util
 } // namespace thekogans

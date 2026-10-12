@@ -23,9 +23,18 @@
     #include <sys/types.h>
     #include <sys/stat.h>
     #include <pwd.h>
-    #if defined (TOOLCHAIN_OS_OSX)
+    #include <unistd.h>
+    #if defined (TOOLCHAIN_OS_Linux)
+        #include <poll.h>
+        #include <sys/syscall.h> // For SYS_pidfd_open
+        #if !defined (SYS_pidfd_open)
+            #define SYS_pidfd_open 434
+        #endif // !defined (SYS_pidfd_open)
+    #elif defined (TOOLCHAIN_OS_OSX)
         #include <libproc.h>
         #include <grp.h>
+        #include <sys/event.h>
+        #include <sys/time.h>
     #endif // defined (TOOLCHAIN_OS_OSX)
 #endif // !defined (TOOLCHAIN_OS_Windows)
 #include <cassert>
@@ -440,76 +449,83 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
-    #if !defined (TOOLCHAIN_OS_Windows)
         namespace {
-            struct Waiter : public Thread {
-                pid_t pid;
-                int *status;
-                int options;
-                Mutex mutex;
-                Condition condition;
+            #define WIFTIMEDOUT(status) ((status & 0xff) == ETIMEDOUT)
 
-                Waiter (pid_t pid_,
-                        int *status_,
-                        int options_) :
-                        pid (pid_),
-                        status (status_),
-                        options (options_),
-                        condition (mutex) {
-                    mutex.Acquire ();
-                }
-                ~Waiter () {
-                    mutex.Release ();
-                }
-
-                inline bool IsExited () const {
-                    return exited;
-                }
-
-                inline void Cancel () {
-                    pthread_cancel (thread);
-                }
-
-                // Thread
-                virtual void Run () noexcept {
-                    pid = waitpid (pid, status, options);
-                    {
-                        LockGuard<Mutex> guard (mutex);
-                        condition.Signal ();
-                    }
-                }
-            };
+        #if defined (TOOLCHAIN_OS_Linux)
+            int pidfd_open (pid_t pid, unsigned int flags) {
+                return syscall (SYS_pidfd_open, pid, flags);
+            }
 
             pid_t waitpid_timed (
                     pid_t pid,
                     int *status,
                     int options,
                     const TimeSpec &timeSpec) {
-                if (status != nullptr) {
-                    Waiter waiter (pid, status, options);
-                    waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-                    if (!waiter.condition.Wait (timeSpec)) {
-                        *status = ETIMEDOUT;
-                        waiter.Cancel ();
-                    }
-                    // The following two lines will prevent a
-                    // potential deadlock that can result if the above
-                    // waiter.condition.Wait returns before Run had a
-                    // chance to execute.
-                    waiter.mutex.TryAcquire ();
-                    waiter.mutex.Release ();
-                    waiter.Wait ();
-                    return waiter.pid;
+                // 1. Obtain a dedicated file descriptor tied uniquely to this specific PID
+                int pfd = pidfd_open (pid, 0);
+                if (pfd < 0) {
+                    return -1; // e.g., ESRCH if the process already died
                 }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                // Convert TimeSpec to milliseconds for poll ()
+                int timeout = -1;
+                if (timeSpec != TimeSpec::Infinite) {
+                    timeout = timeSpec.ToMilliseconds ();
                 }
+                struct pollfd poll_pfd;
+                poll_pfd.fd = pfd;
+                poll_pfd.events = POLLIN;
+                // 2. Block directly on the pidfd. Only this specific process will wake it up!
+                int poll_res = poll (&poll_pfd, 1, timeout);
+                close (pfd); // Clean up the descriptor resource immediately
+                if (poll_res == 0) {
+                    errno = ETIMEDOUT;
+                    return -1;
+                }
+                if (poll_res < 0) {
+                    return -1; // poll error (e.g. EINTR)
+                }
+                // 3. The process is guaranteed dead/changed state; reap it cleanly non-blocking
+                return waitpid (pid, status, options | WNOHANG);
             }
-
-            #define WIFTIMEDOUT(status) ((status & 0xff) == ETIMEDOUT)
+        #elif defined (TOOLCHAIN_OS_OSX)
+            pid_t waitpid_timed (
+                    pid_t pid,
+                    int *status,
+                    int options,
+                    const TimeSpec &timeSpec) {
+                // 1. Create a private event queue kernel context
+                int kq = kqueue ();
+                if (kq < 0) {
+                    return -1;
+                }
+                struct kevent change;
+                struct kevent event;
+                // 2. Configure the event filter to track precisely this PID for exit status
+                EV_SET (&change, pid, EVFILT_PROC, EV_ADD | EV_ENABLE | EV_ONESHOT, NOTE_EXIT, 0, NULL);
+                // Translate TimeSpec to a native kqueue timespec structures
+                struct timespec timeout;
+                struct timespec *timeout_ptr = NULL;
+                if (timeSpec != TimeSpec::Infinite) {
+                    timeout.tv_sec = timeSpec.seconds;
+                    timeout.tv_nsec = timeSpec.nanoseconds;
+                    timeout_ptr = &timeout;
+                }
+                // 3. Wait on kqueue. Only a state change in *this specific PID* can wake us up.
+                int nevents = kevent (kq, &change, 1, &event, 1, timeout_ptr);
+                close (kq); // Clean up kernel resource
+                if (nevents == 0) {
+                    errno = ETIMEDOUT;
+                    return -1;
+                }
+                if (nevents < 0) {
+                    return -1; // kevent error
+                }
+                // 4. Cleanly harvest the child process metadata without blocking
+                return waitpid (pid, status, options | WNOHANG);
+            }
+        #endif // defined (TOOLCHAIN_OS_Linux)
         }
-    #endif // !defined (TOOLCHAIN_OS_Windows)
 
         ChildProcess::ChildStatus ChildProcess::Wait (const TimeSpec &timeSpec) {
         #if defined (TOOLCHAIN_OS_Windows)

@@ -185,7 +185,7 @@ namespace thekogans {
             if (jobQueue != nullptr) {
                 jobQueue->EnqJob (
                     [str, where, color] (
-                            const RunLoop::Job &job,
+                            RunLoop::Job &job,
                             const std::atomic<bool> &done) {
                         if (!job.ShouldStop (done)) {
                             PrintStringWithColor (str, where, color);

@@ -184,7 +184,7 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 pthread_detach (thread);
                 {
-                    LockGuard<NormalMutex> guard (mutex);
+                    LockGuard<Mutex> guard (mutex);
                     joinable = false;
                 }
                 exitCondition.Signal ();
@@ -202,7 +202,7 @@ namespace thekogans {
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             {
-                LockGuard<NormalMutex> guard (mutex);
+                LockGuard<Mutex> guard (mutex);
                 if (timeSpec == TimeSpec::Infinite) {
                     while (joinable) {
                         exitCondition.Wait (mutex);
@@ -238,7 +238,7 @@ namespace thekogans {
                 impl->joinable = false;
             #else // defined (TOOLCHAIN_OS_Windows)
                 {
-                    LockGuard<NormalMutex> guard (impl->mutex);
+                    LockGuard<Mutex> guard (impl->mutex);
                     impl->joinable = false;
                 }
                 impl->exitCondition.Signal ();

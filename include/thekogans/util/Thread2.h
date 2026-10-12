@@ -37,8 +37,8 @@
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/RefCounted.h"
 #if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/NormalMutex.h"
-    #include "thekogans/util/Condition2.h"
+    #include "thekogans/util/Mutex.h"
+    #include "thekogans/util/Condition.h"
 #endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
 #include "thekogans/util/Thread.h"
 
@@ -80,8 +80,8 @@ namespace thekogans {
                 bool joinable;
             #if !defined (TOOLCHAIN_OS_Windows)
                 /// \brief
-                NormalMutex mutex;
-                Condition2 exitCondition;
+                Mutex mutex;
+                Condition exitCondition;
             #endif // !defined (TOOLCHAIN_OS_Windows)
 
                 template<

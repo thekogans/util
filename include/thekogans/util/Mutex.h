@@ -18,12 +18,7 @@
 #if !defined (__thekogans_util_Mutex_h)
 #define __thekogans_util_Mutex_h
 
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/os/windows/WindowsHeader.h"
-#else // defined (TOOLCHAIN_OS_Windows)
-    #include <pthread.h>
-#endif // defined (TOOLCHAIN_OS_Windows)
+#include <memory>
 #include "thekogans/util/Config.h"
 
 namespace thekogans {
@@ -45,7 +40,7 @@ namespace thekogans {
         /// RunLoop::Job::SharedPtr JobQueue::Deq () {
         ///     LockGuard<Mutex> guard (jobsMutex);
         ///     while (jobs.empty ()) {
-        ///         notEmpty.Wait ();
+        ///         notEmpty.Wait (jobsMutex);
         ///     }
         ///     Job::SharedPtr job;
         ///     assert (!jobs.empty ());
@@ -60,28 +55,56 @@ namespace thekogans {
         /// Thanks to the Mutex/Condition pairing, this code is simple,
         /// robust, and easily maintained.
         struct _LIB_THEKOGANS_UTIL_DECL Mutex {
+            enum Type {
+                /// \brief
+                /// Fast, zero-overhead, non-recursive (SRWLock / Standard POSIX)
+                Normal,
+                /// \brief
+                /// Supports re-entrant ownership (Critical Section / Recursive POSIX)
+                Recursive
+            };
+
         private:
-        #if defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// Windows critical section.
-            CRITICAL_SECTION cs;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// POSIX mutex.
-            pthread_mutex_t mutex;
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            struct Impl {
+                Type type;
+
+            #if defined (TOOLCHAIN_OS_Windows)
+                union {
+                    SRWLOCK srwLock;
+                    CRITICAL_SECTION criticalSection;
+                } lock;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                pthread_mutex_t mutex;
+                std::atomic<pthread_t> ownerThread{pthread_t{}};
+            #endif // defined (TOOLCHAIN_OS_Windows)
+
+                explicit Impl (Type type_);
+                ~Impl ();
+
+                bool TryAcquire ();
+                void Acquire ();
+                void Release ();
+            };
+            std::unique_ptr<Impl> impl;
 
             /// \brief
-            /// Condition needs access to cs/mutex.
+            /// Needs access to impl.
             friend struct Condition;
 
         public:
             /// \brief
             /// ctor.
-            Mutex ();
+            explicit Mutex (Type type = Normal);
             /// \brief
-            /// dtor.
-            ~Mutex ();
+            /// Move ctor.
+            /// \param[in] other Mutex to move.
+            Mutex (Mutex &&other) noexcept = default;
+
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in] other Mutex to move.
+            /// \return *this.
+            Mutex &operator = (Mutex &&other) noexcept;
 
             /// \brief
             /// Try to acquire the mutex without blocking.
@@ -95,30 +118,6 @@ namespace thekogans {
             /// \brief
             /// Release the mutex.
             void Release ();
-
-    #if !defined (TOOLCHAIN_OS_Windows)
-        private:
-            /// \brief
-            /// ctor.
-            /// \param[in] shared For pthread_mutex_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            Mutex (bool shared) {
-                Init (shared);
-            }
-
-            /// \brief
-            /// Initialize the mutex.
-            /// \param[in] shared For pthread_mutex_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            void Init (bool shared);
-
-            /// \brief
-            /// Event needs access to the private ctor.
-            friend struct Event;
-            /// \brief
-            /// Semaphore needs access to the private ctor.
-            friend struct Semaphore;
-    #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Mutex is neither copy constructable, nor assignable.

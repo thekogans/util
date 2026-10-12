@@ -80,7 +80,6 @@
     <cpp_header>$(organization)/$(project_directory)/ChildProcess.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CommandLineOptions.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Condition.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Condition2.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Config.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Console.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ConsoleLogger.h</cpp_header>
@@ -91,7 +90,6 @@
     <cpp_header>$(organization)/$(project_directory)/Directory.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DynamicCreatable.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DynamicLibrary.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Event.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
@@ -116,7 +114,6 @@
     <cpp_header>$(organization)/$(project_directory)/MemoryLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MimeTypeMapper.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Mutex.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Mutex2.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NormalMutex.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLock.h</cpp_header>
@@ -143,7 +140,6 @@
     <cpp_header>$(organization)/$(project_directory)/RWLockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Scheduler.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SecureAllocator.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Semaphore.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializable.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableHeader.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableString.h</cpp_header>
@@ -188,7 +184,6 @@
     <cpp_header>$(organization)/$(project_directory)/ValueParser.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Vectorizer.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Vectorizer2.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Version.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/XMLUtils.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/os/RunLoop.h</cpp_header>
@@ -640,7 +635,6 @@
     <cpp_source>ChildProcess.cpp</cpp_source>
     <cpp_source>CommandLineOptions.cpp</cpp_source>
     <cpp_source>Condition.cpp</cpp_source>
-    <cpp_source>Condition2.cpp</cpp_source>
     <cpp_source>Config.cpp</cpp_source>
     <cpp_source>Console.cpp</cpp_source>
     <cpp_source>ConsoleLogger.cpp</cpp_source>
@@ -650,7 +644,6 @@
     <cpp_source>Directory.cpp</cpp_source>
     <cpp_source>DynamicCreatable.cpp</cpp_source>
     <cpp_source>DynamicLibrary.cpp</cpp_source>
-    <cpp_source>Event.cpp</cpp_source>
     <cpp_source>Exception.cpp</cpp_source>
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
@@ -669,7 +662,6 @@
     <cpp_source>MemoryLogger.cpp</cpp_source>
     <cpp_source>MimeTypeMapper.cpp</cpp_source>
     <cpp_source>Mutex.cpp</cpp_source>
-    <cpp_source>Mutex2.cpp</cpp_source>
     <cpp_source>NormalMutex.cpp</cpp_source>
     <cpp_source>NullAllocator.cpp</cpp_source>
     <cpp_source>NullLock.cpp</cpp_source>
@@ -689,7 +681,6 @@
     <cpp_source>RWLock.cpp</cpp_source>
     <cpp_source>Scheduler.cpp</cpp_source>
     <cpp_source>SecureAllocator.cpp</cpp_source>
-    <cpp_source>Semaphore.cpp</cpp_source>
     <cpp_source>Serializable.cpp</cpp_source>
     <cpp_source>SerializableHeader.cpp</cpp_source>
     <cpp_source>SerializableString.cpp</cpp_source>
@@ -729,7 +720,6 @@
     <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>
-    <cpp_source>Vectorizer2.cpp</cpp_source>
     <cpp_source>Version.cpp</cpp_source>
     <cpp_source>XMLUtils.cpp</cpp_source>
     <choose>

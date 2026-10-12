@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_Condition_h)
 #define __thekogans_util_Condition_h
 
+#include <memory>
 #include "thekogans/util/Environment.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsHeader.h"
@@ -26,11 +27,12 @@
     #include <pthread.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Mutex.h"
 #include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
     namespace util {
+
+        struct Mutex;
 
         /// \struct Condition Condition.h thekogans/util/Condition.h
         ///
@@ -42,44 +44,68 @@ namespace thekogans {
         /// (read what Dave Butenhof wrote in response to Patrick Doyle).
         /// To properly use condition variables, a predicate loop must be used. Here's an example:
         /// \code{.cpp}
-        /// while (predicate == false) {
+        /// while (!predicate) {
         ///     condition.Wait ();
         /// }
         /// \endcode
-
         struct _LIB_THEKOGANS_UTIL_DECL Condition {
         private:
+            /// \struct Condition::Impl Condition.h thekogans/util/Condition.h
+            ///
             /// \brief
-            /// The mutex this condition variable is paired with.
-            Mutex &mutex;
-        #if defined (TOOLCHAIN_OS_Windows)
+            /// Isolate system primitives so they stay at the same
+            /// memory location facilitating move.
+            struct Impl {
+            #if defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// Windows condition variable.
+                CONDITION_VARIABLE cv;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                /// POSIX condition variable.
+                pthread_cond_t cv;
+            #endif // defined (TOOLCHAIN_OS_Windows)
+
+                /// \brief
+                /// ctor.
+                Impl ();
+                /// \brief
+                /// dtor.
+                ~Impl ();
+            };
             /// \brief
-            /// Windows condition variable.
-            CONDITION_VARIABLE cv;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            /// \brief
-            /// POSIX condition variable.
-            pthread_cond_t condition;
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// Isolated system primitives.
+            std::unique_ptr<Impl> impl;
 
         public:
             /// \brief
             /// ctor.
-            /// \param[in] mutex_ The mutex to pair this condition variable with.
-            Condition (Mutex &mutex_);
+            Condition () :
+                impl (std::make_unique<Impl> ()) {}
             /// \brief
-            /// dtor.
-            ~Condition ();
+            /// Move ctor.
+            /// \param[in] other Condition to move.
+            Condition (Condition &&other) noexcept :
+                impl (std::move (other.impl)) {}
+
+            /// \brief
+            /// Move assignment operator.
+            /// \param[in] other Condition to move.
+            /// \return *this.
+            Condition &operator = (Condition &&other) noexcept;
 
             /// \brief
             /// Wait for condition.
+            /// \param[in] mutex Mutex to pair with wait.
             /// \param[in] timeSpec How long to wait.
             /// IMPORTANT: timeSpec is a relative value.
             /// On POSIX (pthreads) systems it will add
             /// the current time to the value provided
             /// before calling pthread_cond_timedwait.
             /// \return true = succeeded, false = timed out
-            bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite);
+            bool Wait (
+                Mutex &mutex,
+                const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             /// \brief
             /// Put the condition variable in to signaled state. If
@@ -90,34 +116,6 @@ namespace thekogans {
             /// Put the condition variable in to signaled state. If
             /// any threads are waiting on it, their wait will succeed.
             void SignalAll ();
-
-    #if !defined (TOOLCHAIN_OS_Windows)
-        private:
-            /// \brief
-            /// ctor.
-            /// \param[in] mutex_ The mutex to pair this condition variable with.
-            /// \param[in] shared For pthread_mutex_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            Condition (
-                    Mutex &mutex_,
-                    bool shared) :
-                    mutex (mutex_) {
-                Init (shared);
-            }
-
-            /// \brief
-            /// Initialize the mutex.
-            /// \param[in] shared For pthread_mutex_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            void Init (bool shared);
-
-            /// \brief
-            /// Event needs access to the private ctor.
-            friend struct Event;
-            /// \brief
-            /// Semaphore needs access to the private ctor.
-            friend struct Semaphore;
-    #endif // !defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
             /// Condition is neither copy constructable, nor assignable.

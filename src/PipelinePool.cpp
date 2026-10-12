@@ -47,8 +47,7 @@ namespace thekogans {
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
                 workerCallback (workerCallback_),
-                idPool (0),
-                idle (mutex) {
+                idPool (0) {
             // By requiring at least one Pipeline in reserve coupled
             // with the logic in ReleasePipeline below, we guarantee
             // that we avoid the deadlock associated with trying to
@@ -139,7 +138,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (mutex);
             if (timeSpec == TimeSpec::Infinite) {
                 while (!borrowedPipelines.empty ()) {
-                    idle.Wait ();
+                    idle.Wait (mutex);
                 }
             }
             else {
@@ -149,7 +148,7 @@ namespace thekogans {
                     if (now >= deadline) {
                         break;
                     }
-                    idle.Wait (deadline - now);
+                    idle.Wait (mutex, deadline - now);
                 }
             }
             return borrowedPipelines.empty ();

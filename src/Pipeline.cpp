@@ -177,10 +177,7 @@ namespace thekogans {
                 jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),
                 stats (id, name),
-                jobsNotEmpty (jobsMutex),
-                idle (jobsMutex),
                 paused (false),
-                notPaused (jobsMutex),
                 workerCount (workerCount_),
                 workerPriority (workerPriority_),
                 workerAffinity (workerAffinity_),
@@ -223,10 +220,10 @@ namespace thekogans {
         Pipeline::Job *Pipeline::State::DeqJob (bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
             while (!done && paused && wait) {
-                notPaused.Wait ();
+                notPaused.Wait (jobsMutex);
             }
             while (!done && pendingJobs.empty () && wait) {
-                jobsNotEmpty.Wait ();
+                jobsNotEmpty.Wait (jobsMutex);
             }
             Job *job = nullptr;
             if (!done && !paused && !pendingJobs.empty ()) {
@@ -593,7 +590,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (state->jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
                 while (IsRunning () && (!state->pendingJobs.empty () || !state->runningJobs.empty ())) {
-                    state->idle.Wait ();
+                    state->idle.Wait (state->jobsMutex);
                 }
             }
             else {
@@ -603,7 +600,7 @@ namespace thekogans {
                     if (now >= deadline) {
                         break;
                     }
-                    state->idle.Wait (deadline - now);
+                    state->idle.Wait (state->jobsMutex, deadline - now);
                 }
             }
             return state->pendingJobs.empty () && state->runningJobs.empty ();

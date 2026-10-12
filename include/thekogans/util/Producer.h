@@ -156,7 +156,7 @@ namespace thekogans {
                         typename Subscriber<T>::SharedPtr subscriber) override {
                     runLoop->EnqJob (
                         [event, subscriber] (
-                                const RunLoop::LambdaJob &job,
+                                RunLoop::LambdaJob &job,
                                 const std::atomic<bool> &done) {
                             if (job.IsRunning (done)) {
                                 event (subscriber.Get ());
