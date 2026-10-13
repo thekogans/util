@@ -155,7 +155,7 @@ namespace thekogans {
                 CPU_ZERO (&affinityMask);
                 CPU_SET (affinity, &affinityMask);
                 THEKOGANS_UTIL_ERROR_CODE errorCode =
-                    pthread_setaffinity_np (impl->thread, sizeof (affinityMask), &affinityMask);
+                    pthread_setaffinity_np (thread, sizeof (affinityMask), &affinityMask);
                 if (errorCode != 0) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }

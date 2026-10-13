@@ -25,6 +25,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Mutex.h"
+#include "thekogans/util/MutexImpl.h"
 #include "thekogans/util/Condition.h"
 
 namespace thekogans {

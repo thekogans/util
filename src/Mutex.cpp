@@ -23,119 +23,107 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Mutex.h"
+#include "thekogans/util/MutexImpl.h"
 
 namespace thekogans {
     namespace util {
 
-        struct Mutex::Impl {
-            Type type;
-
+        Mutex::Impl::Impl (Type type_) :
+                type (type_) {
         #if defined (TOOLCHAIN_OS_Windows)
-            union {
-                SRWLOCK srwLock;
-                CRITICAL_SECTION criticalSection;
-            } lock;
+            if (type == Mutex::Recursive) {
+                InitializeCriticalSection (&lock.criticalSection);
+            }
+            else {
+                InitializeSRWLock (&lock.srwLock);
+            }
         #else // defined (TOOLCHAIN_OS_Windows)
-            pthread_mutex_t mutex;
-            std::atomic<pthread_t> ownerThread{pthread_t{}};
+            pthread_mutexattr_t attributes;
+            THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutexattr_init (&attributes);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            }
+            if (type == Mutex::Recursive) {
+                pthread_mutexattr_settype (&attributes, PTHREAD_MUTEX_RECURSIVE);
+            }
+            else {
+                pthread_mutexattr_settype (&attributes, PTHREAD_MUTEX_NORMAL);
+            }
+            errorCode = pthread_mutex_init (&mutex, &attributes);
+            pthread_mutexattr_destroy (&attributes);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            }
         #endif // defined (TOOLCHAIN_OS_Windows)
+        }
 
-            explicit Impl (Type type_) :
-                    type (type_) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (type == Mutex::Recursive) {
-                    InitializeCriticalSection (&lock.criticalSection);
-                }
-                else {
-                    InitializeSRWLock (&lock.srwLock);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                pthread_mutexattr_t attributes;
-                THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutexattr_init (&attributes);
-                if (errorCode != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-                if (type == Mutex::Recursive) {
-                    pthread_mutexattr_settype (&attributes, PTHREAD_MUTEX_RECURSIVE);
-                }
-                else {
-                    pthread_mutexattr_settype (&attributes, PTHREAD_MUTEX_NORMAL);
-                }
-                errorCode = pthread_mutex_init (&mutex, &attributes);
-                pthread_mutexattr_destroy (&attributes);
-                if (errorCode != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
+        Mutex::Impl::~Impl () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (type == Mutex::Recursive) {
+                DeleteCriticalSection (&lock.criticalSection);
             }
-            ~Impl () {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (type == Mutex::Recursive) {
-                    DeleteCriticalSection (&lock.criticalSection);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                pthread_mutex_destroy (&mutex);
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            pthread_mutex_destroy (&mutex);
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
 
-            bool TryAcquire () {
-            #if defined (TOOLCHAIN_OS_Windows)
-                return type == Mutex::Recursive ?
-                    TryEnterCriticalSection (&lock.criticalSection) == TRUE :
-                    TryAcquireSRWLockExclusive (&lock.srwLock) == TRUE;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                return pthread_mutex_trylock (&mutex) == 0;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-            }
+        bool Mutex::Impl::TryAcquire () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            return type == Mutex::Recursive ?
+                TryEnterCriticalSection (&lock.criticalSection) == TRUE :
+                TryAcquireSRWLockExclusive (&lock.srwLock) == TRUE;
+        #else // defined (TOOLCHAIN_OS_Windows)
+            return pthread_mutex_trylock (&mutex) == 0;
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
 
-            void Acquire () {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (type == Mutex::Recursive) {
-                    EnterCriticalSection (&lock.criticalSection);
-                }
-                else {
-                    AcquireSRWLockExclusive (&lock.srwLock);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                pthread_t currentThread = pthread_self ();
-                // RECURSION CHECK GATE:
-                // If this is a normal non-recursive mutex and the current thread already owns it,
-                // intercept the deadlock immediately and throw a loud exception.
-                if (type == Mutex::Normal &&
-                    pthread_equal (ownerThread.load (std::memory_order_relaxed), currentThread)) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK);
-                }
-                THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutex_lock (&mutex);
-                if (errorCode != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-                // Update ownership invariants tracking
-                if (type == Mutex::Normal) {
-                    ownerThread.store (currentThread, std::memory_order_relaxed);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
+        void Mutex::Impl::Acquire () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (type == Mutex::Recursive) {
+                EnterCriticalSection (&lock.criticalSection);
             }
+            else {
+                AcquireSRWLockExclusive (&lock.srwLock);
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            pthread_t currentThread = pthread_self ();
+            // RECURSION CHECK GATE:
+            // If this is a normal non-recursive mutex and the current thread already owns it,
+            // intercept the deadlock immediately and throw a loud exception.
+            if (type == Mutex::Normal &&
+                pthread_equal (ownerThread.load (std::memory_order_relaxed), currentThread)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK);
+            }
+            THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutex_lock (&mutex);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            }
+            // Update ownership invariants tracking
+            if (type == Mutex::Normal) {
+                ownerThread.store (currentThread, std::memory_order_relaxed);
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
 
-            void Release () {
-            #if defined (TOOLCHAIN_OS_Windows)
-                if (type == Mutex::Recursive) {
-                    LeaveCriticalSection (&lock.criticalSection);
-                }
-                else {
-                    ReleaseSRWLockExclusive (&lock.srwLock);
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
-                if (type == Mutex::Normal) {
-                    // Clear owner tracking right before unlocking
-                    ownerThread.store (pthread_t{}, std::memory_order_relaxed);
-                }
-                THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutex_unlock (&mutex);
-                if (errorCode != 0) {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
+        void Mutex::Impl::Release () {
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (type == Mutex::Recursive) {
+                LeaveCriticalSection (&lock.criticalSection);
             }
-        };
+            else {
+                ReleaseSRWLockExclusive (&lock.srwLock);
+            }
+        #else // defined (TOOLCHAIN_OS_Windows)
+            if (type == Mutex::Normal) {
+                // Clear owner tracking right before unlocking
+                ownerThread.store (pthread_t{}, std::memory_order_relaxed);
+            }
+            THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutex_unlock (&mutex);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
+        }
 
         Mutex::Mutex (Type type) :
             impl (new Impl (type)) {}
