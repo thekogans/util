@@ -24,7 +24,6 @@
 namespace thekogans {
     namespace util {
 
-#if 0
     #if defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
         Barrier::Barrier (std::size_t count) {
             if (count != 0) {
@@ -120,7 +119,7 @@ namespace thekogans {
         #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
             bool isSerialThread = false;
             {
-                LockGuard<NormalMutex> guard (mutex);
+                LockGuard<Mutex> guard (mutex);
                 std::size_t currentGeneration = generation;
                 if (--spaces == 0) {
                     // The final thread has arrived. Advance the phase.
@@ -142,7 +141,6 @@ namespace thekogans {
             return isSerialThread;
         #endif // defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
         }
-#endif
 
     } // namespace util
 } // namespace thekogans

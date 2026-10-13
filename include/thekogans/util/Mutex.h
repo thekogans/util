@@ -18,8 +18,8 @@
 #if !defined (__thekogans_util_Mutex_h)
 #define __thekogans_util_Mutex_h
 
-#include <memory>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/ImplPtr.h"
 
 namespace thekogans {
     namespace util {
@@ -65,27 +65,12 @@ namespace thekogans {
             };
 
         private:
-            struct Impl {
-                Type type;
-
-            #if defined (TOOLCHAIN_OS_Windows)
-                union {
-                    SRWLOCK srwLock;
-                    CRITICAL_SECTION criticalSection;
-                } lock;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                pthread_mutex_t mutex;
-                std::atomic<pthread_t> ownerThread{pthread_t{}};
-            #endif // defined (TOOLCHAIN_OS_Windows)
-
-                explicit Impl (Type type_);
-                ~Impl ();
-
-                bool TryAcquire ();
-                void Acquire ();
-                void Release ();
-            };
-            std::unique_ptr<Impl> impl;
+            /// \brief
+            /// Forward declaration on Impl.
+            struct Impl;
+            /// \brief
+            /// Implementation.
+            ImplPtr<Impl> impl;
 
             /// \brief
             /// Needs access to impl.
@@ -96,15 +81,8 @@ namespace thekogans {
             /// ctor.
             explicit Mutex (Type type = Normal);
             /// \brief
-            /// Move ctor.
-            /// \param[in] other Mutex to move.
-            Mutex (Mutex &&other) noexcept = default;
-
-            /// \brief
-            /// Move assignment operator.
-            /// \param[in] other Mutex to move.
-            /// \return *this.
-            Mutex &operator = (Mutex &&other) noexcept;
+            /// dtor.
+            ~Mutex ();
 
             /// \brief
             /// Try to acquire the mutex without blocking.
@@ -122,6 +100,9 @@ namespace thekogans {
             /// \brief
             /// Mutex is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Mutex)
+            /// \brief
+            /// Mutex is movable.
+            THEKOGANS_UTIL_DEFAULT_MOVE_AND_ASSIGN (Mutex)
         };
 
     } // namespace util

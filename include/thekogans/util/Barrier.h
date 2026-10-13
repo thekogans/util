@@ -38,13 +38,10 @@
     #include "thekogans/util/Mutex.h"
     #include "thekogans/util/Condition.h"
 #endif // !defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER) && !defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
-#include <dispatch/dispatch.h>
-#include <atomic>
 
 namespace thekogans {
     namespace util {
 
-#if 0
         /// \struct Barrier Barrier.h thekogans/util/Barrier.h
         ///
         /// \brief
@@ -72,10 +69,10 @@ namespace thekogans {
             std::size_t generation;
             /// \brief
             /// Synchronization mutex.
-            NormalMutex mutex;
+            Mutex mutex;
             /// \brief
             /// Synchronization condition variable.
-            Condition2 condition;
+            Condition condition;
         #endif // defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
 
         public:
@@ -96,54 +93,6 @@ namespace thekogans {
             /// Barrier is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Barrier)
         };
-#else
-        class Barrier {
-        private:
-            std::size_t const count;
-            std::atomic<std::size_t> spaces1;
-            std::atomic<std::size_t> spaces2;
-            dispatch_semaphore_t sem1;
-            dispatch_semaphore_t sem2;
-
-        public:
-            Barrier(std::size_t count_)
-                : count(count_), spaces1(count_), spaces2(count_) {
-                sem1 = dispatch_semaphore_create(0);
-                sem2 = dispatch_semaphore_create(0);
-            }
-
-            ~Barrier() {
-                // GCD objects must be explicitly released under MRC rules if using raw C profiles
-                dispatch_release(sem1);
-                dispatch_release(sem2);
-            }
-
-            bool Wait() {
-                // Phase 1: Scatter Gate
-                if (spaces1.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-                    spaces1.store(count, std::memory_order_relaxed);
-                    for (std::size_t i = 1; i < count; ++i) {
-                        dispatch_semaphore_signal(sem1);
-                    }
-                } else {
-                    dispatch_semaphore_wait(sem1, DISPATCH_TIME_FOREVER);
-                }
-
-                // Phase 2: Gather Lockout Gate (Prevents phase bleeding completely)
-                if (spaces2.fetch_sub(1, std::memory_order_acq_rel) == 1) {
-                    spaces2.store(count, std::memory_order_relaxed);
-                    for (std::size_t i = 1; i < count; ++i) {
-                        dispatch_semaphore_signal(sem2);
-                    }
-                    return true;
-                } else {
-                    dispatch_semaphore_wait(sem2, DISPATCH_TIME_FOREVER);
-                    return false;
-                }
-            }
-        };
-
-#endif
 
     } // namespace util
 } // namespace thekogans

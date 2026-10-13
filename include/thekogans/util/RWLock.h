@@ -49,8 +49,8 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
 
             /// \brief
-            /// Condition2 needs access to rwlock.
-            friend struct Condition2;
+            /// Condition needs access to rwlock.
+            friend struct Condition;
 
         public:
             /// \brief

@@ -19,14 +19,8 @@
 #define __thekogans_util_Condition_h
 
 #include <memory>
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/os/windows/WindowsHeader.h"
-    #include <synchapi.h>
-#else // defined (TOOLCHAIN_OS_Windows)
-    #include <pthread.h>
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
+#include "thekogans/util/ImplPtr.h"
 #include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
@@ -55,44 +49,18 @@ namespace thekogans {
             /// \brief
             /// Isolate system primitives so they stay at the same
             /// memory location facilitating move.
-            struct Impl {
-            #if defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// Windows condition variable.
-                CONDITION_VARIABLE cv;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                /// \brief
-                /// POSIX condition variable.
-                pthread_cond_t cv;
-            #endif // defined (TOOLCHAIN_OS_Windows)
-
-                /// \brief
-                /// ctor.
-                Impl ();
-                /// \brief
-                /// dtor.
-                ~Impl ();
-            };
+            struct Impl;
             /// \brief
             /// Isolated system primitives.
-            std::unique_ptr<Impl> impl;
+            ImplPtr<Impl> impl;
 
         public:
             /// \brief
             /// ctor.
-            Condition () :
-                impl (std::make_unique<Impl> ()) {}
+            Condition ();
             /// \brief
-            /// Move ctor.
-            /// \param[in] other Condition to move.
-            Condition (Condition &&other) noexcept :
-                impl (std::move (other.impl)) {}
-
-            /// \brief
-            /// Move assignment operator.
-            /// \param[in] other Condition to move.
-            /// \return *this.
-            Condition &operator = (Condition &&other) noexcept;
+            /// dtor.
+            ~Condition ();
 
             /// \brief
             /// Wait for condition.
@@ -120,6 +88,9 @@ namespace thekogans {
             /// \brief
             /// Condition is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Condition)
+            /// \brief
+            /// Condition is movable.
+            THEKOGANS_UTIL_DEFAULT_MOVE_AND_ASSIGN (Condition)
         };
 
     } // namespace util

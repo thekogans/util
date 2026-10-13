@@ -114,7 +114,6 @@
     <cpp_header>$(organization)/$(project_directory)/MemoryLogger.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/MimeTypeMapper.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Mutex.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/NormalMutex.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/NullLogger.h</cpp_header>
@@ -662,7 +661,6 @@
     <cpp_source>MemoryLogger.cpp</cpp_source>
     <cpp_source>MimeTypeMapper.cpp</cpp_source>
     <cpp_source>Mutex.cpp</cpp_source>
-    <cpp_source>NormalMutex.cpp</cpp_source>
     <cpp_source>NullAllocator.cpp</cpp_source>
     <cpp_source>NullLock.cpp</cpp_source>
     <cpp_source>NullLogger.cpp</cpp_source>
