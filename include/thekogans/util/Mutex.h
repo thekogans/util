@@ -27,14 +27,20 @@ namespace thekogans {
         /// \struct Mutex Mutex.h thekogans/util/Mutex.h
         ///
         /// \brief
-        /// Mutex is part of the cross-platform synchronization
-        /// primitives. Note, on Windows it is defined as a critical
-        /// section. This is on purpose. The POSIX model of pairing a
-        /// mutex with a condition variable is very valuable, and is
-        /// maintained by having the Windows condition variable be linked
-        /// to this critical section (See Condition.h). With that in
-        /// mind, you can write the following code, and it will work on
-        /// all platforms:
+        /// Mutex is part of the cross-platform synchronization primitives.
+        /// Depending on the type you need (Normal or Recursive), on Windows
+        /// it is based on either SRWLOCK or CRITICAL_SECTION. Mutex is movable
+        /// so it can be stored in movable containers or transferred during setup.
+        /// It is not copyable or copy-assignable. Do not move it while it is
+        /// locked, while a thread may be waiting to acquire it, or while a
+        /// LockGuard or Condition::Wait refers to it.
+        ///
+        /// Condition::Wait requires the mutex to be owned exactly once. Windows
+        /// requires this for SleepConditionVariableCS; on POSIX, waiting on a
+        /// recursively held mutex does not fully unlock it. Although a Recursive
+        /// mutex may work if every wait occurs at recursion depth one, Mutex does
+        /// not track that depth. For portable use, pair Condition only with a
+        /// Normal mutex. This is why the type parameter defaults to Normal.
         ///
         /// \code{.cpp}
         /// RunLoop::Job::SharedPtr JobQueue::Deq () {
@@ -86,7 +92,8 @@ namespace thekogans {
 
             /// \brief
             /// Try to acquire the mutex without blocking.
-            /// \return true = acquired, false = failed to acquire
+            /// On POSIX, errors other than EBUSY are reported as exceptions.
+            /// \return true if acquired, false if currently unavailable.
             bool TryAcquire ();
 
             /// \brief
@@ -98,7 +105,7 @@ namespace thekogans {
             void Release ();
 
             /// \brief
-            /// Mutex is neither copy constructable, nor assignable.
+            /// Mutex is not copy constructable or copy assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Mutex)
             /// \brief
             /// Mutex is movable.

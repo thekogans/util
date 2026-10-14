@@ -73,7 +73,18 @@ namespace thekogans {
                 TryEnterCriticalSection (&lock.criticalSection) == TRUE :
                 TryAcquireSRWLockExclusive (&lock.srwLock) == TRUE;
         #else // defined (TOOLCHAIN_OS_Windows)
-            return pthread_mutex_trylock (&mutex) == 0;
+            THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutex_trylock (&mutex);
+            if (errorCode == 0) {
+                // Update ownership invariants tracking
+                if (type == Normal) {
+                    ownerThread.store (pthread_self (), std::memory_order_relaxed);
+                }
+                return true;
+            }
+            if (errorCode == EBUSY) {
+                return false;
+            }
+            THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
@@ -90,8 +101,7 @@ namespace thekogans {
             // RECURSION CHECK GATE:
             // If this is a normal non-recursive mutex and the current thread already owns it,
             // intercept the deadlock immediately and throw a loud exception.
-            if (type == Mutex::Normal &&
-                pthread_equal (ownerThread.load (std::memory_order_relaxed), currentThread)) {
+            if (type == Normal && pthread_equal (ownerThread.load (std::memory_order_relaxed), currentThread)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK);
             }
             THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_mutex_lock (&mutex);
@@ -99,7 +109,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
             // Update ownership invariants tracking
-            if (type == Mutex::Normal) {
+            if (type == Normal) {
                 ownerThread.store (currentThread, std::memory_order_relaxed);
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
@@ -133,7 +143,7 @@ namespace thekogans {
         bool Mutex::TryAcquire () {
             THEKOGANS_UTIL_ASSERT (impl != nullptr, "Calling Mutex::TryAcquire on a moved object.");
             if (impl != nullptr) {
-                impl->TryAcquire ();
+                return impl->TryAcquire ();
             }
             return false;
         }

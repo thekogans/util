@@ -203,6 +203,7 @@ if(BUILD_TESTING)
     # 1. Define a clean list of your individual test source file names
     set(TEST_FILES
         test_RefCounted
+        test_Mutex
         test_SharedAllocator
         test_SpinRWLock
         test_RWLock
