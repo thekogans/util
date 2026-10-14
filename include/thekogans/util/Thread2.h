@@ -28,6 +28,7 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <memory>
 #include <functional>
+#include <atomic>
 #include <utility>
 #include <tuple>
 #include "thekogans/util/Config.h"
@@ -78,9 +79,9 @@ namespace thekogans {
                 /// \brief
                 /// true = thread is joinable (waitable).
                 bool joinable;
-            #if !defined (TOOLCHAIN_OS_Windows)
                 /// \brief
                 Mutex mutex;
+            #if !defined (TOOLCHAIN_OS_Windows)
                 Condition exitCondition;
             #endif // !defined (TOOLCHAIN_OS_Windows)
 
@@ -315,6 +316,45 @@ namespace thekogans {
             /// \brief
             /// Thread2 is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Thread2)
+        };
+
+        /// \struct ThreadReaper Thread.h thekogans/util/Thread.h
+        ///
+        /// \brief
+        /// ThreadReaper is a \see{Singleton} whose job is to wait for given
+        /// threads to exit, join with them to release the system resources and
+        /// delete the \see{Thread} wrapper. It should be used by \see{Thread}
+        /// derivatives at the end of their \see{Thread::Run} method like this:
+        ///
+        /// \code{.cpp}
+        /// void SomeThread::Run () {
+        ///     ...
+        ///     ThreadReaper::Instance ()->ReapThread (this);
+        /// }
+        /// \endcode
+        ///
+        /// This mechanism allows the thread to control it's own lifetime and
+        /// cleanup after itself avoiding leaks.
+        struct _LIB_THEKOGANS_UTIL_DECL ThreadReaper2 : public Singleton<ThreadReaper2> {
+        private:
+            Thread2 thread;
+            std::vector<Thread2> threads;
+            Mutex mutex;
+            Condition notEmpty;
+
+        public:
+            /// \brief
+            /// ctor.
+            ThreadReaper2 ();
+
+            /// \brief
+            /// Given a \see{Thread} to reap, create a lambda job that will wait for it to exit,
+            /// join with it, and then delete the \see{Thread} wrapper.
+            /// \param[in] thread \see{Thread} to reap.
+            /// \param[in] timeSpec How long to wait for \see{Thread} to exit.
+            /// \param[in] deleter Deleter used to deallocate the thread pointer.
+            void ReapThreads (std::vector<Thread2> &&threads_);
+            void ReapThread (Thread2 &&thread);
         };
 
     } // namespace util

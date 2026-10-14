@@ -20,16 +20,16 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/IntrusiveList.h"
-#include "thekogans/util/Thread.h"
+#include "thekogans/util/Thread2.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -58,11 +58,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (State)
 
                 /// \brief
-                /// State has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-                /// \brief
                 /// Number of workers servicing the queue.
                 const std::size_t workerCount;
                 /// \brief
@@ -75,61 +70,12 @@ namespace thekogans {
                 /// Called to initialize/uninitialize the worker thread.
                 WorkerCallback *workerCallback;
                 /// \brief
-                /// Forward declaration of Worker.
-                struct Worker;
-                /// \brief
-                /// Alias for IntrusiveList<Worker>.
-                using WorkerList = IntrusiveList<Worker>;
-                /// \struct JobQueue::Worker JobQueue.h thekogans/util/JobQueue.h
-                ///
-                /// \brief
-                /// Worker takes pending jobs off the queue and
-                /// executes them. It then reports back to the
-                /// queue so that it can collect statistics.
-                struct Worker :
-                        public Thread,
-                        public WorkerList::Node {
-                private:
-                    /// \brief
-                    /// \see{State} used by the worker to process jobs.
-                    State::SharedPtr state;
-
-                public:
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] state_ \see{State} used by the worker to process jobs.
-                    /// \param[in] name Worker thread name.
-                    Worker (State::SharedPtr state_,
-                            const std::string &name = std::string ()) :
-                            Thread (name),
-                            state (state_) {
-                        Create (state->workerPriority, state->workerAffinity);
-                    }
-
-                private:
-                    // Thread
-                    /// \brief
-                    /// Worker thread.
-                    virtual void Run () noexcept override;
-                };
-                /// \brief
                 /// List of 'active' workers.
                 /// Start will transfer whatever's remaining in drainingWorkers
                 /// in here (the working list). This way warm threads will have
                 /// a chance to survive and continue serving if Start is called
                 /// fast enough.
-                WorkerList workers;
-                /// \brief
-                /// When Stop is called, spindown workers go here.
-                /// They will do what they need to do to finish their
-                /// current jobs and, if not rescued by Start will
-                /// remove themselves from this list before ending
-                /// their own lives.
-                WorkerList drainingWorkers;
-                /// \brief
-                /// Start tags each worker in a multi worker queue with a number.
-                /// This monotonicaly increasing counter servers that purpose.
-                std::size_t workerCounter;
+                std::vector<Thread2> workers;
                 /// \brief
                 /// Synchronization mutex.
                 Mutex workersMutex;
@@ -156,8 +102,7 @@ namespace thekogans {
                     workerCount (workerCount_),
                     workerPriority (workerPriority_),
                     workerAffinity (workerAffinity_),
-                    workerCallback (workerCallback_),
-                    workerCounter (0) {}
+                    workerCallback (workerCallback_) {}
             };
 
         protected:

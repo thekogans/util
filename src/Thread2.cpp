@@ -36,24 +36,28 @@ namespace thekogans {
 
         void Thread2::Impl::Create () {
             Detach ();
-            AddRef ();
-            joinable = true;
-        #if defined (TOOLCHAIN_OS_Windows)
-            thread = CreateThread2 (0, 0, ThreadProc, this, 0, 0);
-            if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-        #else // defined (TOOLCHAIN_OS_Windows)
-            THEKOGANS_UTIL_ERROR_CODE errorCode =
-                pthread_create (&thread, 0, ThreadProc, this);
-            if (errorCode != 0) {
-        #endif // defined (TOOLCHAIN_OS_Windows)
-                joinable = false;
-                Release ();
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            {
+                LockGuard<Mutex> guard (mutex);
+                AddRef ();
+                joinable = true;
+            #if defined (TOOLCHAIN_OS_Windows)
+                thread = CreateThread2 (0, 0, ThreadProc, this, 0, 0);
+                if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+            #else // defined (TOOLCHAIN_OS_Windows)
+                THEKOGANS_UTIL_ERROR_CODE errorCode =
+                    pthread_create (&thread, 0, ThreadProc, this);
+                if (errorCode != 0) {
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                    Release ();
+                    joinable = false;
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
             }
         }
 
         void Thread2::Impl::SetName (const std::string &name) {
+            LockGuard<Mutex> guard (mutex);
             if (joinable) {
             #if defined (TOOLCHAIN_OS_Windows)
                 // This code came from: https://msdn.microsoft.com/en-us/library/xcb2z8hs.aspx
@@ -101,6 +105,7 @@ namespace thekogans {
         }
 
         void Thread2::Impl::SetPriority (i32 priority) {
+            LockGuard<Mutex> guard (mutex);
             if (joinable) {
             #if defined (TOOLCHAIN_OS_Windows)
                 if (!::SetThreadPriority (thread, priority)) {
@@ -143,6 +148,7 @@ namespace thekogans {
         }
 
         void Thread2::Impl::SetAffinity (ui32 affinity) {
+            LockGuard<Mutex> guard (mutex);
             if (joinable) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD affinityMask = 1 << affinity;
@@ -167,7 +173,7 @@ namespace thekogans {
                     THREAD_AFFINITY_POLICY,
                     reinterpret_cast<thread_policy_t> (&policy),
                     THREAD_AFFINITY_POLICY_COUNT);
-                if (result != KERN_SUCCESS) {
+                if (result != KERN_SUCCESS && result != KERN_NOT_SUPPORTED) {
                     THEKOGANS_UTIL_THROW_MACH_ERROR_CODE_EXCEPTION (result);
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
@@ -176,33 +182,28 @@ namespace thekogans {
 
 
         void Thread2::Impl::Detach () {
+            LockGuard<Mutex> guard (mutex);
             if (joinable) {
             #if defined (TOOLCHAIN_OS_Windows)
                 CloseHandle (thread);
                 thread = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
-                joinable = false;
             #else // defined (TOOLCHAIN_OS_Windows)
                 pthread_detach (thread);
-                {
-                    LockGuard<Mutex> guard (mutex);
-                    joinable = false;
-                }
                 exitCondition.Signal ();
             #endif // defined (TOOLCHAIN_OS_Windows)
+                joinable = false;
             }
         }
 
         bool Thread2::Impl::Join (const TimeSpec &timeSpec) {
-        #if defined (TOOLCHAIN_OS_Windows)
+            LockGuard<Mutex> guard (mutex);
             if (joinable) {
+            #if defined (TOOLCHAIN_OS_Windows)
                 DWORD result = WaitForSingleObject (thread, (DWORD)timeSpec.ToMilliseconds ());
                 if (result == WAIT_TIMEOUT || result == WAIT_ABANDONED) {
                     return false;
                 }
-            }
-        #else // defined (TOOLCHAIN_OS_Windows)
-            {
-                LockGuard<Mutex> guard (mutex);
+            #else // defined (TOOLCHAIN_OS_Windows)
                 if (timeSpec == TimeSpec::Infinite) {
                     while (joinable) {
                         exitCondition.Wait (mutex);
@@ -218,9 +219,11 @@ namespace thekogans {
                         exitCondition.Wait (mutex, deadline - now);
                     }
                 }
+                if (!joinable) {
+                    pthread_join (thread, 0);
+                }
+            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            pthread_join (thread, 0);
-       #endif // defined (TOOLCHAIN_OS_Windows)
             return true;
         }
 
@@ -234,15 +237,13 @@ namespace thekogans {
                 Thread2::Impl::SharedPtr impl (static_cast<Thread2::Impl *> (data), false);
                 impl->callable ();
                 Thread2::AtExit (impl->thread);
-            #if defined (TOOLCHAIN_OS_Windows)
-                impl->joinable = false;
-            #else // defined (TOOLCHAIN_OS_Windows)
                 {
                     LockGuard<Mutex> guard (impl->mutex);
                     impl->joinable = false;
+                #if !defined (TOOLCHAIN_OS_Windows)
+                    impl->exitCondition.Signal ();
+                #endif // !defined (TOOLCHAIN_OS_Windows)
                 }
-                impl->exitCondition.Signal ();
-            #endif // defined (TOOLCHAIN_OS_Windows)
             }
             return 0;
         }
@@ -258,30 +259,35 @@ namespace thekogans {
 
 
         void Thread2::SetName (const std::string &name) {
+            THEKOGANS_UTIL_ASSERT (impl != nullptr, "Calling Thread2::SetName on a moved object.");
             if (impl != nullptr) {
                 impl->SetName (name);
             }
         }
 
         void Thread2::SetPriority (i32 priority) {
+            THEKOGANS_UTIL_ASSERT (impl != nullptr, "Calling Thread2::SetPriority on a moved object.");
             if (impl != nullptr) {
                 impl->SetPriority (priority);
             }
         }
 
         void Thread2::SetAffinity (ui32 affinity) {
+            THEKOGANS_UTIL_ASSERT (impl != nullptr, "Calling Thread2::SetAffinity on a moved object.");
             if (impl != nullptr) {
                 impl->SetAffinity (affinity);
             }
         }
 
         void Thread2::Detach () {
+            THEKOGANS_UTIL_ASSERT (impl != nullptr, "Calling Thread2::Detach on a moved object.");
             if (impl != nullptr) {
                 impl->Detach ();
             }
         }
 
         bool Thread2::Join (const TimeSpec &timeSpec) {
+            THEKOGANS_UTIL_ASSERT (impl != nullptr, "Calling Thread2::Join on a moved object.");
             return impl != nullptr && impl->Join (timeSpec);
         }
 
@@ -361,6 +367,51 @@ namespace thekogans {
             for (auto &exitFunc : exitFuncList) {
                 exitFunc (thread);
             }
+        }
+
+        ThreadReaper2::ThreadReaper2 () :
+                thread (
+                    [this] () {
+                        while (true) {
+                            bool empty;
+                            {
+                                LockGuard<Mutex> guard (mutex);
+                                // 1. Only sleep if there is absolutely zero work to track
+                                while (threads.empty()) {
+                                    notEmpty.Wait (mutex);
+                                }
+                                // 2. Clear out everything that has finished executing naturally
+                                for (std::size_t i = threads.size (); i-- != 0;) {
+                                    if (threads[i].Join (TimeSpec::Zero)) {
+                                        threads.erase (threads.begin () + i);
+                                    }
+                                }
+                                empty = threads.empty ();
+                            }
+                            // 3. If the list is NOT empty, it means only stuck/running threads remain.
+                            // Temporarily drop the lock and yield the CPU so we don't spin at 100%.
+                            if (!empty) {
+                                Sleep (TimeSpec::FromMilliseconds (50));
+                            }
+                        }
+                    }) {
+            thread.SetPriority (THEKOGANS_UTIL_LOW_THREAD_PRIORITY);
+        }
+
+        void ThreadReaper2::ReapThreads (std::vector<Thread2> &&threads_) {
+            LockGuard<Mutex> guard (mutex);
+            threads.reserve (threads.size () + threads_.size ());
+            threads.insert (
+                threads.end (),
+                std::make_move_iterator (threads_.begin ()),
+                std::make_move_iterator (threads_.end ()));
+            notEmpty.Signal ();
+        }
+
+        void ThreadReaper2::ReapThread (Thread2 &&thread) {
+            LockGuard<Mutex> guard (mutex);
+            threads.push_back (std::move (thread));
+            notEmpty.Signal ();
         }
 
     } // namespace util

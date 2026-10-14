@@ -15,51 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/Exception.h"
-#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/JobQueue.h"
 
 namespace thekogans {
     namespace util {
-
-        void JobQueue::State::Worker::Run () noexcept {
-            RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
-            while (true) {
-                while (!state->done) {
-                    Job *job = state->DeqJob ();
-                    if (job != nullptr) {
-                        ui64 start = 0;
-                        ui64 end = 0;
-                        // Short circuit cancelled pending jobs.
-                        if (!job->ShouldStop (state->done)) {
-                            start = HRTimer::Click ();
-                            job->SetState (Job::Running);
-                            job->Prologue (state->done);
-                            job->Execute (state->done);
-                            job->Epilogue (state->done);
-                            job->Succeed (state->done);
-                            end = HRTimer::Click ();
-                        }
-                        state->FinishedJob (job, start, end);
-                    }
-                }
-                LockGuard<Mutex> guard (state->workersMutex);
-                if (state->done) {
-                    // If state->done is still true under the lock,
-                    // we were NOT rescued by Start. This guarantees
-                    // we are orphans sitting inside drainingWorkers.
-                    state->drainingWorkers.erase (this);
-                    break; // Break the outer loop to terminate the physical thread safely
-                }
-            }
-            ThreadReaper::Instance ()->ReapThread (this);
-        }
-
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (JobQueue::State)
 
         JobQueue::JobQueue (
                 const std::string &name,
@@ -91,25 +54,48 @@ namespace thekogans {
             // If we were paused and not stoped, continue.
             Continue ();
             LockGuard<Mutex> guard (state->workersMutex);
-            state->done = false;
-            // Rescue any active threads from the draining list instantly!
-            state->workers += state->drainingWorkers;
-            state->jobsNotEmpty.SignalAll (); // Wake them up to see state->done is false
-            // Create as many workers as needed to == state->workerCount.
-            for (std::size_t i = state->workers.size (); i < state->workerCount; ++i) {
-                std::string workerName;
-                if (!state->name.empty ()) {
-                    if (state->workerCount > 1) {
-                        workerName = FormatString (
-                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT,
-                            state->name.c_str (),
-                            state->workerCounter++);
+            if (state->workers.empty ()) {
+                state->done = false;
+                const std::size_t generation = ++state->generation;
+                for (std::size_t i = 0; i < state->workerCount; ++i) {
+                    std::string workerName;
+                    if (!state->name.empty ()) {
+                        if (state->workerCount > 1) {
+                            workerName = FormatString (
+                                "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, state->name.c_str (), i);
+                        }
+                        else {
+                            workerName = state->name;
+                        }
                     }
-                    else {
-                        workerName = state->name;
-                    }
+                    Thread2 worker (
+                        [generation, workerCallback = state->workerCallback] (
+                                RunLoop::State::SharedPtr state) noexcept {
+                            RunLoop::WorkerInitializer workerInitializer (workerCallback);
+                            while (!state->done && generation == state->generation) {
+                                Job *job = state->DeqJob ();
+                                if (job != nullptr) {
+                                    ui64 start = 0;
+                                    ui64 end = 0;
+                                    // Short circuit cancelled pending jobs.
+                                    if (!job->ShouldStop (state->done)) {
+                                        start = HRTimer::Click ();
+                                        job->SetState (Job::Running);
+                                        job->Prologue (state->done);
+                                        job->Execute (state->done);
+                                        job->Epilogue (state->done);
+                                        job->Succeed (state->done);
+                                        end = HRTimer::Click ();
+                                    }
+                                    state->FinishedJob (job, start, end);
+                                }
+                            }
+                        }, state);
+                    worker.SetName (workerName);
+                    worker.SetPriority (state->workerPriority);
+                    worker.SetAffinity (state->workerAffinity);
+                    state->workers.push_back (std::move (worker));
                 }
-                state->workers.push_back (new State::Worker (state, workerName));
             }
         }
 
@@ -119,31 +105,35 @@ namespace thekogans {
             // Code below assumes the queue is not paused.
             Continue ();
             LockGuard<Mutex> guard (state->workersMutex);
-            // Move the current active workers to the drainingWorkers list.
-            // There they will spin down and, if not rescued by Start will
-            // end their own lives.
-            state->drainingWorkers += state->workers;
-            // Preclude workers from dequeuing any more pending jobs.
-            state->done = true;
-            // Wake up sleeping workers to allow them to exit.
-            state->jobsNotEmpty.SignalAll ();
-            //  Cancel all running jobs.
-            if (cancelRunningJobs) {
-                CancelRunningJobs ();
-            }
-            if (cancelPendingJobs) {
-                // The queue has no worker threads. Simulate what
-                // they would do to make sure anyone waiting on
-                // pending jobs gets notified.
-                Job *job;
-                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
-                    job->Cancel ();
-                    state->runningJobs.push_back (job);
-                    state->FinishedJob (job, 0, 0);
+            if (!state->workers.empty ()) {
+                state->done = true;
+                {
+                    LockGuard<Mutex> guard (state->jobsMutex);
+                    state->jobsNotEmpty.SignalAll ();
+                    state->notPaused.SignalAll ();
+                }
+                ThreadReaper2::Instance ()->ReapThreads (std::move (state->workers));
+                //  Cancel all running jobs.
+                if (cancelRunningJobs) {
+                    CancelRunningJobs ();
+                }
+                if (cancelPendingJobs) {
+                    // The queue has no worker threads. Simulate what
+                    // they would do to make sure anyone waiting on
+                    // pending jobs gets notified.
+                    Job *job;
+                    while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
+                        job->Cancel ();
+                        state->runningJobs.push_back (job);
+                        state->FinishedJob (job, 0, 0);
+                    }
+                }
+                {
+                    LockGuard<Mutex> guard (state->jobsMutex);
+                    // Let everyone know the queue is idle.
+                    state->idle.SignalAll ();
                 }
             }
-            // Let everyone know the queue is idle.
-            state->idle.SignalAll ();
         }
 
         bool JobQueue::IsRunning () {

@@ -430,6 +430,7 @@ namespace thekogans {
                 name (name_),
                 jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),
+                generation (0),
                 stats (id, name),
                 paused (false) {
             if (jobExecutionPolicy == nullptr) {

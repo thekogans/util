@@ -869,6 +869,9 @@ namespace thekogans {
                 /// Flag to signal the worker thread(s).
                 std::atomic<bool> done;
                 /// \brief
+                /// Start/Stop generation barrier.
+                std::atomic<std::size_t> generation;
+                /// \brief
                 /// Queue of pending jobs.
                 JobList pendingJobs;
                 /// \brief
