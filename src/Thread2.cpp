@@ -199,7 +199,9 @@ namespace thekogans {
             LockGuard<Mutex> guard (mutex);
             if (joinable) {
             #if defined (TOOLCHAIN_OS_Windows)
+                mutex.Release ();
                 DWORD result = WaitForSingleObject (thread, (DWORD)timeSpec.ToMilliseconds ());
+                mutex.Acquire ();
                 if (result == WAIT_TIMEOUT || result == WAIT_ABANDONED) {
                     return false;
                 }
@@ -224,7 +226,7 @@ namespace thekogans {
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            return true;
+            return !joinable;
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -377,7 +379,7 @@ namespace thekogans {
                             {
                                 LockGuard<Mutex> guard (mutex);
                                 // 1. Only sleep if there is absolutely zero work to track
-                                while (threads.empty()) {
+                                while (threads.empty ()) {
                                     notEmpty.Wait (mutex);
                                 }
                                 // 2. Clear out everything that has finished executing naturally
@@ -389,7 +391,7 @@ namespace thekogans {
                                 empty = threads.empty ();
                             }
                             // 3. If the list is NOT empty, it means only stuck/running threads remain.
-                            // Temporarily drop the lock and yield the CPU so we don't spin at 100%.
+                            // Temporarily yield the CPU so we don't spin at 100%.
                             if (!empty) {
                                 Sleep (TimeSpec::FromMilliseconds (50));
                             }
