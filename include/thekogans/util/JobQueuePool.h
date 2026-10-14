@@ -73,7 +73,6 @@ namespace thekogans {
         /// By passing util::JobQueue::SharedPtr in to the Job's ctor we guarantee
         /// that the \see{JobQueue} will be returned back to the pool as soon
         /// as the Job goes out of scope (as Job will be the last reference).
-
         struct _LIB_THEKOGANS_UTIL_DECL JobQueuePool {
         private:
             /// \brief

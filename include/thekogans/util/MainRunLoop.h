@@ -82,8 +82,7 @@ namespace thekogans {
             public Singleton<
                 RunLoop,
                 SpinLock,
-                MainRunLoopInstanceCreator,
-                RefCountedInstanceDestroyer<RunLoop>> {};
+                MainRunLoopInstanceCreator> {};
 
     } // namespace util
 } // namespace thekogans

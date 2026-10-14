@@ -157,12 +157,11 @@ namespace thekogans {
                         THEKOGANS_UTIL_OS_ERROR_CODE);
                 }
             #elif defined (TOOLCHAIN_OS_Linux)
-                cpu_set_t allowedMask;
-                CPU_ZERO(&allowedMask);
-                // 1. Query the OS to see what cores this process is ACTUALLY allowed to touch
-                if (sched_getaffinity (0, sizeof(cpu_set_t), &allowedMask) == 0) {
-                    // 2. Only attempt to bind if the core index is physically available to us
-                    if (affinity < CPU_SETSIZE && CPU_ISSET (affinity, &allowedMask)) {
+                if (affinity < CPU_SETSIZE) {
+                    cpu_set_t allowedMask;
+                    CPU_ZERO (&allowedMask);
+                    if (sched_getaffinity (0, sizeof (cpu_set_t), &allowedMask) == 0 &&
+                            CPU_ISSET (affinity, &allowedMask)) {
                         cpu_set_t affinityMask;
                         CPU_ZERO (&affinityMask);
                         CPU_SET (affinity, &affinityMask);
@@ -171,11 +170,6 @@ namespace thekogans {
                         if (errorCode != 0) {
                             THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                         }
-                    }
-                    else {
-                        // Core is illegal/offline. Fallback: log a warning, or let the OS
-                        // schedule it freely across the whole allowedMask collection instead
-                        // of throwing a fatal exception.
                     }
                 }
             #elif defined (TOOLCHAIN_OS_OSX)
@@ -192,7 +186,6 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
         }
-
 
         void Thread2::Impl::Detach () {
             LockGuard<Mutex> guard (mutex);

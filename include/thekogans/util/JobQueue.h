@@ -25,7 +25,6 @@
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/RunLoop.h"
-#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Thread2.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
