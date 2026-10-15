@@ -26,7 +26,6 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <string>
 #include "thekogans/util/LockGuard.h"
-#include "thekogans/util/Thread.h"
 #include "thekogans/util/SharedAllocator.h"
 
 namespace thekogans {

@@ -29,7 +29,7 @@
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/TimeSpec.h"
-#include "thekogans/util/Thread.h"
+#include "thekogans/util/Thread2.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 #include "thekogans/util/JobQueue.h"
@@ -405,6 +405,9 @@ namespace thekogans {
                 /// Flag to signal the stage thread(s).
                 std::atomic<bool> done;
                 /// \brief
+                /// Token to disambiguate a group of workers between Start/Stop.
+                std::atomic<std::size_t> generation;
+                /// \brief
                 /// Queue of pending jobs.
                 JobList pendingJobs;
                 /// \brief
@@ -441,46 +444,8 @@ namespace thekogans {
                 /// Called to initialize/uninitialize the worker thread.
                 RunLoop::WorkerCallback *workerCallback;
                 /// \brief
-                /// Forward declaration of Worker.
-                struct Worker;
-                /// \brief
-                /// Alias for IntrusiveList<Worker>.
-                using WorkerList = IntrusiveList<Worker>;
-                /// \struct Pipeline::Worker Pipeline.h thekogans/util/Pipeline.h
-                ///
-                /// \brief
-                /// Worker takes pending jobs off the pipeline queue and
-                /// executes them. It then reports back to the pipeline
-                /// so that it can collect statistics.
-                struct Worker :
-                        public Thread,
-                        public WorkerList::Node {
-                private:
-                    /// \brief
-                    /// Pipeline to which this worker belongs.
-                    State::SharedPtr state;
-
-                public:
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] state_ Pipeline to which this worker belongs.
-                    /// \param[in] name Worker thread name.
-                    Worker (State::SharedPtr state_,
-                            const std::string &name = std::string ()) :
-                            Thread (name),
-                            state (state_) {
-                        Create (state->workerPriority, state->workerAffinity);
-                    }
-
-                private:
-                    // Thread
-                    /// \brief
-                    /// Worker thread.
-                    virtual void Run () noexcept override;
-                };
-                /// \brief
                 /// List of workers.
-                WorkerList workers;
+                std::vector<Thread2> workers;
                 /// \brief
                 /// Pipeline stages.
                 std::vector<JobQueue::SharedPtr> stages;

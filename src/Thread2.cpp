@@ -33,26 +33,23 @@ namespace thekogans {
     namespace util {
 
         void Thread2::Impl::Create () {
-            Detach ();
-            {
-                LockGuard<Mutex> guard (mutex);
-                AddRef ();
-                joinable = true;
-                finished = false;
-            #if defined (TOOLCHAIN_OS_Windows)
-                thread = CreateThread2 (0, 0, ThreadProc, this, 0, 0);
-                if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                    THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
-            #else // defined (TOOLCHAIN_OS_Windows)
-                THEKOGANS_UTIL_ERROR_CODE errorCode =
-                    pthread_create (&thread, 0, ThreadProc, this);
-                if (errorCode != 0) {
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                    Release ();
-                    joinable = false;
-                    finished = true;
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
-                }
+            LockGuard<Mutex> guard (mutex);
+            AddRef ();
+            joinable = true;
+            finished = false;
+        #if defined (TOOLCHAIN_OS_Windows)
+            thread = CreateThread2 (0, 0, ThreadProc, this, 0, 0);
+            if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                THEKOGANS_UTIL_ERROR_CODE errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+        #else // defined (TOOLCHAIN_OS_Windows)
+            THEKOGANS_UTIL_ERROR_CODE errorCode =
+                pthread_create (&thread, 0, ThreadProc, this);
+            if (errorCode != 0) {
+        #endif // defined (TOOLCHAIN_OS_Windows)
+                Release ();
+                joinable = false;
+                finished = true;
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             }
         }
 

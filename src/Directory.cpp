@@ -256,7 +256,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Directory::Watcher::Watch)
 
         Directory::Watcher::Watcher () :
-            Thread ("Watcher"),
+            Thread ("Directory::Watcher"),
             #if defined (TOOLCHAIN_OS_Windows)
                 handle (CreateIoCompletionPort (
                     THEKOGANS_UTIL_INVALID_HANDLE_VALUE, 0, 0, 1)) {

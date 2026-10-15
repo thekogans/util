@@ -108,10 +108,10 @@ namespace thekogans {
                     joinable (false),
                     finished (false) {}
                 ~Impl () {
-                    try {
+                    THEKOGANS_UTIL_TRY {
                         Detach ();
                     }
-                    catch (...) {}
+                    THEKOGANS_UTIL_CATCH_AND_IGNORE
                 }
 
                 void Create ();
@@ -329,14 +329,14 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Thread2)
         };
 
-        /// \struct ThreadReaper Thread2.h thekogans/util/Thread2.h
+        /// \struct ThreadReaper2 Thread2.h thekogans/util/Thread2.h
         ///
         /// \brief
-        /// ThreadReaper is a \see{Singleton} whose job is to wait for given
-        /// threads to exit, join with them to release the system resources.
-        /// It's utility is in tear down of cooperative thread pools. The pool
-        /// wrapper can offload the actual waiting on the join to the reaper
-        /// and go about it's business without being blocked.
+        /// ThreadReaper is a \see{Singleton} whose job it is to wait for the
+        /// given threads to exit, and join with them to release the system
+        /// resources. It's utility is in tear down of cooperative thread pools.
+        /// The pool wrapper can offload the actual waiting on the join to the
+        /// reaper and go about it's business without being blocked (dtor?).
         struct _LIB_THEKOGANS_UTIL_DECL ThreadReaper2 : public Singleton<ThreadReaper2> {
         private:
             /// \brief
@@ -364,9 +364,11 @@ namespace thekogans {
             /// Given a \see{Thread} to reap, create a lambda job that will wait for it to exit,
             /// join with it, and then delete the \see{Thread} wrapper.
             /// \param[in] thread \see{Thread} to reap.
-            /// \param[in] timeSpec How long to wait for \see{Thread} to exit.
-            /// \param[in] deleter Deleter used to deallocate the thread pointer.
             void ReapThreads (std::vector<Thread2> &&threads_);
+            /// \brief
+            /// Add the given \see{Thread2} to the threads queue and signal
+            /// the reaper thread that there are fresh souls to reap.
+            /// \param[in] thread \see{Thread2} to reap.
             void ReapThread (Thread2 &&thread);
         };
 

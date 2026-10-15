@@ -140,27 +140,6 @@ namespace thekogans {
             }
         }
 
-        void Pipeline::State::Worker::Run () noexcept {
-            RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
-            while (!state->done) {
-                Job *job = state->DeqJob ();
-                if (job != nullptr) {
-                    // Short circuit cancelled pending jobs.
-                    if (!job->ShouldStop (state->done) &&
-                            ((job->stage = job->GetFirstStage ()) < state->stages.size ())) {
-                        THEKOGANS_UTIL_TRY {
-                            state->stages[job->stage]->EnqJob (RunLoop::Job::SharedPtr (job));
-                            continue;
-                        }
-                        THEKOGANS_UTIL_CATCH (Exception) {
-                            job->Fail (exception);
-                        }
-                    }
-                    state->FinishedJob (job, job->start, job->end);
-                }
-            }
-        }
-
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (Pipeline::State)
 
         Pipeline::State::State (
@@ -176,6 +155,7 @@ namespace thekogans {
                 name (name_),
                 jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),
+                generation (0),
                 stats (id, name),
                 paused (false),
                 workerCount (workerCount_),
@@ -307,60 +287,97 @@ namespace thekogans {
 
         void Pipeline::Start () {
             LockGuard<Mutex> guard (state->workersMutex);
-            state->done = false;
-            for (std::size_t i = 0, count = state->stages.size (); i < count; ++i) {
-                state->stages[i]->Start ();
-            }
-            for (std::size_t i = state->workers.size (); i < state->workerCount; ++i) {
-                std::string workerName;
-                if (!state->name.empty ()) {
-                    if (state->workerCount > 1) {
-                        workerName = FormatString ("%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, state->name.c_str (), i);
-                    }
-                    else {
-                        workerName = state->name;
-                    }
+            if (state->workers.empty ()) {
+                state->done = false;
+                const std::size_t generation = ++state->generation;
+                for (std::size_t i = 0, count = state->stages.size (); i < count; ++i) {
+                    state->stages[i]->Start ();
                 }
-                state->workers.push_back (new State::Worker (state, workerName));
+                for (std::size_t i = 0; i < state->workerCount; ++i) {
+                    std::string workerName;
+                    if (!state->name.empty ()) {
+                        if (state->workerCount > 1) {
+                            workerName = FormatString (
+                                "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT, state->name.c_str (), i);
+                        }
+                        else {
+                            workerName = state->name;
+                        }
+                    }
+                    Thread2 worker (
+                        [generation] (State::SharedPtr state) noexcept {
+                            RunLoop::WorkerInitializer workerInitializer (state->workerCallback);
+                            while (!state->done && generation == state->generation) {
+                                Job *job = state->DeqJob ();
+                                if (job != nullptr) {
+                                    // Short circuit cancelled pending jobs.
+                                    if (!job->ShouldStop (state->done) &&
+                                            ((job->stage = job->GetFirstStage ()) < state->stages.size ())) {
+                                        THEKOGANS_UTIL_TRY {
+                                            state->stages[job->stage]->EnqJob (RunLoop::Job::SharedPtr (job));
+                                            continue;
+                                        }
+                                        THEKOGANS_UTIL_CATCH (Exception) {
+                                            job->Fail (exception);
+                                        }
+                                    }
+                                    state->FinishedJob (job, job->start, job->end);
+                                }
+                            }
+                        }, state);
+                    worker.SetName (workerName);
+                    worker.SetPriority (state->workerPriority);
+                    worker.SetAffinity (state->workerAffinity);
+                    state->workers.push_back (std::move (worker));
+                }
             }
         }
 
         void Pipeline::Stop (
                 bool cancelRunningJobs,
                 bool cancelPendingJobs) {
+            Continue ();
             LockGuard<Mutex> guard (state->workersMutex);
-            // Stop the pipeline stages.
-            for (std::size_t i = 0, count = state->stages.size (); i < count; ++i) {
-                state->stages[i]->Stop (cancelRunningJobs, cancelPendingJobs);
-            }
-            // Clear worker list in case Start is called again.
-            // The worker threads are responsible for their own
-            // lifetimes. Also do it before setting state->done = true
-            // below in case workers exit before we can clear the
-            // list so as not to have a race leading to a crash.
-            state->workers.clear ();
-            // Preclude workers from dequeuing any more pending jobs.
-            state->done = true;
-            // Wake up sleeping workers to allow them to exit.
-            state->jobsNotEmpty.SignalAll ();
-            //  Cancel all running jobs.
-            if (cancelRunningJobs) {
-                CancelRunningJobs ();
-            }
-            // CancelPendingJobs does not block.
-            if (cancelPendingJobs) {
-                // The queue has no worker threads. Simulate what
-                // they would do to make sure anyone waiting on
-                // pending jobs gets notified.
-                Job *job;
-                while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
-                    job->Cancel ();
-                    state->runningJobs.push_back (job);
-                    state->FinishedJob (job, 0, 0);
+            if (!state->workers.empty ()) {
+                // Stop the pipeline stages.
+                for (std::size_t i = 0, count = state->stages.size (); i < count; ++i) {
+                    state->stages[i]->Stop (cancelRunningJobs, cancelPendingJobs);
+                }
+                // Clear worker list in case Start is called again.
+                // The worker threads are responsible for their own
+                // lifetimes. Also do it before setting state->done = true
+                // below in case workers exit before we can clear the
+                // list so as not to have a race leading to a crash.
+                // Preclude workers from dequeuing any more pending jobs.
+                state->done = true;
+                {
+                    LockGuard<Mutex> guard (state->jobsMutex);
+                    state->jobsNotEmpty.SignalAll ();
+                    state->notPaused.SignalAll ();
+                }
+                ThreadReaper2::Instance ()->ReapThreads (std::move (state->workers));
+                //  Cancel all running jobs.
+                if (cancelRunningJobs) {
+                    CancelRunningJobs ();
+                }
+                // CancelPendingJobs does not block.
+                if (cancelPendingJobs) {
+                    // The queue has no worker threads. Simulate what
+                    // they would do to make sure anyone waiting on
+                    // pending jobs gets notified.
+                    Job *job;
+                    while ((job = state->jobExecutionPolicy->DeqJob (*state)) != nullptr) {
+                        job->Cancel ();
+                        state->runningJobs.push_back (job);
+                        state->FinishedJob (job, 0, 0);
+                    }
+                }
+                {
+                    LockGuard<Mutex> guard (state->jobsMutex);
+                    // Let everyone know the queue is idle.
+                    state->idle.SignalAll ();
                 }
             }
-            // Let everyone know the queue is idle.
-            state->idle.SignalAll ();
         }
 
         bool Pipeline::IsRunning () {

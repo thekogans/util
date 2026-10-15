@@ -99,9 +99,7 @@ namespace thekogans {
                 }
             } doneJob (workers.size () + 1);
             Execute (doneJob, 1);
-            for (auto &worker : workers) {
-                worker.Join ();
-            }
+            ThreadReaper2::Instance ()->ReapThreads (std::move (workers));
         }
 
         void Vectorizer::Execute (
