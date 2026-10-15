@@ -205,6 +205,7 @@ if(BUILD_TESTING)
         test_RefCounted
         test_Mutex
         test_Condition
+        test_Thread2
         test_SharedAllocator
         test_SpinRWLock
         test_RWLock

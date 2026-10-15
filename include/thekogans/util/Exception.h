@@ -348,7 +348,7 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL
         /// OS specific invalid parameter error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL ERROR_INVALID_PARAMETER
-        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM
         /// OS specific out of memory error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM ERROR_NOT_ENOUGH_MEMORY
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT
@@ -360,17 +360,17 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
         /// OS specific overflow error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW ERROR_BUFFER_OVERFLOW
-        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT
         /// OS specific no file name error code.
-        #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT ERROR_BAD_PATHNAME
-        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT ERROR_FILE_NOT_FOUND
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK
         /// OS specific deadlock error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK ERROR_POSSIBLE_DEADLOCK
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL
         /// OS specific invalid parameter error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL EINVAL
-        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM
         /// OS specific out of memory error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM ENOMEM
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT
@@ -382,10 +382,10 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
         /// OS specific overflow error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW EOVERFLOW
-        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT
         /// OS specific no file name error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOENT ENOENT
-        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK
         /// OS specific deadlock error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK EDEADLK
     #endif // defined (TOOLCHAIN_OS_Windows)

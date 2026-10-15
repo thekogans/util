@@ -27,9 +27,7 @@
 #include "thekogans/util/Thread2.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/CPU.h"
-#if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/LockGuard.h"
-#endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+#include "thekogans/util/LockGuard.h"
 
 namespace thekogans {
     namespace util {
@@ -40,6 +38,7 @@ namespace thekogans {
                 LockGuard<Mutex> guard (mutex);
                 AddRef ();
                 joinable = true;
+                finished = false;
             #if defined (TOOLCHAIN_OS_Windows)
                 thread = CreateThread2 (0, 0, ThreadProc, this, 0, 0);
                 if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
@@ -51,6 +50,7 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                     Release ();
                     joinable = false;
+                    finished = true;
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
             }
@@ -191,48 +191,100 @@ namespace thekogans {
             LockGuard<Mutex> guard (mutex);
             if (joinable) {
             #if defined (TOOLCHAIN_OS_Windows)
-                CloseHandle (thread);
+                if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (ERROR_INVALID_HANDLE);
+                }
+                if (!CloseHandle (thread)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE);
+                }
                 thread = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
             #else // defined (TOOLCHAIN_OS_Windows)
-                pthread_detach (thread);
-                exitCondition.Signal ();
+                THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_detach (thread);
+                if (errorCode != 0) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                }
             #endif // defined (TOOLCHAIN_OS_Windows)
                 joinable = false;
+                exitCondition.SignalAll ();
             }
         }
 
         bool Thread2::Impl::Join (const TimeSpec &timeSpec) {
             LockGuard<Mutex> guard (mutex);
-            if (joinable) {
-            #if defined (TOOLCHAIN_OS_Windows)
-                mutex.Release ();
-                DWORD result = WaitForSingleObject (thread, (DWORD)timeSpec.ToMilliseconds ());
-                mutex.Acquire ();
-                if (result == WAIT_TIMEOUT || result == WAIT_ABANDONED) {
-                    return false;
-                }
-            #else // defined (TOOLCHAIN_OS_Windows)
+            if (!joinable) {
+                return false;
+            }
+            TimeSpec deadline;
+            if (timeSpec != TimeSpec::Infinite) {
+                deadline = GetMonotonicTime () + timeSpec;
+            }
+            while (joinable && !finished) {
                 if (timeSpec == TimeSpec::Infinite) {
-                    while (joinable) {
-                        exitCondition.Wait (mutex);
-                    }
+                    exitCondition.Wait (mutex);
                 }
                 else {
-                    const TimeSpec deadline = GetMonotonicTime () + timeSpec;
-                    while (joinable) {
-                        TimeSpec now = GetMonotonicTime ();
-                        if (now >= deadline) {
-                            return false;
-                        }
-                        exitCondition.Wait (mutex, deadline - now);
+                    TimeSpec now = GetMonotonicTime ();
+                    if (now >= deadline) {
+                        return false;
+                    }
+                    if (!exitCondition.Wait (mutex, deadline - now) && joinable && !finished) {
+                        return false;
                     }
                 }
-                if (!joinable) {
-                    pthread_join (thread, 0);
-                }
-            #endif // defined (TOOLCHAIN_OS_Windows)
             }
-            return !joinable;
+            if (!joinable) {
+                return false;
+            }
+        #if defined (TOOLCHAIN_OS_Windows)
+            if (thread == THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (ERROR_INVALID_HANDLE);
+            }
+            THEKOGANS_UTIL_THREAD_HANDLE waitThread = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+            if (!DuplicateHandle (
+                    GetCurrentProcess (),
+                    thread,
+                    GetCurrentProcess (),
+                    &waitThread,
+                    0,
+                    FALSE,
+                    DUPLICATE_SAME_ACCESS)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            DWORD timeout = INFINITE;
+            if (timeSpec != TimeSpec::Infinite) {
+                TimeSpec now = GetMonotonicTime ();
+                timeout = now >= deadline ? 0 : (DWORD)(deadline - now).ToMilliseconds ();
+            }
+            mutex.Release ();
+            DWORD result = WaitForSingleObject (waitThread, timeout);
+            DWORD waitError = result == WAIT_FAILED ? THEKOGANS_UTIL_OS_ERROR_CODE : 0;
+            DWORD closeError = !CloseHandle (waitThread) ? THEKOGANS_UTIL_OS_ERROR_CODE : 0;
+            mutex.Acquire ();
+            if (waitError != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (waitError);
+            }
+            if (closeError != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (closeError);
+            }
+            if (result == WAIT_TIMEOUT || !joinable) {
+                return false;
+            }
+            if (result != WAIT_OBJECT_0 || !CloseHandle (thread)) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE);
+            }
+            thread = THEKOGANS_UTIL_INVALID_HANDLE_VALUE;
+        #else // defined (TOOLCHAIN_OS_Windows)
+            THEKOGANS_UTIL_ERROR_CODE errorCode = pthread_join (thread, 0);
+            if (errorCode != 0) {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+            }
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            joinable = false;
+            exitCondition.SignalAll ();
+            return true;
         }
 
     #if defined (TOOLCHAIN_OS_Windows)
@@ -244,13 +296,15 @@ namespace thekogans {
             {
                 Thread2::Impl::SharedPtr impl (static_cast<Thread2::Impl *> (data), false);
                 impl->callable ();
+            #if defined (TOOLCHAIN_OS_Windows)
+                Thread2::AtExit (GetCurrentThread ());
+            #else // defined (TOOLCHAIN_OS_Windows)
                 Thread2::AtExit (impl->thread);
+            #endif // defined (TOOLCHAIN_OS_Windows)
                 {
                     LockGuard<Mutex> guard (impl->mutex);
-                    impl->joinable = false;
-                #if !defined (TOOLCHAIN_OS_Windows)
-                    impl->exitCondition.Signal ();
-                #endif // !defined (TOOLCHAIN_OS_Windows)
+                    impl->finished = true;
+                    impl->exitCondition.SignalAll ();
                 }
             }
             return 0;
@@ -379,7 +433,7 @@ namespace thekogans {
 
         ThreadReaper2::ThreadReaper2 () :
                 thread (
-                    [this] () {
+                    [this] () noexcept {
                         while (true) {
                             bool empty;
                             {

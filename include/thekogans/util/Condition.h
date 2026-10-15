@@ -39,7 +39,7 @@ namespace thekogans {
         /// To properly use condition variables, a predicate loop must be used. Here's an example:
         /// \code{.cpp}
         /// while (!predicate) {
-        ///     condition.Wait ();
+        ///     condition.Wait (mutex, timeSpec);
         /// }
         /// \endcode
         struct _LIB_THEKOGANS_UTIL_DECL Condition {

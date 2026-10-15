@@ -37,10 +37,8 @@
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/RefCounted.h"
-#if defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
-    #include "thekogans/util/Mutex.h"
-    #include "thekogans/util/Condition.h"
-#endif // defined (TOOLCHAIN_OS_Linux) || defined (TOOLCHAIN_OS_OSX)
+#include "thekogans/util/Mutex.h"
+#include "thekogans/util/Condition.h"
 #include "thekogans/util/Thread.h"
 
 namespace thekogans {
@@ -50,10 +48,9 @@ namespace thekogans {
         ///
         /// \brief
         /// Thread2 is a cross-platform wrapper around POSIX and Windows threads.
-        /// Platform specific features like priority and affinity are handled in
-        /// a sensical and uniform way.
+        /// Platform specific features like thread name, priority and affinity
+        /// are handled in a sensical and uniform way.
         ///
-        /// NOTE: On POSIX systems, threads are created with signals disabled.
         struct _LIB_THEKOGANS_UTIL_DECL Thread2 {
             /// \brief
             /// Alias for void (*) (THEKOGANS_UTIL_THREAD_HANDLE thread).
@@ -80,10 +77,15 @@ namespace thekogans {
                 /// true = thread is joinable (waitable).
                 bool joinable;
                 /// \brief
+                /// true = thread function and exit callbacks have finished.
+                bool finished;
+                /// \brief
+                /// By it's very nature, thread is meant to be accessed
+                // concurrently. Lock to protect access to above state.
                 Mutex mutex;
-            #if !defined (TOOLCHAIN_OS_Windows)
+                /// \brief
+                ///
                 Condition exitCondition;
-            #endif // !defined (TOOLCHAIN_OS_Windows)
 
                 template<
                     typename F,
@@ -103,9 +105,13 @@ namespace thekogans {
                 #if defined (TOOLCHAIN_OS_Windows)
                     thread (THEKOGANS_UTIL_INVALID_HANDLE_VALUE),
                 #endif // defined (TOOLCHAIN_OS_Windows)
-                    joinable (false) {}
+                    joinable (false),
+                    finished (false) {}
                 ~Impl () {
-                    Detach ();
+                    try {
+                        Detach ();
+                    }
+                    catch (...) {}
                 }
 
                 void Create ();
@@ -128,12 +134,13 @@ namespace thekogans {
 
                 /// \brief
                 /// Detach from the running thread.
+                /// The thread continues running and pending Join calls return false.
                 void Detach ();
 
                 /// \brief
                 /// Wait for thread to finish.
                 /// \param[in] timeSpec How long to wait for.
-                /// \return true = succeeded, false = timed out
+                /// \return true = joined, false = timed out or no longer joinable
                 /// IMPORTANT: timeSpec is a relative value.
                 bool Join (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
@@ -186,17 +193,21 @@ namespace thekogans {
             /// \brief
             /// Set thread affinity. This will bind the
             /// thread to a particular processor.
+            /// NOTE: Unlike SetPriority, SetAffinity is an advisory function.
+            /// It will do it's best to honor your request, but if it doesn't
+            /// succeed, it won't complain.
             /// \param[in] affinity Thread2 processor affinity.
             void SetAffinity (ui32 affinity);
 
             /// \brief
             /// Detach from the running thread.
+            /// The thread continues running and pending Join calls return false.
             void Detach ();
 
             /// \brief
             /// Wait for thread to finish.
             /// \param[in] timeSpec How long to wait for.
-            /// \return true = succeeded, false = timed out
+            /// \return true = joined, false = timed out or no longer joinable
             /// IMPORTANT: timeSpec is a relative value.
             bool Join (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
@@ -318,33 +329,35 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Thread2)
         };
 
-        /// \struct ThreadReaper Thread.h thekogans/util/Thread.h
+        /// \struct ThreadReaper Thread2.h thekogans/util/Thread2.h
         ///
         /// \brief
         /// ThreadReaper is a \see{Singleton} whose job is to wait for given
-        /// threads to exit, join with them to release the system resources and
-        /// delete the \see{Thread} wrapper. It should be used by \see{Thread}
-        /// derivatives at the end of their \see{Thread::Run} method like this:
-        ///
-        /// \code{.cpp}
-        /// void SomeThread::Run () {
-        ///     ...
-        ///     ThreadReaper::Instance ()->ReapThread (this);
-        /// }
-        /// \endcode
-        ///
-        /// This mechanism allows the thread to control it's own lifetime and
-        /// cleanup after itself avoiding leaks.
+        /// threads to exit, join with them to release the system resources.
+        /// It's utility is in tear down of cooperative thread pools. The pool
+        /// wrapper can offload the actual waiting on the join to the reaper
+        /// and go about it's business without being blocked.
         struct _LIB_THEKOGANS_UTIL_DECL ThreadReaper2 : public Singleton<ThreadReaper2> {
         private:
+            /// \brief
+            /// The reaper thread. Walks the threads vector, joining with them.
             Thread2 thread;
+            /// \brief
+            /// Zombie threads we need to reap.
             std::vector<Thread2> threads;
+            /// \brief
+            /// We're a thread safe system singleton. We need to protect
+            /// threads from concurrent access.
             Mutex mutex;
+            /// \brief
+            /// Signal to our worker that new souls arrived for reaping.
             Condition notEmpty;
 
         public:
             /// \brief
-            /// ctor.
+            /// ctor. Create our reaper thread.
+            /// The thread is set to low priority to not interfere with
+            /// main system functions. Reaping is an idle activity at best.
             ThreadReaper2 ();
 
             /// \brief
