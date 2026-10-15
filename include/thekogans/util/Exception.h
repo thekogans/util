@@ -353,7 +353,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_OS_ERROR_CODE_ENOMEM ERROR_NOT_ENOUGH_MEMORY
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT
         /// OS specific timeout error code.
-        #define THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT WAIT_TIMEOUT
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT ERROR_TIMEOUT
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EBADF
         /// OS specific file not open error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EBADF ERROR_INVALID_HANDLE

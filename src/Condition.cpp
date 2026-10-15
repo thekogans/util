@@ -20,6 +20,7 @@
     #include "thekogans/util/os/windows/WindowsHeader.h"
     #include <synchapi.h>
 #else // defined (TOOLCHAIN_OS_Windows)
+    #include <errno.h>
     #include <pthread.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Exception.h"
@@ -85,9 +86,17 @@ namespace thekogans {
                     const TimeSpec &timeSpec) {
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD timeout = timeSpec == TimeSpec::Infinite ? INFINITE : timeSpec.ToMilliseconds ();
-                return mutex.impl->type == Mutex::Normal ?
+                BOOL succeeded = mutex.impl->type == Mutex::Normal ?
                     SleepConditionVariableSRW (&cv, &mutex.impl->lock.srwLock, timeout, 0) :
                     SleepConditionVariableCS (&cv, &mutex.impl->lock.criticalSection, timeout);
+                if (succeeded) {
+                    return true;
+                }
+                DWORD errorCode = THEKOGANS_UTIL_OS_ERROR_CODE;
+                if (errorCode == THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT) {
+                    return false;
+                }
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
             #else // defined (TOOLCHAIN_OS_Windows)
                 if (timeSpec == TimeSpec::Infinite) {
                     THEKOGANS_UTIL_ERROR_CODE errorCode =
@@ -95,6 +104,7 @@ namespace thekogans {
                     if (errorCode == 0) {
                         return true;
                     }
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
                 }
                 else {
                 #if defined (TOOLCHAIN_OS_Linux)
@@ -111,9 +121,12 @@ namespace thekogans {
                     if (errorCode == 0) {
                         return true;
                     }
+                    if (errorCode != THEKOGANS_UTIL_OS_ERROR_CODE_TIMEOUT) {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (errorCode);
+                    }
+                    return false;
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
-                return false;
             }
 
             void Signal () {

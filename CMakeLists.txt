@@ -204,6 +204,7 @@ if(BUILD_TESTING)
     set(TEST_FILES
         test_RefCounted
         test_Mutex
+        test_Condition
         test_SharedAllocator
         test_SpinRWLock
         test_RWLock

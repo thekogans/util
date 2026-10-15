@@ -70,7 +70,8 @@ namespace thekogans {
             /// On POSIX (pthreads) systems it will add
             /// the current time to the value provided
             /// before calling pthread_cond_timedwait.
-            /// \return true = succeeded, false = timed out
+            /// \return true = signaled, false = timed out
+            /// System errors are reported by throwing Exception.
             bool Wait (
                 Mutex &mutex,
                 const TimeSpec &timeSpec = TimeSpec::Infinite);

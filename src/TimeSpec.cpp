@@ -311,7 +311,7 @@ namespace thekogans {
                 else if (totalNanos < 0) {
                     // Handle negative nanosecond normalization safely
                     carrySeconds = (totalNanos / 1000000000) - 1;
-                    totalNanos = 1000000000 + (totalNanos %= 1000000000);
+                    totalNanos = 1000000000 + (totalNanos % 1000000000);
                     if (totalNanos == 1000000000) {
                         totalNanos = 0;
                         ++carrySeconds;
