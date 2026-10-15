@@ -124,6 +124,8 @@ namespace thekogans {
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (TransactedFile)
 
+            using AddressSpaceType = TransactedFileAddressSpaceType;
+
             /// \brief
             /// TransactedFile implements a two phase commit. The
             /// first phase (usually called the allocation phase)
@@ -240,10 +242,10 @@ namespace thekogans {
         private:
             /// \brief
             /// File size.
-            TransactedFileAddressSpaceType::SizeType size;
+            AddressSpaceType::SizeType size;
             /// \brief
             /// \see{PageMap} used to map file pages.
-            TransactedFileAddressSpaceType::SharedPtr pageMap;
+            AddressSpaceType::SharedPtr pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
@@ -340,7 +342,7 @@ namespace thekogans {
             /// Return file size in bytes.
             /// Thread safe.
             /// \return File size in bytes.
-            inline TransactedFileAddressSpaceType::SizeType GetSizeEx () {
+            inline AddressSpaceType::SizeType GetSizeEx () {
                 LockGuard<SpinLock> guard (spinLock);
                 return size;
             }
@@ -398,7 +400,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
             std::size_t ReadEx (
-                TransactedFileAddressSpaceType::AddressType offset,
+                AddressSpaceType::AddressType offset,
                 void *buffer,
                 std::size_t count);
             /// \brief
@@ -408,7 +410,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
             std::size_t WriteEx (
-                TransactedFileAddressSpaceType::AddressType offset,
+                AddressSpaceType::AddressType offset,
                 const void *buffer,
                 std::size_t count);
 
@@ -417,28 +419,26 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
-            TransactedFileAddressSpaceType::SizeType Grow (
-                TransactedFileAddressSpaceType::SizeType amount);
+            AddressSpaceType::SizeType Grow (AddressSpaceType::SizeType amount);
             /// \brief
             /// Shrink the file by the given amount.
             /// Thread safe.
             /// \param[in] amount Amount to shrink the file by.
             /// \return New file size.
-            TransactedFileAddressSpaceType::SizeType Shrink (
-                TransactedFileAddressSpaceType::SizeType amount);
+            AddressSpaceType::SizeType Shrink (AddressSpaceType::SizeType amount);
 
         private:
-            // TransactedFileAddressSpaceType::PageSource
+            // AddressSpaceType::PageSource
             /// \brief
             /// Read raw bytes.
             /// \param[in] offset Offset to seek to.
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            virtual TransactedFileAddressSpaceType::SizeType ReadPage (
-                    TransactedFileAddressSpaceType::AddressType offset,
+            virtual AddressSpaceType::SizeType ReadPage (
+                    AddressSpaceType::AddressType offset,
                     void *buffer,
-                    TransactedFileAddressSpaceType::SizeType count) override {
+                    AddressSpaceType::SizeType count) override {
                 Seek (offset, SEEK_SET);
                 return Read (buffer, count);
             }
@@ -448,10 +448,10 @@ namespace thekogans {
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual TransactedFileAddressSpaceType::SizeType WritePage (
-                    TransactedFileAddressSpaceType::AddressType offset,
+            virtual AddressSpaceType::SizeType WritePage (
+                    AddressSpaceType::AddressType offset,
                     const void *buffer,
-                    TransactedFileAddressSpaceType::SizeType count) override {
+                    AddressSpaceType::SizeType count) override {
                 Seek (offset, SEEK_SET);
                 return Write (buffer, count);
             }
@@ -493,8 +493,8 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            TransactedFileAddressSpaceType::Page::SharedPtr GetPage (
-                TransactedFileAddressSpaceType::AddressType offset);
+            AddressSpaceType::Page::SharedPtr GetPage (
+                AddressSpaceType::AddressType offset);
 
             /// \brief
             /// Given a file path, use the full file name to create

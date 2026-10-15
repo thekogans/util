@@ -74,7 +74,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
 
     /// \brief
     /// PtrType is tied to the \see{PageMap::AddressType}.
-    using PtrType = TransactedFileAddressSpaceType::AddressType;
+    using PtrType = AddressSpaceType::AddressType;
     /// \brief
     /// PtrType size on disk.
     static const std::size_t PTR_TYPE_SIZE = Width<PtrType>::value;

@@ -49,7 +49,7 @@ namespace thekogans {
         const int TransactedFile::COMMIT_PHASE_1 = 1;
         const int TransactedFile::COMMIT_PHASE_2 = 2;
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFileAddressSpaceType::Page)
+        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFile::AddressSpaceType::Page)
 
         TransactedFile::Transaction::~Transaction () {
             // If the transaction has been committed, these two statements
@@ -138,8 +138,7 @@ namespace thekogans {
             if (IsOpen ()) {
                 size = GetSize ();
                 pageMap.Reset (
-                    new TransactedFileAddressSpaceType (
-                        32, 8, 20, GetPhysicalSectorSize (handle)));
+                    new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
                 Init (allocator, registry);
             }
         }
@@ -217,7 +216,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             size = GetSize ();
             pageMap.Reset (
-                new TransactedFileAddressSpaceType (
+                new AddressSpaceType (
                     32, 8, 20, GetPhysicalSectorSize (handle)));
             Init (allocator, registry);
         }
@@ -234,13 +233,13 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::ReadEx (
-                TransactedFileAddressSpaceType::AddressType offset,
+                AddressSpaceType::AddressType offset,
                 void *buffer,
                 std::size_t count) {
             LockGuard<SpinLock> guard (spinLock);
             if (offset < size) {
                 if (IsOpen ()) {
-                    TransactedFileAddressSpaceType::SizeType available = size - offset;
+                    AddressSpaceType::SizeType available = size - offset;
                     if (count > available) {
                         count = available;
                     }
@@ -255,7 +254,7 @@ namespace thekogans {
         }
 
         std::size_t TransactedFile::WriteEx (
-                TransactedFileAddressSpaceType::AddressType offset,
+                AddressSpaceType::AddressType offset,
                 const void *buffer,
                 std::size_t count) {
             LockGuard<SpinLock> guard (spinLock);
@@ -273,11 +272,11 @@ namespace thekogans {
             }
         }
 
-        TransactedFileAddressSpaceType::SizeType TransactedFile::Grow (
-                TransactedFileAddressSpaceType::SizeType amount) {
+        TransactedFile::AddressSpaceType::SizeType TransactedFile::Grow (
+                AddressSpaceType::SizeType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
-                TransactedFileAddressSpaceType::SizeType oldSize = size;
+                AddressSpaceType::SizeType oldSize = size;
                 size += MIN (pageMap->GetMaxOffset () - size, amount);
                 return oldSize;
             }
@@ -287,8 +286,8 @@ namespace thekogans {
             }
         }
 
-        TransactedFileAddressSpaceType::SizeType TransactedFile::Shrink (
-                TransactedFileAddressSpaceType::SizeType amount) {
+        TransactedFile::AddressSpaceType::SizeType TransactedFile::Shrink (
+                AddressSpaceType::SizeType amount) {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 size -= MIN (amount, size);
@@ -388,10 +387,10 @@ namespace thekogans {
                             logPath.c_str ());
                     }
                     ui32 count;
-                    TransactedFileAddressSpaceType::SizeType size;
-                    TransactedFileAddressSpaceType::SizeType pageSize;
+                    AddressSpaceType::SizeType size;
+                    AddressSpaceType::SizeType pageSize;
                     log >> count >> size >> pageSize;
-                    TransactedFileAddressSpaceType::AddressType offset;
+                    AddressSpaceType::AddressType offset;
                     HostBuffer page (pageSize);
                     while (count-- != 0) {
                         log >> offset;
@@ -417,7 +416,7 @@ namespace thekogans {
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
                     log << (ui32)0 << (ui32)0 << size <<
-                        (TransactedFileAddressSpaceType::SizeType)pageMap->GetPageSize ();
+                        (AddressSpaceType::SizeType)pageMap->GetPageSize ();
                     std::size_t count = pageMap->Log (log);
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32 << (ui32)count;
@@ -449,8 +448,8 @@ namespace thekogans {
             }
         }
 
-        TransactedFileAddressSpaceType::Page::SharedPtr TransactedFile::GetPage (
-                TransactedFileAddressSpaceType::AddressType offset) {
+        TransactedFile::AddressSpaceType::Page::SharedPtr TransactedFile::GetPage (
+                AddressSpaceType::AddressType offset) {
             LockGuard<SpinLock> guard (spinLock);
             return pageMap->GetPage (offset, this);
         }

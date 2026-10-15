@@ -22,7 +22,7 @@
     /// Stats should be used during system integration and tuning. Every time
     /// a \see{Range} is created it bumps up the appropriate (based on reading)
     /// counter in it's ctor. It also bumps up an appropriate *Owner* counter if
-    /// it happens to straddle a \see{TransactedFileAddressSpaceType::Page} boundary.
+    /// it happens to straddle a \see{TransactedFile::AddressSpaceType::Page} boundary.
     /// If the ratio of *Owner* counter and range counter approaches 1 then you
     /// have some tuning to do.
     /// In an ideal world, no range would ever cross a page boundary and you would
@@ -30,8 +30,8 @@
     /// page boundary it needs to allocate a local buffer to satisfy the fact
     /// range reads and writes do no boundary checking (hence the performance boost).
     /// If a large percentage of your ranges have to allocate the buffer it means
-    /// that \see{TransactedFileAddressSpaceType::bitsPerPage} is not properly tuned
-    /// for your application.
+    /// that \see{TransactedFile::AddressSpaceType::bitsPerPage} is not properly
+    /// tuned for your application.
     struct Stats {
         /// \brief
         /// A count of \see{Range} (reading == true) that have been created for this file.
@@ -59,14 +59,14 @@
 /// \struct TransactedFile::Range TransactedFileRange.h thekogans/util/TransactedFileRange.h
 ///
 /// \brief
-/// Range provides direct access to the underlying \see{TransactedFileAddressSpaceType::Page}.
+/// Range provides direct access to the underlying \see{TransactedFile::AddressSpaceType::Page}.
 /// By pairing it with \see{RandomSeekSerializer}, Range provides serialization/
 /// deserialization capabilities without the need to copy chunks of data
 /// in to and out of the pages resulting in better performance. Because
 /// the file's 64 bit address space is chunked in to hierarchical pages,
 /// if the requested range straddles a page boundary, a range buffer is
 /// allocated to gurantee sequential access. Use \see{Stats} to tune the
-/// \see{TransactedFileAddressSpaceType::bitsPerPage}. Because range
+/// \see{TransactedFile::AddressSpaceType::bitsPerPage}. Because range
 /// maintains it's own set of state variables in to the file, if you create
 /// nonoveralapping ranges, you can access the file from multiple threads
 /// without the need for synchronization.
@@ -91,17 +91,17 @@ protected:
     /// use this allocator to allocate a range buffer.
     util::Allocator::SharedPtr allocator;
     /// \brief
-    /// Either a pointer in to \see{TransactedFileAddressSpaceType::Page::data} or self
+    /// Either a pointer in to \see{TransactedFile::AddressSpaceType::Page::data} or self
     /// allocated range buffer.
     ui8 *data;
     /// \brief
     /// Maintains current read/write position in the range.
     std::size_t position;
     /// \brief
-    /// \see{TransactedFileAddressSpaceType::Page} associated with this range.
-    TransactedFileAddressSpaceType::Page::SharedPtr page;
+    /// \see{TransactedFile::AddressSpaceType::Page} associated with this range.
+    TransactedFile::AddressSpaceType::Page::SharedPtr page;
     /// \brief
-    /// true == We straddle a \see{TransactedFileAddressSpaceType::Page} boundary.
+    /// true == We straddle a \see{TransactedFile::AddressSpaceType::Page} boundary.
     /// We allocated data and need to copy and free it in the dtor.
     bool owner;
 
