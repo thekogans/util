@@ -39,15 +39,21 @@ namespace thekogans {
             Policy::SlotsPerPage<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_SLOTS_PER_PAGE>,
             Policy::TLCThreshold<THEKOGANS_UTIL_DEFAULT_REF_COUNED_REFERENCES_SLAB_ALLOCATOR_TLC_THRESHOLD>>;
 
+        namespace {
+            // 1. Resolve and cache the global instance address EXACTLY ONCE at translation-unit boot time.
+            // This permanently flattens the if (instance == nullptr) branch constraint.
+            static auto &allocator = *ReferencesAllocator::Instance ();
+        }
+
         void *RefCounted::References::operator new (std::size_t) {
-            return ReferencesAllocator::Instance ()->Alloc ();
+            return allocator.Alloc ();
         }
 
         void RefCounted::References::operator delete (void *ptr) {
             if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr)) {
                 return;
             }
-            ReferencesAllocator::Instance ()->Free (ptr);
+            allocator.Free (ptr);
         }
 
         namespace {
@@ -64,7 +70,7 @@ namespace thekogans {
             if (oldWeak == 1) {
                 // 2. Only issue the acquire barrier if we are the thread destroying 'this'.
                 boost::atomics::detail::thread_fence (boost::memory_order_acquire);
-                delete this; // Invokes your custom operator delete
+                delete this;
                 return 0;
             }
             return oldWeak - 1;

@@ -98,6 +98,7 @@ namespace thekogans {
 #else
         void TransactedFile::Transaction::Commit (bool clearCache) {
             std::vector<SharedSubscriberInfo> totalCommittedObjects;
+            totalCommittedObjects.reserve (file.GetSubscriberCount () * 2);
             // =========================================================================
             // STEP 1: DETERMINISTIC CONVERGENT SETTLEMENT LOOP (PHASE 1 ONLY)
             // =========================================================================
