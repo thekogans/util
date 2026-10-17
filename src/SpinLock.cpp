@@ -45,7 +45,7 @@ namespace thekogans {
                 // This code was adapted from the ideas found here:
                 // https://geidav.wordpress.com/tag/exponential-back-off/
                 Thread::Backoff backoff (maxPauseBeforeYield);
-                while (operations::load (state, boost::memory_order_acquire) == Locked) {
+                while (operations::load (state, boost::memory_order_relaxed) == Locked) {
                     backoff.Pause ();
                 }
             }

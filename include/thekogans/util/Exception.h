@@ -366,6 +366,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK
         /// OS specific deadlock error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK ERROR_POSSIBLE_DEADLOCK
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP
+        /// OS specific loop error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP ERROR_TOO_MANY_LINKS
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL
         /// OS specific invalid parameter error code.
@@ -388,6 +391,9 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK
         /// OS specific deadlock error code.
         #define THEKOGANS_UTIL_OS_ERROR_CODE_EDEADLK EDEADLK
+        /// \def THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP
+        /// OS specific loop error code.
+        #define THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP ELOOP
     #endif // defined (TOOLCHAIN_OS_Windows)
 
         /// \brief

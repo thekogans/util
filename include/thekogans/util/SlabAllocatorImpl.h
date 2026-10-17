@@ -60,9 +60,17 @@ namespace thekogans {
                     /// \brief
                     /// Validate that the slot is in fact ours and call its Page::Free.
                     /// \param[in] pageMask Mask to turn the Slot * in to a Page *.
-                    inline void Free (std::size_t pageMask) noexcept {
+                    inline Page *GetPage (std::size_t pageMask) noexcept {
                         Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & pageMask);
-                        if (THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64)) {
+                        return THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64) ? page : nullptr;
+                    }
+
+                    /// \brief
+                    /// Validate that the slot is in fact ours and call its Page::Free.
+                    /// \param[in] pageMask Mask to turn the Slot * in to a Page *.
+                    inline void Free (std::size_t pageMask) noexcept {
+                        Page *page = GetPage (pageMask);
+                        if (page != nullptr) {
                             page->Free (this);
                         }
                         else {
@@ -201,12 +209,30 @@ namespace thekogans {
             /// acquisition. In real load testing (see test_SlabAllocator) this
             /// results in ~65% speedup!
             struct TLC {
+                std::size_t pageSize{0};
                 /// \brief
                 /// Our own local slot cache.
                 Page::Slot *slotList{nullptr};
                 /// \brief
                 /// Number of slots currently in the cache.
                 std::size_t slotCount{0};
+
+                ~TLC () noexcept {
+                    if (slotList != nullptr) {
+                        Page *page = slotList->GetPage (pageSize);
+                        // Event though, technically, GetPage can return nullptr,
+                        // these are our internal slots not some random void *
+                        // passed to Free. If they are not pointing to valid pages
+                        // something is very seriously wrong with the data and perhaps
+                        // it's better to crash the program than to continue corrupting.
+                        LockGuard<SpinLock> guard (page->header.allocator.lock);
+                        while (slotList != nullptr) {
+                            typename Page::Slot *next = slotList->next;
+                            slotList->Free (pageSize);
+                            slotList = next;
+                        }
+                    }
+                }
 
                 /// \brief
                 /// Add a slot to the local cache.

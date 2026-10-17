@@ -523,9 +523,14 @@ namespace thekogans {
                         /// Pointer to the next free slot in the list.
                         Slot *next;
 
-                        inline void Free () noexcept {
+                        inline Page *GetPage () noexcept {
                             Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
-                            if (THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64)) {
+                            return THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64) ? page : nullptr;
+                        }
+
+                        inline void Free () noexcept {
+                            Page *page = GetPage ();
+                            if (THEKOGANS_UTIL_LIKELY (page != nullptr)) {
                                 page->Free (this);
                             }
                         }
@@ -686,6 +691,23 @@ namespace thekogans {
                     /// Number of slots currently in the cache.
                     std::size_t slotCount{0};
 
+                    ~TLC () noexcept {
+                        if (slotList != nullptr) {
+                            Page *page = slotList->GetPage ();
+                            // Event though, technically, GetPage can return nullptr,
+                            // these are our internal slots not some random void *
+                            // passed to Free. If they are not pointing to valid pages
+                            // something is very seriously wrong with the data and perhaps
+                            // it's better to crash the program than to continue corrupting.
+                            LockGuard<Lock> guard (page->header.allocator.storage.lock);
+                            while (slotList != nullptr) {
+                                typename Page::Slot *next = slotList->next;
+                                slotList->Free ();
+                                slotList = next;
+                            }
+                        }
+                    }
+
                     /// \brief
                     /// Add a slot to the local cache.
                     /// \param[in] slot Page::Slot to add to the cache.
@@ -727,14 +749,14 @@ namespace thekogans {
                             static constexpr std::size_t batchTarget = TLCThreshold / 2;
                             // Persistent outer loop forces lock retention until TLC target is met.
                             LockGuard<Lock> guard (storage.lock);
-                            while (tlc.slotCount == 0 /*< batchTarget*/) {
+                            while (tlc.slotCount < batchTarget) {
                                 // Inner loop aggressively drains whatever pages are currently available.
                                 while (tlc.slotCount < batchTarget && storage.partialPageList != nullptr) {
                                     tlc.Push (storage.partialPageList->Alloc ());
                                 }
                                 // If inner loop broke but target isn't met, the pool is dry.
                                 // Seed a fresh page from the OS and let the outer loop repeat the harvest.
-                                if (tlc.slotCount == 0 /*< batchTarget*/) {
+                                if (tlc.slotCount < batchTarget) {
                                     AllocPage ();
                                 }
                             }
@@ -758,22 +780,24 @@ namespace thekogans {
                 void Free (void *ptr) noexcept {
                     if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                         typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
-                        if constexpr (TLCThreshold > 0) {
-                            TLC &tlc = GetTLC ();
-                            tlc.Push (slot);
-                            // If we have no more room in our local cache batch release a bunch
-                            // of slots back to their pages so that we have room for more.
-                            if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == TLCThreshold)) {
-                                LockGuard<Lock> guard (storage.lock);
-                                static constexpr std::size_t flushCount = TLCThreshold / 2;
-                                for (std::size_t i = 0; i < flushCount; ++i) {
-                                    tlc.Pop ()->Free ();
+                        if (slot->GetPage () != nullptr) {
+                            if constexpr (TLCThreshold > 0) {
+                                TLC &tlc = GetTLC ();
+                                tlc.Push (slot);
+                                // If we have no more room in our local cache batch release a bunch
+                                // of slots back to their pages so that we have room for more.
+                                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == TLCThreshold)) {
+                                    LockGuard<Lock> guard (storage.lock);
+                                    static constexpr std::size_t flushCount = TLCThreshold / 2;
+                                    for (std::size_t i = 0; i < flushCount; ++i) {
+                                        tlc.Pop ()->Free ();
+                                    }
                                 }
                             }
-                        }
-                        else {
-                            LockGuard<Lock> guard (storage.lock);
-                            slot->Free ();
+                            else {
+                                LockGuard<Lock> guard (storage.lock);
+                                slot->Free ();
+                            }
                         }
                     }
                 }

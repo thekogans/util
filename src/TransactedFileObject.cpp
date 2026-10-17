@@ -21,6 +21,20 @@
 namespace thekogans {
     namespace util {
 
+        DynamicCreatable::SharedPtr TransactedFile::Object::CreateObject (
+                const char *type,
+                TransactedFile::SharedPtr file,
+                Allocator::PtrType offset) {
+            return CreateType (type,
+                [file, offset] (DynamicCreatable::SharedPtr dynamicCreatable) {
+                    Object::SharedPtr object = dynamicCreatable;
+                    if (object != nullptr) {
+                        object->file = file;
+                        object->offset = offset;
+                    }
+                });
+        }
+
         TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
             if (IsDirty ()) {
                 Alloc ();

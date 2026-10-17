@@ -78,6 +78,11 @@ public:
     /// dtor.
     virtual ~Object () {}
 
+    static DynamicCreatable::SharedPtr CreateObject (
+        const char *type,
+        TransactedFile::SharedPtr file,
+        Allocator::PtrType offset);
+
     /// \brief
     /// Return the \see{TransactedFile::Allocator}.
     /// \return \see{TransactedFile::Allocator}.

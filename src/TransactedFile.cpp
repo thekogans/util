@@ -64,6 +64,7 @@ namespace thekogans {
                 true);
         }
 
+#if 0
         void TransactedFile::Transaction::Commit (bool clearCache) {
             // We must account for objects that dirty other objects during commit.
             // We keep looping, collecting the newly dirtied ones and make them
@@ -94,6 +95,51 @@ namespace thekogans {
             }
             file.Commit (clearCache);
         }
+#else
+        void TransactedFile::Transaction::Commit (bool clearCache) {
+            std::vector<SharedSubscriberInfo> totalCommittedObjects;
+            // =========================================================================
+            // STEP 1: DETERMINISTIC CONVERGENT SETTLEMENT LOOP (PHASE 1 ONLY)
+            // =========================================================================
+            std::size_t iterations = 0;
+            static constexpr std::size_t MAX_CONVERGENCE_WAVES = 32;
+            while (file.GetSubscriberCount () != 0) {
+                // DEFENSIVE CEILING: If we hit this, a cyclic dirty loop has been detected!
+                if (THEKOGANS_UTIL_UNLIKELY (++iterations > MAX_CONVERGENCE_WAVES)) {
+                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                        THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP); // Crash/Abort before corrupting disk!
+                }
+                std::vector<SharedSubscriberInfo> currentDirtyBatch;
+                file.GetSubscribers (currentDirtyBatch, true);
+                for (const auto &subscriber : currentDirtyBatch) {
+                    subscriber.second->DeliverEvent (
+                        std::bind (
+                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
+                            std::placeholders::_1,
+                            &file,
+                            COMMIT_PHASE_1),
+                        subscriber.first);
+                }
+                totalCommittedObjects.insert (
+                    totalCommittedObjects.end (),
+                    currentDirtyBatch.begin (),
+                    currentDirtyBatch.end ());
+            }
+            // =========================================================================
+            // STEP 2: UNIFIED FLUSH PASS (PHASE 2 ONLY)
+            // =========================================================================
+            for (const auto &subscriber : totalCommittedObjects) {
+                subscriber.second->DeliverEvent (
+                    std::bind (
+                        &TransactedFileEvents::OnTransactedFileTransactionCommit,
+                        std::placeholders::_1,
+                        &file,
+                        COMMIT_PHASE_2),
+                    subscriber.first);
+            }
+            file.Commit (clearCache);
+        }
+#endif
 
         void TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
             if (dirty) {

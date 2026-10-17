@@ -312,11 +312,8 @@ private:
         virtual void Write (Serializer &serializer) override;
 
         /// \brief
-        /// Node is neither copy constructable, nor assignable.
-        THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Node)
-        /// \brief
-        /// Node is neither move constructable, nor move assignable.
-        THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (Node)
+        /// Node is neither copy or move constructable, nor assignable.
+        THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Node)
     } *rootNode;
 
 public:
@@ -448,9 +445,6 @@ protected:
         Header &header);
 
     /// \brief
-    /// BTree is neither copy constructable, nor assignable.
-    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (BTree)
-    /// \brief
-    /// BTree is neither move constructable, nor move assignable.
-    THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (BTree)
+    /// BTree is neither copy or move constructable, nor assignable.
+    THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (BTree)
 };

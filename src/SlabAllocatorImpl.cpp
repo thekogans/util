@@ -84,6 +84,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+            GetTLC ().pageSize = pageSize;
         }
 
         SlabAllocatorImpl::~SlabAllocatorImpl () noexcept {
@@ -121,14 +122,16 @@ namespace thekogans {
         void SlabAllocatorImpl::Free (void *ptr) noexcept {
             if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                 Page::Slot *slot = reinterpret_cast<Page::Slot *> (ptr);
-                TLC &tlc = GetTLC ();
-                tlc.Push (slot);
-                // If we have no more room in our local cache batch
-                // release a batch of slots back to their pages.
-                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == tlcSize)) {
-                    LockGuard<SpinLock> guard (lock);
-                    for (std::size_t i = 0; i < tlcBatchSize; ++i) {
-                        tlc.Pop ()->Free (pageMask);
+                if (slot->GetPage (pageSize)) {
+                    TLC &tlc = GetTLC ();
+                    tlc.Push (slot);
+                    // If we have no more room in our local cache batch
+                    // release a batch of slots back to their pages.
+                    if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == tlcSize)) {
+                        LockGuard<SpinLock> guard (lock);
+                        for (std::size_t i = 0; i < tlcBatchSize; ++i) {
+                            tlc.Pop ()->Free (pageMask);
+                        }
                     }
                 }
             }
