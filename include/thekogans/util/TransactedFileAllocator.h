@@ -58,9 +58,7 @@
 /// | ... |
 /// +-----+
 ///   var
-struct _LIB_THEKOGANS_UTIL_DECL Allocator :
-        public Serializable,
-        public TransactionParticipant {
+struct _LIB_THEKOGANS_UTIL_DECL Allocator : Object {
     /// \brief
     /// Allocator is a \see{util::DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Allocator)
@@ -71,13 +69,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     /// to as new Allocator derivatives are added to the system.
     static void StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
-    /// \brief
-    /// PtrType is tied to the \see{PageMap::AddressType}.
-    using PtrType = AddressSpaceType::AddressType;
-    /// \brief
-    /// PtrType size on disk.
-    static const std::size_t PTR_TYPE_SIZE = Width<PtrType>::value;
 
     /// \struct TransactedFile::Allocator::Block TransactedFileAllocator.h
     /// thekogans/util/TransactedFileAllocator.h
@@ -110,10 +101,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
     protected:
         /// \brief
         /// Block \see{TransactedFile}.
-        TransactedFile &file;
+        TransactedFile::SharedPtr file;
         /// \brief
         /// Block offset.
-        PtrType offset;
+        AddressSpaceType::AddressType offset;
         /// \struct TransactedFileAllocator::Block::Header TransactedFileAllocator.h
         /// thekogans/util/TransactedFileAllocator.h
         ///
@@ -135,7 +126,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             Flags32 flags;
             /// \brief
             /// Block size (not including header and footer). Only user data.
-            ui64 size;
+            AddressSpaceType::SizeType size;
 
             /// \brief
             /// Size of header on disk.
@@ -148,7 +139,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
                 UI32_SIZE + // magic
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 UI32_SIZE + // flags
-                UI64_SIZE;  // size
+                AddressSpaceType::SizeTypeSize;  // size
 
             /// \brief
             /// ctor.
@@ -156,7 +147,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             /// \param[in] size_ Block user data size.
             Header (
                 Flags32 flags_ = 0,
-                ui64 size_ = 0) :
+                AddressSpaceType::SizeType size_ = 0) :
                 flags (flags_),
                 size (size_) {}
 
@@ -178,15 +169,15 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
             /// \param[in] file File to read from.
             /// \param[in] offset Offset where the header begins.
             void Read (
-                TransactedFile &file,
-                PtrType offset);
+                TransactedFile::SharedPtr file,
+                AddressSpaceType::AddressType offset);
             /// \brief
             /// Write the header to the disk.
             /// \param[in] file TransactedFile to write to.
             /// \param[in] offset Offset where the header begins.
             void Write (
-                TransactedFile &file,
-                PtrType offset) const;
+                TransactedFile::SharedPtr file,
+                AddressSpaceType::AddressType offset) const;
         } header;
 
     public:
@@ -207,10 +198,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \param[in] flags Combination of FLAGS_FREE and allocator specific flags.
         /// \param[in] size Block size (not including the size of the Block itself).
         Block (
-            TransactedFile &file_,
-            PtrType offset_ = 0,
+            TransactedFile::SharedPtr file_,
+            AddressSpaceType::AddressType offset_ = 0,
             Flags32 flags = 0,
-            ui64 size = 0) :
+            AddressSpaceType::SizeType size = 0) :
             file (file_),
             offset (offset_),
             header (flags, size) {}
@@ -221,19 +212,19 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \param[in] offset Block offset.
         /// \return Block size.
         static ui64 GetSize (
-            TransactedFile &file,
-            PtrType offset);
+            TransactedFile::SharedPtr file,
+            AddressSpaceType::AddressType offset);
 
         /// \brief
         /// Return the block offset.
         /// \return Block offset.
-        inline PtrType GetOffset () const {
+        inline AddressSpaceType::AddressType GetOffset () const {
             return offset;
         }
         /// \brief
         /// Set block offset.
         /// \param[in] offset_ New block offset.
-        inline void SetOffset (PtrType offset_) {
+        inline void SetOffset (AddressSpaceType::AddressType offset_) {
             offset = offset_;
         }
 
@@ -253,13 +244,13 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// \brief
         /// Return the block size (not including Block::SIZE).
         /// \return Block size.
-        inline ui64 GetSize () const {
+        inline AddressSpaceType::SizeType GetSize () const {
             return header.size;
         }
         /// \brief
         /// Set block size.
         /// \param[in] size New block size.
-        inline void SetSize (ui64 size) {
+        inline void SetSize (AddressSpaceType::SizeType size) {
             header.size = size;
         }
 
@@ -273,7 +264,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator :
         /// Return true if this is the last block in the heap.
         /// \return true == last block in the heap.
         inline bool IsLast () const {
-            return GetOffset () + GetSize () + HEADER_SIZE == file.GetSizeEx ();
+            return GetOffset () + GetSize () + HEADER_SIZE == file->GetSizeEx ();
         }
 
         /// \brief
@@ -331,7 +322,7 @@ protected:
         Flags32 flags;
         /// \brief
         /// Contains the offset of the \see{Registry}.
-        PtrType registryOffset;
+        AddressSpaceType::AddressType registryOffset;
         // NOTE: If you add new fields, adjust the SIZE and increment
         // the version of your derivative and add if statements to operator
         // << and >> to read and write them. And don't forget to rebuild
@@ -343,7 +334,7 @@ protected:
         static const std::size_t SIZE =
             UI32_SIZE +     // magic
             UI32_SIZE +     // flags
-            PTR_TYPE_SIZE;  // regisryOffset
+            AddressSpaceType::AddressTypeSize;  // regisryOffset
 
         /// \brief
         /// ctor.
@@ -379,8 +370,11 @@ public:
     /// \brief
     /// ctor.
     /// \param[in] secure true == Clear unused space in blocks.
-    Allocator (bool secure = false) :
-        TransactionParticipant (nullptr),
+    Allocator (
+        TransactedFile::SharedPtr file = nullptr,
+        AddressSpaceType::AddressType offset = 0,
+        bool secure = false) :
+        Object (file, offset),
         header (secure ? Header::FLAGS_SECURE : 0) {}
 
     /// \brief
@@ -403,13 +397,13 @@ public:
     /// \brief
     /// Return the header.registryOffset;
     /// \return header.registryOffset;
-    inline PtrType GetRegistryOffset () const {
+    inline AddressSpaceType::AddressType GetRegistryOffset () const {
         return header.registryOffset;
     }
     /// \brief
     /// Set the header.registryOffset.
     /// \param[in] registryOffset New registryOffset to set.
-    inline void SetRegistryOffset (PtrType registryOffset) {
+    inline void SetRegistryOffset (AddressSpaceType::AddressType registryOffset) {
         if (header.registryOffset != registryOffset) {
             header.registryOffset = registryOffset;
             SetDirty (true);
@@ -420,11 +414,11 @@ public:
     /// Allocate a block.
     /// \param[in] size Size of block to allocate.
     /// \return Offset to the allocated block.
-    virtual PtrType Alloc (std::size_t size) = 0;
+    virtual AddressSpaceType::AddressType Alloc (std::size_t size) = 0;
     /// \brief
     /// Free a previously Alloc(ated) block.
     /// \param[in] offset Offset of block to free.
-    virtual void Free (PtrType offset) = 0;
+    virtual void Free (AddressSpaceType::AddressType offset) = 0;
     /// \brief
     /// Resize a block. Make it bigger or smaller.
     /// \param[in] offset Offset of \see{Block} to resize.
@@ -433,8 +427,8 @@ public:
     /// \return If newSize is greater than current size, return the
     /// new \see{Block} offset. If not, return the old \see{Block}
     /// offset.
-    virtual PtrType Realloc (
-        PtrType offset,
+    virtual AddressSpaceType::AddressType Realloc (
+        AddressSpaceType::AddressType offset,
         std::size_t newSize,
         bool moveData = true) = 0;
 
@@ -450,7 +444,7 @@ protected:
     /// \brief
     /// Write the \see{Header}.
     /// \param[in] serializer \see{Serializer} to write the \see{Header} to.
-    virtual void Write (Serializer &serializer) const override;
+    virtual void Write (Serializer &serializer) override;
 
     /// \brief
     /// Needs access to private members.
@@ -483,8 +477,8 @@ struct _LIB_THEKOGANS_UTIL_DECL BlockRange : public Range {
     /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     BlockRange (
-        TransactedFile &file,
-        Allocator::PtrType offset,
+        TransactedFile::SharedPtr file,
+        TransactedFile::AddressSpaceType::AddressType offset,
         bool reading = true,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
         Range (file, offset, Allocator::Block::GetSize (file, offset), reading, allocator) {}
@@ -505,8 +499,8 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeBlockRange : public SafeRange {
     /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     SafeBlockRange (
-        TransactedFile &file,
-        Allocator::PtrType offset,
+        TransactedFile::SharedPtr file,
+        TransactedFile::AddressSpaceType::AddressType offset,
         bool reading = true,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
         SafeRange (file, offset, Allocator::Block::GetSize (file, offset), reading, allocator) {}

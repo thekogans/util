@@ -66,7 +66,7 @@ namespace thekogans {
             /// \brief
             /// Write the value to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << value;
             }
         };
@@ -74,7 +74,7 @@ namespace thekogans {
         /// \struct PtrValue SerializableValues.h thekogans/util/SerializableValues.h
         ///
         /// \brief
-        /// \see{TransactedFile::Allocator::PtrType} value.
+        /// \see{TransactedFile::AddressSpaceType::AddressType} value.
         struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public Serializable {
             /// \brief
             /// PtrValue is a \see{Serializable}.
@@ -82,12 +82,12 @@ namespace thekogans {
 
             /// \brief
             /// The actual ptr.
-            TransactedFile::Allocator::PtrType value;
+            TransactedFile::AddressSpaceType::AddressType value;
 
             /// \brief
             /// ctor.
-            /// \param[in] value_ TransactedFile::Allocator::PtrType to initialize this value with.
-            PtrValue (TransactedFile::Allocator::PtrType value_ = 0) :
+            /// \param[in] value_ TransactedFile::AddressSpaceType::AddressType to initialize this value with.
+            PtrValue (TransactedFile::AddressSpaceType::AddressType value_ = 0) :
                 value (value_) {}
 
             // Serializable
@@ -103,7 +103,7 @@ namespace thekogans {
             /// \brief
             /// Write the value to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << value;
             }
         };
@@ -177,7 +177,7 @@ namespace thekogans {
             /// \brief
             /// Write the value to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << value;
             }
         };

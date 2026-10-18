@@ -720,7 +720,7 @@ namespace thekogans {
             serializer >> lastAccessedDate >> lastModifiedDate >> size;
         }
 
-        void Directory::Entry::Write (Serializer &serializer) const {
+        void Directory::Entry::Write (Serializer &serializer) {
             serializer << fileSystem << type << name;
             if (fileSystem == Windows) {
                 serializer << attributes << creationDate;
@@ -733,7 +733,7 @@ namespace thekogans {
 
         void Directory::Entry::ReadXML (
                 const SerializableHeader & /*header*/,
-                const pugi::xml_node &node) {
+                pugi::xml_node &node) {
             fileSystem = stringTofileSystem (node.attribute (ATTR_FILE_SYSTEM).value ());
             type = stringTotype (node.attribute (ATTR_TYPE).value ());
             name = Decodestring (node.attribute (ATTR_NAME).value ());
@@ -750,7 +750,7 @@ namespace thekogans {
             size = stringToui64 (node.attribute (ATTR_SIZE).value ());
         }
 
-        void Directory::Entry::WriteXML (pugi::xml_node &node) const {
+        void Directory::Entry::WriteXML (pugi::xml_node &node) {
             node.append_attribute (
                 ATTR_FILE_SYSTEM).set_value (fileSystemTostring (fileSystem).c_str ());
             node.append_attribute (ATTR_TYPE).set_value (typeTostring (type).c_str ());
@@ -775,7 +775,7 @@ namespace thekogans {
 
         void Directory::Entry::ReadJSON (
                 const SerializableHeader & /*header*/,
-                const JSON::Object &object) {
+                JSON::Object &object) {
             fileSystem = stringTofileSystem (object.Get<JSON::String> (ATTR_FILE_SYSTEM)->value);
             type = stringTotype (object.Get<JSON::String> (ATTR_TYPE)->value);
             name = object.Get<JSON::String> (ATTR_NAME)->value;
@@ -792,7 +792,7 @@ namespace thekogans {
             size = object.Get<JSON::Number> (ATTR_SIZE)->To<ui64> ();
         }
 
-        void Directory::Entry::WriteJSON (JSON::Object &object) const {
+        void Directory::Entry::WriteJSON (JSON::Object &object) {
             object.Add<const std::string &> (ATTR_FILE_SYSTEM, fileSystemTostring (fileSystem));
             object.Add<const std::string &> (ATTR_TYPE, typeTostring (type));
             object.Add<const std::string &> (ATTR_NAME, name);

@@ -55,10 +55,17 @@ namespace thekogans {
             return serializer;
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::TransactedFileBTreeAllocator::BTree::Node,
+            1,
+            0,
+            TransactedFile::Object::TYPE)
+
         TransactedFileBTreeAllocator::BTree::Node::Node (
-                BTree &btree_,
-                PtrType offset) :
-                TransactedFile::Object (btree_.GetFile (), offset),
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressSpaceType::AddressType offset,
+                BTree *btree_) :
+                TransactedFile::Object (file, offset),
                 btree (btree_),
                 count (0),
                 leftOffset (0),
@@ -72,10 +79,10 @@ namespace thekogans {
         }
 
         std::size_t TransactedFileBTreeAllocator::BTree::Node::FileSize (std::size_t entriesPerNode) {
-                                        // key             rightOffset
-            const std::size_t ENTRY_SIZE = Key::SIZE + PTR_TYPE_SIZE;
-                // magic       count       leftOffset      entries
-            return UI32_SIZE + UI32_SIZE + PTR_TYPE_SIZE + entriesPerNode * ENTRY_SIZE;
+                                        // key         rightOffset
+            const std::size_t ENTRY_SIZE = Key::SIZE + TransactedFile::AddressSpaceType::AddressTypeSize;
+                // magic       count       leftOffset                                          entries
+            return UI32_SIZE + UI32_SIZE + TransactedFile::AddressSpaceType::AddressTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t TransactedFileBTreeAllocator::BTree::Node::Size (std::size_t entriesPerNode) {
@@ -83,36 +90,36 @@ namespace thekogans {
         }
 
         TransactedFileBTreeAllocator::BTree::Node *TransactedFileBTreeAllocator::BTree::Node::Alloc (
-                BTree &btree,
-                PtrType offset) {
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressSpaceType::AddressType offset,
+                BTree *btree) {
             Node *node = new (
-                btree.nodeAllocator->Alloc (
-                    Size (btree.header.entriesPerNode))) Node (btree, offset);
+                btree->nodeAllocator->Alloc (Size (btree->header.entriesPerNode))) Node (file, offset, btree);
             node->AddRef ();
             return node;
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::FreeSubtree (
-                BTree &btree,
-                PtrType offset) {
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressSpaceType::AddressType offset) {
             if (offset != 0) {
-                TransactedFile::BlockRange range (*btree.file, offset);
+                TransactedFile::BlockRange range (file, offset);
                 ui32 magic;
                 range >> magic;
                 if (magic == MAGIC32) {
                     ui32 count;
                     range >> count;
                     if (count > 0) {
-                        PtrType leftOffset;
+                        TransactedFile::AddressSpaceType::AddressType leftOffset;
                         range >> leftOffset;
-                        FreeSubtree (btree, leftOffset);
+                        FreeSubtree (file, leftOffset);
                         for (ui32 i = 0; i < count; ++i) {
-                            PtrType rightOffset;
+                            TransactedFile::AddressSpaceType::AddressType rightOffset;
                             range >> rightOffset;
-                            FreeSubtree (btree, rightOffset);
+                            FreeSubtree (file, rightOffset);
                         }
                     }
-                    btree.allocator.Free (offset);
+                    file->GetAllocator ()->Free (offset);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -125,7 +132,7 @@ namespace thekogans {
         TransactedFileBTreeAllocator::BTree::Node *TransactedFileBTreeAllocator::BTree::Node::GetChild (ui32 index) {
             if (index == 0) {
                 if (leftNode == nullptr && leftOffset != 0) {
-                    leftNode = Alloc (btree, leftOffset);
+                    leftNode = Alloc (file, leftOffset, btree);
                 }
                 return leftNode;
             }
@@ -134,7 +141,7 @@ namespace thekogans {
                 if (entries[index].rightNode == nullptr &&
                         entries[index].rightOffset != 0) {
                     entries[index].rightNode = Alloc (
-                        btree, entries[index].rightOffset);
+                        file, entries[index].rightOffset, btree);
                 }
                 return entries[index].rightNode;
             }
@@ -178,9 +185,9 @@ namespace thekogans {
                         // in to the proper daughter node. Return the
                         // entry at the split point to be added up the
                         // parent chain.
-                        Node *right = Alloc (btree);
+                        Node *right = Alloc (file, 0, btree);
                         Split (right);
-                        ui32 splitIndex = btree.header.entriesPerNode / 2;
+                        ui32 splitIndex = btree->header.entriesPerNode / 2;
                         if (index != splitIndex) {
                             if (index < splitIndex) {
                                 InsertEntry (entry, index);
@@ -300,18 +307,18 @@ namespace thekogans {
                 ui32 index,
                 Node *left,
                 Node *right) {
-            assert (left->count + right->count < btree.header.entriesPerNode);
+            assert (left->count + right->count < btree->header.entriesPerNode);
             entries[index].rightOffset = right->leftOffset;
             entries[index].rightNode = right->leftNode;
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            right->Free ();
+            right->FreeRange ();
             right->Release ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Split (Node *node) {
-            ui32 splitIndex = btree.header.entriesPerNode / 2;
+            ui32 splitIndex = btree->header.entriesPerNode / 2;
             node->count = count - splitIndex;
             std::memcpy (
                 node->entries,
@@ -368,7 +375,9 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTreeAllocator::BTree::Node::Read (Serializer &serializer) {
+        void TransactedFileBTreeAllocator::BTree::Node::Read (
+                const SerializableHeader & /*header*/,
+                Serializer &serializer) {
             Reset ();
             ui32 magic;
             serializer >> magic;
@@ -404,21 +413,26 @@ namespace thekogans {
             }
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::TransactedFileBTreeAllocator::BTree,
+            1,
+            0,
+            TransactedFile::Object::TYPE)
+
         TransactedFileBTreeAllocator::BTree::BTree (
-                TransactedFileBTreeAllocator &allocator_,
-                PtrType offset,
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressSpaceType::AddressType offset,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage,
-                util::Allocator::SharedPtr allocator__) :
-                TransactedFile::Object (allocator_.GetFile (), offset),
-                allocator (allocator_),
+                util::Allocator::SharedPtr allocator) :
+                TransactedFile::Object (file, offset),
                 header ((ui32)entriesPerNode),
                 nodeAllocator (
                     new BlockAllocator (
                         Node::Size (entriesPerNode),
                         nodesPerPage,
-                        allocator__)),
-                rootNode (Node::Alloc (*this, header.rootOffset)) {
+                        allocator)),
+                rootNode (Node::Alloc (file, header.rootOffset, this)) {
             Reload ();
         }
 
@@ -449,7 +463,7 @@ namespace thekogans {
                 // The path to the leaf node is full.
                 // Create a new root node and make the entry
                 // its first.
-                Node *node = Node::Alloc (*this);
+                Node *node = Node::Alloc (file, 0, this);
                 node->leftOffset = rootNode->GetOffset ();
                 node->leftNode = rootNode;
                 node->InsertEntry (entry, 0);
@@ -467,7 +481,7 @@ namespace thekogans {
                 if (rootNode->IsEmpty () && rootNode->GetChild (0) != nullptr) {
                     Node *node = rootNode;
                     rootNode = rootNode->GetChild (0);
-                    node->Free ();
+                    node->FreeRange ();
                     node->Release ();
                 }
                 if (!IsDirty () &&
@@ -479,15 +493,17 @@ namespace thekogans {
             return removed;
         }
 
-        void TransactedFileBTreeAllocator::BTree::Free () {
-            Node::FreeSubtree (*this, header.rootOffset);
+        void TransactedFileBTreeAllocator::BTree::FreeRange () {
+            Node::FreeSubtree (file, header.rootOffset);
             header.rootOffset = 0;
-            Object::Free ();
+            Object::FreeRange ();
             rootNode->Release ();
-            rootNode = Node::Alloc (*this, header.rootOffset);
+            rootNode = Node::Alloc (file, header.rootOffset, this);
         }
 
-        void TransactedFileBTreeAllocator::BTree::Read (Serializer &serializer) {
+        void TransactedFileBTreeAllocator::BTree::Read (
+                const SerializableHeader & /*header*/,
+                Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -504,7 +520,7 @@ namespace thekogans {
                     Node::Size (header.entriesPerNode),
                     nodeAllocator->GetBlocksPerPage (),
                     nodeAllocator->GetAllocator ()));
-            rootNode = Node::Alloc (*this, header.rootOffset);
+            rootNode = Node::Alloc (file, header.rootOffset, this);
         }
 
         void TransactedFileBTreeAllocator::BTree::Write (Serializer &serializer) {

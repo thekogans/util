@@ -98,7 +98,7 @@ namespace thekogans {
             /// \brief
             /// Write the key to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the key to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << key;
             }
         };
@@ -170,7 +170,7 @@ namespace thekogans {
             /// \brief
             /// Write the key to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the key to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << key;
             }
         };

@@ -17,14 +17,25 @@
 
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/TransactedFile.h"
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/TransactedFileBTree.h"
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
     namespace util {
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE (thekogans::util::TransactedFile::Object)
+
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        void TransactedFile::Object::StaticInit () {
+            thekogans::util::TransactedFileBTree::StaticInit ();
+        }
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
         DynamicCreatable::SharedPtr TransactedFile::Object::CreateObject (
                 const char *type,
                 TransactedFile::SharedPtr file,
-                Allocator::PtrType offset) {
+                AddressSpaceType::AddressType offset) {
             return CreateType (type,
                 [file, offset] (DynamicCreatable::SharedPtr dynamicCreatable) {
                     Object::SharedPtr object = dynamicCreatable;
@@ -35,43 +46,43 @@ namespace thekogans {
                 });
         }
 
-        TransactedFile::Allocator::PtrType TransactedFile::Object::ForceFlush () {
+        TransactedFile::AddressSpaceType::AddressType TransactedFile::Object::ForceFlush () {
             if (IsDirty ()) {
-                Alloc ();
+                AllocRange ();
                 Flush ();
                 SetDirty (false);
             }
             return GetOffset ();
         }
 
-        void TransactedFile::Object::Alloc () {
-            if (!IsFixedSize () || offset == 0) {
-                Allocator::PtrType newOffset =
-                    GetAllocator ()->Realloc (offset, Size (), false);
+        void TransactedFile::Object::AllocRange () {
+            if (DynamicClassSize () == 0 || offset == 0) {
+                AddressSpaceType::AddressType newOffset =
+                    file->GetAllocator ()->Realloc (offset, Size (), false);
                 if (offset != newOffset) {
                     if (offset != 0) {
                         Produce (
                             std::bind (
-                                &ObjectEvents::OnTransactedFileObjectFree,
+                                &ObjectEvents::OnTransactedFileObjectFreeRange,
                                 std::placeholders::_1,
                                 this));
                     }
                     offset = newOffset;
                     Produce (
                         std::bind (
-                            &ObjectEvents::OnTransactedFileObjectAlloc,
+                            &ObjectEvents::OnTransactedFileObjectAllocRange,
                             std::placeholders::_1,
                             this));
                 }
             }
         }
 
-        void TransactedFile::Object::Free () {
+        void TransactedFile::Object::FreeRange () {
             if (offset != 0) {
-                GetAllocator ()->Free (offset);
+                file->GetAllocator ()->Free (offset);
                 Produce (
                     std::bind (
-                        &ObjectEvents::OnTransactedFileObjectFree,
+                        &ObjectEvents::OnTransactedFileObjectFreeRange,
                         std::placeholders::_1,
                         this));
                 offset = 0;
@@ -80,9 +91,9 @@ namespace thekogans {
 
         void TransactedFile::Object::Flush () {
             if (offset != 0) {
-                BlockRange range (*file, offset, false);
-                Write (range);
-                if (GetAllocator ()->IsSecure ()) {
+                BlockRange range (file, offset, false);
+                range << *this;
+                if (file->GetAllocator ()->IsSecure ()) {
                     range.Seek (
                         SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
                         SEEK_CUR);
@@ -92,8 +103,8 @@ namespace thekogans {
 
         void TransactedFile::Object::Reload () {
             if (offset != 0) {
-                BlockRange range (*file, offset);
-                Read (range);
+                BlockRange range (file, offset);
+                range >> *this;
             }
         }
 
@@ -102,7 +113,7 @@ namespace thekogans {
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 if (phase == TransactedFile::COMMIT_PHASE_1) {
-                    Alloc ();
+                    AllocRange ();
                 }
                 else if (phase == TransactedFile::COMMIT_PHASE_2) {
                     Flush ();
@@ -117,31 +128,6 @@ namespace thekogans {
                 Reload ();
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (TransactedFile::SerializableObject)
-
-        Serializable::SharedPtr TransactedFile::SerializableObject::GetSerializable () {
-            if (serializable == nullptr) {
-                Reload ();
-            }
-            return serializable;
-        }
-
-        void TransactedFile::SerializableObject::SetSerializable (Serializable::SharedPtr serializable_) {
-            serializable = serializable_;
-        }
-
-        void TransactedFile::SerializableObject::Read (Serializer &serializer) {
-            Serializer::ContextGuard guard (serializer, context, factory, parameters);
-            serializer >> serializable;
-        }
-
-        void TransactedFile::SerializableObject::Write (Serializer &serializer) {
-            if (serializable != nullptr) {
-                Serializer::ContextGuard guard (serializer, context, factory, parameters);
-                serializer << *serializable;
-            }
         }
 
     } // namespace util

@@ -34,17 +34,17 @@ namespace thekogans {
         /// \struct PageMap PageMap.h thekogans/util/PageMap.h
         ///
         /// \brief
-        /// PageMap gives you the ability to work with virtual address spaces, potentialy
+        /// PageMap gives you the ability to work with virtual address spaces, potentially
         /// astronomical (10^19, 10^38...) in size, given the somewhat limited resources
         /// of today's and tomorrow's hosts. PageMap divides the given address space in to
-        /// sequential, contiguous, nonoverlapping pages. The pages are maintained in groups
-        /// called segments. Segments are organized as leaf nodes in a fixed depth, multiway
+        /// sequential, contiguous, non overlapping pages. The pages are maintained in groups
+        /// called segments. Segments are organized as leaf nodes in a fixed depth, multi way
         /// tree. Given a particular parameterization of an address space, PageMap will
         /// calculate all other parameters needed for efficient tree traversal. PageMap's
         /// entire reason for being, as far as the user is concerned, is to provide on demand
         /// access to pages given any valid address space address (GetPage). It does this by
         /// lazily wiring in pages as the need arises. Given an address, PageMap walks the
-        /// tree looking for the correponding page. That tree walk is constant for every page
+        /// tree looking for the corresponding page. That tree walk is constant for every page
         /// and is dependent on the particular parameterization of the address space. As pages
         /// accumulate, eventually memory will become an issue. PageMap provides an API to
         /// maintain internal page cache (Clear). PageMap maintains a cache of last accessed
@@ -55,10 +55,10 @@ namespace thekogans {
         /// outside the new address space size. The following knobs; AddressType, bitsPerAddress,
         /// bitsPerSegment, bitsPerLevel and bitsPerPage, allow you to tune the address space
         /// very precisely given your particular performance requirements. Specifying exactly
-        /// how many levels deep to make the multiway tree, which directly affects tree walk
+        /// how many levels deep to make the multi way tree, which directly affects tree walk
         /// performance, and by extension GetPage performance. PageMap is designed to be used
-        /// either embeded behind an API that controls access from multiple threads or as a
-        /// standalone thread safe object by passing in different types for Lock template
+        /// either embedded behind an API that controls access from multiple threads or as a
+        /// stand alone thread safe object by passing in different types for Lock template
         /// parameter.
         ///
         /// Ex:
@@ -192,9 +192,11 @@ namespace thekogans {
             /// Rename T to something more appropriate that's
             /// visible outside the template.
             using AddressType = T;
+            static constexpr std::size_t AddressTypeSize = Width<AddressType>::value;
             /// \brief
             /// Alias for T. In our world address type and size type are the same type.
             using SizeType = T;
+            static constexpr std::size_t SizeTypeSize = Width<SizeType>::value;
 
             /// \brief
             /// Declare \see{RefCounted} pointers.

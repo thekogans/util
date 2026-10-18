@@ -30,44 +30,42 @@
 /// big to maintain.
 struct BTree : public TransactedFile::Object {
     /// \brief
-    /// Declare \see{RefCounted} pointers.
-    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (BTree)
+    /// Object is a \see{Serializable}.
+    THEKOGANS_UTIL_DECLARE_SERIALIZABLE (BTree)
 
-    /// \struct Fileallocator::BTree::Key FileallocatorBTree.h
-    /// thekogans/util/FileallocatorBTree.h
+    /// \struct TransactedFileBTreeAllocator::BTree::Key TransactedFileBTreeAllocator.h
+    /// thekogans/util/TransactedFileBTreeAllocator.h
     ///
     /// \brief
     /// Key is structured on block {size, offset}.
     struct Key {
         /// \brief
         /// Block size.
-        ui64 size;
+        TransactedFile::AddressSpaceType::SizeType size;
         /// \brief
         /// Block offset.
-        PtrType offset;
+        TransactedFile::AddressSpaceType::AddressType offset;
 
         /// \brief
         /// Key size on disk.
-        static const std::size_t SIZE = UI64_SIZE + PTR_TYPE_SIZE;
+        static const std::size_t SIZE =
+            TransactedFile::AddressSpaceType::SizeTypeSize +
+            TransactedFile::AddressSpaceType::AddressTypeSize;
 
         /// \brief
         /// ctor.
         /// \param[in] size_ Block size.
         /// \param[in] offset_ Block offset.
         Key (
-            ui64 size_ = 0,
-            PtrType offset_ = 0) :
+            TransactedFile::AddressSpaceType::SizeType size_ = 0,
+            TransactedFile::AddressSpaceType::AddressType offset_ = 0) :
             size (size_),
             offset (offset_) {}
     };
 
 private:
-    /// \brief
-    /// Reference back to the TransactedFileBTreeAllocator for
-    /// \see{Header} and \see{Node} blocks.
-    TransactedFileBTreeAllocator &allocator;
-    /// \struct Fileallocator::BTree::Header FileallocatorBTree.h
-    /// thekogans/util/FileallocatorBTree.h
+    /// \struct TransactedFileBTreeAllocator::BTree::Header TransactedFileBTreeAllocatorBTree.h
+    /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
     ///
     /// \brief
     /// Header contains global btree info.
@@ -77,14 +75,14 @@ private:
         ui32 entriesPerNode;
         /// \brief
         /// Root node offset.
-        PtrType rootOffset;
+        TransactedFile::AddressSpaceType::AddressType rootOffset;
 
         /// \brief
         /// Size of header on disk.
         static const std::size_t SIZE =
             UI32_SIZE +     // magic
             UI32_SIZE +     // entriesPerNode
-            PTR_TYPE_SIZE;  // rootOffset
+            TransactedFile::AddressSpaceType::AddressTypeSize;  // rootOffset
 
         /// \brief
         /// ctor.
@@ -96,21 +94,24 @@ private:
     /// \brief
     /// An instance of \see{BlockAllocator} to allocate \see{Node}s.
     BlockAllocator::SharedPtr nodeAllocator;
-    /// \struct Fileallocator::BTree::Node FileallocatorBTree.h
-    /// thekogans/util/FileallocatorBTree.h
+    /// \struct TransactedFileBTreeAllocator::BTree::Node TransactedFileBTreeAllocatorBTree.h
+    /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
     ///
     /// \brief
     /// BTree nodes store sorted keys and pointers to children nodes.
     struct Node : public TransactedFile::Object {
         /// \brief
-        /// BTree to which this node belongs.
-        BTree &btree;
+        /// Object is a \see{Serializable}.
+        THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Node)
+
+        /// \brief
+        BTree *btree;
         /// \brief
         /// Count of entries.
         ui32 count;
         /// \brief
         /// Left most child node offset.
-        PtrType leftOffset;
+        TransactedFile::AddressSpaceType::AddressType leftOffset;
         /// \brief
         /// Left most child node.
         Node *leftNode;
@@ -124,7 +125,7 @@ private:
             Key key;
             /// \brief
             /// Right child node offset.
-            PtrType rightOffset;
+            TransactedFile::AddressSpaceType::AddressType rightOffset;
             /// \brief
             /// Right child node.
             Node *rightNode;
@@ -143,11 +144,13 @@ private:
 
         /// \brief
         /// ctor.
-        /// \param[in] btree_ BTree to which this node belongs.
-        /// \param[in] offset_ Node offset.
+        /// \param[in] file \see{TransactedFile} where the Node resides.
+        /// \param[in] offset Node offset.
+        /// \param[in] btree_.
         Node (
-            BTree &btree_,
-            PtrType offset_ = 0);
+            TransactedFile::SharedPtr file = nullptr,
+            TransactedFile::AddressSpaceType::AddressType offset = 0,
+            BTree *btree_ = nullptr);
         /// \brief
         /// dtor.
         virtual ~Node ();
@@ -164,18 +167,21 @@ private:
         static std::size_t Size (std::size_t entriesPerNode);
         /// \brief
         /// Allocate a node.
-        /// \param[in] btree BTree to which this node belongs.
+        /// \param[in] file \see{TransactedFile} where the Node resides.
         /// \param[in] offset Node offset.
+        /// \param[in] btree
+        /// \return New node.
         static Node *Alloc (
-            BTree &btree,
-            PtrType offset = 0);
+            TransactedFile::SharedPtr file,
+            TransactedFile::AddressSpaceType::AddressType offset,
+            BTree *btree);
         /// \brief
         /// Free the subtree rooted at node.
-        /// \param[in] btree BTree to which this node belongs.
+        /// \param[in] file \see{TransactedFile} where the Node resides.
         /// \param[in] offset Node offset.
         static void FreeSubtree (
-            BTree &btree,
-            PtrType offset);
+            TransactedFile::SharedPtr file,
+            TransactedFile::AddressSpaceType::AddressType offset);
 
         /// \brief
         /// Return the child at the given index.
@@ -225,7 +231,7 @@ private:
             Node *left,
             Node *right);
         /// \brief
-        /// Split the node in the middle (splitIndex = btree.header.entriesPerNode / 2).
+        /// Split the node in the middle (splitIndex = btree->header.entriesPerNode / 2).
         /// \param[out] node Node that will receive entries >= splitIndex.
         void Split (Node *node);
         /// \brief
@@ -260,19 +266,19 @@ private:
         /// Return true if the node is full.
         /// \return true == node is full.
         inline bool IsFull () const {
-            return count == btree.header.entriesPerNode;
+            return count == btree->header.entriesPerNode;
         }
         /// \brief
         /// Return true if less than half the nodes entries are occupied.
         /// \return true if less than half the nodes entries are occupied.
         inline bool IsPoor () const {
-            return count < btree.header.entriesPerNode / 2;
+            return count < btree->header.entriesPerNode / 2;
         }
         /// \brief
         /// Return true if more than half the nodes entries are occupied.
         /// \return true if more than half the nodes entries are occupied.
         inline bool IsPlentiful () const {
-            return count > btree.header.entriesPerNode / 2;
+            return count > btree->header.entriesPerNode / 2;
         }
 
     protected:
@@ -285,27 +291,23 @@ private:
         /// Undo what \see{Alloc} did.
         virtual void Harakiri () override {
             this->~Node ();
-            btree.nodeAllocator->Free (this, Size (btree.header.entriesPerNode));
+            btree->nodeAllocator->Free (this, Size (btree->header.entriesPerNode));
         }
 
     protected:
-        // TransactedFile::Object
-        /// \brief
-        /// Node is fixed size.
-        /// \return true.
-        virtual bool IsFixedSize () const override {
-            return true;
-        }
+        // Serializable
         /// \brief
         /// Return the node size.
         /// \return btree.allocator.btreeNodeFileSize.
-        virtual std::size_t Size () const noexcept override {
-            return btree.allocator.btreeNodeFileSize;
+        virtual std::size_t DynamicClassSize () const noexcept override {
+            return FileSize (btree->header.entriesPerNode);
         }
         /// \brief
         /// Read the node.
         /// \param[in] serializer \see{Serializer} to read the node from.
-        virtual void Read (Serializer &serializer) override;
+        virtual void Read (
+            const SerializableHeader & /*header*/,
+            Serializer &serializer) override;
         /// \brief
         /// Write the node.
         /// \param[in] serializer \see{Serializer} to write the node to.
@@ -333,11 +335,11 @@ public:
     /// for the \see{BlockAllocator}. As with the previous parameter, the same
     /// advice aplies.
     BTree (
-        TransactedFileBTreeAllocator &allocator_,
-        PtrType offset,
-        std::size_t entriesPerNode,
-        std::size_t nodesPerPage,
-        util::Allocator::SharedPtr allocator__);
+        TransactedFile::SharedPtr file = nullptr,
+        TransactedFile::AddressSpaceType::AddressType offset = 0,
+        std::size_t entriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE,
+        std::size_t nodesPerPage = BlockAllocator::DEFAULT_BLOCKS_PER_PAGE,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
     /// \brief
     /// dtor.
     virtual ~BTree ();
@@ -360,32 +362,29 @@ public:
     bool Remove (const Key &key);
 
 protected:
-    // TransactedFile::Object
-    /// \brief
-    /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
-    /// Also free the \see{Node} hierarchy @root.
-    virtual void Free () override;
-
-    /// \brief
-    /// Node is fixed size.
-    /// \return true.
-    virtual bool IsFixedSize () const override {
-        return true;
-    }
+    // Serializable
     /// \brief
     /// Our size is \see{Header::SIZE}.
     /// \return \see{Header::SIZE}.
-    virtual std::size_t Size () const noexcept override {
+    virtual std::size_t DynamicClassSize () const noexcept override {
         return Header::SIZE;
     }
     /// \brief
     /// Read \see{Header::SIZE}.
     /// \param[in] serializer \see{Serializer} to read the header from.
-    virtual void Read (Serializer &serializer) override;
+    virtual void Read (
+        const SerializableHeader & /*header*/,
+        Serializer &serializer) override;
     /// \brief
     /// Write \see{Header::SIZE}.
     /// \param[in] serializer \see{Serializer} to write the header to.
     virtual void Write (Serializer &serializer) override;
+
+    // TransactedFile::Object
+    /// \brief
+    /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
+    /// Also free the \see{Node} hierarchy @root.
+    virtual void FreeRange () override;
 
     /// \brief
     /// Needs access to private members.

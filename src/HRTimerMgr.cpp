@@ -41,7 +41,7 @@ namespace thekogans {
             serializer >> name >> attributes;
         }
 
-        void HRTimerMgr::TimerInfoBase::Write (Serializer &serializer) const {
+        void HRTimerMgr::TimerInfoBase::Write (Serializer &serializer) {
             serializer << name << attributes;
         }
 
@@ -54,7 +54,7 @@ namespace thekogans {
 
         void HRTimerMgr::TimerInfoBase::ReadXML (
                 const SerializableHeader & /*header*/,
-                const pugi::xml_node &node) {
+                pugi::xml_node &node) {
             name = node.attribute (ATTR_NAME).value ();
             attributes.clear ();
             pugi::xml_node attributesNode = node.child (TAG_ATTRIBUTES);
@@ -67,7 +67,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::TimerInfoBase::WriteXML (pugi::xml_node &node) const {
+        void HRTimerMgr::TimerInfoBase::WriteXML (pugi::xml_node &node) {
             node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
             if (!attributes.empty ()) {
                 pugi::xml_node attributesNode = node.append_child (TAG_ATTRIBUTES);
@@ -83,7 +83,7 @@ namespace thekogans {
 
         void HRTimerMgr::TimerInfoBase::ReadJSON (
                 const SerializableHeader & /*header*/,
-                const JSON::Object &object) {
+                JSON::Object &object) {
             name = object.Get<JSON::String> (ATTR_NAME)->value;
             util::JSON::Array::SharedPtr attributesArray = object.Get<JSON::Array> (TAG_ATTRIBUTES);
             if (attributesArray != nullptr) {
@@ -99,7 +99,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::TimerInfoBase::WriteJSON (JSON::Object &object) const {
+        void HRTimerMgr::TimerInfoBase::WriteJSON (JSON::Object &object) {
             object.Add<const std::string &> (ATTR_NAME, name);
             if (!attributes.empty ()) {
                 util::JSON::Array::SharedPtr attributesArray (new util::JSON::Array);
@@ -193,20 +193,20 @@ namespace thekogans {
             serializer >> start >> stop;
         }
 
-        void HRTimerMgr::TimerInfo::Write (Serializer &serializer) const {
+        void HRTimerMgr::TimerInfo::Write (Serializer &serializer) {
             TimerInfoBase::Write (serializer);
             serializer << start << stop;
         }
 
         void HRTimerMgr::TimerInfo::ReadXML (
                 const SerializableHeader &header,
-                const pugi::xml_node &node) {
+                pugi::xml_node &node) {
             TimerInfoBase::ReadXML (header, node);
             start = stringToui64 (node.attribute (ATTR_START).value ());
             stop = stringToui64 (node.attribute (ATTR_STOP).value ());
         }
 
-        void HRTimerMgr::TimerInfo::WriteXML (pugi::xml_node &node) const {
+        void HRTimerMgr::TimerInfo::WriteXML (pugi::xml_node &node) {
             TimerInfoBase::WriteXML (node);
             node.append_attribute (ATTR_START).set_value (ui64Tostring (start).c_str ());
             node.append_attribute (ATTR_STOP).set_value (ui64Tostring (stop).c_str ());
@@ -214,13 +214,13 @@ namespace thekogans {
 
         void HRTimerMgr::TimerInfo::ReadJSON (
                 const SerializableHeader &header,
-                const JSON::Object &object) {
+                JSON::Object &object) {
             TimerInfoBase::ReadJSON (header, object);
             start = object.Get<JSON::Number> (ATTR_START)->To<ui64> ();
             stop = object.Get<JSON::Number> (ATTR_STOP)->To<ui64> ();
         }
 
-        void HRTimerMgr::TimerInfo::WriteJSON (JSON::Object &object) const {
+        void HRTimerMgr::TimerInfo::WriteJSON (JSON::Object &object) {
             TimerInfoBase::WriteJSON (object);
             object.Add (ATTR_START, start);
             object.Add (ATTR_STOP, stop);
@@ -406,7 +406,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::Write (Serializer &serializer) const {
+        void HRTimerMgr::ScopeInfo::Write (Serializer &serializer) {
             TimerInfoBase::Write (serializer);
             {
                 serializer << util::SizeT (open.size ());
@@ -424,7 +424,7 @@ namespace thekogans {
 
         void HRTimerMgr::ScopeInfo::ReadXML (
                 const SerializableHeader &header,
-                const pugi::xml_node &node) {
+                pugi::xml_node &node) {
             TimerInfoBase::ReadXML (header, node);
             {
                 open.clear ();
@@ -458,7 +458,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::WriteXML (pugi::xml_node &node) const {
+        void HRTimerMgr::ScopeInfo::WriteXML (pugi::xml_node &node) {
             TimerInfoBase::WriteXML (node);
             {
                 pugi::xml_node openScopes = node.append_child (TAG_OPEN_SCOPES);
@@ -478,7 +478,7 @@ namespace thekogans {
 
         void HRTimerMgr::ScopeInfo::ReadJSON (
                 const SerializableHeader &header,
-                const JSON::Object &object) {
+                JSON::Object &object) {
             TimerInfoBase::ReadJSON (header, object);
             {
                 open.clear ();
@@ -510,7 +510,7 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::WriteJSON (JSON::Object &object) const {
+        void HRTimerMgr::ScopeInfo::WriteJSON (JSON::Object &object) {
             TimerInfoBase::WriteJSON (object);
             {
                 util::JSON::Array::SharedPtr openScopes (new util::JSON::Array);
@@ -564,27 +564,27 @@ namespace thekogans {
             serializer >> root;
         }
 
-        void HRTimerMgr::Write (Serializer &serializer) const {
+        void HRTimerMgr::Write (Serializer &serializer) {
             serializer << root;
         }
 
         void HRTimerMgr::ReadXML (
                 const SerializableHeader & /*header*/,
-                const pugi::xml_node &node) {
+                pugi::xml_node &node) {
             node >> root;
         }
 
-        void HRTimerMgr::WriteXML (pugi::xml_node &node) const {
+        void HRTimerMgr::WriteXML (pugi::xml_node &node) {
             node << root;
         }
 
         void HRTimerMgr::ReadJSON (
                 const SerializableHeader & /*header*/,
-                const JSON::Object &object) {
+                JSON::Object &object) {
             object >> root;
         }
 
-        void HRTimerMgr::WriteJSON (JSON::Object &object) const {
+        void HRTimerMgr::WriteJSON (JSON::Object &object) {
             object << root;
         }
 

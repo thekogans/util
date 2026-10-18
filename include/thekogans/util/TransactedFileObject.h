@@ -35,7 +35,7 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// \brief
     /// \see{Object} allocated a block in the file.
     /// \param[in] object \see{Object} whose offset has become valid.
-    virtual void OnTransactedFileObjectAlloc (
+    virtual void OnTransactedFileObjectAllocRange (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
     /// \brief
     /// \see{Object} freed its file block.
@@ -43,7 +43,7 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// VERY IMPORTANT SEMANTICS: When you get this notification,
     /// object->GetOffset () will still point to the old offset (which
     /// has been freed).
-    virtual void OnTransactedFileObjectFree (
+    virtual void OnTransactedFileObjectFreeRange (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 };
 
@@ -54,24 +54,34 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
 /// from \see{TransactedFile::Allocator} and participates in \see{TransactedFileEvents}.
 struct _LIB_THEKOGANS_UTIL_DECL Object :
         public TransactionParticipant,
+        public Serializable,
         public Producer<ObjectEvents> {
     /// \brief
     /// Object is a \see{util::DynamicCreatable} abstract base.
-    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Object)
+    THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Object)
+
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    /// \brief
+    /// Register all known derivatives. This method is meant to be added
+    /// to as new Allocator derivatives are added to the system.
+    static void StaticInit ();
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 protected:
     /// \brief
     /// Our address inside the \see{TransactedFile}.
-    Allocator::PtrType offset;
+    AddressSpaceType::AddressType offset;
 
 public:
+    Object () :
+        offset (0) {}
     /// \brief
     /// ctor.
     /// \param[in] file \see{TransactedFile} where this object resides.
     /// \param[in] offset_ Offset of the \see{TransactedFile::Allocator::Block}.
     Object (
         TransactedFile::SharedPtr file,
-        Allocator::PtrType offset_ = 0) :
+        AddressSpaceType::AddressType offset_ = 0) :
         TransactionParticipant (file),
         offset (offset_) {}
     /// \brief
@@ -81,36 +91,29 @@ public:
     static DynamicCreatable::SharedPtr CreateObject (
         const char *type,
         TransactedFile::SharedPtr file,
-        Allocator::PtrType offset);
-
-    /// \brief
-    /// Return the \see{TransactedFile::Allocator}.
-    /// \return \see{TransactedFile::Allocator}.
-    inline Allocator::SharedPtr GetAllocator () const {
-        return file->GetAllocator ();
-    }
+        AddressSpaceType::AddressType offset);
 
     /// \brief
     /// Return the offset.
     /// \return offset.
-    inline Allocator::PtrType GetOffset () const {
+    inline AddressSpaceType::AddressType GetOffset () const {
         return offset;
     }
 
     /// \brief
     /// If the object is dirty, flush it's cache to disk.
     /// \return GetOffset ().
-    Allocator::PtrType ForceFlush ();
+    AddressSpaceType::AddressType ForceFlush ();
 
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
-    virtual void Alloc ();
+    virtual void AllocRange ();
     /// \brief
     /// Default free implementation for single block objects.
     /// If your objects contain internal pointers to other
     /// blocks you will need to implement this method and
     /// properly free the containing blocks.
-    virtual void Free ();
+    virtual void FreeRange ();
     /// \brief
     /// Flush the internal cache to file.
     virtual void Flush ();
@@ -133,115 +136,6 @@ protected:
         TransactedFile::SharedPtr /*file*/) noexcept override;
 
     /// \brief
-    /// Optimization for Alloc below. If an object declares
-    /// itself as fixed size, Alloc will not check the object
-    /// block size, only offset. And if offset == 0, it will allocate
-    /// a block once and that's it.
-    /// \return true == object is fixed size.
-    virtual bool IsFixedSize () const {
-        return false;
-    }
-    /// \brief
-    /// Return the serializable binary size (not including the header).
-    /// \return Serializable binary size.
-    virtual std::size_t Size () const noexcept = 0;
-
-    /// \brief
-    /// Read the object from the given serializer.
-    /// \param[in] serializer Serializer to read the object from.
-    virtual void Read (Serializer & /*serializer*/) = 0;
-    /// \brief
-    /// Write the object to the given serializer.
-    /// \param[out] serializer Serializer to write the object to.
-    virtual void Write (Serializer & /*serializer*/) = 0;
-
-    /// \brief
     /// Object is neither copy constructable, nor assignable.
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
-};
-
-/// \struct TransactedFile::SerializableObject TransactedFile.h thekogans/util/TransactedFile.h
-///
-/// \brief
-/// SerializableObject combines the power of \see{Serializable} (i.e. dynamic
-/// discovery and creation) with \see{Object} (i.e. \see{TransactedFile::Allocator}).
-struct _LIB_THEKOGANS_UTIL_DECL SerializableObject : public Object {
-    /// \brief
-    /// Declare \see{RefCounted} pointers.
-    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (SerializableObject)
-
-    /// \brief
-    /// SerializableObject has a private heap.
-    THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-protected:
-    /// \brief
-    /// Determines how the object's \see{SerializableHeader}
-    /// is read/writen to/from the file.
-    SerializableHeader context;
-    /// \brief
-    /// \see{Serializable} creation factory.
-    DynamicCreatable::FactoryType factory;
-    /// \brief
-    /// \see{Serializable} creation factory parameters.
-    DynamicCreatable::ParametersType parameters;
-    /// \brief
-    /// The \see{Serializable} object itself.
-    Serializable::SharedPtr serializable;
-
-public:
-    /// \brief
-    /// ctor.
-    /// \param[in] file \see{TransactedFile} where the object resides.
-    /// \param[in] offset Object's offset.
-    /// \param[in] context_ Determines how the object's \see{SerializableHeader}
-    /// is read/writen to/from the file.
-    /// \param[in] factory_ \see{Serializable} creation factory.
-    /// \param[in] parameters_ \see{Serializable} creation factory parameters.
-    /// \param[in] serializable_ The \see{Serializable} object itself.
-    SerializableObject (
-        TransactedFile::SharedPtr file,
-        TransactedFile::Allocator::PtrType offset = 0,
-        const SerializableHeader &context_ = SerializableHeader (),
-        DynamicCreatable::FactoryType factory_ = nullptr,
-        DynamicCreatable::ParametersType parameters_ = nullptr,
-        Serializable::SharedPtr serializable_ = nullptr) :
-        TransactedFile::Object (file, offset),
-        context (context_),
-        factory (factory_),
-        parameters (parameters_),
-        serializable (serializable_) {}
-
-    /// \brief
-    /// Return the contained \see{Serializable}. Load it null and offset != 0.
-    /// \return serializable.
-    Serializable::SharedPtr GetSerializable ();
-    /// \brief
-    /// Set the contained serializable.
-    /// \param[in] serializable_ New contained \see{Serializable}.
-    void SetSerializable (Serializable::SharedPtr serializable_);
-
-protected:
-    // TransactedFile::Object
-    /// Optimization for Alloc. \see{Serializable} declares itself
-    /// as fixed size by having ClassSize return > 0.
-    /// \return true == object is fixed size.
-    virtual bool IsFixedSize () const override {
-        return serializable != nullptr && serializable->ClassSize () != 0;
-    }
-    /// \brief
-    /// Return \see{Serializable} binary size (including the header).
-    /// \return \see{Serializable} binary size.
-    virtual std::size_t Size () const noexcept override {
-        return serializable != nullptr ? serializable->GetSize (context) : 0;
-    }
-
-    /// \brief
-    /// Read the \see{Serializable} from the given serializer.
-    /// \param[in] serializer \see{Serializer} to read the \see{Serializable} from.
-    virtual void Read (Serializer &serializer) override;
-    /// \brief
-    /// Write the \see{Serializable} to the given serializer.
-    /// \param[out] serializer \see{Serializer} to write the \see{Serializable} to.
-    virtual void Write (Serializer &serializer) override;
 };

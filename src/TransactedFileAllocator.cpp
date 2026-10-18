@@ -34,8 +34,8 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         void TransactedFile::Allocator::Block::Header::Read (
-                TransactedFile &file,
-                PtrType offset) {
+                TransactedFile::SharedPtr file,
+                AddressSpaceType::AddressType offset) {
             Range range (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
@@ -55,8 +55,8 @@ namespace thekogans {
         }
 
         void TransactedFile::Allocator::Block::Header::Write (
-                TransactedFile &file,
-                PtrType offset) const {
+                TransactedFile::SharedPtr file,
+                AddressSpaceType::AddressType offset) const {
             Range range (file, offset, SIZE, false);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             range << MAGIC32;
@@ -71,8 +71,8 @@ namespace thekogans {
         }
 
         ui64 TransactedFile::Allocator::Block::GetSize (
-                TransactedFile &file,
-                PtrType offset) {
+                TransactedFile::SharedPtr file,
+                AddressSpaceType::AddressType offset) {
             Block block (file, offset);
             block.Read ();
             return block.GetSize ();
@@ -175,7 +175,7 @@ namespace thekogans {
             return serializer;
         }
 
-        void TransactedFile::Allocator::Write (Serializer &serializer) const {
+        void TransactedFile::Allocator::Write (Serializer &serializer) {
             serializer << MAGIC32 << header;
         }
 

@@ -208,7 +208,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
-                explicit TransactionParticipant (TransactedFile::SharedPtr file_) :
+                explicit TransactionParticipant (TransactedFile::SharedPtr file_ = nullptr) :
                     file (file_) {}
                 /// \brief
                 /// dtor.
@@ -255,9 +255,9 @@ namespace thekogans {
 
         public:
             #include "thekogans/util/TransactedFileRange.h"
+            #include "thekogans/util/TransactedFileObject.h"
             #include "thekogans/util/TransactedFileAllocator.h"
             #include "thekogans/util/TransactedFileRegistry.h"
-            #include "thekogans/util/TransactedFileObject.h"
 
         private:
             /// \brief
@@ -513,40 +513,29 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
 
-#if 0
-        template <typename T>
-        std::enable_if_t<std::is_base_of_v<TransactedFile::Object, T>, TransactedFile::Range &>
-        operator >> (TransactedFile::Range &range, typename T::SharedPtr &object) {
-            SerializableHeader header;
-            range >> header;
-            object = TransactedFile::Object::CreateType (header.type.c_str (), range.file, range.offset);
-            if (object != nullptr) {
-                if (header.version <= object->Version ()) {
-                    object->Read (header, range);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%s) is greater then the Serializable version (%u).",
-                        header.version,
-                        serializable->Version ());
-                }
+        TransactedFile::Range &operator >> (
+            TransactedFile::Range &range,
+            TransactedFile::Object::SharedPtr &object);
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR(_T)
+        /// Implement extraction operator for _T::SharedPtr.
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR(_T)\
+            inline thekogans::util::TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (\
+                    thekogans::util::TransactedFile::Range &range,\
+                    _T::SharedPtr &object) {\
+                thekogans::util::TransactedFile::Object::SharedPtr base;\
+                range >> base;\
+                object = base;\
+                return range;\
             }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to create a Serializable of type: %s.",
-                    header.type.c_str ());
-            }
-            return range;
-        }
-#endif
 
         /// \brief
         /// Implement \see{TransactedFile::Allocator} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::Allocator)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Allocator)
 
         /// \brief
         /// Implement \see{TransactedFile::Registry} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::Registry)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Registry)
 
         /// \struct SimpleTransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///

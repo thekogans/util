@@ -29,7 +29,7 @@ namespace thekogans {
             TransactedFileBTreeRegistry::Header::SIZE,
             TransactedFile::Registry::TYPE)
 
-        Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
+        TransactedFile::Object::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             LockGuard<SpinLock> guard (spinLock);
             TransactedFileBTree::Iterator it;
             return btree->Find (StringKey (key), it) ? it.GetValue () : nullptr;
@@ -37,7 +37,7 @@ namespace thekogans {
 
         void TransactedFileBTreeRegistry::SetValue (
                 const std::string &key,
-                Serializable::SharedPtr value) {
+                TransactedFile::Object::SharedPtr value) {
             LockGuard<SpinLock> guard (spinLock);
             if (value == nullptr) {
                 btree->Remove (StringKey (key));
@@ -91,43 +91,19 @@ namespace thekogans {
             return serializer;
         }
 
-        void TransactedFileBTreeRegistry::Write (Serializer &serializer) const {
+        void TransactedFileBTreeRegistry::Write (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
             serializer << MAGIC32 << header;
         }
 
-        void TransactedFileBTreeRegistry::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr file,
-                int phase) noexcept {
-            TransactedFile::Allocator::SharedPtr allocator = file->GetAllocator ();
-            // Can't have a registry without an allocator.
-            assert (allocator != nullptr);
-            if (phase == TransactedFile::COMMIT_PHASE_1) {
-                allocator->SetRegistryOffset (
-                    allocator->Realloc (allocator->GetRegistryOffset (), GetSize ()));
-            }
-            else if (phase == TransactedFile::COMMIT_PHASE_2) {
-                TransactedFile::BlockRange range (
-                    *file, allocator->GetRegistryOffset (), false);
-                range << *this;
-            }
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr file) noexcept {
-            TransactedFile::BlockRange range (
-                *file, file->GetAllocator ()->GetRegistryOffset ());
-            range >> *this;
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectAlloc (
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectAllocRange (
                 TransactedFile::Object::SharedPtr object) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = object->GetOffset ();
             SetDirty (true);
         }
 
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectFree (
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectFreeRange (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = 0;

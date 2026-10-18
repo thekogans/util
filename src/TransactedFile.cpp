@@ -356,30 +356,11 @@ namespace thekogans {
                 if (allocator_ != nullptr) {
                     allocator_.Reset (new TransactedFileBTreeAllocator);
                 }
-                // Initialize the first block.
-                Allocator::Block block (
-                    *this,
-                    Allocator::Block::HEADER_SIZE,
-                    0,
-                    allocator_->GetSize ());
-                // For performance reasons Range assumes that all
-                // reads and writes are within file bounds. We set
-                // the file size here so that block.Write and range
-                // insert below honor that assumption.
-                Grow (Allocator::Block::SIZE + block.GetSize ());
-                block.Write ();
-                Range range (*this, block.GetOffset (), block.GetSize (), false);
+                BlockRange range (this, allocator_->Alloc (allocator_->GetSize ()), false);
                 range << *allocator_;
             }
             {
-                BlockRange range (*this, Allocator::Block::HEADER_SIZE);
-                ContextGuard guard (range, SerializableHeader (), DynamicCreatable::FactoryType (),
-                    [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
-                        Allocator::SharedPtr allocator = dynamicCreatable;
-                        if (allocator != nullptr) {
-                            allocator->file = this;
-                        }
-                    });
+                BlockRange range (this, Allocator::Block::HEADER_SIZE);
                 range >> allocator;
                 assert (allocator != nullptr && allocator->file == this);
             }
@@ -389,18 +370,11 @@ namespace thekogans {
                 }
                 allocator->SetRegistryOffset (
                     allocator->Alloc (registry_->GetSize ()));
-                BlockRange range (*this, allocator->GetRegistryOffset (), false);
+                BlockRange range (this, allocator->GetRegistryOffset (), false);
                 range << *registry_;
             }
             {
-                BlockRange range (*this, allocator->GetRegistryOffset ());
-                ContextGuard guard (range, SerializableHeader (), DynamicCreatable::FactoryType (),
-                    [this] (DynamicCreatable::SharedPtr dynamicCreatable) {
-                        Registry::SharedPtr registry = dynamicCreatable;
-                        if (registry != nullptr) {
-                            registry->file = this;
-                        }
-                    });
+                BlockRange range (this, allocator->GetRegistryOffset ());
                 range >> registry;
                 assert (registry != nullptr && registry->file == this);
             }
@@ -505,6 +479,32 @@ namespace thekogans {
             std::string name = Path (path).GetFullFileName ();
             return path + "-" +
                 GUID::FromBuffer (name.data (), name.size ()).ToHexString () + ".log";
+        }
+
+        TransactedFile::Range &operator >> (
+                TransactedFile::Range &range,
+                TransactedFile::Object::SharedPtr &object) {
+            SerializableHeader header;
+            range >> header;
+            object = TransactedFile::Object::CreateObject (
+                header.type.c_str (), range.GetFile (), range.GetOffset ());
+            if (object != nullptr) {
+                if (header.version <= object->Version ()) {
+                    object->Read (header, range);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Header version (%u) is greater then the TransactedFile::Object version (%u).",
+                        header.version,
+                        object->Version ());
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to create a TransactedFile::Object of type: %s.",
+                    header.type.c_str ());
+            }
+            return range;
         }
 
         SimpleTransactedFile::SimpleTransactedFile (

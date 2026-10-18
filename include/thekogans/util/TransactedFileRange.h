@@ -76,10 +76,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Range : public RandomSeekSerializer {
 protected:
     /// \brief
     /// \see{TransactedFile} the range is referring too.
-    TransactedFile &file;
+    TransactedFile::SharedPtr file;
     /// \brief
     /// Begining of range.
-    ui64 offset;
+    AddressSpaceType::AddressType offset;
     /// \brief
     /// Length of range.
     std::size_t length;
@@ -99,7 +99,7 @@ protected:
     std::size_t position;
     /// \brief
     /// \see{TransactedFile::AddressSpaceType::Page} associated with this range.
-    TransactedFile::AddressSpaceType::Page::SharedPtr page;
+    AddressSpaceType::Page::SharedPtr page;
     /// \brief
     /// true == We straddle a \see{TransactedFile::AddressSpaceType::Page} boundary.
     /// We allocated data and need to copy and free it in the dtor.
@@ -114,8 +114,8 @@ public:
     /// \param[in] reading_ true == range is for reading, false == range is for writing.
     /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
     Range (
-        TransactedFile &file_,
-        ui64 offset_,
+        TransactedFile::SharedPtr file_,
+        AddressSpaceType::AddressType offset_,
         std::size_t length_,
         bool reading_ = true,
         util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
@@ -123,6 +123,12 @@ public:
     /// dtor.
     virtual ~Range ();
 
+    inline TransactedFile::SharedPtr GetFile () const {
+        return file;
+    }
+    inline AddressSpaceType::AddressType GetOffset () const {
+        return offset;
+    }
     /// \brief
     /// Return the next location we will read/write from/to.
     /// \return data at the next location we will read/write from/to.
@@ -188,8 +194,8 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
     /// \param[in] reading true == range is for reading, false == range is for writing.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     SafeRange (
-        TransactedFile &file,
-        ui64 offset,
+        TransactedFile::SharedPtr file,
+        AddressSpaceType::AddressType offset,
         std::size_t length,
         bool reading = true,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
@@ -238,10 +244,10 @@ private:
     /// \param[in] length Range length.
     /// \return Clamped length.
     inline static std::size_t ClampLength (
-            TransactedFile &file,
-            ui64 offset,
+            TransactedFile::SharedPtr file,
+            AddressSpaceType::AddressType offset,
             std::size_t length) {
-        ui64 size = file.GetSizeEx ();
+        AddressSpaceType::SizeType size = file->GetSizeEx ();
         return size > offset ? MIN (length, size - offset) : 0;
     }
 };

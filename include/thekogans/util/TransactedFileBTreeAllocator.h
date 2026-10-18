@@ -65,13 +65,13 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Header {
                 /// \brief
                 /// Contains the offset of the \see{BTree::Header}.
-                PtrType btreeOffset;
+                TransactedFile::AddressSpaceType::AddressType btreeOffset;
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
                     UI32_SIZE +     // magic
-                    PTR_TYPE_SIZE;  // btreeOffset
+                    TransactedFile::AddressSpaceType::AddressTypeSize;  // btreeOffset
 
                 /// \brief
                 /// ctor.
@@ -92,7 +92,7 @@ namespace thekogans {
             std::size_t btreeNodeFileSize;
             /// \brief
             /// Synchronization lock.
-            mutable SpinLock spinLock;
+            SpinLock spinLock;
 
         public:
             /// \brief
@@ -118,11 +118,13 @@ namespace thekogans {
             /// in to a \see{BlockAllocator} page.
             /// \param[in] allocator_ \see{util::Allocator} for \see{BTree::Node}.
             TransactedFileBTreeAllocator (
+                TransactedFile::SharedPtr file = nullptr,
+                TransactedFile::AddressSpaceType::AddressType offset = 0,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
                 util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
-                Allocator (secure),
+                Allocator (file, offset, secure),
                 btreeEntriesPerNode (btreeEntriesPerNode_),
                 btreeNodesPerPage (btreeNodesPerPage_),
                 allocator (allocator_),
@@ -133,11 +135,11 @@ namespace thekogans {
             /// Allocate a block.
             /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
-            virtual PtrType Alloc (std::size_t size) override;
+            virtual TransactedFile::AddressSpaceType::AddressType Alloc (std::size_t size) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] offset Offset of block to free.
-            virtual void Free (PtrType offset) override;
+            virtual void Free (TransactedFile::AddressSpaceType::AddressType offset) override;
             /// \brief
             /// Resize a block. Make it bigger or smaller.
             /// \param[in] offset Offset of \see{Block} to resize.
@@ -146,8 +148,8 @@ namespace thekogans {
             /// \return If newSize is greater than current size, return the
             /// new \see{Block} offset. If not, return the old \see{Block}
             /// offset.
-            virtual PtrType Realloc (
-                PtrType offset,
+            virtual TransactedFile::AddressSpaceType::AddressType Realloc (
+                TransactedFile::AddressSpaceType::AddressType offset,
                 std::size_t newSize,
                 bool moveData = true) override;
 
@@ -160,7 +162,7 @@ namespace thekogans {
                 Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the given \see{Serializer}.
-            virtual void Write (Serializer &serializer) const override;
+            virtual void Write (Serializer &serializer) override;
 
             // TransactedFileEvents
             /// \brief
@@ -183,12 +185,12 @@ namespace thekogans {
             /// \brief
             /// \see{BTree} allocated it's header block.
             /// \param[in] object \see{BTree} that allocated it's header block.
-            virtual void OnTransactedFileObjectAlloc (
+            virtual void OnTransactedFileObjectAllocRange (
                 TransactedFile::Object::SharedPtr object) noexcept override;
             /// \brief
             /// \see{BTree} freed it's header block.
             /// \param[in] object \see{BTree} that freed it's header block.
-            virtual void OnTransactedFileObjectFree (
+            virtual void OnTransactedFileObjectFreeRange (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 
             /// \brief

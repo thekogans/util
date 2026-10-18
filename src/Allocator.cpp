@@ -25,7 +25,7 @@
 #include "thekogans/util/Allocator.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/DefaultAllocator.h"
-    #include "thekogans/util/GlobalSlabAllocator.h"
+    #include "thekogans/util/SlabAllocatorHeap.h"
     #include "thekogans/util/SecureAllocator.h"
     #if defined (TOOLCHAIN_OS_Windows)
         #include "thekogans/util/os/windows/HGLOBALAllocator.h"
@@ -44,7 +44,7 @@ namespace thekogans {
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Allocator::StaticInit () {
             DefaultAllocator::StaticInit ();
-            GlobalSlabAllocator::StaticInit ();
+            GlobalSlabAllocatorHeap::StaticInit ();
             SecureAllocator::StaticInit ();
         #if defined (TOOLCHAIN_OS_Windows)
             os::windows::HGLOBALAllocator::StaticInit ();
