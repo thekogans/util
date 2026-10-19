@@ -185,60 +185,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Transaction)
             };
 
-            /// \struct TransactedFile::TransactionParticipant TransactedFile.h
-            /// thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// TransactionParticipants are objects that listen to
-            /// \see{TransactedFileEvents} and are able to flush and reload
-            /// themselves to and from a \see{TransactedFile}.
-            struct _LIB_THEKOGANS_UTIL_DECL TransactionParticipant :
-                    public Subscriber<TransactedFileEvents> {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactionParticipant)
-
-            protected:
-                /// \brief
-                /// \see{TransactedFile} whose \see{TransactedFileEvents}
-                /// we're participants of.
-                TransactedFile::SharedPtr file;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
-                explicit TransactionParticipant (TransactedFile::SharedPtr file_ = nullptr) :
-                    file (file_) {}
-                /// \brief
-                /// dtor.
-                virtual ~TransactionParticipant () {}
-
-                /// \brief
-                /// Return the file.
-                /// \return file.
-                inline TransactedFile::SharedPtr GetFile () const {
-                    return file;
-                }
-
-                inline bool IsDirty () {
-                    return file->IsSubscribed (*this);
-                }
-                /// \brief
-                /// Subscribe to \see{TransactedFileEvents}.
-                /// \param[in] dirty == true, Subcribe.
-                /// dirty == false, Unsubscribe.
-                void SetDirty (bool dirty);
-
-                /// \brief
-                /// TransactedFile::Init sets the file.
-                friend struct TransactedFile;
-
-                /// \brief
-                /// TransactionParticipant is neither copy or move constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactionParticipant)
-            };
-
         private:
             /// \brief
             /// File size.

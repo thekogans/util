@@ -46,6 +46,15 @@ namespace thekogans {
                 });
         }
 
+        void TransactedFile::Object::SetDirty (bool dirty) {
+            if (dirty) {
+                file->Subscribe (*this);
+            }
+            else {
+                file->Unsubscribe (*this);
+            }
+        }
+
         TransactedFile::AddressSpaceType::AddressType TransactedFile::Object::ForceFlush () {
             if (IsDirty ()) {
                 AllocRange ();

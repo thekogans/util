@@ -142,15 +142,6 @@ namespace thekogans {
         }
 #endif
 
-        void TransactedFile::TransactionParticipant::SetDirty (bool dirty) {
-            if (dirty) {
-                file->Subscribe (*this);
-            }
-            else {
-                file->Unsubscribe (*this);
-            }
-        }
-
         namespace {
             std::size_t GetPhysicalSectorSize (THEKOGANS_UTIL_HANDLE handle) {
             #if defined (TOOLCHAIN_OS_Windows)
@@ -350,35 +341,42 @@ namespace thekogans {
         void TransactedFile::Init (
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_) {
-            // Initialization is all or nothing.
-            Transaction transaction (*this);
             if (size == 0) {
+                // Initialization is all or nothing.
+                Transaction transaction (*this);
                 if (allocator_ != nullptr) {
-                    allocator_.Reset (new TransactedFileBTreeAllocator);
+                    allocator = allocator_;
+                    allocator->file = this;
                 }
-                BlockRange range (this, allocator_->Alloc (allocator_->GetSize ()), false);
-                range << *allocator_;
-            }
-            {
-                BlockRange range (this, Allocator::Block::HEADER_SIZE);
-                range >> allocator;
-                assert (allocator != nullptr && allocator->file == this);
-            }
-            if (allocator->GetRegistryOffset () == 0) {
+                else {
+                    allocator.Reset (new TransactedFileBTreeAllocator (this));
+                }
                 if (registry_ != nullptr) {
-                    registry_.Reset (new TransactedFileBTreeRegistry);
+                    registry = registry_;
+                    registry->file = this;
                 }
-                allocator->SetRegistryOffset (
-                    allocator->Alloc (registry_->GetSize ()));
-                BlockRange range (this, allocator->GetRegistryOffset (), false);
-                range << *registry_;
+                else {
+                    registry.Reset (new TransactedFileBTreeRegistry (this));
+                }
+                BlockRange allocatorRange (this, allocator->Alloc (allocator->GetSize ()), false);
+                BlockRange registryRange (this, allocator->Alloc (registry->GetSize ()), false);
+                allocator->SetRegistryOffset (registryRange.GetOffset ());
+                allocatorRange << *allocator;
+                registryRange << *registry;
+                transaction.Commit ();
             }
-            {
-                BlockRange range (this, allocator->GetRegistryOffset ());
-                range >> registry;
-                assert (registry != nullptr && registry->file == this);
+            else {
+                {
+                    BlockRange range (this, Allocator::Block::HEADER_SIZE);
+                    range >> allocator;
+                    assert (allocator != nullptr && allocator->file == this);
+                }
+                {
+                    BlockRange range (this, allocator->GetRegistryOffset ());
+                    range >> registry;
+                    assert (registry != nullptr && registry->file == this);
+                }
             }
-            transaction.Commit ();
         }
 
         void TransactedFile::CommitLog (const std::string &path) {

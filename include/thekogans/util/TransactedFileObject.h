@@ -53,8 +53,8 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
 /// A TransactedFile Object is an object that has allocated at least one block
 /// from \see{TransactedFile::Allocator} and participates in \see{TransactedFileEvents}.
 struct _LIB_THEKOGANS_UTIL_DECL Object :
-        public TransactionParticipant,
         public Serializable,
+        public Subscriber<TransactedFileEvents>,
         public Producer<ObjectEvents> {
     /// \brief
     /// Object is a \see{util::DynamicCreatable} abstract base.
@@ -69,20 +69,22 @@ struct _LIB_THEKOGANS_UTIL_DECL Object :
 
 protected:
     /// \brief
+    /// \see{TransactedFile} whose \see{TransactedFileEvents}
+    /// we're participants of.
+    TransactedFile::SharedPtr file;
+    /// \brief
     /// Our address inside the \see{TransactedFile}.
     AddressSpaceType::AddressType offset;
 
 public:
-    Object () :
-        offset (0) {}
     /// \brief
     /// ctor.
     /// \param[in] file \see{TransactedFile} where this object resides.
     /// \param[in] offset_ Offset of the \see{TransactedFile::Allocator::Block}.
     Object (
-        TransactedFile::SharedPtr file,
+        TransactedFile::SharedPtr file_ = nullptr,
         AddressSpaceType::AddressType offset_ = 0) :
-        TransactionParticipant (file),
+        file (file_),
         offset (offset_) {}
     /// \brief
     /// dtor.
@@ -94,11 +96,27 @@ public:
         AddressSpaceType::AddressType offset);
 
     /// \brief
+    /// Return the file.
+    /// \return file.
+    inline TransactedFile::SharedPtr GetFile () const {
+        return file;
+    }
+
+    /// \brief
     /// Return the offset.
     /// \return offset.
     inline AddressSpaceType::AddressType GetOffset () const {
         return offset;
     }
+
+    inline bool IsDirty () {
+        return file->IsSubscribed (*this);
+    }
+    /// \brief
+    /// Subscribe to \see{TransactedFileEvents}.
+    /// \param[in] dirty == true, Subcribe.
+    /// dirty == false, Unsubscribe.
+    void SetDirty (bool dirty);
 
     /// \brief
     /// If the object is dirty, flush it's cache to disk.
@@ -134,6 +152,8 @@ protected:
     /// \param[in] file \see{TransactedFile} aborting the transaction.
     virtual void OnTransactedFileTransactionAbort (
         TransactedFile::SharedPtr /*file*/) noexcept override;
+
+    friend struct TransactedFile;
 
     /// \brief
     /// Object is neither copy constructable, nor assignable.
