@@ -208,7 +208,7 @@ namespace thekogans {
             /// per thread. This optimization allows us to bypass the costly lock
             /// acquisition. In real load testing (see test_SlabAllocator) this
             /// results in ~65% speedup!
-            struct TLC {
+            struct alignas (SYSTEM_CACHE_LINE_SIZE) TLC {
                 std::size_t pageSize{0};
                 /// \brief
                 /// Our own local slot cache.
@@ -257,8 +257,6 @@ namespace thekogans {
             /// \brief
             /// Return the TLC associated with this allocator.
             inline TLC &GetTLC () const noexcept {
-                static constexpr std::size_t MAX_ALLOCATORS = 100;
-                thread_local TLC caches[MAX_ALLOCATORS];
                 return caches[instanceId];
             }
 
@@ -302,7 +300,12 @@ namespace thekogans {
             /// \brief
             /// Allocate a new page.
             void AllocPage () noexcept;
+
+            static constexpr std::size_t MAX_ALLOCATORS = 100;
+            static thread_local TLC caches[MAX_ALLOCATORS];
         };
+
+        inline thread_local SlabAllocatorImpl::TLC SlabAllocatorImpl::caches[SlabAllocatorImpl::MAX_ALLOCATORS];
 
     } // namespace util
 } // namespace thekogans

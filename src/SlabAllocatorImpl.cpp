@@ -112,6 +112,7 @@ namespace thekogans {
                     // b) no more partial pages to harvest. If it's the
                     // later, grab a fresh page from the OS.
                     if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount < tlcBatchSize)) {
+                        assert (partialPageList == nullptr);
                         AllocPage ();
                     }
                 }

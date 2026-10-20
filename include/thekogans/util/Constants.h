@@ -696,6 +696,136 @@ namespace thekogans {
             return value + 1;
         }
 
+        template<typename T>
+        [[nodiscard]] inline constexpr int countr_zero (T x) noexcept {
+            static_assert(std::is_integral_v<T> && !std::is_signed_v<T>,
+                "Type must be an unsigned integer.");
+            if (x == 0) {
+                return BitWidth<T>::value;
+            }
+        #if defined (_MSC_VER)
+            // --- MSVC Implementation Branch ---
+            unsigned long index = 0;
+            if constexpr (sizeof (T) <= Width<ui32>::value) {
+                // _BitScanForward handles types up to 32-bit (returns trailing zeros via index)
+                _BitScanForward (&index, static_cast<unsigned long> (x));
+            }
+            else {
+                // _BitScanForward64 handles 64-bit types
+                _BitScanForward64 (&index, static_cast<unsigned __int64> (x));
+            }
+            return static_cast<int> (index);
+        #elif defined (__GNUC__) || defined (__clang__)
+            // --- GCC / Clang Implementation Branch ---
+            if constexpr (sizeof (T) <= sizeof (unsigned int)) {
+                return __builtin_ctz (static_cast<unsigned int> (x));
+            }
+            else if constexpr (sizeof (T) == sizeof (unsigned long)) {
+                return __builtin_ctzl (x);
+            }
+            else {
+                return __builtin_ctzll (x);
+            }
+        #else
+            // Fallback for uncommon compilers (guarantees compilation, but relies on loop)
+            int count = 0;
+            while ((x & 1) == 0) {
+                count++;
+                x >>= 1;
+            }
+            return count;
+        #endif
+        }
+
+        // ============================================================================
+        // 1. FORCED COUNT LEADING ZEROS (C++20 std::countl_zero alternative)
+        // ============================================================================
+        template<typename T>
+        [[nodiscard]] inline constexpr int countl_zero (T x) noexcept {
+            static_assert(std::is_integral_v<T> && !std::is_signed_v<T>,
+                "Type must be an unsigned integer.");
+            if (x == 0) {
+                return BitWidth<T>::value;
+            }
+        #if defined (_MSC_VER)
+            // --- MSVC Branch ---
+            unsigned long index = 0;
+            if constexpr (sizeof (T) <= Width<ui32>::value) {
+                // _BitScanReverse finds the most significant set bit index from LSB (0-based)
+                _BitScanReverse (&index, static_cast<unsigned long> (x));
+                return 31 - static_cast<int> (index);
+            }
+            else {
+                _BitScanReverse64 (&index, static_cast<unsigned __int64> (x));
+                return 63 - static_cast<int> (index);
+            }
+        #elif defined (__GNUC__) || defined (__clang__)
+            // --- GCC / Clang Branch ---
+            if constexpr (sizeof (T) <= sizeof (unsigned int)) {
+                // __builtin_clz assumes a 32-bit int width, adjust for smaller types
+                constexpr int int_bits = sizeof (unsigned int) * CHAR_BIT;
+                return __builtin_clz (static_cast<unsigned int> (x)) - (int_bits - BitWidth<T>::value);
+            }
+            else if constexpr (sizeof (T) == sizeof (unsigned long)) {
+                return __builtin_clzl (x);
+            }
+            else {
+                return __builtin_clzll (x);
+            }
+        #else
+            // Fallback
+            int count = 0;
+            for (int i = total_bits; i-- >= 0;) {
+                if ((x >> i) & 1) {
+                    break;
+                }
+                ++count;
+            }
+            return count;
+        #endif
+        }
+
+        // ============================================================================
+        // 2. FORCED POPULATION COUNT (C++20 std::popcount alternative)
+        // ============================================================================
+        template<typename T>
+        [[nodiscard]] inline constexpr int popcount (T x) noexcept {
+            static_assert (std::is_integral_v<T> && !std::is_signed_v<T>,
+                "Type must be an unsigned integer.");
+        #if defined (_MSC_VER)
+            // --- MSVC Branch ---
+            if constexpr (sizeof (T) <= Width<ui16>::value) {
+                return static_cast<int> (__popcnt16 (static_cast<unsigned short> (x)));
+            }
+            else if constexpr (sizeof (T) == Width<ui32>::value) {
+                return static_cast<int> (__popcnt (static_cast<unsigned int> (x)));
+            }
+            else {
+                return static_cast<int> (__popcnt64 (static_cast<unsigned __int64> (x)));
+            }
+
+        #elif defined (__GNUC__) || defined (__clang__)
+            // --- GCC / Clang Branch ---
+            if constexpr (sizeof (T) <= sizeof (unsigned int)) {
+                return __builtin_popcount (static_cast<unsigned int> (x));
+            }
+            else if constexpr (sizeof (T) == sizeof(unsigned long)) {
+                return __builtin_popcountl (x);
+            }
+            else {
+                return __builtin_popcountll (x);
+            }
+        #else
+            // Fallback (Brian Kernighan's algorithm)
+            int count = 0;
+            while (x) {
+                ++count;
+                x &= (x - 1);
+            }
+            return count;
+        #endif
+        }
+
     } // namespace util
 } // namespace thekogans
 

@@ -380,9 +380,9 @@ namespace thekogans {
             struct SlotSize {
                 static constexpr std::size_t calcSlotSize () noexcept {
                     // 1. Determine the maximum alignment required by either the object or the free list pointer
-                    constexpr std::size_t requiredAlign = std::max (alignof (T), alignof (void *));
+                    constexpr std::size_t requiredAlign = MAX (alignof (T), alignof (void *));
                     // 2. Determine the maximum size required by either object
-                    constexpr std::size_t rawSize = std::max (sizeof (T), sizeof (void *));
+                    constexpr std::size_t rawSize = MAX (sizeof (T), sizeof (void *));
                     // 3. Round up the size to a clean multiple of our highest alignment requirement
                     return (rawSize + requiredAlign - 1) / requiredAlign * requiredAlign;
                 }
@@ -444,7 +444,7 @@ namespace thekogans {
                     "    - Policy::Lock<typename> (Default SpinLock)\n"
                     "    - Policy::PageAllocator<typename> (Default detail::DefaultPageAllocator\n"
                     "    - Policy::InstanceCreator<template> (only used if derived from GlobalSlabAllocator)\n"
-                    "    - Policy::IsCompaction<bool> (Default false)\n"
+                    "    - Policy::IsCompaction<bool> (Default true)\n"
                     "    - Policy::DeriveTLCThreshold<std::size_t, std::size_t>\n"
                     "    - Policy::DeriveSlotsPerPage<std::size_t, std::size_t>\n"
                     "    - Policy::DeriveSlotsPerPageAndTLCThreshold<std::size_t>\n"
@@ -608,12 +608,12 @@ namespace thekogans {
                                 reinterpret_cast<std::byte *> (this + 1) + header.slotCount * slotSize);
                         }
                         if (THEKOGANS_UTIL_UNLIKELY (++header.slotCount == maxSlots)) {
-                            // Page is full. Evict it from the list so that no one asks it
-                            // for slots again. Yes the page is now floating out there in
-                            // the either completely inaccessible until someone decides to
-                            // free one of it's slots or if the allocator is scoped and it's
-                            // dtor fires. Either way full pages get evicted from the partial
-                            // list so as not to waste time traversion over them when allocating.
+                            // Page is full. Evict it from the partial list so that no one asks
+                            // it for slots again. Yes the page is now floating out there in the
+                            // either completely inaccessible until someone decides to free one
+                            // of it's slots or if the allocator is scoped and it's dtor fires.
+                            // Either way full pages get evicted from the partial list so as not
+                            //to waste time traversion over them when allocating.
                             header.allocator.storage.partialPageList = header.partialNext;
                             header.partialNext = nullptr;
                         }
@@ -646,6 +646,11 @@ namespace thekogans {
                     sizeof (Page) == CacheLineSize,
                     "sizeof (Page) must be EXACTLY equal to CacheLineSize.");
 
+                /// \struct SlabAllocator::ScopedSlabAllocatorStorageBase SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+                ///
+                /// \brief
+                /// Storage base for scoped allocators. Adds a masterPageList to keep track
+                /// of allocated pages to be freed in the dtor.
                 struct ScopedSlabAllocatorStorageBase {
                     Page *masterPageList{nullptr};
                     ~ScopedSlabAllocatorStorageBase () noexcept {
@@ -663,6 +668,10 @@ namespace thekogans {
                     ScopedSlabAllocatorStorageBase,
                     SingletonSlabAllocatorStorageBase>;
 
+                /// \struct SlabAllocator::Storage SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+                ///
+                /// \brief
+                /// SlabAllocator state.
                 struct Storage : public StorageBase {
                     /// \brief
                     /// Partially allocated page list.
@@ -683,7 +692,7 @@ namespace thekogans {
                 /// per thread. This optimization allows us to bypass the costly lock
                 /// acquisition. In real load testing (see test_SlabAllocator) this
                 /// results in ~65% speedup!
-                struct TLC {
+                struct alignas (CacheLineSize) TLC {
                     /// \brief
                     /// Our own local slot cache.
                     typename Page::Slot *slotList{nullptr};
@@ -691,6 +700,8 @@ namespace thekogans {
                     /// Number of slots currently in the cache.
                     std::size_t slotCount{0};
 
+                    /// \brief
+                    /// dtor. Return our locally cached slots back tothe global page pool.
                     ~TLC () noexcept {
                         if (slotList != nullptr) {
                             Page *page = slotList->GetPage ();
@@ -727,14 +738,7 @@ namespace thekogans {
                         return slot;
                     }
                 };
-
-                /// \brief
-                /// Return the TLC.
-                /// \return tlc.
-                static TLC &GetTLC () noexcept {
-                    thread_local TLC tlc;
-                    return tlc;
-                }
+                static inline thread_local TLC tlc;
 
             public:
                 /// \brief
@@ -742,7 +746,6 @@ namespace thekogans {
                 void *Alloc () {
                     void *ptr = nullptr;
                     if constexpr (TLCThreshold > 0) {
-                        TLC &tlc = GetTLC ();
                         // See if we have a free slot in our local cache.
                         if (THEKOGANS_UTIL_UNLIKELY (tlc.slotList == nullptr)) {
                             // No banana. Let's seed the TLC.
@@ -757,6 +760,7 @@ namespace thekogans {
                                 // If inner loop broke but target isn't met, the pool is dry.
                                 // Seed a fresh page from the OS and let the outer loop repeat the harvest.
                                 if (tlc.slotCount < batchTarget) {
+                                    assert (storage.partialPageList == nullptr);
                                     AllocPage ();
                                 }
                             }
@@ -782,7 +786,6 @@ namespace thekogans {
                         typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
                         if (slot->GetPage () != nullptr) {
                             if constexpr (TLCThreshold > 0) {
-                                TLC &tlc = GetTLC ();
                                 tlc.Push (slot);
                                 // If we have no more room in our local cache batch release a bunch
                                 // of slots back to their pages so that we have room for more.
