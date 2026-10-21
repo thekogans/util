@@ -82,7 +82,6 @@ namespace thekogans {
         /// by all insertion APIs to check containment before inserting. This
         /// is why they return a bool (to let the caller know whether the node
         /// has been inserted).
-
         template<
             typename T,
             i32 ID = 0>

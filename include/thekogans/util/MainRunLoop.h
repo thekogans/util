@@ -23,7 +23,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/Thread.h"
 #include "thekogans/util/RunLoop.h"
 #include "thekogans/util/SystemRunLoop.h"
 #if defined (TOOLCHAIN_OS_Linux) && !defined (THEKOGANS_UTIL_HAVE_XLIB)
@@ -40,10 +39,6 @@ namespace thekogans {
         /// MainRunLoop::Instance to supply custom arguments to SystemRunLoop ctor.
         /// If you don't call MainRunLoop::CreateInstance, MainRunLoop will
         /// create a \see{SystemRunLoop} on it's first invocation of Instance.
-        ///
-        /// VERY IMPORTANT: MainRunLoop::CreateInstance performs initialization
-        /// (calls Thread::SetMainThread ()) that only makes sense when called from the
-        /// main thread (main).
         struct _LIB_THEKOGANS_UTIL_DECL MainRunLoopInstanceCreator {
             /// \brief
             /// Returns RunLoop::SharedPtr.
@@ -58,7 +53,6 @@ namespace thekogans {
                     const std::string &name = "MainRunLoop",
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                         new RunLoop::FIFOJobExecutionPolicy) {
-                Thread::SetMainThread ();
                 return
                 #if defined (TOOLCHAIN_OS_Windows)
                     new SystemRunLoop<os::windows::RunLoop> (name, jobExecutionPolicy);
@@ -82,8 +76,7 @@ namespace thekogans {
             public Singleton<
                 RunLoop,
                 SpinLock,
-                MainRunLoopInstanceCreator,
-                RefCountedInstanceDestroyer<RunLoop>> {};
+                MainRunLoopInstanceCreator> {};
 
     } // namespace util
 } // namespace thekogans

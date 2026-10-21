@@ -346,14 +346,12 @@ namespace thekogans {
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Unable to retrieve property: %s",
-                            "kIOPlatformUUIDKey");
+                            "Unable to retrieve property: kIOPlatformUUIDKey");
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Unable to retrieve registry entry: %s",
-                        "IOService:/");
+                        "Unable to retrieve registry entry: IOService:/");
                 }
             #endif // defined (TOOLCHAIN_OS_Windows)
             }

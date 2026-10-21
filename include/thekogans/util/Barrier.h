@@ -45,9 +45,8 @@ namespace thekogans {
         /// \struct Barrier Barrier.h thekogans/util/Barrier.h
         ///
         /// \brief
-        /// Wraps a Windows/Linux barrier synchronization object.
-        /// Emulates it on OS X.
-
+        /// Wraps a Windows/POSIX barrier synchronization object.
+        /// Emulates it if it doesn't exist (OS X).
         struct _LIB_THEKOGANS_UTIL_DECL Barrier {
         private:
         #if defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
@@ -63,8 +62,11 @@ namespace thekogans {
             /// Number of threads to wait for.
             const std::size_t count;
             /// \brief
-            /// Number of threads that entered the barrier.
-            std::size_t entered;
+            /// Generation guard.
+            std::size_t spaces;
+            /// \brief
+            /// Generation guard.
+            std::size_t generation;
             /// \brief
             /// Synchronization mutex.
             Mutex mutex;

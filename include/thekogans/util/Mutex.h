@@ -18,13 +18,8 @@
 #if !defined (__thekogans_util_Mutex_h)
 #define __thekogans_util_Mutex_h
 
-#include "thekogans/util/Environment.h"
-#if defined (TOOLCHAIN_OS_Windows)
-    #include "thekogans/util/os/windows/WindowsHeader.h"
-#else // defined (TOOLCHAIN_OS_Windows)
-    #include <pthread.h>
-#endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
+#include "thekogans/util/ImplPtr.h"
 
 namespace thekogans {
     namespace util {
@@ -32,20 +27,26 @@ namespace thekogans {
         /// \struct Mutex Mutex.h thekogans/util/Mutex.h
         ///
         /// \brief
-        /// Mutex is part of the cross-platform synchronization
-        /// primitives. Note, on Windows it is defined as a critical
-        /// section. This is on purpose. The POSIX model of pairing a
-        /// mutex with a condition variable is very valuable, and is
-        /// maintained by having the Windows condition variable be linked
-        /// to this critical section (See Condition.h). With that in
-        /// mind, you can write the following code, and it will work on
-        /// all platforms:
+        /// Mutex is part of the cross-platform synchronization primitives.
+        /// Depending on the type you need (Normal or Recursive), on Windows
+        /// it is based on either SRWLOCK or CRITICAL_SECTION. Mutex is movable
+        /// so it can be stored in movable containers or transferred during setup.
+        /// It is not copyable or copy-assignable. Do not move it while it is
+        /// locked, while a thread may be waiting to acquire it, or while a
+        /// LockGuard or Condition::Wait refers to it.
+        ///
+        /// Condition::Wait requires the mutex to be owned exactly once. Windows
+        /// requires this for SleepConditionVariableCS; on POSIX, waiting on a
+        /// recursively held mutex does not fully unlock it. Although a Recursive
+        /// mutex may work if every wait occurs at recursion depth one, Mutex does
+        /// not track that depth. For portable use, pair Condition only with a
+        /// Normal mutex. This is why the type parameter defaults to Normal.
         ///
         /// \code{.cpp}
         /// RunLoop::Job::SharedPtr JobQueue::Deq () {
         ///     LockGuard<Mutex> guard (jobsMutex);
         ///     while (jobs.empty ()) {
-        ///         notEmpty.Wait ();
+        ///         notEmpty.Wait (jobsMutex);
         ///     }
         ///     Job::SharedPtr job;
         ///     assert (!jobs.empty ());
@@ -60,32 +61,39 @@ namespace thekogans {
         /// Thanks to the Mutex/Condition pairing, this code is simple,
         /// robust, and easily maintained.
         struct _LIB_THEKOGANS_UTIL_DECL Mutex {
+            enum Type {
+                /// \brief
+                /// Fast, zero-overhead, non-recursive (SRWLock / Standard POSIX)
+                Normal,
+                /// \brief
+                /// Supports re-entrant ownership (Critical Section / Recursive POSIX)
+                Recursive
+            };
+
         private:
-        #if defined (TOOLCHAIN_OS_Windows)
             /// \brief
-            /// Windows critical section.
-            CRITICAL_SECTION cs;
-        #else // defined (TOOLCHAIN_OS_Windows)
+            /// Forward declaration on Impl.
+            struct Impl;
             /// \brief
-            /// POSIX mutex.
-            pthread_mutex_t mutex;
-        #endif // defined (TOOLCHAIN_OS_Windows)
+            /// Implementation.
+            ImplPtr<Impl> impl;
 
             /// \brief
-            /// Condition needs access to cs/mutex.
+            /// Needs access to impl.
             friend struct Condition;
 
         public:
             /// \brief
             /// ctor.
-            Mutex ();
+            explicit Mutex (Type type = Normal);
             /// \brief
             /// dtor.
             ~Mutex ();
 
             /// \brief
             /// Try to acquire the mutex without blocking.
-            /// \return true = acquired, false = failed to acquire
+            /// On POSIX, errors other than EBUSY are reported as exceptions.
+            /// \return true if acquired, false if currently unavailable.
             bool TryAcquire ();
 
             /// \brief
@@ -96,33 +104,12 @@ namespace thekogans {
             /// Release the mutex.
             void Release ();
 
-    #if !defined (TOOLCHAIN_OS_Windows)
-        private:
             /// \brief
-            /// ctor.
-            /// \param[in] shared For pthread_mutex_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            Mutex (bool shared) {
-                Init (shared);
-            }
-
-            /// \brief
-            /// Initialize the mutex.
-            /// \param[in] shared For pthread_mutex_t. Initialize with
-            /// PTHREAD_PROCESS_SHARED attribute.
-            void Init (bool shared);
-
-            /// \brief
-            /// Event needs access to the private ctor.
-            friend struct Event;
-            /// \brief
-            /// Semaphore needs access to the private ctor.
-            friend struct Semaphore;
-    #endif // !defined (TOOLCHAIN_OS_Windows)
-
-            /// \brief
-            /// Mutex is neither copy constructable, nor assignable.
+            /// Mutex is not copy constructable or copy assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Mutex)
+            /// \brief
+            /// Mutex is movable.
+            THEKOGANS_UTIL_DEFAULT_MOVE_AND_ASSIGN (Mutex)
         };
 
     } // namespace util

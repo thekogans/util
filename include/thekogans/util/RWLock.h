@@ -48,6 +48,10 @@ namespace thekogans {
             pthread_rwlock_t rwlock;
         #endif // defined (TOOLCHAIN_OS_Windows)
 
+            /// \brief
+            /// Condition needs access to rwlock.
+            friend struct Condition;
+
         public:
             /// \brief
             /// Default ctor. Initialize to unlocked.

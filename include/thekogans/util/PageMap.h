@@ -20,6 +20,7 @@
 
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/Constants.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/IntrusiveList.h"
@@ -34,17 +35,17 @@ namespace thekogans {
         /// \struct PageMap PageMap.h thekogans/util/PageMap.h
         ///
         /// \brief
-        /// PageMap gives you the ability to work with virtual address spaces, potentialy
+        /// PageMap gives you the ability to work with virtual address spaces, potentially
         /// astronomical (10^19, 10^38...) in size, given the somewhat limited resources
         /// of today's and tomorrow's hosts. PageMap divides the given address space in to
-        /// sequential, contiguous, nonoverlapping pages. The pages are maintained in groups
-        /// called segments. Segments are organized as leaf nodes in a fixed depth, multiway
+        /// sequential, contiguous, non overlapping pages. The pages are maintained in groups
+        /// called segments. Segments are organized as leaf nodes in a fixed depth, multi way
         /// tree. Given a particular parameterization of an address space, PageMap will
         /// calculate all other parameters needed for efficient tree traversal. PageMap's
         /// entire reason for being, as far as the user is concerned, is to provide on demand
         /// access to pages given any valid address space address (GetPage). It does this by
         /// lazily wiring in pages as the need arises. Given an address, PageMap walks the
-        /// tree looking for the correponding page. That tree walk is constant for every page
+        /// tree looking for the corresponding page. That tree walk is constant for every page
         /// and is dependent on the particular parameterization of the address space. As pages
         /// accumulate, eventually memory will become an issue. PageMap provides an API to
         /// maintain internal page cache (Clear). PageMap maintains a cache of last accessed
@@ -55,10 +56,10 @@ namespace thekogans {
         /// outside the new address space size. The following knobs; AddressType, bitsPerAddress,
         /// bitsPerSegment, bitsPerLevel and bitsPerPage, allow you to tune the address space
         /// very precisely given your particular performance requirements. Specifying exactly
-        /// how many levels deep to make the multiway tree, which directly affects tree walk
+        /// how many levels deep to make the multi way tree, which directly affects tree walk
         /// performance, and by extension GetPage performance. PageMap is designed to be used
-        /// either embeded behind an API that controls access from multiple threads or as a
-        /// standalone thread safe object by passing in different types for Lock template
+        /// either embedded behind an API that controls access from multiple threads or as a
+        /// stand alone thread safe object by passing in different types for Lock template
         /// parameter.
         ///
         /// Ex:
@@ -193,8 +194,27 @@ namespace thekogans {
             /// visible outside the template.
             using AddressType = T;
             /// \brief
+            /// Size of AddressType in bytes.
+            static constexpr std::size_t AddressTypeSize = Width<AddressType>::value;
+            /// \brief
             /// Alias for T. In our world address type and size type are the same type.
             using SizeType = T;
+            /// \brief
+            /// Size of SizeType in bytes.
+            static constexpr std::size_t SizeTypeSize = Width<SizeType>::value;
+
+            /// \brief
+            /// Base type used to store \see{Parent::children} occupancy.
+            using BitMaskType = ui64;
+            /// \brief
+            /// Base type width in bits.
+            static constexpr std::size_t BitMaskWidth = BitWidth<BitMaskType>::value;
+            /// \brief
+            /// Index shift to calculate bitmask word index.
+            static constexpr std::size_t BitMaskShift = countr_zero (BitMaskWidth);
+            /// \brief
+            /// Index mod to calculate word bit index.
+            static constexpr std::size_t BitMaskMod = BitMaskWidth - 1;
 
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -571,6 +591,9 @@ namespace thekogans {
                 /// child exists just by indexing in to an array is worth all the cost.
                 Node **children;
                 /// \brief
+                /// Bitmask to facilitate finding next child in GetChild.
+                BitMaskType *bitmask;
+                /// \brief
                 /// \see{IntrusiveList} of \see{Node}s. A linked list is much better
                 /// suited to everyday chores like tree walking. We therefore maintain
                 /// a list even at the cost of making sure that the nodes are inserted
@@ -589,15 +612,16 @@ namespace thekogans {
                         std::size_t index,
                         std::size_t childCount) :
                         Node (pageMap, index),
-                        children (reinterpret_cast<Node **> (this + 1)) {
-                    SecureZeroMemory (children, childCount * sizeof (Node *));
+                        children (reinterpret_cast<Node **> (this + 1)),
+                        bitmask (reinterpret_cast<BitMaskType *> (children + childCount)) {
+                    SecureZeroMemory (children,
+                        childCount * sizeof (Node *) + (childCount / BitMaskWidth) * Width<BitMaskType>::value);
                 }
                 /// \brief
                 /// dtor.
                 virtual ~Parent () {
                     childList.for_each (
-                        [&] (NodeList &/*list*/, Node *child) {
-                            children[child->index] = nullptr;
+                        [] (NodeList &/*list*/, Node *child) {
                             child->Release ();
                             return true;
                         }
@@ -698,35 +722,53 @@ namespace thekogans {
                         std::size_t index,
                         F &&factory) {
                     if (children[index] == nullptr) {
-                        Node *child = factory ();
+                        Node *child = factory (this->pageMap, index);
                         children[index] = child;
-                        // A quick optimization to check if the node is first or last.
-                        if (childList.empty () || childList.tail->index < child->index) {
-                            // In that case a simple push_back will do the trick.
+                        // 1. Edge Case: List is completely empty.
+                        if (childList.empty ()) {
                             childList.push_back (child);
                         }
-                        else {
-                            // If not, walk the list, the slowest method.
-                            // TODO: There are various games we can play with
-                            // child->index and the size of the child list (both
-                            // full and current) to perhaps scan in reverse. Skip
-                            // list? This needs further profiling to get the lay
-                            // of the land.
-                            childList.for_each (
-                                [child] (NodeList &list, Node *child_) {
-                                    if (child->index < child_->index) {
-                                        list.insert (child, child_);
-                                        return false;
-                                    }
-                                    return true;
-                                }
-                            );
+                        // 2. Edge Case: Index is the absolute smallest (New Head).
+                        else if (child->index < childList.head->index) {
+                            childList.push_front (child);
                         }
+                        // 3. Edge Case: Index is the absolute largest (New Tail).
+                        else if (child->index > childList.tail->index) {
+                            childList.push_back (child);
+                        }
+                        // 4. General Case: Guaranteed to be buried strictly between two existing nodes.
+                        else {
+                            InsertChild (child);
+                        }
+                        // Update the bitmask with the new child.
+                        bitmask[index >> BitMaskShift] |= (static_cast<BitMaskType> (1) << (index & BitMaskMod));
                     }
                     return children[index];
                 }
 
             protected:
+                /// \brief
+                /// Insert the given child \see{Node} in to childList.
+                /// \param[in] child Child \see{Node} to insert.
+                void InsertChild (Node *child) {
+                    std::size_t wordIndex = child->index >> BitMaskShift;
+                    std::size_t bitIndex = child->index & BitMaskMod;
+                    Node *next = nullptr;
+                    static constexpr BitMaskType Zero = static_cast<BitMaskType> (0);
+                    static constexpr BitMaskType Ones = ~static_cast<BitMaskType> (0);
+                    BitMaskType word = bitmask[wordIndex] & ((bitIndex == BitMaskMod) ? Zero : (Ones << (bitIndex + 1)));
+                    if (word != Zero) {
+                        next = children[(wordIndex << BitMaskShift) + countr_zero (word)];
+                    }
+                    else {
+                        // This might look scary but we're guaranteed to find a 1 bit
+                        // because of the edge case tests in GetChild above.
+                        while (bitmask[++wordIndex] == Zero);
+                        next = children[(wordIndex << BitMaskShift) + countr_zero (bitmask[wordIndex])];
+                    }
+                    childList.insert (child, next);
+                }
+
                 /// \brief
                 /// Delete the given child.
                 /// \param[in] child \see{Node} to delete.
@@ -740,6 +782,8 @@ namespace thekogans {
                     // from the map. They need to be returned first.
                     if (child->GetRefCount () == 1) {
                         children[child->index] = nullptr;
+                        bitmask[child->index >> BitMaskShift] &=
+                            ~(static_cast<BitMaskType> (1) << (child->index & BitMaskMod));
                         childList.erase (child);
                         child->Release ();
                         return true;
@@ -771,7 +815,10 @@ namespace thekogans {
                 /// \param[in] pagesPerSegment Number of \see{Page} pointers following the segment.
                 /// \return Size of the segment node (including the following \see{Page} pointer array).
                 static std::size_t Size (std::size_t pagesPerSegment) {
-                    return sizeof (Segment) + pagesPerSegment * sizeof (Page *);
+                    return
+                        sizeof (Segment) +
+                        pagesPerSegment * sizeof (Page *) +
+                        (pagesPerSegment / BitMaskWidth) * Width<BitMaskType>::value;
                 }
 
                 /// \brief
@@ -835,7 +882,10 @@ namespace thekogans {
                 /// \param[in] nodesPerInternal Number of \see{Node} pointers following the internal node.
                 /// \return Size of the internal node (including the following \see{Node} pointer array).
                 static std::size_t Size (std::size_t nodesPerInternal) {
-                    return sizeof (Internal) + nodesPerInternal * sizeof (Node *);
+                    return
+                        sizeof (Internal) +
+                        nodesPerInternal * sizeof (Node *) +
+                        (nodesPerInternal / BitMaskWidth) * Width<BitMaskType>::value;
                 }
 
                 /// \brief
@@ -1161,10 +1211,10 @@ namespace thekogans {
                         levelShift_ -= bitsPerLevel;
                         levelMask_ >>= bitsPerLevel;
                         node = (static_cast<Internal *> (node))->GetChild (index,
-                            [&] () -> Node * {
+                            [levelMask_] (PageMap &pageMap, std::size_t index) -> Node * {
                                 return levelMask_ == 0 ?
-                                    Segment::Alloc (*this, index) :
-                                    Internal::Alloc (*this, index);
+                                    Segment::Alloc (pageMap, index) :
+                                    Internal::Alloc (pageMap, index);
                             }
                         );
                     }
@@ -1176,8 +1226,8 @@ namespace thekogans {
                     std::size_t index = (offset & segmentMask) >> bitsPerPage;
                     lastGetPagePage = static_cast<Page *> (
                         static_cast<Segment *> (node)->GetChild (index,
-                            [&] () -> Node * {
-                                return Page::Alloc (*this, index, offset, pageSource);
+                            [offset, pageSource] (PageMap &pageMap, std::size_t index) -> Node * {
+                                return Page::Alloc (pageMap, index, offset, pageSource);
                             }));
                 }
                 return lastGetPagePage;

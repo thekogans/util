@@ -90,7 +90,6 @@
     <cpp_header>$(organization)/$(project_directory)/Directory.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DynamicCreatable.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/DynamicLibrary.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Event.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Exception.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/File.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/FileLogger.h</cpp_header>
@@ -131,7 +130,6 @@
     <cpp_header>$(organization)/$(project_directory)/RandomSeekSerializer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RandomSource.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Rectangle.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/RecursiveLock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RefCounted.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RefCountedRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/RunLoop.h</cpp_header>
@@ -140,7 +138,6 @@
     <cpp_header>$(organization)/$(project_directory)/RWLockGuard.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Scheduler.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SecureAllocator.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/Semaphore.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Serializable.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableHeader.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SerializableString.h</cpp_header>
@@ -167,6 +164,7 @@
     <cpp_header>$(organization)/$(project_directory)/SystemInfo.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/SystemRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Thread.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Thread2.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ThreadRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TimeSpec.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
@@ -644,7 +642,6 @@
     <cpp_source>Directory.cpp</cpp_source>
     <cpp_source>DynamicCreatable.cpp</cpp_source>
     <cpp_source>DynamicLibrary.cpp</cpp_source>
-    <cpp_source>Event.cpp</cpp_source>
     <cpp_source>Exception.cpp</cpp_source>
     <cpp_source>File.cpp</cpp_source>
     <cpp_source>FileLogger.cpp</cpp_source>
@@ -681,7 +678,6 @@
     <cpp_source>RWLock.cpp</cpp_source>
     <cpp_source>Scheduler.cpp</cpp_source>
     <cpp_source>SecureAllocator.cpp</cpp_source>
-    <cpp_source>Semaphore.cpp</cpp_source>
     <cpp_source>Serializable.cpp</cpp_source>
     <cpp_source>SerializableHeader.cpp</cpp_source>
     <cpp_source>SerializableString.cpp</cpp_source>
@@ -704,6 +700,7 @@
     <cpp_source>StringUtils.cpp</cpp_source>
     <cpp_source>SystemInfo.cpp</cpp_source>
     <cpp_source>Thread.cpp</cpp_source>
+    <cpp_source>Thread2.cpp</cpp_source>
     <cpp_source>ThreadRunLoop.cpp</cpp_source>
     <cpp_source>Timer.cpp</cpp_source>
     <cpp_source>TimeSpec.cpp</cpp_source>

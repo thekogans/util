@@ -222,8 +222,7 @@ namespace thekogans {
                 Waiter (pthread_t threadToJoin_,
                         void **result_) :
                         threadToJoin (threadToJoin_),
-                        result (result_),
-                        condition (mutex) {
+                        result (result_) {
                     mutex.Acquire ();
                 }
                 ~Waiter () {
@@ -255,7 +254,7 @@ namespace thekogans {
                 if (timeSpec != nullptr) {
                     Waiter waiter (thread, result);
                     waiter.Create (THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
-                    if (!waiter.condition.Wait (TimeSpec (*timeSpec))) {
+                    if (!waiter.condition.Wait (waiter.mutex, TimeSpec (*timeSpec))) {
                         waiter.Cancel ();
                     }
                     waiter.Wait ();

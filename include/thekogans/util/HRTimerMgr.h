@@ -148,7 +148,6 @@ namespace thekogans {
         ///     }
         /// };
         /// \endcode
-
         struct _LIB_THEKOGANS_UTIL_DECL HRTimerMgr : public Serializable {
             /// \brief
             /// HRTimerMgr is a \see{Serializable}.

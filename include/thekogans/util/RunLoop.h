@@ -42,7 +42,6 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
-#include "thekogans/util/Event.h"
 
 namespace thekogans {
     namespace util {
@@ -138,11 +137,14 @@ namespace thekogans {
                 /// If IsFailed, exception will hold the reason.
                 Exception exception;
                 /// \brief
+                /// Lock to use with completed.
+                Mutex mutex;
+                /// \brief
                 /// Provides interruptable sleep (see Sleep below).
-                Event sleeping;
+                Condition sleeping;
                 /// \brief
                 /// Set when job completes execution.
-                Event completed;
+                Condition completed;
 
             public:
                 /// \brief
@@ -151,8 +153,7 @@ namespace thekogans {
                 Job (const Id &id_ = GUID::FromRandom ().ToHexString ()) :
                     id (id_),
                     state (Completed),
-                    disposition (Unknown),
-                    sleeping (false) {}
+                    disposition (Unknown) {}
 
                 /// \brief
                 /// Return the job id.
@@ -169,50 +170,58 @@ namespace thekogans {
                 /// \brief
                 /// Return the job state.
                 /// \return Job state.
-                inline State GetState () const {
+                inline State GetState () {
+                    LockGuard<Mutex> guard (mutex);
                     return state;
                 }
                 /// \brief
                 /// Return true if job is pending.
                 /// \return true == Job is pending.
-                inline bool IsPending () const {
+                inline bool IsPending () {
+                    LockGuard<Mutex> guard (mutex);
                     return state == Pending;
                 }
                 /// \brief
                 /// Return true if job is running.
                 /// \return true == Job is running.
-                inline bool IsRunning () const {
+                inline bool IsRunning () {
+                    LockGuard<Mutex> guard (mutex);
                     return state == Running;
                 }
                 /// \brief
                 /// Return true if job completed.
                 /// \return true == Job has completed.
-                inline bool IsCompleted () const {
+                inline bool IsCompleted () {
+                    LockGuard<Mutex> guard (mutex);
                     return state == Completed;
                 }
 
                 /// \brief
                 /// Return the job disposition.
                 /// \return Job disposition.
-                inline Disposition GetDisposition () const {
+                inline Disposition GetDisposition () {
+                    LockGuard<Mutex> guard (mutex);
                     return disposition;
                 }
                 /// \brief
                 /// Return true if the job was cancelled.
                 /// \return true == the job was cancelled.
-                inline bool IsCancelled () const {
+                inline bool IsCancelled () {
+                    LockGuard<Mutex> guard (mutex);
                     return disposition == Cancelled;
                 }
                 /// \brief
                 /// Return true if the job has failed.
                 /// \return true == the job has failed.
-                inline bool IsFailed () const {
+                inline bool IsFailed () {
+                    LockGuard<Mutex> guard (mutex);
                     return disposition == Failed;
                 }
                 /// \brief
                 /// Return true if the job has succeeded.
                 /// \return true == the job has succeeded.
-                inline bool IsSucceeded () const {
+                inline bool IsSucceeded () {
+                    LockGuard<Mutex> guard (mutex);
                     return disposition == Succeeded;
                 }
 
@@ -223,8 +232,9 @@ namespace thekogans {
                 /// \param[in] done If true, this flag indicates that
                 /// the job should stop what it's doing, and exit.
                 /// \return true == Job should stop what it's doing and exit.
-                inline bool ShouldStop (const std::atomic<bool> &done) const {
-                    return done || IsCancelled () || IsFailed ();
+                inline bool ShouldStop (const std::atomic<bool> &done) {
+                    LockGuard<Mutex> guard (mutex);
+                    return done || disposition == Cancelled || disposition == Failed;
                 }
 
                 /// \brief
@@ -238,9 +248,7 @@ namespace thekogans {
                 /// \param[in] timeSpec How long to wait for the job to complete.
                 /// IMPORTANT: timeSpec is a relative value.
                 /// \return true == Wait completed successfully, false == Timed out.
-                inline bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                    return completed.Wait (timeSpec);
-                }
+                bool Wait (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
             protected:
                 /// \brief
@@ -271,9 +279,7 @@ namespace thekogans {
                 /// \param[in] timeSpec How long to sleep.
                 /// IMPORTANT: timeSpec is a relative value.
                 /// \return true == Slept successfully, false == Interrupted by Cancel.
-                inline bool Sleep (const TimeSpec &timeSpec = TimeSpec::Infinite) {
-                    return !sleeping.Wait (timeSpec);
-                }
+                bool Sleep (const TimeSpec &timeSpec = TimeSpec::Infinite);
 
                 /// \brief
                 /// Called before the job is executed. Allows
@@ -330,7 +336,7 @@ namespace thekogans {
                 /// \param[in] done Call job.ShouldStop (done) to respond to
                 /// cancel requests and termination events.
                 using Function = std::function<void (
-                    const LambdaJob & /*job*/,
+                    LambdaJob & /*job*/,
                     const std::atomic<bool> & /*done*/)>;
 
             private:
@@ -363,7 +369,7 @@ namespace thekogans {
                 /// This method exposes the ShoulStop machinery to the lambda.
                 /// \param[in] done true == The run loop is done and nothing can be executed on it.
                 /// \return true == Continue executing, false == Stop and return.
-                inline bool IsRunning (const std::atomic<bool> &done) const {
+                inline bool IsRunning (const std::atomic<bool> &done) {
                     return !ShouldStop (done);
                 }
             };
@@ -851,11 +857,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (State)
 
                 /// \brief
-                /// State has a private heap to help with memory
-                /// management, performance, and global heap fragmentation.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
-                /// \brief
                 /// RunLoop id.
                 const Id id;
                 /// \brief
@@ -867,6 +868,9 @@ namespace thekogans {
                 /// \brief
                 /// Flag to signal the worker thread(s).
                 std::atomic<bool> done;
+                /// \brief
+                /// Start/Stop generation barrier.
+                std::atomic<std::size_t> generation;
                 /// \brief
                 /// Queue of pending jobs.
                 JobList pendingJobs;

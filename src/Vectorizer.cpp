@@ -33,27 +33,59 @@ namespace thekogans {
                 workerCount (0),
                 chunkSize (0) {
             if (workerCount_ > 1) {
-                std::size_t masterCore = workerCount - 1;
-                // NOTE: Unlike worker threads, we deliberately do not
-                // adjust our own priority. This is done because 1) When
-                // Execute is called, we are already running, and 2) Not
-                // to cause starvation by monopolizing the processor
-                // needlessly.
-                Thread::SetThreadAffinity (Thread::GetCurrThreadHandle (), masterCore);
-                // We are the first thread. Create workerCount_ - 1
+                // We are the first worker. Create workerCount_ - 1
                 // additional worker threads.
                 for (std::size_t i = 1; i < workerCount_; ++i) {
-                    std::size_t workerCore = (i - 1) % masterCore;
-                    Worker::UniquePtr worker (
-                        new Worker (*this, i, FormatString ("Vectorizer-%u", i), workerPriority, workerCore));
-                    workers.push_back (worker.get ());
-                    worker.release ();
+                    workers.emplace_back (
+                        [this] (std::size_t rank) noexcept {
+                            // NOTE: No exception handling here. If we were to wrap
+                            // the while loop with try/catch, the first exception
+                            // thrown would leave the vectorizer with one (or more)
+                            // less workers (leaving it completely broken). If we
+                            // instead wrap the contents of the loop, then we are
+                            // catching an exception we do not know how to handle
+                            // (and which leaves the job in an incomplete state).
+                            // It's better to just crash loudly, and let the engineer
+                            // fix his/her own code.
+                            while (true) {
+                                // Wait until Execute releases us.
+                                barrier.Wait ();
+                                // This test used to be done in the while above. It was a source
+                                // of intermittent hangs that were difficult to debug. Turns out
+                                // that in a single barrier state transition design all decisions
+                                // MUST happen inside the barrier walls (between the waits). It
+                                // is the only way to guard against phase leakage.
+                                if (done.load (std::memory_order_relaxed)) {
+                                    break;
+                                }
+                                if (job != nullptr && rank < workerCount) {
+                                    std::size_t startIndex = rank * chunkSize;
+                                    std::size_t endIndex = MIN (startIndex + chunkSize, job->Size ());
+                                    // This test is necessary because of integer division in Execute.
+                                    // By way of example;
+                                    // 1. job size: 28
+                                    // 2. workers: 8
+                                    // 3. chunk size: 28 / 8 = 3 (integer division!)
+                                    // 4. 8 * 3 = 24
+                                    // 5. 24 < 28 so bump up chunk size (4)
+                                    // 6. 7 * 4 = 28 <---- This means that the 8th worker
+                                    // will have nothing to do, and hence the test below.
+                                    if (startIndex < endIndex) {
+                                        job->Execute (startIndex, endIndex, rank);
+                                    }
+                                }
+                                // Wait for all worker threads to finish with the job.
+                                barrier.Wait ();
+                            }
+                        }, i);
+                    workers.back ().SetName (FormatString ("Vectorizer-%u", i));
+                    workers.back ().SetPriority (workerPriority);
                 }
             }
         }
 
         Vectorizer::~Vectorizer () {
-            done = true;
+            done.store (true, std::memory_order_relaxed);
             struct DoneJob : public Job {
                 std::size_t workerCount;
                 explicit DoneJob (std::size_t workerCount_) :
@@ -65,11 +97,9 @@ namespace thekogans {
                 virtual std::size_t Size () const noexcept {
                     return workerCount;
                 }
-            } doneJob (workers.size ());
+            } doneJob (workers.size () + 1);
             Execute (doneJob, 1);
-            for (std::size_t i = 0, count = workers.size (); i < count; ++i) {
-                workers[i]->Wait ();
-            }
+            ThreadReaper2::Instance ()->ReapThreads (std::move (workers));
         }
 
         void Vectorizer::Execute (
@@ -99,8 +129,8 @@ namespace thekogans {
                         }
                     }
                     else {
+                        chunkSize = MIN (chunkSize_, job->Size ());
                         workerCount = job->Size () / chunkSize_;
-                        chunkSize = chunkSize_;
                         if (workerCount * chunkSize < job->Size ()) {
                             // Since we are holding chunkSize constant,
                             // we must update workerCount to account for
@@ -108,21 +138,21 @@ namespace thekogans {
                             ++workerCount;
                         }
                     }
-                    assert (workerCount > 0);
-                    assert (workerCount <= workers.size () + 1);
-                    assert (chunkSize > 0);
-                    assert (chunkSize <= job->Size ());
+                    assert (workerCount > 0 && workerCount <= workers.size () + 1);
+                    assert (chunkSize > 0 && chunkSize <= job->Size ());
                     // Scatter.
                     job->Prolog (workerCount);
                     // Release the workers.
                     barrier.Wait ();
-                    // Work on the first chunk.
-                    job->Execute (0, chunkSize, 0);
-                    // Wait for the rest of the workers.
-                    barrier.Wait ();
-                    // Gather.
-                    job->Epilog ();
-                    job = 0;
+                    if (!done.load (std::memory_order_relaxed)) {
+                        // Work on the first chunk.
+                        job->Execute (0, chunkSize, 0);
+                        // Wait for the rest of the workers.
+                        barrier.Wait ();
+                        // Gather.
+                        job->Epilog ();
+                    }
+                    job = nullptr;
                     workerCount = 0;
                     chunkSize = 0;
                 }
@@ -131,42 +161,6 @@ namespace thekogans {
                     job_.Execute (0, job_.Size (), 0);
                     job_.Epilog ();
                 }
-            }
-        }
-
-        void Vectorizer::Worker::Run () noexcept {
-            // NOTE: No exception handling here. If we were to wrap
-            // the while loop with try/catch, the first exception
-            // thrown would leave the vectorizer with one (or more)
-            // less workers (leaving it completely broken). If we
-            // instead wrap the contents of the loop, then we are
-            // catching an exception we do not know how to handle
-            // (and which leaves the job in an incomplete state).
-            // It's better to just crash loudly, and let the engineer
-            // fix his/her own code.
-            while (!vectorizer.done) {
-                // Wait until Execute releases us.
-                vectorizer.barrier.Wait ();
-                if (vectorizer.job != nullptr && rank < vectorizer.workerCount) {
-                    std::size_t startIndex = rank * vectorizer.chunkSize;
-                    std::size_t endIndex = std::min (
-                        startIndex + vectorizer.chunkSize, vectorizer.job->Size ());
-                    // This test is necessary because of integer division
-                    // above (Execute).
-                    // By way of example;
-                    // 1. job size: 28
-                    // 2. workers: 8
-                    // 3. chunk size: 28 / 8 = 3 (integer division!)
-                    // 4. 8 * 3 = 24
-                    // 5. 24 < 28 so bump up chunk size (4)
-                    // 6. 7 * 4 = 28 <---- This means that the 8th worker
-                    // will have nothing to do, and hence the test below.
-                    if (startIndex < endIndex) {
-                        vectorizer.job->Execute (startIndex, endIndex, rank);
-                    }
-                }
-                // Wait for all worker threads to finish.
-                vectorizer.barrier.Wait ();
             }
         }
 

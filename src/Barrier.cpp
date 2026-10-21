@@ -54,8 +54,8 @@ namespace thekogans {
     #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
         Barrier::Barrier (std::size_t count_) :
                 count (count_),
-                entered (0),
-                condition (mutex) {
+                spaces (count_),
+                generation (0) {
             if (count == 0) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -88,8 +88,6 @@ namespace thekogans {
         }
     #endif // !defined (TOOLCHAIN_OS_Windows)
 
-        #define THEKOGANS_UTIL_BARRIER_FLAG (1 << 30)
-
         Barrier::~Barrier () {
         #if defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
             if (DeleteSynchronizationBarrier (&barrier) != TRUE) {
@@ -104,16 +102,6 @@ namespace thekogans {
                     "%s\n", "Unable to destroy the barrier.");
             }
         #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
-            THEKOGANS_UTIL_TRY {
-                LockGuard<Mutex> guard (mutex);
-                while (entered > THEKOGANS_UTIL_BARRIER_FLAG) {
-                #if !defined (TOOLCHAIN_OS_Windows)
-                    DisableCancelState disableCancelState;
-                #endif // !defined (TOOLCHAIN_OS_Windows)
-                    condition.Wait ();
-                }
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         #endif // defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
         }
 
@@ -129,35 +117,28 @@ namespace thekogans {
             }
             return errorCode == PTHREAD_BARRIER_SERIAL_THREAD;
         #else // defined (THEKOGANS_UTIL_USE_POSIX_BARRIER)
-            LockGuard<Mutex> guard (mutex);
-            while (entered > THEKOGANS_UTIL_BARRIER_FLAG) {
-            #if !defined (TOOLCHAIN_OS_Windows)
-                DisableCancelState disableCancelState;
-            #endif // !defined (TOOLCHAIN_OS_Windows)
-                condition.Wait ();
-            }
-            if (entered == THEKOGANS_UTIL_BARRIER_FLAG) {
-                entered = 0;
-            }
-            ++entered;
-            if (entered == count) {
-                entered += THEKOGANS_UTIL_BARRIER_FLAG - 1;
-                condition.SignalAll ();
-                return true;
-            }
-            else {
-                while (entered < THEKOGANS_UTIL_BARRIER_FLAG) {
-                #if !defined (TOOLCHAIN_OS_Windows)
-                    DisableCancelState disableCancelState;
-                #endif // !defined (TOOLCHAIN_OS_Windows)
-                    condition.Wait ();
-                }
-                --entered;
-                if (entered == THEKOGANS_UTIL_BARRIER_FLAG) {
+            bool isSerialThread = false;
+            {
+                LockGuard<Mutex> guard (mutex);
+                std::size_t currentGeneration = generation;
+                if (--spaces == 0) {
+                    // The final thread has arrived. Advance the phase.
+                    ++generation;
+                    spaces = count;
+                    isSerialThread = true;
                     condition.SignalAll ();
                 }
-                return false;
+                else {
+                    // Lagging threads lock onto the unique generation phase instance.
+                    while (currentGeneration == generation) {
+                    #if !defined (TOOLCHAIN_OS_Windows)
+                        DisableCancelState disableCancelState;
+                    #endif // !defined (TOOLCHAIN_OS_Windows)
+                        condition.Wait (mutex);
+                    }
+                }
             }
+            return isSerialThread;
         #endif // defined (THEKOGANS_UTIL_USE_WINDOWS_BARRIER)
         }
 

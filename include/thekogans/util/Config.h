@@ -141,6 +141,12 @@ public:\
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN(_T)\
     THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN(_T)
 
+/// \def THEKOGANS_UTIL_DEFAULT_MOVE_AND_ASSIGN(_T)
+/// A convenient macro to suppress move construction and assignment.
+#define THEKOGANS_UTIL_DEFAULT_MOVE_AND_ASSIGN(_T)\
+    _T (_T &&) = default;\
+    _T &operator = (_T &&) = default;
+
 #if defined (__clang__) || defined (__GNUC__)
     #define THEKOGANS_UTIL_LIKELY(x)   (__builtin_expect (!!(x), 1))
     #define THEKOGANS_UTIL_UNLIKELY(x) (__builtin_expect (!!(x), 0))

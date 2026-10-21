@@ -18,32 +18,54 @@
 #include <cassert>
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Heap.h"
-#include "thekogans/util/Event.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
+#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/RunLoop.h"
 
 namespace thekogans {
     namespace util {
 
         void RunLoop::Job::Cancel () {
+            LockGuard<Mutex> guard (mutex);
             if (disposition == Unknown) {
                 disposition = Cancelled;
                 sleeping.Signal ();
             }
         }
 
+        bool RunLoop::Job::Wait (const TimeSpec &timeSpec) {
+            LockGuard<Mutex> guard (mutex);
+            if (timeSpec == TimeSpec::Infinite) {
+                while (state != Completed) {
+                    completed.Wait (mutex);
+                }
+            }
+            else {
+                const TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                while (state != Completed) {
+                    TimeSpec now = GetMonotonicTime ();
+                    if (now >= deadline) {
+                        break;
+                    }
+                    completed.Wait (mutex, deadline - now);
+                }
+            }
+            return state == Completed;
+        }
+
         void RunLoop::Job::Reset (const RunLoop::Id &runLoopId_) {
+            LockGuard<Mutex> guard (mutex);
             runLoopId = runLoopId_;
-            SetState (Pending);
+            state = Pending;
             disposition = Unknown;
-            completed.Reset ();
         }
 
         void RunLoop::Job::SetState (State state_) {
+            LockGuard<Mutex> guard (mutex);
             state = state_;
             if (state == Completed) {
                 completed.Signal ();
@@ -51,14 +73,40 @@ namespace thekogans {
         }
 
         void RunLoop::Job::Fail (const Exception &exception_) {
+            LockGuard<Mutex> guard (mutex);
             disposition = Failed;
             exception = exception_;
+            sleeping.Signal ();
         }
 
         void RunLoop::Job::Succeed (const std::atomic<bool> &done) {
+            LockGuard<Mutex> guard (mutex);
             if (disposition == Unknown) {
                 disposition = !done ? Succeeded : Cancelled;
+                sleeping.Signal ();
             }
+        }
+
+        bool RunLoop::Job::Sleep (const TimeSpec &timeSpec) {
+            LockGuard<Mutex> guard (mutex);
+            if (state == Running && disposition == Unknown) {
+                if (timeSpec == TimeSpec::Infinite) {
+                    while (state != Completed) {
+                        sleeping.Wait (mutex);
+                    }
+                }
+                else {
+                    const TimeSpec deadline = GetMonotonicTime () + timeSpec;
+                    while (state != Completed) {
+                        TimeSpec now = GetMonotonicTime ();
+                        if (now >= deadline) {
+                            return true;
+                        }
+                        sleeping.Wait (mutex, deadline - now);
+                    }
+                }
+            }
+            return false;
         }
 
         RunLoop::WorkerInitializer::WorkerInitializer (WorkerCallback *workerCallback_) :
@@ -375,8 +423,6 @@ namespace thekogans {
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (RunLoop::State)
-
         RunLoop::State::State (
                 const std::string &name_,
                 JobExecutionPolicy::SharedPtr jobExecutionPolicy_) :
@@ -384,11 +430,9 @@ namespace thekogans {
                 name (name_),
                 jobExecutionPolicy (jobExecutionPolicy_),
                 done (false),
+                generation (0),
                 stats (id, name),
-                jobsNotEmpty (jobsMutex),
-                idle (jobsMutex),
-                paused (false),
-                notPaused (jobsMutex) {
+                paused (false) {
             if (jobExecutionPolicy == nullptr) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
@@ -411,10 +455,10 @@ namespace thekogans {
         RunLoop::Job *RunLoop::State::DeqJob (bool wait) {
             LockGuard<Mutex> guard (jobsMutex);
             while (!done && paused && wait) {
-                notPaused.Wait ();
+                notPaused.Wait (jobsMutex);
             }
             while (!done && pendingJobs.empty () && wait) {
-                jobsNotEmpty.Wait ();
+                jobsNotEmpty.Wait (jobsMutex);
             }
             Job *job = nullptr;
             if (!done && !paused && !pendingJobs.empty ()) {
@@ -711,7 +755,7 @@ namespace thekogans {
             LockGuard<Mutex> guard (state->jobsMutex);
             if (timeSpec == TimeSpec::Infinite) {
                 while (IsRunning () && (!state->pendingJobs.empty () || !state->runningJobs.empty ())) {
-                    state->idle.Wait ();
+                    state->idle.Wait (state->jobsMutex);
                 }
             }
             else {
@@ -721,7 +765,7 @@ namespace thekogans {
                     if (now >= deadline) {
                         break;
                     }
-                    if (!state->idle.Wait (deadline - now)) {
+                    if (!state->idle.Wait (state->jobsMutex, deadline - now)) {
                         return false;
                     }
                 }

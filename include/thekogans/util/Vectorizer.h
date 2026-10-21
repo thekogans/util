@@ -15,18 +15,18 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#if !defined (__thekogans_util_Vectorizer_h)
-#define __thekogans_util_Vectorizer_h
+#if !defined (__thekogans_util_Vectorizer2_h)
+#define __thekogans_util_Vectorizer2_h
 
 #include <cstddef>
 #include <atomic>
+#include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/OwnerVector.h"
 #include "thekogans/util/SystemInfo.h"
 #include "thekogans/util/Singleton.h"
-#include "thekogans/util/Thread.h"
+#include "thekogans/util/Thread2.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Barrier.h"
 
@@ -89,7 +89,7 @@ namespace thekogans {
         /// } job (result, vertices, xform);
         /// util::Vectorizer::Instance ()->Execute (job);
         /// \endcode
-        struct _LIB_THEKOGANS_UTIL_DECL Vectorizer : public Singleton<Vectorizer> {
+        struct _LIB_THEKOGANS_UTIL_DECL Vectorizer {
             /// \struct Vectorizer::Job Vectorizer.h thekogans/util/Vectorizer.h
             ///
             /// \brief
@@ -148,7 +148,7 @@ namespace thekogans {
                 i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY);
             /// \brief
             /// dtor.
-            virtual ~Vectorizer ();
+            ~Vectorizer ();
 
             /// \brief
             /// In order to provide fine grained control over job
@@ -156,7 +156,7 @@ namespace thekogans {
             /// of their own jobs), Execute takes a chunkSize_ parameter.
             /// This parameter allows the job to hide the Vectorizer
             /// latency by scheduling fewer workers to do more work.
-            /// \param[in] job_ Job to parellalize.
+            /// \param[in] job_ Job to parallelize.
             /// \param[in] chunkSize_ Optional worker chunk size.
             /// NOTE: Vectorizer::Execute is synchronous.
             void Execute (
@@ -173,51 +173,9 @@ namespace thekogans {
             /// \brief
             /// Used to synchronize vectorizer workers.
             Barrier barrier;
-            /// \struct vectorizer::Worker Vectorizer.h thekogans/util/Vectorizer.h
-            ///
-            /// \brief
-            /// Vectorizer worker thread.
-            struct Worker : public Thread {
-                /// \brief
-                /// Alias for std::unique_ptr<Worker>.
-                using UniquePtr = std::unique_ptr<Worker>;
-
-            private:
-                /// \brief
-                /// Vectorizer to which this worker belongs.
-                Vectorizer &vectorizer;
-                /// \brief
-                /// Worker rank. It's position in the vectorizer.
-                /// Used to calculate the chunk to execute.
-                const std::size_t rank;
-
-            public:
-                /// \brief
-                /// \ctor.
-                /// \param[in] vectorizer_ Vectorizer to which this worker belongs.
-                /// \param[in] rank_ Worker rank.
-                /// \param[in] name Worker thread name.
-                /// \param[in] priority Worker thread priority.
-                Worker (Vectorizer &vectorizer_,
-                        std::size_t rank_,
-                        const std::string &name = std::string (),
-                        i32 priority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY,
-                        ui32 affinity = THEKOGANS_UTIL_MAX_THREAD_AFFINITY) :
-                        Thread (name),
-                        vectorizer (vectorizer_),
-                        rank (rank_) {
-                    Create (priority, affinity);
-                }
-
-            protected:
-                // Thread
-                /// \brief
-                /// Worker thread.
-                virtual void Run () noexcept override;
-            };
             /// \brief
             /// Vectorizer workers.
-            OwnerVector<Worker> workers;
+            std::vector<Thread2> workers;
             // These variables hold the state of the vectorized job.
             /// \brief
             /// Currently executed job.
@@ -228,6 +186,19 @@ namespace thekogans {
             /// \brief
             /// Chunk size each worker should execute.
             std::size_t chunkSize;
+        };
+
+        struct _LIB_THEKOGANS_UTIL_DECL GlobalVectorizer :
+                public Vectorizer,
+                public Singleton<GlobalVectorizer> {
+            /// \brief
+            /// ctor. Initialize the workers array, and start waiting for jobs.
+            /// \param[in] workerCount The width of the vector.
+            /// \param[in] workerPriority Worker thread priority.
+            GlobalVectorizer (
+                std::size_t workerCount = SystemInfo::Instance ()->GetCPUCount (),
+                i32 workerPriority = THEKOGANS_UTIL_NORMAL_THREAD_PRIORITY) :
+                Vectorizer (workerCount, workerPriority) {}
         };
 
     } // namespace util
