@@ -137,28 +137,33 @@ namespace thekogans {
             }
         };
 
-        /// \brief
-        /// Initialize the GlobalSlabAllocatorHeap.
+        /// \struct tk_mem_t
+        /// \brief The native return token for the high-performance heap.
+        /// maps perfectly to ARM64 registers (x0/x1) for zero-copy passing.
+        struct tk_mem_t {
+            void *ptr{nullptr};
+            std::size_t size{0};
+        };
+
+        /// \brief Initialize the GlobalSlabAllocatorHeap.
         /// \param[in] minExp The smallest object (2^minExp).
         /// \param[in] maxExp The largest object (2^maxExp).
-        /// \param[in] poolConfig An array of maxExp - minExp + 1
-        /// std::pair<std::size_t /*SlotsPerPage*/, std::size_t /*TLCSize*/>.
+        /// \param[in] poolConfig An array of maxExp - minExp + 1 pairs of <SlotsPerPage, TLCSize>.
         void tk_malloc_init (
             std::size_t minExp,
             std::size_t maxExp,
             const std::pair<std::size_t, std::size_t> poolConfig[]);
+
         /// \brief
-        /// Direct replacement for std malloc. Uses the \see{GlobalSlabAllocatorHeap}.
-        /// \param[in] size Size of block to allocate,
-        /// \return Allocated block.
-        void *tk_malloc (std::size_t size);
+        /// Direct lock-free replacement for std::malloc.
+        /// \param[in] size Size of block to allocate.
+        /// \return A token containing the block pointer and the exact aligned capacity allocated.
+        [[nodiscard]] tk_mem_t tk_malloc (std::size_t size) noexcept;
+
         /// \brief
-        /// Companion to thekogans_malloc.
-        /// \param[in] ptr Pointer return by tk_malloc.
-        /// \param[in] size Same value passed to tk_malloc.
-        void tk_free (
-            void *ptr,
-            std::size_t size);
+        /// Companion to tk_malloc. Bypasses metadata tracking via O(1) size lookups.
+        /// \param[in] mem The memory token originally returned by tk_malloc.
+        void tk_free (tk_mem_t mem) noexcept;
 
     } // namespace util
 } // namespace thekogans

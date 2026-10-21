@@ -64,7 +64,7 @@ namespace thekogans {
             if (oldWeak == 1) {
                 // 2. Only issue the acquire barrier if we are the thread destroying 'this'.
                 boost::atomics::detail::thread_fence (boost::memory_order_acquire);
-                delete this; // Invokes your custom operator delete
+                delete this;
                 return 0;
             }
             return oldWeak - 1;

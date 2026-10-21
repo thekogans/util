@@ -39,7 +39,7 @@ namespace thekogans {
         using GlobalSlabAllocator = Singleton<
             detail::SlabAllocator<T, Policy::IsSingleton<true>, Policies...>,
             typename detail::GetTypePolicy<Policy::Lock, SpinLock, Policies...>::type,
-            typename detail::GetInstanceCreatorPolicy<T, Policies...>::type,
+            typename detail::GetInstanceCreatorPolicy<T, Policy::IsSingleton<true>, Policies...>::type,
             NullInstanceDestroyer<detail::SlabAllocator<T, Policy::IsSingleton<true>, Policies...>>>;
 
         // Scoped / Single Threaded version. Will clean up after itself.

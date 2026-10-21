@@ -60,9 +60,17 @@ namespace thekogans {
                     /// \brief
                     /// Validate that the slot is in fact ours and call its Page::Free.
                     /// \param[in] pageMask Mask to turn the Slot * in to a Page *.
-                    inline void Free (std::size_t pageMask) noexcept {
+                    inline Page *GetPage (std::size_t pageMask) noexcept {
                         Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & pageMask);
-                        if (THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64)) {
+                        return THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64) ? page : nullptr;
+                    }
+
+                    /// \brief
+                    /// Validate that the slot is in fact ours and call its Page::Free.
+                    /// \param[in] pageMask Mask to turn the Slot * in to a Page *.
+                    inline void Free (std::size_t pageMask) noexcept {
+                        Page *page = GetPage (pageMask);
+                        if (page != nullptr) {
                             page->Free (this);
                         }
                         else {
@@ -187,7 +195,7 @@ namespace thekogans {
             Page *partialPageList{nullptr};
             /// \brief
             /// Flag to protect from multiple threads calling the page allocator.
-            bool pageAllocationInFlight{false};
+            std::atomic<bool> pageAllocationInFlight{false};
             /// \brief
             /// Protect access to page lists.
             /// Align the lock to it's own cache line to prevent false sharing.
@@ -201,6 +209,7 @@ namespace thekogans {
             /// acquisition. In real load testing (see test_SlabAllocator) this
             /// results in ~65% speedup!
             struct TLC {
+                std::size_t pageSize{0};
                 /// \brief
                 /// Our own local slot cache.
                 Page::Slot *slotList{nullptr};
@@ -226,15 +235,39 @@ namespace thekogans {
                     --slotCount;
                     return slot;
                 }
+
+                inline void ReturnSlots () noexcept {
+                    if (slotList != nullptr) {
+                        Page *page = slotList->GetPage (pageSize);
+                        LockGuard<SpinLock> guard (page->header.allocator.lock);
+                        while (slotList != nullptr) {
+                            Page::Slot *next = slotList->next;
+                            slotList->Free (pageSize);
+                            slotList = next;
+                        }
+                        slotCount = 0;
+                    }
+                }
             };
+
+            static constexpr std::size_t MAX_ALLOCATORS = 100;
+            static thread_local TLC caches[MAX_ALLOCATORS];
 
             /// \brief
             /// Return the TLC associated with this allocator.
             inline TLC &GetTLC () const noexcept {
-                static constexpr std::size_t MAX_ALLOCATORS = 100;
-                thread_local TLC caches[MAX_ALLOCATORS];
                 return caches[instanceId];
             }
+
+            struct ThreadLifetimeManager {
+                ~ThreadLifetimeManager () noexcept {
+                    // This runs ONCE when the thread dies.
+                    // Loop through all 100 caches and return their slots to the pool!
+                    for (std::size_t i = 0; i < MAX_ALLOCATORS; ++i) {
+                        caches[i].ReturnSlots ();
+                    }
+                }
+            };
 
         public:
             /// \brief

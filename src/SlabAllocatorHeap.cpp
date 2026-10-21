@@ -52,7 +52,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (size < minSize || size > maxSize)) {
                 return nullptr;
             }
-            return pools[TrailingZeroBitCount (Align (size)) - minExp]->Alloc ();
+            return pools[TrailingZeroBitCount (size) - minExp]->Alloc ();
         }
 
         void SlabAllocatorHeap::Free (
@@ -61,7 +61,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr || size < minSize || size > maxSize)) {
                 return;
             }
-            pools[TrailingZeroBitCount (Align (size)) - minExp]->Free (ptr);
+            pools[TrailingZeroBitCount (size) - minExp]->Free (ptr);
         }
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
@@ -75,18 +75,13 @@ namespace thekogans {
             GlobalSlabAllocatorHeap::CreateInstance (minExp, maxExp, poolConfig);
         }
 
-        namespace {
-            static GlobalSlabAllocatorHeap &allocator = *GlobalSlabAllocatorHeap::Instance ();
+        tk_mem_t tk_malloc (std::size_t size) noexcept {
+            size = Align (size);
+            return tk_mem_t{GlobalSlabAllocatorHeap::Instance ()->Alloc (size), size};
         }
 
-        void *tk_malloc (std::size_t size) {
-            return allocator.Alloc (size);
-        }
-
-        void tk_free (
-                void *ptr,
-                std::size_t size) {
-            allocator.Free (ptr, size);
+        void tk_free (tk_mem_t mem) noexcept {
+            GlobalSlabAllocatorHeap::Instance ()->Free (mem.ptr, mem.size);
         }
 
     } // namespace util

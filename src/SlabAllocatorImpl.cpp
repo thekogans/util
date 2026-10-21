@@ -63,6 +63,8 @@ namespace thekogans {
             }
         }
 
+        thread_local SlabAllocatorImpl::TLC SlabAllocatorImpl::caches[SlabAllocatorImpl::MAX_ALLOCATORS];
+
         namespace {
             std::atomic<std::size_t> instanceCounter{0};
         }
@@ -84,6 +86,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
+            GetTLC ().pageSize = pageSize;
         }
 
         SlabAllocatorImpl::~SlabAllocatorImpl () noexcept {
@@ -99,6 +102,7 @@ namespace thekogans {
             TLC &tlc = GetTLC ();
             // See if we have a free slot in our local cache.
             if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == 0)) {
+                static thread_local ThreadLifetimeManager lifecycleManager;
                 // No banana. Let's seed it.
                 LockGuard<SpinLock> guard (lock);
                 while (tlc.slotCount < tlcBatchSize) {
@@ -111,6 +115,7 @@ namespace thekogans {
                     // b) no more partial pages to harvest. If it's the
                     // later, grab a fresh page from the OS.
                     if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount < tlcBatchSize)) {
+                        assert (partialPageList == nullptr);
                         AllocPage ();
                     }
                 }
@@ -121,14 +126,16 @@ namespace thekogans {
         void SlabAllocatorImpl::Free (void *ptr) noexcept {
             if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                 Page::Slot *slot = reinterpret_cast<Page::Slot *> (ptr);
-                TLC &tlc = GetTLC ();
-                tlc.Push (slot);
-                // If we have no more room in our local cache batch
-                // release a batch of slots back to their pages.
-                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == tlcSize)) {
-                    LockGuard<SpinLock> guard (lock);
-                    for (std::size_t i = 0; i < tlcBatchSize; ++i) {
-                        tlc.Pop ()->Free (pageMask);
+                if (slot->GetPage (pageSize)) {
+                    TLC &tlc = GetTLC ();
+                    tlc.Push (slot);
+                    // If we have no more room in our local cache batch
+                    // release a batch of slots back to their pages.
+                    if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == tlcSize)) {
+                        LockGuard<SpinLock> guard (lock);
+                        for (std::size_t i = 0; i < tlcBatchSize; ++i) {
+                            tlc.Pop ()->Free (pageMask);
+                        }
                     }
                 }
             }
@@ -136,7 +143,8 @@ namespace thekogans {
 
         void SlabAllocatorImpl::AllocPage () noexcept {
             // Wait until a page is guaranteed to be available or...
-            while (THEKOGANS_UTIL_LIKELY (partialPageList == nullptr && pageAllocationInFlight)) {
+            while (THEKOGANS_UTIL_LIKELY (partialPageList == nullptr &&
+                    pageAllocationInFlight.load (std::memory_order_acquire))) {
                 lock.Release ();
                 CPU::YieldSlice ();
                 lock.Acquire ();
@@ -145,7 +153,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_LIKELY (partialPageList == nullptr)) {
                 // Set the in flight flag before releasing the lock so that no other thread
                 // tries to allocate a page too.
-                pageAllocationInFlight = true;
+                pageAllocationInFlight.store (true, std::memory_order_relaxed);
                 // Release the lock before dropping down to the OS.
                 // This wont help waiting allocators but if there are
                 // waiting freeers it will alow them to let go of their
@@ -169,7 +177,7 @@ namespace thekogans {
                 // the in flight flag so that the spinning waiters drop out
                 // and either have a fresh page to harvest/allocate from or
                 // permission to allocate.
-                pageAllocationInFlight = false;
+                pageAllocationInFlight.store (false, std::memory_order_release);
             }
         }
 

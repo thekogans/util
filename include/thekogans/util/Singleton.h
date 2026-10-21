@@ -48,8 +48,8 @@ namespace thekogans {
             /// \param[in] args List of arguments to the instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
-            inline ReturnType operator () (Args... args) {
-                return ReturnType (new T (std::forward<Args> (args)...));
+            inline T *operator () (Args... args) {
+                return new T (std::forward<Args> (args)...);
             }
         };
 
@@ -63,7 +63,7 @@ namespace thekogans {
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
             /// \return true (Instance has been destroyed).
-            inline bool operator () (typename DefaultInstanceCreator<T>::ReturnType instance) {
+            inline bool operator () (T *instance) {
                 if (instance != nullptr) {
                     delete instance;
                 }
@@ -82,7 +82,7 @@ namespace thekogans {
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
             /// \return false.
-            inline bool operator () (typename DefaultInstanceCreator<T>::ReturnType /*instance*/) {
+            inline bool operator () (T * /*instance*/) {
                 return false;
             }
         };
@@ -151,19 +151,18 @@ namespace thekogans {
             /// \return The singleton instance.
             template<typename... Args>
             static typename InstanceCreator::ReturnType CreateInstance (Args... args) {
-                // We implement the double-checked locking pattern here
-                // to allow our singleton instance method to be thread-safe
-                // (i.e. thread-safe singleton construction).
-                if (instance () == nullptr) {
-                    // Here we acquire the lock, check instance again,
-                    // and if it's STILL null, we are the lucky ones,
-                    // we get to create the actual instance!
+                T *ptr = instance ().load (std::memory_order_acquire);
+                if (ptr == nullptr) {
                     LockGuard<Lock> guard (lock ());
-                    if (instance () == nullptr) {
-                        instance () = InstanceCreator () (std::forward<Args> (args)...);
+                    ptr = instance ().load (std::memory_order_relaxed);
+                    if (ptr == nullptr) {
+                        ptr = InstanceCreator () (std::forward<Args> (args)...);
+                        instance ().store (ptr, std::memory_order_release);
                     }
                 }
-                return instance ();
+                // 2. ALWAYS return the local copy. It can never be null if created,
+                // even if DestroyInstance clears the atomic variable concurrently.
+                return typename InstanceCreator::ReturnType (ptr);
             }
 
             /// \brief
@@ -176,13 +175,10 @@ namespace thekogans {
                 // using the Instance. That kind of synchronization is
                 // outside the scope of Singleton and needs to be
                 // handled by the application.
-                LockGuard<Lock> guard (lock ());
-                if (instance () != nullptr) {
+                T *ptr = instance ().exchange (nullptr, std::memory_order_acq_rel);
+                if (ptr != nullptr) {
                     InstanceDestroyer instanceDestroyer;
-                    if (instanceDestroyer (instance ())) {
-                        typename InstanceCreator::ReturnType instance_ = nullptr;
-                        EXCHANGE (instance (), instance_);
-                    }
+                    instanceDestroyer (ptr);
                 }
             }
 
@@ -190,26 +186,25 @@ namespace thekogans {
             /// Return true if instance has been created.
             /// \return true if instance has been created.
             static bool IsInstanceCreated () {
-                return instance () != nullptr;
+                return instance ().load (std::memory_order_relaxed) != nullptr;
             }
 
             /// \brief
             /// Return the singleton instance. Create if first time accessed.
             /// \return The singleton instance.
             static typename InstanceCreator::ReturnType Instance () {
-                // We implement the double-checked locking pattern here
-                // to allow our singleton instance method to be thread-safe
-                // (i.e. thread-safe singleton construction).
-                if (instance () == nullptr) {
-                    // Here we acquire the lock, check instance again,
-                    // and if it's STILL null, we are the lucky ones,
-                    // we get to create the actual instance!
+                T *ptr = instance ().load (std::memory_order_acquire);
+                if (ptr == nullptr) {
                     LockGuard<Lock> guard (lock ());
-                    if (instance () == nullptr) {
-                        instance () = InstanceCreator () ();
+                    ptr = instance ().load (std::memory_order_relaxed);
+                    if (ptr == nullptr) {
+                        ptr = InstanceCreator () ();
+                        instance ().store (ptr, std::memory_order_release);
                     }
                 }
-                return instance ();
+                // 2. ALWAYS return the local copy. It can never be null if created,
+                // even if DestroyInstance clears the atomic variable concurrently.
+                return typename InstanceCreator::ReturnType (ptr);
             }
 
         protected:
@@ -218,9 +213,9 @@ namespace thekogans {
             /// functions we guarantee that the ctors are called in
             /// the right order.
             /// \return A reference to the one and only instance pointer.
-            static typename InstanceCreator::ReturnType &instance () {
+            static std::atomic<T *> &instance () {
                 // The one and only singleton instance.
-                static typename InstanceCreator::ReturnType _instance = nullptr;
+                static std::atomic<T *> _instance{nullptr};
                 return _instance;
             };
             /// \brief
@@ -274,8 +269,8 @@ namespace thekogans {
             /// \param[in] args List of arguments to the instance ctor.
             /// \return Singleton instance.
             template<typename... Args>
-            inline ReturnType operator () (Args... args) {
-                ReturnType instance (new T (std::forward<Args> (args)...));
+            inline T *operator () (Args... args) {
+                T *instance (new T (std::forward<Args> (args)...));
                 instance->AddRef ();
                 return instance;
             }
@@ -298,7 +293,7 @@ namespace thekogans {
             /// \brief
             /// Destroy the singleton instance.
             /// \param[in] instance Singleton instance to destroy.
-            inline bool operator () (typename RefCountedInstanceCreator<T>::ReturnType instance) {
+            inline bool operator () (T *instance) {
                 if (instance != nullptr) {
                     instance->Release ();
                 }

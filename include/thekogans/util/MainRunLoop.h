@@ -54,22 +54,22 @@ namespace thekogans {
             /// \param[in] name RunLoop name.
             /// \param[in] jobExecutionPolicy JobQueue \see{RunLoop::JobExecutionPolicy}.
             /// \return A main thread run loop with custom ctor arguments.
-            inline ReturnType operator () (
+            inline RunLoop *operator () (
                     const std::string &name = "MainRunLoop",
                     RunLoop::JobExecutionPolicy::SharedPtr jobExecutionPolicy =
                         new RunLoop::FIFOJobExecutionPolicy) {
                 Thread::SetMainThread ();
-                return ReturnType (
+                return
                 #if defined (TOOLCHAIN_OS_Windows)
-                    new SystemRunLoop<os::windows::RunLoop> (name, jobExecutionPolicy));
+                    new SystemRunLoop<os::windows::RunLoop> (name, jobExecutionPolicy);
                 #elif defined (TOOLCHAIN_OS_Linux)
                 #if defined (THEKOGANS_UTIL_HAVE_XLIB)
-                    new SystemRunLoop<os::linux::XlibRunLoop> (name, jobExecutionPolicy));
+                    new SystemRunLoop<os::linux::XlibRunLoop> (name, jobExecutionPolicy);
                 #else // defined (THEKOGANS_UTIL_HAVE_XLIB)
-                    new ThreadRunLoop (name, jobExecutionPolicy));
+                    new ThreadRunLoop (name, jobExecutionPolicy);
                 #endif // defined (THEKOGANS_UTIL_HAVE_XLIB)
                 #elif defined (TOOLCHAIN_OS_OSX)
-                    new SystemRunLoop<os::osx::NSAppRunLoop> (name, jobExecutionPolicy));
+                    new SystemRunLoop<os::osx::NSAppRunLoop> (name, jobExecutionPolicy);
                 #endif // defined (TOOLCHAIN_OS_Windows)
             }
         };
