@@ -72,11 +72,15 @@ namespace thekogans {
                         path,
                         util::SimpleFile::ReadWrite | util::SimpleFile::Create,
                         new util::TransactedFileBTreeAllocator (
+                            nullptr,
+                            0,
                             secure,
                             allocatorEntriesPerNode,
                             allocatorNodesPerPage,
                             allocator),
                         new util::TransactedFileBTreeRegistry (
+                            nullptr,
+                            0,
                             registryValueAsObject,
                             registryEntriesPerNode,
                             registryNodesPerPage,

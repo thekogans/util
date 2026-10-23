@@ -90,10 +90,8 @@ namespace thekogans {
             return header.size;
         }
 
-        void Blob::Read (
-                const SerializableHeader &header_,
-                Serializer &serializer) {
-            header = header_;
+        void Blob::Read (Serializer &serializer) {
+            header = serializer.context;
             buffer.Resize (header.size);
             buffer.Rewind ();
             buffer.AdvanceWriteOffset (
@@ -102,7 +100,7 @@ namespace thekogans {
                     buffer.GetDataAvailableForWriting ()));
         }
 
-        void Blob::Write (Serializer &serializer) const {
+        void Blob::Write (Serializer &serializer) {
             serializer.Write (
                 buffer.GetReadPtr (),
                 buffer.GetDataAvailableForReading ());
@@ -114,7 +112,7 @@ namespace thekogans {
 
         void Blob::ReadXML (
                 const SerializableHeader &header_,
-                const pugi::xml_node &node_) {
+                pugi::xml_node &node_) {
             header = header_;
             for (pugi::xml_attribute attribute = node_.first_attribute ();
                     attribute; attribute = attribute.next_attribute ()) {
@@ -126,7 +124,7 @@ namespace thekogans {
             }
         }
 
-        void Blob::WriteXML (pugi::xml_node &node_) const {
+        void Blob::WriteXML (pugi::xml_node &node_) {
             for (pugi::xml_attribute attribute = node.first_attribute ();
                     attribute; attribute = attribute.next_attribute ()) {
                 node_.append_copy (attribute);
@@ -143,18 +141,18 @@ namespace thekogans {
 
         void Blob::ReadJSON (
                 const SerializableHeader &header_,
-                const JSON::Object &object_) {
+                JSON::Object &object_) {
             header = header_;
             object = object_;
         }
 
-        void Blob::WriteJSON (JSON::Object &object_) const {
+        void Blob::WriteJSON (JSON::Object &object_) {
             object_ = object;
         }
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
-                const Serializable &serializable) {
+                Serializable &serializable) {
             serializer << serializable.GetHeader (serializer.context);
             serializable.Write (serializer);
             return serializer;
@@ -162,7 +160,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
                 pugi::xml_node &node,
-                const Serializable &serializable) {
+                Serializable &serializable) {
             node <<
                 SerializableHeader (
                     serializable.Type (),
@@ -174,7 +172,7 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
                 JSON::Object &object,
-                const Serializable &serializable) {
+                Serializable &serializable) {
             object <<
                 SerializableHeader (
                     serializable.Type (),
@@ -191,12 +189,12 @@ namespace thekogans {
             serializer >> header;
             if (header.type == serializable.Type ()) {
                 if (header.version <= serializable.Version ()) {
-                    serializable.Read (header, serializer);
-                    return serializer;
+                    Serializer::ContextGuard guard (serializer, header);
+                    serializable.Read (serializer);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%s) is greater then the Serializable version (%u).",
+                        "Header version (%u) is greater then the Serializable version (%u).",
                         header.version,
                         serializable.Version ());
                 }
@@ -207,21 +205,21 @@ namespace thekogans {
                     header.type.c_str (),
                     serializable.Type ());
             }
+            return serializer;
         }
 
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-                const pugi::xml_node &node,
+                pugi::xml_node &node,
                 Serializable &serializable) {
             SerializableHeader header;
             node >> header;
             if (header.type == serializable.Type ()) {
                 if (header.version <= serializable.Version ()) {
                     serializable.ReadXML (header, node);
-                    return node;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%s) is greater then the Serializable version (%u).",
+                        "Header version (%u) is greater then the Serializable version (%u).",
                         header.version,
                         serializable.Version ());
                 }
@@ -232,21 +230,21 @@ namespace thekogans {
                     header.type.c_str (),
                     serializable.Type ());
             }
+            return node;
         }
 
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-                const JSON::Object &object,
+                JSON::Object &object,
                 Serializable &serializable) {
             SerializableHeader header;
             object >> header;
             if (header.type == serializable.Type ()) {
                 if (header.version <= serializable.Version ()) {
                     serializable.ReadJSON (header, object);
-                    return object;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%s) is greater then the Serializable version (%u).",
+                        "Header version (%u) is greater then the Serializable version (%u).",
                         header.version,
                         serializable.Version ());
                 }
@@ -257,6 +255,7 @@ namespace thekogans {
                     header.type.c_str (),
                     serializable.Type ());
             }
+            return object;
         }
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
@@ -272,12 +271,12 @@ namespace thekogans {
             }
             if (serializable != nullptr) {
                 if (header.version <= serializable->Version ()) {
-                    serializable->Read (header, serializer);
-                    return serializer;
+                    Serializer::ContextGuard guard (serializer, header);
+                    serializable->Read (serializer);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%s) is greater then the Serializable version (%u).",
+                        "Header version (%u) is greater then the Serializable version (%u).",
                         header.version,
                         serializable->Version ());
                 }
@@ -287,10 +286,11 @@ namespace thekogans {
                     "Unable to create a Serializable of type: %s.",
                     header.type.c_str ());
             }
+            return serializer;
         }
 
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-                const pugi::xml_node &node,
+                pugi::xml_node &node,
                 Serializable::SharedPtr &serializable) {
             SerializableHeader header;
             node >> header;
@@ -298,11 +298,10 @@ namespace thekogans {
             if (serializable != nullptr) {
                 if (header.version <= serializable->Version ()) {
                     serializable->ReadXML (header, node);
-                    return node;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%s) is greater then the Serializable version (%u).",
+                        "Header version (%u) is greater then the Serializable version (%u).",
                         header.version,
                         serializable->Version ());
                 }
@@ -312,10 +311,11 @@ namespace thekogans {
                     "Unable to create a Serializable of type: %s.",
                     header.type.c_str ());
             }
+            return node;
         }
 
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-                const JSON::Object &object,
+                JSON::Object &object,
                 Serializable::SharedPtr &serializable) {
             SerializableHeader header;
             object >> header;
@@ -323,11 +323,10 @@ namespace thekogans {
             if (serializable != nullptr) {
                 if (header.version <= serializable->Version ()) {
                     serializable->ReadJSON (header, object);
-                    return object;
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%s) is greater then the Serializable version (%u).",
+                        "Header version (%u) is greater then the Serializable version (%u).",
                         header.version,
                         serializable->Version ());
                 }
@@ -337,6 +336,7 @@ namespace thekogans {
                     "Unable to create a Serializable of type: %s.",
                     header.type.c_str ());
             }
+            return object;
         }
 
         void ValueParser<Serializable>::Reset (Serializer &serializer) {
@@ -381,7 +381,8 @@ namespace thekogans {
                         payload.GetWritePtr (),
                         payload.GetDataAvailableForWriting ()));
                 if (payload.IsFull ()) {
-                    value.Read (header, payload);
+                    Serializer::ContextGuard guard (payload, header);
+                    value.Read (payload);
                     Reset (serializer);
                     return true;
                 }
@@ -411,7 +412,7 @@ namespace thekogans {
                     else {
                         Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Invalid serializable length: %u.",
+                            "Invalid serializable length: " THEKOGANS_UTIL_SIZE_T_FORMAT,
                             header.size);
                     }
                 }
@@ -429,7 +430,8 @@ namespace thekogans {
                         value = Serializable::CreateType (header.type.c_str (), serializer.parameters);
                     }
                     if (value != nullptr) {
-                        value->Read (header, payload);
+                        Serializer::ContextGuard guard (payload, header);
+                        value->Read (payload);
                         Reset (serializer);
                         return true;
                     }

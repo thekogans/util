@@ -28,6 +28,7 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/SlabAllocatorDetail.h"
 #include "thekogans/util/CPU.h"
 
 namespace thekogans {
@@ -58,8 +59,9 @@ namespace thekogans {
                     Slot *next;
 
                     /// \brief
-                    /// Validate that the slot is in fact ours and call its Page::Free.
+                    /// Return the page this slot belongs to.
                     /// \param[in] pageMask Mask to turn the Slot * in to a Page *.
+                    /// \return Page containing the slot.
                     inline Page *GetPage (std::size_t pageMask) noexcept {
                         Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & pageMask);
                         return THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64) ? page : nullptr;
@@ -168,7 +170,7 @@ namespace thekogans {
 
             /// \brief
             /// Our index in to the tlc array.
-            const std::size_t instanceId;
+            const std::size_t tlcIndex;
             /// \brief
             /// Slot size.
             const std::size_t slotSize;
@@ -209,7 +211,7 @@ namespace thekogans {
             /// acquisition. In real load testing (see test_SlabAllocator) this
             /// results in ~65% speedup!
             struct TLC {
-                std::size_t pageSize{0};
+                std::size_t pageMask{0};
                 /// \brief
                 /// Our own local slot cache.
                 Page::Slot *slotList{nullptr};
@@ -236,13 +238,22 @@ namespace thekogans {
                     return slot;
                 }
 
-                inline void ReturnSlots () noexcept {
+                inline void Reset () noexcept {
+                    pageMask = 0;
+                    slotList = nullptr;
+                    slotCount = 0;
+                }
+
+                inline void Release () noexcept {
                     if (slotList != nullptr) {
-                        Page *page = slotList->GetPage (pageSize);
+                        Page *page = slotList->GetPage (pageMask);
+                        // We're guaranteed to have a page here because Free is the
+                        // only one that calls Push and it does a check before calling
+                        // us.
                         LockGuard<SpinLock> guard (page->header.allocator.lock);
                         while (slotList != nullptr) {
                             Page::Slot *next = slotList->next;
-                            slotList->Free (pageSize);
+                            slotList->Free (pageMask);
                             slotList = next;
                         }
                         slotCount = 0;
@@ -250,24 +261,23 @@ namespace thekogans {
                 }
             };
 
-            static constexpr std::size_t MAX_ALLOCATORS = 100;
-            static thread_local TLC caches[MAX_ALLOCATORS];
-
-            /// \brief
-            /// Return the TLC associated with this allocator.
-            inline TLC &GetTLC () const noexcept {
-                return caches[instanceId];
-            }
+            static thread_local std::array<TLC, detail::TLCIndexBroker::MAX_INDEX> caches;
+            static detail::TLCIndexBroker broker;
 
             struct ThreadLifetimeManager {
                 ~ThreadLifetimeManager () noexcept {
-                    // This runs ONCE when the thread dies.
-                    // Loop through all 100 caches and return their slots to the pool!
-                    for (std::size_t i = 0; i < MAX_ALLOCATORS; ++i) {
-                        caches[i].ReturnSlots ();
+                    for (auto &cache : caches) {
+                        cache.Release ();
                     }
                 }
             };
+
+            /// \brief
+            /// Return the TLC associated with this allocator.
+            static TLC &GetTLC (std::size_t tlcIndex) noexcept {
+                static thread_local ThreadLifetimeManager manager;
+                return caches[tlcIndex];
+            }
 
         public:
             /// \brief

@@ -90,15 +90,13 @@ namespace thekogans {
             /// Read the key from the given serializer.
             /// \param[in] header \see{Serializable::Header}.
             /// \param[in] serializer \see{Serializer} to read the key from.
-            virtual void Read (
-                    const SerializableHeader & /*header*/,
-                    Serializer &serializer) override {
+            virtual void Read (Serializer &serializer) override {
                 serializer >> key;
             }
             /// \brief
             /// Write the key to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the key to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << key;
             }
         };
@@ -158,11 +156,8 @@ namespace thekogans {
             // Serializable
             /// \brief
             /// Read the key from the given serializer.
-            /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the key from.
-            virtual void Read (
-                    const SerializableHeader & /*header*/,
-                    Serializer &serializer) override {
+            virtual void Read (Serializer &serializer) override {
                 serializer >> key;
                 length = GUID::SIZE;
                 hexString = HexEncodeBuffer (key.data, length, false);
@@ -170,7 +165,7 @@ namespace thekogans {
             /// \brief
             /// Write the key to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the key to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << key;
             }
         };

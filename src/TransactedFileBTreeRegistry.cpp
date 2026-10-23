@@ -27,9 +27,35 @@ namespace thekogans {
             thekogans::util::TransactedFileBTreeRegistry,
             1,
             TransactedFileBTreeRegistry::Header::SIZE,
-            TransactedFile::Registry::TYPE)
+            TransactedFile::Object::TYPE)
 
-        Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
+        TransactedFileBTreeRegistry::TransactedFileBTreeRegistry (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset,
+                bool valueAsObject_,
+                std::size_t entriesPerNode_,
+                std::size_t nodesPerPage_,
+                util::Allocator::SharedPtr allocator_) :
+                TransactedFile::Registry (file, offset),
+                valueAsObject (valueAsObject_),
+                entriesPerNode (entriesPerNode_),
+                nodesPerPage (nodesPerPage_),
+                allocator (allocator_),
+                btree (
+                    new TransactedFileBTree (
+                        file,
+                        header.btreeOffset,
+                        StringKey::GetContext (),
+                        SerializableHeader (),
+                        valueAsObject,
+                        entriesPerNode,
+                        nodesPerPage,
+                        allocator)) {
+            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+            Reload ();
+        }
+
+        TransactedFile::Object::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             LockGuard<SpinLock> guard (spinLock);
             TransactedFileBTree::Iterator it;
             return btree->Find (StringKey (key), it) ? it.GetValue () : nullptr;
@@ -37,7 +63,7 @@ namespace thekogans {
 
         void TransactedFileBTreeRegistry::SetValue (
                 const std::string &key,
-                Serializable::SharedPtr value) {
+                TransactedFile::Object::SharedPtr value) {
             LockGuard<SpinLock> guard (spinLock);
             if (value == nullptr) {
                 btree->Remove (StringKey (key));
@@ -57,9 +83,7 @@ namespace thekogans {
             return serializer;
         }
 
-        void TransactedFileBTreeRegistry::Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) {
+        void TransactedFileBTreeRegistry::Read (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
             ui32 magic;
             serializer >> magic;
@@ -91,43 +115,19 @@ namespace thekogans {
             return serializer;
         }
 
-        void TransactedFileBTreeRegistry::Write (Serializer &serializer) const {
+        void TransactedFileBTreeRegistry::Write (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
             serializer << MAGIC32 << header;
         }
 
-        void TransactedFileBTreeRegistry::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr file,
-                int phase) noexcept {
-            TransactedFile::Allocator::SharedPtr allocator = file->GetAllocator ();
-            // Can't have a registry without an allocator.
-            assert (allocator != nullptr);
-            if (phase == TransactedFile::COMMIT_PHASE_1) {
-                allocator->SetRegistryOffset (
-                    allocator->Realloc (allocator->GetRegistryOffset (), GetSize ()));
-            }
-            else if (phase == TransactedFile::COMMIT_PHASE_2) {
-                TransactedFile::BlockRange range (
-                    *file, allocator->GetRegistryOffset (), false);
-                range << *this;
-            }
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr file) noexcept {
-            TransactedFile::BlockRange range (
-                *file, file->GetAllocator ()->GetRegistryOffset ());
-            range >> *this;
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectAlloc (
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectAllocRange (
                 TransactedFile::Object::SharedPtr object) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = object->GetOffset ();
             SetDirty (true);
         }
 
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectFree (
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectFreeRange (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = 0;

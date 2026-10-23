@@ -63,17 +63,16 @@ namespace thekogans {
             }
         }
 
-        thread_local SlabAllocatorImpl::TLC SlabAllocatorImpl::caches[SlabAllocatorImpl::MAX_ALLOCATORS];
-
-        namespace {
-            std::atomic<std::size_t> instanceCounter{0};
-        }
+        thread_local std::array<
+            SlabAllocatorImpl::TLC,
+            detail::TLCIndexBroker::MAX_INDEX> SlabAllocatorImpl::caches;
+        detail::TLCIndexBroker SlabAllocatorImpl::broker;
 
         SlabAllocatorImpl::SlabAllocatorImpl (
                 std::size_t slotSize_,
                 std::size_t slotsPerPage_,
                 std::size_t tlcSize_) :
-                instanceId (instanceCounter.fetch_add (1, std::memory_order_relaxed)),
+                tlcIndex (broker.LeaseIndex ()),
                 slotSize (slotSize_),
                 pageSize (Align (sizeof (Page) + slotSize * slotsPerPage_)),
                 pageMask (~(pageSize - 1)),
@@ -86,7 +85,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
-            GetTLC ().pageSize = pageSize;
+            GetTLC (tlcIndex).pageMask = pageMask;
         }
 
         SlabAllocatorImpl::~SlabAllocatorImpl () noexcept {
@@ -96,13 +95,14 @@ namespace thekogans {
                 detail::DefaultPageAllocator::Free (page, pageSize);
                 page = next;
             }
+            GetTLC (tlcIndex).Reset ();
+            broker.ReleaseIndex (tlcIndex);
         }
 
         void *SlabAllocatorImpl::Alloc () {
-            TLC &tlc = GetTLC ();
+            TLC &tlc = GetTLC (tlcIndex);
             // See if we have a free slot in our local cache.
             if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == 0)) {
-                static thread_local ThreadLifetimeManager lifecycleManager;
                 // No banana. Let's seed it.
                 LockGuard<SpinLock> guard (lock);
                 while (tlc.slotCount < tlcBatchSize) {
@@ -126,11 +126,11 @@ namespace thekogans {
         void SlabAllocatorImpl::Free (void *ptr) noexcept {
             if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                 Page::Slot *slot = reinterpret_cast<Page::Slot *> (ptr);
-                if (slot->GetPage (pageSize)) {
-                    TLC &tlc = GetTLC ();
+                if (slot->GetPage (pageMask)) {
+                    TLC &tlc = GetTLC (tlcIndex);
                     tlc.Push (slot);
                     // If we have no more room in our local cache batch
-                    // release a batch of slots back to their pages.
+                    // release a bunch of slots back to their pages.
                     if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == tlcSize)) {
                         LockGuard<SpinLock> guard (lock);
                         for (std::size_t i = 0; i < tlcBatchSize; ++i) {

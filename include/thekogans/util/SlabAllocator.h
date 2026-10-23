@@ -45,12 +45,12 @@ namespace thekogans {
         // Scoped / Single Threaded version. Will clean up after itself.
         template <typename T, typename... Policies>
         using PersonalScopedSlabAllocator =
-            ScopedSlabAllocator<T, Policy::TLCThreshold<0>, Policy::Lock<NullLock>, Policies...>;
+            ScopedSlabAllocator<T, Policy::TLCSize<0>, Policy::Lock<NullLock>, Policies...>;
 
         // The Global / Single Threaded version. Will NOT clean up after itself.
         template <typename T, typename... Policies>
         using PersonalGlobalSlabAllocator =
-            GlobalSlabAllocator<T, Policy::TLCThreshold<0>, Policy::Lock<NullLock>, Policies...>;
+            GlobalSlabAllocator<T, Policy::TLCSize<0>, Policy::Lock<NullLock>, Policies...>;
 
         #define THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS(_T, ...)\
         public:\

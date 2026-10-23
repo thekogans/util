@@ -66,7 +66,7 @@ int main (
         const char *argv[]) {
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     util::StaticInit ();
-        Roots::StaticInit ();
+    Roots::StaticInit ();
     IgnoreList::StaticInit ();
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
     Options::Instance ()->Parse (argc, argv, "hvldarpfio");
@@ -107,12 +107,12 @@ int main (
             Roots::SharedPtr roots =
                 Database::Instance ()->GetRegistry ()->GetValue ("roots");
             if (roots == nullptr) {
-                roots.Reset (new Roots);
+                roots.Reset (new Roots (Database::Instance ()->GetFile ()));
             }
             IgnoreList::SharedPtr ignoreList =
                 Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
             if (ignoreList == nullptr) {
-                ignoreList.Reset (new IgnoreList);
+                ignoreList.Reset (new IgnoreList (Database::Instance ()->GetFile ()));
             }
             if (Options::Instance ()->action == "scan_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;

@@ -137,7 +137,7 @@ namespace thekogans {
             typename T,
             typename Lock = SpinLock,
             typename InstanceCreator = DefaultInstanceCreator<T>,
-            typename InstanceDestroyer = DefaultInstanceDestroyer<T>>
+            typename InstanceDestroyer = NullInstanceDestroyer<T>>
         struct Singleton {
             /// \brief
             /// Uses modern C++ template facilities to provide singleton
@@ -313,7 +313,7 @@ namespace thekogans {
                 T,
                 Lock,
                 RefCountedInstanceCreator<T>,
-                RefCountedInstanceDestroyer<T>> {
+                NullInstanceDestroyer<T>> {
         protected:
             /// \brief
             /// ctor.

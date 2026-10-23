@@ -22,7 +22,7 @@
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/Directory.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
-#include "thekogans/util/SerializableValues.h"
+#include "thekogans/util/TransactedFileObjects.h"
 #include "thekogans/pathfinder/Root.h"
 
 namespace thekogans {
@@ -51,13 +51,13 @@ namespace thekogans {
                     &RootEvents::OnRootDeleteBegin,
                     std::placeholders::_1,
                     this));
-            pathBTree->Free ();
+            pathBTree->FreeRange ();
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeletedPathBTree,
                     std::placeholders::_1,
                     this));
-            componentBTree->Free ();
+            componentBTree->FreeRange ();
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeletedComponentBTree,
@@ -133,12 +133,12 @@ namespace thekogans {
                 // To honor the case request we filter out everything that
                 // doesn't match.
                 if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
-                    util::GUIDArrayValue::SharedPtr componentValue = it.GetValue ();
+                    util::GUIDArrayObject::SharedPtr componentValue = it.GetValue ();
                     for (std::size_t i = 0,
                              count = componentValue->value.size (); i < count; ++i) {
                         util::TransactedFileBTree::Iterator jt;
                         if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                            util::StringValue::SharedPtr value = jt.GetValue ();
+                            util::StringObject::SharedPtr value = jt.GetValue ();
                             std::string path = value->value;
                             std::vector<std::string> pathComponents;
                             util::Path (path).GetComponents (pathComponents);
@@ -185,7 +185,7 @@ namespace thekogans {
                 IgnoreList::SharedPtr ignoreList) {
             util::GUIDKey::SharedPtr pathKey (
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
-            util::StringValue::SharedPtr pathValue (new util::StringValue (path));
+            util::StringObject::SharedPtr pathValue (new util::StringObject (path));
             util::TransactedFileBTree::Iterator it;
             if (pathBTree->Insert (pathKey, pathValue, it)) {
                 Produce (
@@ -203,8 +203,8 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 for (; it != components.end (); ++it) {
                     util::StringKey::SharedPtr componentKey (new util::StringKey (*it, true));
-                    util::GUIDArrayValue::SharedPtr componentValue (
-                        new util::GUIDArrayValue (std::vector<util::GUID> {pathKey->key}));
+                    util::GUIDArrayObject::SharedPtr componentValue (
+                        new util::GUIDArrayObject (std::vector<util::GUID> {pathKey->key}));
                     util::TransactedFileBTree::Iterator jt;
                     if (!componentBTree->Insert (componentKey, componentValue, jt)) {
                         componentValue = jt.GetValue ();
@@ -247,8 +247,8 @@ namespace thekogans {
                 util::Serializer &serializer,
                 Root::SharedPtr &root) {
             std::string path;
-            util::TransactedFile::Allocator::PtrType pathBTreeOffset;
-            util::TransactedFile::Allocator::PtrType componentBTreeOffset;
+            util::TransactedFile::AddressSpaceType::AddressType pathBTreeOffset;
+            util::TransactedFile::AddressSpaceType::AddressType componentBTreeOffset;
             bool active;
             serializer >> path >> pathBTreeOffset >> componentBTreeOffset >> active;
             root.Reset (new Root (path, pathBTreeOffset, componentBTreeOffset, active));

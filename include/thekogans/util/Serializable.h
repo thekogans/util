@@ -83,26 +83,32 @@ namespace thekogans {
             /// and you need to call Size to get the size of this instance.
             /// \return Serializable class size.
             virtual std::size_t ClassSize () const noexcept = 0;
+            /// \brief
+            /// DynamicClassSize is a hook. It allows you to calculate class size at runtime.
+            /// If you classes are a fixed size but cannot be determined at compile time
+            /// override this function and calculate it at runtime.
+            /// \return Dynamic class size.
+            virtual std::size_t DynamicClassSize () const noexcept {
+                return ClassSize ();
+            }
 
             /// \brief
             /// Return the serializable instance size (excluding the header).
+            /// Overide this method if your class instances are variable size.
             /// \return Serializable instance size.
             virtual std::size_t Size () const noexcept {
-                return ClassSize ();
+                return DynamicClassSize ();
             }
             /// \brief
             /// Read the serializable from the given serializer.
-            /// \param[in] header \see{SerializableHeader} governing the stored data.
             /// \param[in] serializer Serializer to read the serializable from.
-            virtual void Read (
-                const SerializableHeader & /*header*/,
-                Serializer & /*serializer*/) = 0;
+            virtual void Read (Serializer & /*serializer*/) = 0;
             /// \brief
             /// Write the serializable to the given serializer.
             /// IMPORTANT: You must use the \see{Serializer::context} to determine
             /// the version and the amount of space you have to write.
             /// \param[out] serializer Serializer to write the serializable to.
-            virtual void Write (Serializer & /*serializer*/) const = 0;
+            virtual void Write (Serializer & /*serializer*/) = 0;
 
             /// \brief
             /// Return the serializable XML size.
@@ -116,7 +122,7 @@ namespace thekogans {
             /// \param[in] node XML DOM representation of a Serializable.
             virtual void ReadXML (
                     const SerializableHeader & /*header*/,
-                    const pugi::xml_node & /*node*/) {
+                    pugi::xml_node & /*node*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "ReadXML is unimplemented for: %s.", Type ());
@@ -124,7 +130,7 @@ namespace thekogans {
             /// \brief
             /// Write the Serializable to the XML DOM.
             /// \param[out] node Parent node.
-            virtual void WriteXML (pugi::xml_node & /*node*/) const {
+            virtual void WriteXML (pugi::xml_node & /*node*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "WriteXML is unimplemented for: %s.", Type ());
@@ -142,7 +148,7 @@ namespace thekogans {
             /// \param[in] node JSON DOM representation of a Serializable.
             virtual void ReadJSON (
                     const SerializableHeader & /*header*/,
-                    const JSON::Object & /*object*/) {
+                    JSON::Object & /*object*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "ReadJSON is unimplemented for: %s.", Type ());
@@ -150,7 +156,7 @@ namespace thekogans {
             /// \brief
             /// Write a Serializable to the JSON DOM.
             /// \param[out] node Parent node.
-            virtual void WriteJSON (JSON::Object & /*object*/) const {
+            virtual void WriteJSON (JSON::Object & /*object*/) {
                 assert (0);
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "WriteJSON is unimplemented for: %s.", Type ());
@@ -368,15 +374,12 @@ namespace thekogans {
 
             /// \brief
             /// Read the serializable from the given serializer.
-            /// \param[in] header_ SerializableHeader to deserialize.
             /// \param[in] serializer Serializer to read the serializable from.
-            virtual void Read (
-                const SerializableHeader &header_,
-                Serializer &serializer) override;
+            virtual void Read (Serializer &serializer) override;
             /// \brief
             /// Write the serializable to the given serializer.
             /// \param[out] serializer Serializer to write the serializable to.
-            virtual void Write (Serializer &serializer) const override;
+            virtual void Write (Serializer &serializer) override;
 
             /// \brief
             /// Return the serializable XML size.
@@ -388,11 +391,11 @@ namespace thekogans {
             /// \param[in] node XML DOM representation of a Serializable.
             virtual void ReadXML (
                 const SerializableHeader &header_,
-                const pugi::xml_node &node_) override;
+                pugi::xml_node &node_) override;
             /// \brief
             /// Write a Serializable to the XML DOM.
             /// \param[out] node_ Parent node.
-            virtual void WriteXML (pugi::xml_node &node_) const override;
+            virtual void WriteXML (pugi::xml_node &node_) override;
 
             /// \brief
             /// Return the serializable JSON size.
@@ -404,11 +407,11 @@ namespace thekogans {
             /// \param[in] object_ JSON DOM representation of a Serializable.
             virtual void ReadJSON (
                 const SerializableHeader &header_,
-                const JSON::Object &object_) override;
+                JSON::Object &object_) override;
             /// \brief
             /// Write a Serializable to the JSON DOM.
             /// \param[out] object_ Parent node.
-            virtual void WriteJSON (JSON::Object &object_) const override;
+            virtual void WriteJSON (JSON::Object &object_) override;
         };
 
         /// \brief
@@ -418,7 +421,7 @@ namespace thekogans {
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
             Serializer &serializer,
-            const Serializable &serializable);
+            Serializable &serializable);
         /// \brief
         /// Serializable insertion operator.
         /// \param[in] node Where to serialize the serializable.
@@ -426,7 +429,7 @@ namespace thekogans {
         /// \return node.
         _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
             pugi::xml_node &node,
-            const Serializable &serializable);
+            Serializable &serializable);
         /// \brief
         /// Serializable insertion operator.
         /// \param[in] object Where to serialize the serializable.
@@ -434,7 +437,7 @@ namespace thekogans {
         /// \return node.
         _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
             JSON::Object &object,
-            const Serializable &serializable);
+            Serializable &serializable);
 
         /// \brief
         /// Serializable extraction operator.
@@ -450,7 +453,7 @@ namespace thekogans {
         /// \param[out] serializable Serializable to extract.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-            const pugi::xml_node &node,
+            pugi::xml_node &node,
             Serializable &serializable);
         /// \brief
         /// Serializable extraction operator.
@@ -458,7 +461,7 @@ namespace thekogans {
         /// \param[out] serializable Serializable to extract.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-            const JSON::Object &object,
+            JSON::Object &object,
             Serializable &serializable);
 
         /// \brief
@@ -475,7 +478,7 @@ namespace thekogans {
         /// \param[out] serializable Serializable to extract.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-            const pugi::xml_node &node,
+            pugi::xml_node &node,
             Serializable::SharedPtr &serializable);
         /// \brief
         /// Serializable::SharedPtr extraction operator.
@@ -483,7 +486,7 @@ namespace thekogans {
         /// \param[out] serializable Serializable to extract.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-            const JSON::Object &object,
+            JSON::Object &object,
             Serializable::SharedPtr &serializable);
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)
@@ -498,7 +501,7 @@ namespace thekogans {
                 return serializer;\
             }\
             inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
-                    const pugi::xml_node &node,\
+                    pugi::xml_node &node,\
                     _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::SharedPtr base;\
                 node >> base;\
@@ -506,7 +509,7 @@ namespace thekogans {
                 return node;\
             }\
             inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
-                    const thekogans::util::JSON::Object &object,\
+                    thekogans::util::JSON::Object &object,\
                     _T::SharedPtr &serializable) {\
                 thekogans::util::Serializable::SharedPtr base;\
                 object >> base;\
@@ -712,7 +715,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL ValueParser<_T::SharedPtr> {\
             private:\
                 _T::SharedPtr &value;\
-                Serializable::SharedPtr base;\
+                thekogans::util::Serializable::SharedPtr base;\
                 thekogans::util::ValueParser<thekogans::util::Serializable::SharedPtr> baseParser;\
             public:\
                 ValueParser (\

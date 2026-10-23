@@ -25,6 +25,7 @@
 #include "thekogans/util/Producer.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/TransactedFileBTree.h"
+#include "thekogans/util/TransactedFileObjects.h"
 #include "thekogans/pathfinder/Database.h"
 #include "thekogans/pathfinder/IgnoreList.h"
 
@@ -74,8 +75,8 @@ namespace thekogans {
         public:
             Root (
                 std::string path_ = std::string (),
-                util::TransactedFile::Allocator::PtrType pathBTreeOffset = 0,
-                util::TransactedFile::Allocator::PtrType componentBTreeOffset = 0,
+                util::TransactedFile::AddressSpaceType::AddressType pathBTreeOffset = 0,
+                util::TransactedFile::AddressSpaceType::AddressType componentBTreeOffset = 0,
                 bool active_ = true) :
                 path (path_),
                 pathBTree (
@@ -83,13 +84,13 @@ namespace thekogans {
                         Database::Instance ()->GetFile (),
                         pathBTreeOffset,
                         util::GUIDKey::GetContext (),
-                        util::StringValue::GetContext ())),
+                        util::StringObject::GetContext ())),
                 componentBTree (
                     new util::TransactedFileBTree (
                         Database::Instance ()->GetFile (),
                         componentBTreeOffset,
                         util::StringKey::GetContext (),
-                        util::GUIDArrayValue::GetContext ())),
+                        util::GUIDArrayObject::GetContext ())),
                 active (active_) {}
 
             inline const std::string &GetPath () const {
@@ -106,8 +107,8 @@ namespace thekogans {
             inline std::size_t Size () const {
                 return
                     util::Serializer::Size (path) +
-                    util::TransactedFile::Allocator::PTR_TYPE_SIZE +
-                    util::TransactedFile::Allocator::PTR_TYPE_SIZE +
+                    util::TransactedFile::AddressSpaceType::AddressTypeSize +
+                    util::TransactedFile::AddressSpaceType::AddressTypeSize +
                     util::Serializer::Size (active);
             }
 

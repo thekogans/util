@@ -696,6 +696,9 @@ namespace thekogans {
             return value + 1;
         }
 
+        // ============================================================================
+        // COUNT TRAILING ZEROS
+        // ============================================================================
         template<typename T>
         [[nodiscard]] inline constexpr int countr_zero (T x) noexcept {
             static_assert(std::is_integral_v<T> && !std::is_signed_v<T>,
@@ -738,7 +741,7 @@ namespace thekogans {
         }
 
         // ============================================================================
-        // 1. FORCED COUNT LEADING ZEROS (C++20 std::countl_zero alternative)
+        // COUNT LEADING ZEROS
         // ============================================================================
         template<typename T>
         [[nodiscard]] inline constexpr int countl_zero (T x) noexcept {
@@ -786,7 +789,7 @@ namespace thekogans {
         }
 
         // ============================================================================
-        // 2. FORCED POPULATION COUNT (C++20 std::popcount alternative)
+        // POPULATION COUNT
         // ============================================================================
         template<typename T>
         [[nodiscard]] inline constexpr int popcount (T x) noexcept {
@@ -824,6 +827,24 @@ namespace thekogans {
             }
             return count;
         #endif
+        }
+
+        // ==========================================
+        // Count leading ones
+        // ==========================================
+        template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
+        [[nodiscard]] inline constexpr int countl_one (T val) noexcept {
+            // If the type is smaller than unsigned int, bitwise inversion (~) promotes it to int.
+            // We mask or cast back to T to prevent upper-register sign extension bits from corrupting the count.
+            return countl_zero (static_cast<T> (~val));
+        }
+
+        // ==========================================
+        // Count trailing ones
+        // ==========================================
+        template <typename T, typename = std::enable_if_t<std::is_unsigned_v<T>>>
+        [[nodiscard]] inline constexpr int countr_one (T val) noexcept {
+            return countr_zero (static_cast<T> (~val));
         }
 
     } // namespace util

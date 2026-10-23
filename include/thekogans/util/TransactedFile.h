@@ -124,6 +124,12 @@ namespace thekogans {
             /// dynamic discovery and creation.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (TransactedFile)
 
+            using AddressSpaceType = TransactedFileAddressSpaceType;
+            using AddressType = AddressSpaceType::AddressType;
+            static constexpr std::size_t AddressTypeSize = AddressSpaceType::AddressTypeSize;
+            using SizeType = AddressSpaceType::SizeType;
+            static constexpr std::size_t SizeTypeSize = AddressSpaceType::SizeTypeSize;
+
             /// \brief
             /// TransactedFile implements a two phase commit. The
             /// first phase (usually called the allocation phase)
@@ -183,67 +189,13 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Transaction)
             };
 
-            /// \struct TransactedFile::TransactionParticipant TransactedFile.h
-            /// thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// TransactionParticipants are objects that listen to
-            /// \see{TransactedFileEvents} and are able to flush and reload
-            /// themselves to and from a \see{TransactedFile}.
-            struct _LIB_THEKOGANS_UTIL_DECL TransactionParticipant :
-                    public Subscriber<TransactedFileEvents> {
-                /// \brief
-                /// Declare \see{RefCounted} pointers.
-                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactionParticipant)
-
-            protected:
-                /// \brief
-                /// \see{TransactedFile} whose \see{TransactedFileEvents}
-                /// we're participants of.
-                TransactedFile::SharedPtr file;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] file_ \see{TransactedFile} we're a transaction participant of.
-                explicit TransactionParticipant (TransactedFile::SharedPtr file_) :
-                    file (file_) {}
-                /// \brief
-                /// dtor.
-                virtual ~TransactionParticipant () {}
-
-                /// \brief
-                /// Return the file.
-                /// \return file.
-                inline TransactedFile::SharedPtr GetFile () const {
-                    return file;
-                }
-
-                inline bool IsDirty () {
-                    return file->IsSubscribed (*this);
-                }
-                /// \brief
-                /// Subscribe to \see{TransactedFileEvents}.
-                /// \param[in] dirty == true, Subcribe.
-                /// dirty == false, Unsubscribe.
-                void SetDirty (bool dirty);
-
-                /// \brief
-                /// TransactedFile::Init sets the file.
-                friend struct TransactedFile;
-
-                /// \brief
-                /// TransactionParticipant is neither copy or move constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactionParticipant)
-            };
-
         private:
             /// \brief
             /// File size.
-            TransactedFileAddressSpaceType::SizeType size;
+            SizeType size;
             /// \brief
             /// \see{PageMap} used to map file pages.
-            TransactedFileAddressSpaceType::SharedPtr pageMap;
+            AddressSpaceType::SharedPtr pageMap;
             /// \brief
             /// For use by \see{Transaction}.
             Mutex mutex;
@@ -253,9 +205,9 @@ namespace thekogans {
 
         public:
             #include "thekogans/util/TransactedFileRange.h"
+            #include "thekogans/util/TransactedFileObject.h"
             #include "thekogans/util/TransactedFileAllocator.h"
             #include "thekogans/util/TransactedFileRegistry.h"
-            #include "thekogans/util/TransactedFileObject.h"
 
         private:
             /// \brief
@@ -340,7 +292,7 @@ namespace thekogans {
             /// Return file size in bytes.
             /// Thread safe.
             /// \return File size in bytes.
-            inline TransactedFileAddressSpaceType::SizeType GetSizeEx () {
+            inline SizeType GetSizeEx () {
                 LockGuard<SpinLock> guard (spinLock);
                 return size;
             }
@@ -398,7 +350,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
             std::size_t ReadEx (
-                TransactedFileAddressSpaceType::AddressType offset,
+                AddressType offset,
                 void *buffer,
                 std::size_t count);
             /// \brief
@@ -408,7 +360,7 @@ namespace thekogans {
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
             std::size_t WriteEx (
-                TransactedFileAddressSpaceType::AddressType offset,
+                AddressType offset,
                 const void *buffer,
                 std::size_t count);
 
@@ -417,28 +369,26 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
-            TransactedFileAddressSpaceType::SizeType Grow (
-                TransactedFileAddressSpaceType::SizeType amount);
+            SizeType Grow (SizeType amount);
             /// \brief
             /// Shrink the file by the given amount.
             /// Thread safe.
             /// \param[in] amount Amount to shrink the file by.
             /// \return New file size.
-            TransactedFileAddressSpaceType::SizeType Shrink (
-                TransactedFileAddressSpaceType::SizeType amount);
+            SizeType Shrink (SizeType amount);
 
         private:
-            // TransactedFileAddressSpaceType::PageSource
+            // PageSource
             /// \brief
             /// Read raw bytes.
             /// \param[in] offset Offset to seek to.
             /// \param[out] buffer Where to place the bytes.
             /// \param[in] count Number of bytes to read.
             /// \return Number of bytes actually read.
-            virtual TransactedFileAddressSpaceType::SizeType ReadPage (
-                    TransactedFileAddressSpaceType::AddressType offset,
+            virtual SizeType ReadPage (
+                    AddressType offset,
                     void *buffer,
-                    TransactedFileAddressSpaceType::SizeType count) override {
+                    SizeType count) override {
                 Seek (offset, SEEK_SET);
                 return Read (buffer, count);
             }
@@ -448,10 +398,10 @@ namespace thekogans {
             /// \param[in] buffer Bytes to write.
             /// \param[in] count Number of bytes to write.
             /// \return Number of bytes actually written.
-            virtual TransactedFileAddressSpaceType::SizeType WritePage (
-                    TransactedFileAddressSpaceType::AddressType offset,
+            virtual SizeType WritePage (
+                    AddressType offset,
                     const void *buffer,
-                    TransactedFileAddressSpaceType::SizeType count) override {
+                    SizeType count) override {
                 Seek (offset, SEEK_SET);
                 return Write (buffer, count);
             }
@@ -493,8 +443,7 @@ namespace thekogans {
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
-            TransactedFileAddressSpaceType::Page::SharedPtr GetPage (
-                TransactedFileAddressSpaceType::AddressType offset);
+            AddressSpaceType::Page::SharedPtr GetPage (AddressType offset);
 
             /// \brief
             /// Given a file path, use the full file name to create
@@ -513,13 +462,29 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
 
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
+            TransactedFile::Range &range,
+            TransactedFile::Object::SharedPtr &object);
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR(_T)
+        /// Implement extraction operator for _T::SharedPtr.
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR(_T)\
+            inline thekogans::util::TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (\
+                    thekogans::util::TransactedFile::Range &range,\
+                    _T::SharedPtr &object) {\
+                thekogans::util::TransactedFile::Object::SharedPtr base;\
+                range >> base;\
+                object = base;\
+                return range;\
+            }
+
         /// \brief
         /// Implement \see{TransactedFile::Allocator} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::Allocator)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Allocator)
 
         /// \brief
         /// Implement \see{TransactedFile::Registry} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TransactedFile::Registry)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Registry)
 
         /// \struct SimpleTransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///

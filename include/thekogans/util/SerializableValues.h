@@ -32,7 +32,7 @@ namespace thekogans {
         ///
         /// \brief
         /// Variable size string value.
-        struct _LIB_THEKOGANS_UTIL_DECL StringValue : public Serializable {
+        struct _LIB_THEKOGANS_UTIL_DECL StringValue : public virtual Serializable {
             /// \brief
             /// StringValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringValue)
@@ -56,54 +56,14 @@ namespace thekogans {
             }
             /// \brief
             /// Read the value from the given serializer.
-            /// \param[in] header \see{Serializable::Header}.
             /// \param[in] serializer \see{Serializer} to read the value from.
-            virtual void Read (
-                    const SerializableHeader & /*header*/,
-                    Serializer &serializer) override {
+            virtual void Read (Serializer &serializer) override {
                 serializer >> value;
             }
             /// \brief
             /// Write the value to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) const override {
-                serializer << value;
-            }
-        };
-
-        /// \struct PtrValue SerializableValues.h thekogans/util/SerializableValues.h
-        ///
-        /// \brief
-        /// \see{TransactedFile::Allocator::PtrType} value.
-        struct _LIB_THEKOGANS_UTIL_DECL PtrValue : public Serializable {
-            /// \brief
-            /// PtrValue is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (PtrValue)
-
-            /// \brief
-            /// The actual ptr.
-            TransactedFile::Allocator::PtrType value;
-
-            /// \brief
-            /// ctor.
-            /// \param[in] value_ TransactedFile::Allocator::PtrType to initialize this value with.
-            PtrValue (TransactedFile::Allocator::PtrType value_ = 0) :
-                value (value_) {}
-
-            // Serializable
-            /// \brief
-            /// Read the value from the given serializer.
-            /// \param[in] header \see{SerializableHeader}.
-            /// \param[in] serializer \see{Serializer} to read the value from.
-            virtual void Read (
-                    const SerializableHeader & /*header*/,
-                    Serializer &serializer) override {
-                serializer >> value;
-            }
-            /// \brief
-            /// Write the value to the given serializer.
-            /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << value;
             }
         };
@@ -113,7 +73,7 @@ namespace thekogans {
         /// \brief
         /// ArrayValue is a template for storing arrays of types.
         template<typename T>
-        struct ArrayValue : public Serializable {
+        struct ArrayValue : public virtual Serializable {
             /// \brief
             /// The actual array.
             std::vector<T> value;
@@ -167,17 +127,14 @@ namespace thekogans {
             }
             /// \brief
             /// Read the value from the given serializer.
-            /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the value from.
-            virtual void Read (
-                    const SerializableHeader & /*header*/,
-                    Serializer &serializer) override {
+            virtual void Read (Serializer &serializer) override {
                 serializer >> value;
             }
             /// \brief
             /// Write the value to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) const override {
+            virtual void Write (Serializer &serializer) override {
                 serializer << value;
             }
         };
@@ -196,6 +153,22 @@ namespace thekogans {
             /// \param[in] value Optional std::string array to initialize with.
             StringArrayValue (const std::vector<std::string> &value = std::vector<std::string> ()) :
                 ArrayValue<std::string> (value) {}
+        };
+
+        /// \struct StringArrayValue SerializableValues.h thekogans/util/SerializableValues.h
+        ///
+        /// \brief
+        /// Specialization of \see{ArrayValue} for TransactedFile::AddressType.
+        struct _LIB_THEKOGANS_UTIL_DECL AddressArrayValue : public ArrayValue<TransactedFile::AddressType> {
+            /// \brief
+            /// AddressArrayValue is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (AddressArrayValue)
+
+            /// \brief
+            /// ctor.
+            /// \param[in] value Optional TransactedFile::AddressType array to initialize with.
+            AddressArrayValue (const std::vector<TransactedFile::AddressType> &value = std::vector<TransactedFile::AddressType> ()) :
+                ArrayValue<TransactedFile::AddressType> (value) {}
         };
 
         /// \struct GUIDArrayValue SerializableValues.h thekogans/util/SerializableValues.h

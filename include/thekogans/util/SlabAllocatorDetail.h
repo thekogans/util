@@ -39,24 +39,24 @@ namespace thekogans {
             /// \brief
             /// Default Thread Local Cache (TLC) size.
             /// A tuning knob meant to limit lock contention on a heavily contested type.
-            static constexpr std::size_t DEFAULT_TLC_THRESHOLD = 64;
+            static constexpr std::size_t DEFAULT_TLC_SIZE = 64;
 
             // Our target harvest is slots / threads.
-            constexpr std::size_t CalculateThreshold (
+            constexpr std::size_t CalculateSize (
                     std::size_t slots,
                     std::size_t threads) noexcept {
                 // Target harvest per thread = slots / threads
                 std::size_t harvest = slots / threads;
-                std::size_t threshold = harvest * 2;
+                std::size_t size = harvest * 2;
                 // Apply the floor clamp.
-                if (threshold < (threads / 2)) {
-                    threshold = (threads / 2);
+                if (size < (threads / 2)) {
+                    size = (threads / 2);
                 }
                 // Apply the cascading safety cap.
-                if ((threshold / 2) >= slots) {
-                    threshold = slots;
+                if ((size / 2) >= slots) {
+                    size = slots;
                 }
-                return threshold;
+                return size;
             }
         }
 
@@ -78,7 +78,7 @@ namespace thekogans {
             /// \brief
             /// Thread Local Cache size.
             template<std::size_t Value>
-            struct TLCThreshold {
+            struct TLCSize {
                 static constexpr std::size_t value = Value;
             };
             template<std::size_t Value>
@@ -119,36 +119,36 @@ namespace thekogans {
             };
 
             /// \brief
-            /// Policy helper to calculate an optimal TLC threshold.
+            /// Policy helper to calculate an optimal TLC size.
             /// \param SlotsPerPage The configured slots per page boundary.
             /// \param ThreadDensity The number of threads sharing this allocator.
             template<
                 std::size_t SlotsPerPage,
                 std::size_t ThreadDensity = 16>
-            struct DeriveTLCThreshold {
-                static constexpr std::size_t TLCThreshold =
-                    detail::CalculateThreshold (SlotsPerPage, ThreadDensity);
+            struct DeriveTLCSize {
+                static constexpr std::size_t TLCSize =
+                    detail::CalculateSize (SlotsPerPage, ThreadDensity);
             };
 
             /// \brief
             /// Policy helper to calculate an optimal slots per page.
-            /// \param TLCThreshold The configured thread local cache boundary.
+            /// \param TLCSize The configured thread local cache boundary.
             /// \param ThreadDensity The number of threads sharing this allocator.
             template<
-                std::size_t TLCThreshold,
+                std::size_t TLCSize,
                 std::size_t ThreadDensity = 16>
             struct DeriveSlotsPerPage {
-                static constexpr std::size_t SlotsPerPage = TLCThreshold * ThreadDensity;
+                static constexpr std::size_t SlotsPerPage = TLCSize * ThreadDensity;
             };
 
             /// \brief
-            /// Policy helper to calculate an optimal slots per page and tlc threshold.
+            /// Policy helper to calculate an optimal slots per page and tlc size.
             /// \param ThreadDensity The number of threads sharing this allocator.
             template<std::size_t ThreadDensity = 16>
-            struct DeriveSlotsPerPageAndTLCThreshold {
+            struct DeriveSlotsPerPageAndTLCSize {
                 static constexpr std::size_t SlotsPerPage =
-                    DeriveSlotsPerPage<detail::DEFAULT_TLC_THRESHOLD, ThreadDensity>::SlotsPerPage;
-                static constexpr std::size_t TLCThreshold = detail::DEFAULT_TLC_THRESHOLD;
+                    DeriveSlotsPerPage<detail::DEFAULT_TLC_SIZE, ThreadDensity>::SlotsPerPage;
+                static constexpr std::size_t TLCSize = detail::DEFAULT_TLC_SIZE;
             };
         }
 
@@ -210,7 +210,7 @@ namespace thekogans {
 
             // Match Case B: Unified Policy::Derive tag found! Dig inside it.
             template <std::size_t Default, std::size_t S, std::size_t T, typename... Rest>
-            struct GetSlotsPerPage<Default, Policy::DeriveTLCThreshold<S, T>, Rest...> {
+            struct GetSlotsPerPage<Default, Policy::DeriveTLCSize<S, T>, Rest...> {
                 static constexpr std::size_t value = S; // Pull out the slots configuration
             };
 
@@ -221,33 +221,33 @@ namespace thekogans {
             };
 
             // --------------------------------------------------------------------
-            // Unpacker for TLCThreshold
+            // Unpacker for TLCSize
             // --------------------------------------------------------------------
             template<std::size_t Default, typename... Policies>
-            struct GetTLCThreshold;
+            struct GetTLCSize;
 
             // Base Case: Empty pack, return your default baseline value
             template<std::size_t Default>
-            struct GetTLCThreshold<Default> {
+            struct GetTLCSize<Default> {
                 static constexpr std::size_t value = Default;
             };
 
-            // Match Case A: Standard explicit Policy::TLCThreshold found
+            // Match Case A: Standard explicit Policy::TLCSize found
             template<std::size_t Default, std::size_t N, typename... Rest>
-            struct GetTLCThreshold<Default, Policy::TLCThreshold<N>, Rest...> {
+            struct GetTLCSize<Default, Policy::TLCSize<N>, Rest...> {
                 static constexpr std::size_t value = N;
             };
 
             // Match Case B: Unified Policy::Derive tag found! Pull out the COMPUTED value
             template<std::size_t Default, std::size_t S, std::size_t T, typename... Rest>
-            struct GetTLCThreshold<Default, Policy::DeriveTLCThreshold<S, T>, Rest...> {
-                static constexpr std::size_t value = Policy::DeriveTLCThreshold<S, T>::TLCThreshold;
+            struct GetTLCSize<Default, Policy::DeriveTLCSize<S, T>, Rest...> {
+                static constexpr std::size_t value = Policy::DeriveTLCSize<S, T>::TLCSize;
             };
 
             // Fallthrough Case: Skip unrelated tags
             template<std::size_t Default, typename T, typename... Rest>
-            struct GetTLCThreshold<Default, T, Rest...> {
-                static constexpr std::size_t value = GetTLCThreshold<Default, Rest...>::value;
+            struct GetTLCSize<Default, T, Rest...> {
+                static constexpr std::size_t value = GetTLCSize<Default, Rest...>::value;
             };
 
             // --- TYPE EXTRACTOR MECHANICS ---
@@ -304,7 +304,7 @@ namespace thekogans {
             template<std::size_t V>
             struct IsValidSlabPolicy<Policy::SlotsPerPage<V>> : std::true_type {};
             template<std::size_t V>
-            struct IsValidSlabPolicy<Policy::TLCThreshold<V>> : std::true_type {};
+            struct IsValidSlabPolicy<Policy::TLCSize<V>> : std::true_type {};
             template<std::size_t V>
             struct IsValidSlabPolicy<Policy::CacheLineSize<V>> : std::true_type {};
             template<std::size_t V>
@@ -318,11 +318,11 @@ namespace thekogans {
             template<template <typename> typename C>
             struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
             template <std::size_t SlotsPerPage, std::size_t ThreadDensity>
-            struct IsValidSlabPolicy<Policy::DeriveTLCThreshold<SlotsPerPage, ThreadDensity>> : std::true_type {};
-            template <std::size_t TLCThreshold, std::size_t ThreadDensity>
-            struct IsValidSlabPolicy<Policy::DeriveSlotsPerPage<TLCThreshold, ThreadDensity>> : std::true_type {};
+            struct IsValidSlabPolicy<Policy::DeriveTLCSize<SlotsPerPage, ThreadDensity>> : std::true_type {};
+            template <std::size_t TLCSize, std::size_t ThreadDensity>
+            struct IsValidSlabPolicy<Policy::DeriveSlotsPerPage<TLCSize, ThreadDensity>> : std::true_type {};
             template <std::size_t ThreadDensity>
-            struct IsValidSlabPolicy<Policy::DeriveSlotsPerPageAndTLCThreshold<ThreadDensity>> : std::true_type {};
+            struct IsValidSlabPolicy<Policy::DeriveSlotsPerPageAndTLCSize<ThreadDensity>> : std::true_type {};
             // Helper to evaluate the entire variadic pack at once
             template <typename... Policies>
             constexpr bool ValidatePolicies () {
@@ -379,13 +379,49 @@ namespace thekogans {
             struct SlotSize {
                 static constexpr std::size_t calcSlotSize () noexcept {
                     // 1. Determine the maximum alignment required by either the object or the free list pointer
-                    constexpr std::size_t requiredAlign = MAX (alignof (T), alignof (void *));
+                    constexpr std::size_t requiredAlign = std::max (alignof (T), alignof (void *));
                     // 2. Determine the maximum size required by either object
-                    constexpr std::size_t rawSize = MAX (sizeof (T), sizeof (void *));
+                    constexpr std::size_t rawSize = std::max (sizeof (T), sizeof (void *));
                     // 3. Round up the size to a clean multiple of our highest alignment requirement
                     return (rawSize + requiredAlign - 1) / requiredAlign * requiredAlign;
                 }
                 static constexpr std::size_t value = calcSlotSize ();
+            };
+
+            struct TLCIndexBroker {
+            private:
+                // A bitmask where a '0' bit means the ID is free, and '1' means leased.
+                // 64 slots is usually massive for concurrent active allocators.
+                // Expand to an array of atomics if you need more.
+                std::atomic<ui64> leasedBits{0};
+
+            public:
+                static constexpr std::size_t MAX_INDEX = BitWidth<ui64>::value;
+
+                // Leases a unique ID in a non-blocking constant-time loop
+                std::size_t LeaseIndex () {
+                    ui64 current = leasedBits.load (std::memory_order_relaxed);
+                    while (true) {
+                        // Find the first available zero bit.
+                        int free_bit = countr_one (current);
+                        if (free_bit >= MAX_INDEX) {
+                            // Out of IDs! Handle catastrophic overflow or expand bitmask.
+                            throw std::runtime_error ("Exceeded maximum concurrent allocators.");
+                        }
+                        ui64 next = current | (1ULL << free_bit);
+                        if (leasedBits.compare_exchange_weak (current, next,
+                                std::memory_order_acquire,
+                                std::memory_order_relaxed)) {
+                            return static_cast<std::size_t> (free_bit);
+                        }
+                        // If exchange failed, current is updated automatically; retry loop.
+                    }
+                }
+
+                // Returns the ID back to the pool instantly
+                void ReleaseIndex (std::size_t id) {
+                    leasedBits.fetch_and (~(1ULL << id), std::memory_order_release);
+                }
             };
 
             /// \struct SlabAllocator SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
@@ -437,22 +473,22 @@ namespace thekogans {
                     "  Supported Allocator Policies are exclusively:\n"
                     "    - Policy::IsSingleton<bool> (Default false)\n"
                     "    - Policy::SlotsPerPage<std::size_t> (Default detail::DEFAULT_SLOTS_PER_PAGE)\n"
-                    "    - Policy::TLCThreshold<std::size_t> (Default detail::DEFAULT_TLC_THRESHOLD)\n"
+                    "    - Policy::TLCSize<std::size_t> (Default detail::DEFAULT_TLC_SIZE)\n"
                     "    - Policy::CacheLineSize<std::size_t> (Default SYSTEM_CACHE_LINE_SIZE)\n"
                     "    - Policy::Id<std::size_t> (Default 0)\n"
                     "    - Policy::Lock<typename> (Default SpinLock)\n"
                     "    - Policy::PageAllocator<typename> (Default detail::DefaultPageAllocator\n"
                     "    - Policy::InstanceCreator<template> (only used if derived from GlobalSlabAllocator)\n"
                     "    - Policy::IsCompaction<bool> (Default true)\n"
-                    "    - Policy::DeriveTLCThreshold<std::size_t, std::size_t>\n"
+                    "    - Policy::DeriveTLCSize<std::size_t, std::size_t>\n"
                     "    - Policy::DeriveSlotsPerPage<std::size_t, std::size_t>\n"
-                    "    - Policy::DeriveSlotsPerPageAndTLCThreshold<std::size_t>\n"
+                    "    - Policy::DeriveSlotsPerPageAndTLCSize<std::size_t>\n"
                     "=========================================================================\n");
 
                 static constexpr bool IsSingleton = GetBoolPolicy<
                     Policy::IsSingleton, false, Policies...>::value;
-                static constexpr std::size_t TLCThreshold = GetTLCThreshold<
-                    DEFAULT_TLC_THRESHOLD, Policies...>::value;
+                static constexpr std::size_t TLCSize = GetTLCSize<
+                    DEFAULT_TLC_SIZE, Policies...>::value;
                 static constexpr std::size_t SlotsPerPage = GetSlotsPerPage<
                     DEFAULT_SLOTS_PER_PAGE, Policies...>::value;
                 static constexpr std::size_t CacheLineSize = GetValuePolicy<
@@ -470,12 +506,12 @@ namespace thekogans {
                 /// \brief
                 /// Validate template parameters.
                 static_assert (SlotsPerPage > 0, "SlotsPerPage must be > 0.");
-                static_assert ((TLCThreshold / 2) <= SlotsPerPage,
-                    "CRITICAL CONFIGURATION ERROR: Your TLC batch target (TLCThreshold / 2) "
+                static_assert ((TLCSize / 2) <= SlotsPerPage,
+                    "CRITICAL CONFIGURATION ERROR: Your TLC batch target (TLCSize / 2) "
                     "is larger than the maximum slots available in a single page (SlotsPerPage). "
                     "This would cause a single thread allocation burst to swallow and evict "
                     "multiple entire pages instantly, causing severe memory fragmentation. "
-                    "Please decrease TLCThreshold or increase SlotsPerPage.");
+                    "Please decrease TLCSize or increase SlotsPerPage.");
                 static_assert (IsPowerOf2 (CacheLineSize), "CacheLineSize must be a power of 2.");
 
                 static constexpr std::size_t calcSlotSize () noexcept {
@@ -522,13 +558,13 @@ namespace thekogans {
                         /// Pointer to the next free slot in the list.
                         Slot *next;
 
-                        inline Page *GetPage () noexcept {
+                        inline Page *GetPage (std::size_t pageMask) noexcept {
                             Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
                             return THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64) ? page : nullptr;
                         }
 
-                        inline void Free () noexcept {
-                            Page *page = GetPage ();
+                        inline void Free (std::size_t pageMask) noexcept {
+                            Page *page = GetPage (pageMask);
                             if (THEKOGANS_UTIL_LIKELY (page != nullptr)) {
                                 page->Free (this);
                             }
@@ -563,15 +599,15 @@ namespace thekogans {
 
                     /// \brief
                     /// Calculate the size of the header.
-                    static constexpr std::size_t metadataSize = sizeof (Header);
+                    static constexpr std::size_t headerSize = sizeof (Header);
                     // Guard the Metadata Header Block
                     static_assert (
-                        metadataSize <= CacheLineSize,
+                        headerSize <= CacheLineSize,
                         "Page metadata header size has exceeded a single CacheLineSize block.");
 
                     /// \brief
                     /// Calculated padding size.
-                    static constexpr std::size_t paddingSize = CacheLineSize - metadataSize;
+                    static constexpr std::size_t paddingSize = CacheLineSize - headerSize;
                     /// \struct SlabAllocator::Page::EmptyPadding SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
                     ///
                     /// \brief
@@ -645,53 +681,15 @@ namespace thekogans {
                     sizeof (Page) == CacheLineSize,
                     "sizeof (Page) must be EXACTLY equal to CacheLineSize.");
 
-                /// \struct SlabAllocator::ScopedSlabAllocatorStorageBase SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
-                ///
-                /// \brief
-                /// Storage base for scoped allocators. Adds a masterPageList to keep track
-                /// of allocated pages to be freed in the dtor.
-                struct ScopedSlabAllocatorStorageBase {
-                    Page *masterPageList{nullptr};
-                    ~ScopedSlabAllocatorStorageBase () noexcept {
-                        Page *page = masterPageList;
-                        while (page != nullptr) {
-                            Page *next = page->header.masterNext;
-                            PageAllocator::Free (page, pageSize);
-                            page = next;
-                        }
-                    }
-                };
-                struct SingletonSlabAllocatorStorageBase {};
-                using StorageBase = std::conditional_t<
-                    !IsSingleton,
-                    ScopedSlabAllocatorStorageBase,
-                    SingletonSlabAllocatorStorageBase>;
-
-                /// \struct SlabAllocator::Storage SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
-                ///
-                /// \brief
-                /// SlabAllocator state.
-                struct Storage : public StorageBase {
-                    /// \brief
-                    /// Partially allocated page list.
-                    Page *partialPageList{nullptr};
-                    /// \brief
-                    /// Flag to protect multiple threads from calling the page allocator.
-                    std::atomic<bool> pageAllocationInFlight{false};
-                    /// \brief
-                    /// Protect access to storage.
-                    /// Align the lock to it's own cache line to prevent false sharing with pageList.
-                    alignas (CacheLineSize) Lock lock;
-                } storage;
-
                 /// \struct SlabAllocator::TLC SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
                 ///
                 /// \brief
-                /// Thread Local Cache (TLC). We keep a small (TLCThreshold) number of slots
+                /// Thread Local Cache (TLC). We keep a small (TLCSize) number of slots
                 /// per thread. This optimization allows us to bypass the costly lock
                 /// acquisition. In real load testing (see test_SlabAllocator) this
                 /// results in ~65% speedup!
                 struct TLC {
+                    std::size_t pageMask{0};
                     /// \brief
                     /// Our own local slot cache.
                     typename Page::Slot *slotList{nullptr};
@@ -718,11 +716,17 @@ namespace thekogans {
                         return slot;
                     }
 
+                    inline void Reset () noexcept {
+                        pageMask = 0;
+                        slotList = nullptr;
+                        slotCount = 0;
+                    }
+
                     /// \brief
                     /// dtor. Return our locally cached slots back tothe global page pool.
-                    inline void ReturnSlots () noexcept {
+                    inline void Release () noexcept {
                         if (slotList != nullptr) {
-                            Page *page = slotList->GetPage ();
+                            Page *page = slotList->GetPage (pageMask);
                             // Event though, technically, GetPage can return nullptr,
                             // these are our internal slots not some random void *
                             // passed to Free. If they are not pointing to valid pages
@@ -731,32 +735,91 @@ namespace thekogans {
                             LockGuard<Lock> guard (page->header.allocator.storage.lock);
                             while (slotList != nullptr) {
                                 typename Page::Slot *next = slotList->next;
-                                slotList->Free ();
+                                slotList->Free (pageMask);
                                 slotList = next;
                             }
                         }
                     }
                 };
 
-                static inline thread_local TLC tlc;
+                static thread_local std::array<TLC, TLCIndexBroker::MAX_INDEX> caches;
 
                 struct ThreadLifetimeManager {
-                    ~ThreadLifetimeManager() noexcept {
-                        tlc.ReturnSlots ();
+                    ~ThreadLifetimeManager () noexcept {
+                        for (auto &cache : caches) {
+                            cache.Release ();
+                        }
                     }
                 };
+
+                /// \brief
+                /// Return the TLC associated with this allocator.
+                static TLC &GetTLC (std::size_t tlcIndex) noexcept {
+                    static thread_local ThreadLifetimeManager manager;
+                    return caches[tlcIndex];
+                }
+
+                struct StorageBaseImpl {
+                    std::size_t tlcIndex;
+                    static TLCIndexBroker broker;
+
+                    StorageBaseImpl () : tlcIndex (broker.LeaseIndex ()) {}
+                };
+
+                /// \struct SlabAllocator::ScopedSlabAllocatorStorageBase SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+                ///
+                /// \brief
+                /// Storage base for scoped allocators. Adds a masterPageList to keep track
+                /// of allocated pages to be freed in the dtor.
+                struct ScopedStorageBaseImpl : public StorageBaseImpl {
+                    Page *masterPageList{nullptr};
+                    ~ScopedStorageBaseImpl () noexcept {
+                        Page *page = masterPageList;
+                        while (page != nullptr) {
+                            Page *next = page->header.masterNext;
+                            PageAllocator::Free (page, pageSize);
+                            page = next;
+                        }
+                        GetTLC (StorageBaseImpl::tlcIndex).Reset ();
+                        StorageBaseImpl::broker.ReleaseIndex (StorageBaseImpl::tlcIndex);
+                    }
+                };
+                struct SingletonStorageBaseImpl : public StorageBaseImpl {};
+                using StorageBase = std::conditional_t<!IsSingleton, ScopedStorageBaseImpl, SingletonStorageBaseImpl>;
+
+                /// \struct SlabAllocator::Storage SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
+                ///
+                /// \brief
+                /// SlabAllocator state.
+                struct Storage : public StorageBase {
+                    /// \brief
+                    /// Partially allocated page list.
+                    Page *partialPageList{nullptr};
+                    /// \brief
+                    /// Flag to protect multiple threads from calling the page allocator.
+                    std::atomic<bool> pageAllocationInFlight{false};
+                    /// \brief
+                    /// Protect access to storage.
+                    /// Align the lock to it's own cache line to prevent false sharing with pageList.
+                    alignas (CacheLineSize) Lock lock;
+
+                    Storage () {
+                        GetTLC (StorageBaseImpl::tlcIndex).pageMask = pageMask;
+                    }
+                } storage;
 
             public:
                 /// \brief
                 /// Allocate a new slot.
                 void *Alloc () {
                     void *ptr = nullptr;
-                    if constexpr (TLCThreshold > 0) {
+                    if constexpr (TLCSize > 0) {
+                        TLC &tlc = GetTLC (storage.tlcIndex);
                         // See if we have a free slot in our local cache.
                         if (THEKOGANS_UTIL_UNLIKELY (tlc.slotList == nullptr)) {
                             static thread_local ThreadLifetimeManager lifecycleManager;
                             // No banana. Let's seed the TLC.
-                            static constexpr std::size_t batchTarget = TLCThreshold / 2;
+                            static constexpr std::size_t batchTarget = TLCSize / 2;
                             // Persistent outer loop forces lock retention until TLC target is met.
                             LockGuard<Lock> guard (storage.lock);
                             while (tlc.slotCount < batchTarget) {
@@ -791,22 +854,23 @@ namespace thekogans {
                 void Free (void *ptr) noexcept {
                     if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                         typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
-                        if (slot->GetPage () != nullptr) {
-                            if constexpr (TLCThreshold > 0) {
+                        if (slot->GetPage (pageMask) != nullptr) {
+                            if constexpr (TLCSize > 0) {
+                                TLC &tlc = GetTLC (storage.tlcIndex);
                                 tlc.Push (slot);
                                 // If we have no more room in our local cache batch release a bunch
                                 // of slots back to their pages so that we have room for more.
-                                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == TLCThreshold)) {
+                                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == TLCSize)) {
                                     LockGuard<Lock> guard (storage.lock);
-                                    static constexpr std::size_t flushCount = TLCThreshold / 2;
+                                    static constexpr std::size_t flushCount = TLCSize / 2;
                                     for (std::size_t i = 0; i < flushCount; ++i) {
-                                        tlc.Pop ()->Free ();
+                                        tlc.Pop ()->Free (pageMask);
                                     }
                                 }
                             }
                             else {
                                 LockGuard<Lock> guard (storage.lock);
-                                slot->Free ();
+                                slot->Free (pageMask);
                             }
                         }
                     }
@@ -857,6 +921,13 @@ namespace thekogans {
                     }
                 }
             };
+
+            template <typename T, typename... Policies>
+            thread_local std::array<
+                typename SlabAllocator<T, Policies...>::TLC,
+                TLCIndexBroker::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
+            template <typename T, typename... Policies>
+            TLCIndexBroker SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
         } // namespace detail
 
     } // namespace util

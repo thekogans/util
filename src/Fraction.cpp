@@ -154,13 +154,11 @@ namespace thekogans {
             denominator /= gcd;
         }
 
-        void Fraction::Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) {
+        void Fraction::Read (Serializer &serializer) {
             serializer >> numerator >> denominator >> (ui8 &)sign;
         }
 
-        void Fraction::Write (Serializer &serializer) const {
+        void Fraction::Write (Serializer &serializer) {
             serializer << numerator << denominator << (ui8)sign;
         }
 
@@ -172,13 +170,13 @@ namespace thekogans {
 
         void Fraction::ReadXML (
                 const SerializableHeader & /*header*/,
-                const pugi::xml_node &node) {
+                pugi::xml_node &node) {
             numerator = stringToui32 (node.attribute (ATTR_NUMERATOR).value ());
             denominator = stringToui32 (node.attribute (ATTR_DENOMINATOR).value ());
             sign = stringTosign (node.attribute (ATTR_SIGN).value ());
         }
 
-        void Fraction::WriteXML (pugi::xml_node &node) const {
+        void Fraction::WriteXML (pugi::xml_node &node) {
             node.append_attribute (ATTR_NUMERATOR).set_value (ui32Tostring (numerator).c_str ());
             node.append_attribute (ATTR_DENOMINATOR).set_value (ui32Tostring (denominator).c_str ());
             node.append_attribute (ATTR_SIGN).set_value (signTostring (sign).c_str ());
@@ -186,13 +184,13 @@ namespace thekogans {
 
         void Fraction::ReadJSON (
                 const SerializableHeader & /*header*/,
-                const JSON::Object &object) {
+                JSON::Object &object) {
             numerator = object.Get<JSON::Number> (ATTR_NUMERATOR)->To<ui32> ();
             denominator = object.Get<JSON::Number> (ATTR_DENOMINATOR)->To<ui32> ();
             sign = stringTosign (object.Get<JSON::String> (ATTR_SIGN)->value);
         }
 
-        void Fraction::WriteJSON (JSON::Object &object) const {
+        void Fraction::WriteJSON (JSON::Object &object) {
             object.Add (ATTR_NUMERATOR, numerator);
             object.Add (ATTR_DENOMINATOR, denominator);
             object.Add<const std::string &> (ATTR_SIGN, signTostring (sign));

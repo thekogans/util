@@ -25,7 +25,7 @@ namespace thekogans {
             thekogans::pathfinder::IgnoreList,
             1,
             0,
-            util::Serializable::TYPE)
+            util::TransactedFile::Object::TYPE)
 
         bool IgnoreList::AddIgnore (const std::string &ignore) {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
@@ -34,6 +34,7 @@ namespace thekogans {
                 }
             }
             value.push_back (ignore);
+            SetDirty (true);
             return true;
         }
 
@@ -41,6 +42,7 @@ namespace thekogans {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i] == ignore) {
                     value.erase (value.begin () + i);
+                    SetDirty (true);
                     return true;
                 }
             }

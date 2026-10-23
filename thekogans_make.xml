@@ -176,6 +176,7 @@
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeKeys.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileObject.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileObjects.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileRange.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Types.h</cpp_header>
@@ -712,6 +713,7 @@
     <cpp_source>TransactedFileBTreeKeys.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeRegistry.cpp</cpp_source>
     <cpp_source>TransactedFileObject.cpp</cpp_source>
+    <cpp_source>TransactedFileObjects.cpp</cpp_source>
     <cpp_source>TransactedFileRange.cpp</cpp_source>
     <cpp_source>TransactedFileRegistry.cpp</cpp_source>
     <cpp_source>ValueParser.cpp</cpp_source>

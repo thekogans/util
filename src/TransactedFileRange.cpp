@@ -22,12 +22,12 @@ namespace thekogans {
     namespace util {
 
         TransactedFile::Range::Range (
-                TransactedFile &file_,
+                TransactedFile::SharedPtr file_,
                 ui64 offset_,
                 std::size_t length_,
                 bool reading_,
                 util::Allocator::SharedPtr allocator_) :
-                RandomSeekSerializer (file_.endianness),
+                RandomSeekSerializer (file_->endianness),
                 file (file_),
                 offset (offset_),
                 length (length_),
@@ -38,10 +38,10 @@ namespace thekogans {
                 owner (false) {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             if (reading) {
-                ++file.stats.readingRanges;
+                ++file->stats.readingRanges;
             }
             else {
-                ++file.stats.writingRanges;
+                ++file->stats.writingRanges;
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             ////////////////////////////////////////////////////////////////////
@@ -61,7 +61,7 @@ namespace thekogans {
             // 2. Use patterns and tunability. Range is specifically designed
             // to work with PageMap::Page and it's size. That size is parameterized
             // by bitsPerPage ctor value. You therefore have a lot of power to tune
-            // the underlying TransactedFileAddressSpaceType to minimize boudary
+            // the underlying TransactedFile::AddressSpaceType to minimize boudary
             // crossings. At the same time range is designed to work with
             // TransactedFile::Allocator::Block (BlockRange). That means that most
             // of range parameters will come from block offset and size. And to
@@ -74,27 +74,27 @@ namespace thekogans {
             // critical path code to deal with it would be the wrong way to go.
             ////////////////////////////////////////////////////////////////////
             // Check to see if the range straddles a page boundary...
-            ui64 pageOffset = offset & file.GetPageMask ();
-            if (length > file.GetPageSize () - pageOffset) {
+            ui64 pageOffset = offset & file->GetPageMask ();
+            if (length > file->GetPageSize () - pageOffset) {
                 // ...it does. Allocate a backing buffer.
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
                 if (reading) {
                 #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
-                    ++file.stats.ownerReadingRanges;
+                    ++file->stats.ownerReadingRanges;
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                     // and, if it's a read request, buffer the underlying file range.
-                    file.ReadEx (offset, data, length);
+                    file->ReadEx (offset, data, length);
                 }
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 else {
-                    ++file.stats.ownerWritingRanges;
+                    ++file->stats.ownerWritingRanges;
                 }
             #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
             }
             else {
                 // ...otherwise, read/write directly from/into the page.
-                page = file.GetPage (offset);
+                page = file->GetPage (offset);
                 data = page->data + pageOffset;
             }
         }
@@ -102,7 +102,7 @@ namespace thekogans {
         TransactedFile::Range::~Range () {
             if (owner) {
                 if (!reading && position > 0) {
-                    file.WriteEx (offset, data, position);
+                    file->WriteEx (offset, data, position);
                 }
                 allocator->Free (data, length);
             }

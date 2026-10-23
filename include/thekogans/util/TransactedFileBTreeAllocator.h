@@ -65,13 +65,13 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Header {
                 /// \brief
                 /// Contains the offset of the \see{BTree::Header}.
-                PtrType btreeOffset;
+                TransactedFile::AddressType btreeOffset;
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
                     UI32_SIZE +     // magic
-                    PTR_TYPE_SIZE;  // btreeOffset
+                    TransactedFile::AddressTypeSize;  // btreeOffset
 
                 /// \brief
                 /// ctor.
@@ -92,7 +92,7 @@ namespace thekogans {
             std::size_t btreeNodeFileSize;
             /// \brief
             /// Synchronization lock.
-            mutable SpinLock spinLock;
+            SpinLock spinLock;
 
         public:
             /// \brief
@@ -118,26 +118,23 @@ namespace thekogans {
             /// in to a \see{BlockAllocator} page.
             /// \param[in] allocator_ \see{util::Allocator} for \see{BTree::Node}.
             TransactedFileBTreeAllocator (
+                TransactedFile::SharedPtr file = nullptr,
+                TransactedFile::AddressType offset = 0,
                 bool secure = false,
                 std::size_t btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
-                Allocator (secure),
-                btreeEntriesPerNode (btreeEntriesPerNode_),
-                btreeNodesPerPage (btreeNodesPerPage_),
-                allocator (allocator_),
-                btreeNodeFileSize (BTree::Node::FileSize (btreeNodesPerPage)) {}
+                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
 
             // Allocator
             /// \brief
             /// Allocate a block.
             /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
-            virtual PtrType Alloc (std::size_t size) override;
+            virtual TransactedFile::AddressType Alloc (std::size_t size) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] offset Offset of block to free.
-            virtual void Free (PtrType offset) override;
+            virtual void Free (TransactedFile::AddressType offset) override;
             /// \brief
             /// Resize a block. Make it bigger or smaller.
             /// \param[in] offset Offset of \see{Block} to resize.
@@ -146,8 +143,8 @@ namespace thekogans {
             /// \return If newSize is greater than current size, return the
             /// new \see{Block} offset. If not, return the old \see{Block}
             /// offset.
-            virtual PtrType Realloc (
-                PtrType offset,
+            virtual TransactedFile::AddressType Realloc (
+                TransactedFile::AddressType offset,
                 std::size_t newSize,
                 bool moveData = true) override;
 
@@ -155,40 +152,29 @@ namespace thekogans {
             // Serializable
             /// \brief
             /// Read the \see{Header} from the given \see{Serializer}.
-            virtual void Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) override;
+            virtual void Read (Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the given \see{Serializer}.
-            virtual void Write (Serializer &serializer) const override;
+            virtual void Write (Serializer &serializer) override;
 
-            // TransactedFileEvents
-            /// \brief
-            /// Transaction is committing:
-            /// Phase 1: Nothing to do as we're the special first block.
-            /// Phase 2: Flush our and \see{Allocator::Header} to file.
-            /// \param[in] file \see{TransactedFile} commiting the transaction.
-            /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
-            virtual void OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr file,
-                int phase) noexcept override;
-            /// \brief
-            /// Transaction is aborting:
-            /// Reload our and \see{Allocator::Header} from disk.
-            /// \param[in] file \see{TransactedFile} aborting the transaction.
-            virtual void OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr file) noexcept override;
+            // TransactedFile::Object
+            virtual void Init (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::AddressType offset) noexcept override {
+                TransactedFile::Object::Init (file, offset);
+                btree->Init (file, header.btreeOffset);
+            }
 
             // TransactedFile::ObjectEvents
             /// \brief
             /// \see{BTree} allocated it's header block.
             /// \param[in] object \see{BTree} that allocated it's header block.
-            virtual void OnTransactedFileObjectAlloc (
+            virtual void OnTransactedFileObjectAllocRange (
                 TransactedFile::Object::SharedPtr object) noexcept override;
             /// \brief
             /// \see{BTree} freed it's header block.
             /// \param[in] object \see{BTree} that freed it's header block.
-            virtual void OnTransactedFileObjectFree (
+            virtual void OnTransactedFileObjectFreeRange (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 
             /// \brief

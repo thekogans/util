@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include "thekogans/util/Serializable.h"
+#include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/SerializableValues.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
@@ -79,12 +80,18 @@ namespace thekogans {
         /// Roots is an \see{ArrayValue<Root::SharedPtr>}. It
         /// keeps track of all the \see{Root}s.
         struct Roots :
+                public virtual util::TransactedFile::Object,
                 public util::ArrayValue<Root::SharedPtr>,
                 public util::Subscriber<RootEvents>,
                 public util::Producer<RootsEvents> {
             /// \brief
             /// Roots is a \see{util::Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
+
+            Roots (
+                util::TransactedFile::SharedPtr file = nullptr,
+                util::TransactedFile::AddressType offset = 0) :
+                util::TransactedFile::Object (file, offset) {}
 
             /// \brief
             /// Given a path, scan the directory tree rooted at it.
@@ -117,14 +124,12 @@ namespace thekogans {
                 bool ignoreCase,
                 bool ordered);
 
-            // util::ArrayValue<Root::SharedPtr>.
+            // util::ArrayObject<Root::SharedPtr>.
             /// \brief
             /// Read the value from the given serializer.
             /// \param[in] header \see{SerializableHeader}.
             /// \param[in] serializer \see{Serializer} to read the value from.
-            virtual void Read (
-                const util::SerializableHeader &header,
-                util::Serializer &serializer) override;
+            virtual void Read (util::Serializer &serializer) override;
 
             // util::Subscriber<RootEvents>.
             virtual void OnRootScanPath (

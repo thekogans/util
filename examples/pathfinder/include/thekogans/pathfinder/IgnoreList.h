@@ -30,10 +30,19 @@ namespace thekogans {
         /// \brief
         /// IgnoreList stores a list of regular expressions in the \see{Database::registry}.
         /// \see{Root} uses this list to exclude paths that match patterns in the list.
-        struct IgnoreList : public util::StringArrayValue {
+        struct IgnoreList :
+                public virtual util::TransactedFile::Object,
+                public util::StringArrayValue {
             /// \brief
             /// IgnoreList is a \see{util::Serializable}
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (IgnoreList)
+
+            IgnoreList (
+                util::TransactedFile::SharedPtr file = nullptr,
+                util::TransactedFile::AddressType offset = 0,
+                const std::vector<std::string> &value = std::vector<std::string> ()) :
+                util::TransactedFile::Object (file, offset),
+                util::StringArrayValue (value) {}
 
             /// \brief
             /// Add a new pattern to the list.

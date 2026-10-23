@@ -26,10 +26,27 @@ namespace thekogans {
             thekogans::util::TransactedFileBTreeAllocator,
             1,
             TransactedFileBTreeAllocator::SIZE,
-            TransactedFile::Allocator::TYPE)
+            TransactedFile::Object::TYPE)
 
-        TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::Alloc (std::size_t size) {
-            PtrType offset = 0;
+        TransactedFileBTreeAllocator::TransactedFileBTreeAllocator (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset,
+                bool secure,
+                std::size_t btreeEntriesPerNode_,
+                std::size_t btreeNodesPerPage_,
+                util::Allocator::SharedPtr allocator_) :
+                Allocator (file, offset, secure),
+                btreeEntriesPerNode (btreeEntriesPerNode_),
+                btreeNodesPerPage (btreeNodesPerPage_),
+                allocator (allocator_),
+                btree (new BTree (file, 0, btreeEntriesPerNode, btreeNodesPerPage, allocator)),
+                btreeNodeFileSize (BTree::Node::FileSize (btreeNodesPerPage)) {
+            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+            Reload ();
+        }
+
+        TransactedFile::AddressType TransactedFileBTreeAllocator::Alloc (std::size_t size) {
+            TransactedFile::AddressType offset = 0;
             if (size > 0) {
                 if (size < MIN_USER_DATA_SIZE) {
                     size = MIN_USER_DATA_SIZE;
@@ -92,7 +109,7 @@ namespace thekogans {
                                     result.size >= remainder + size + Block::HEADER_SIZE) {
                                 // ...it would. Add a filler block.
                                 Block prev (
-                                    *file,
+                                    file,
                                     result.offset,
                                     Block::FLAGS_FREE,
                                     remainder - Block::HEADER_SIZE);
@@ -111,7 +128,7 @@ namespace thekogans {
                         if (remainder >= MIN_BLOCK_SIZE) {
                             // ...there is. Add a free block.
                             Block next (
-                                *file,
+                                file,
                                 result.offset + size + Block::SIZE,
                                 Block::FLAGS_FREE,
                                 remainder - Block::SIZE);
@@ -146,7 +163,7 @@ namespace thekogans {
                     if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
                             size <= (file->GetPageSize () - Block::SIZE)) {
                         Block prev (
-                            *file,
+                            file,
                             file->Grow (remainder) + Block::HEADER_SIZE,
                             Block::FLAGS_FREE,
                             remainder - Block::SIZE);
@@ -166,29 +183,29 @@ namespace thekogans {
                     // Most file systems will fill the new space with '0' bytes
                     // but we can't take a chance and do it ourselves.
                     if (IsSecure ()) {
-                        TransactedFile::Range range (*file, offset, size, false);
+                        TransactedFile::Range range (file, offset, size, false);
                         range.Seek (
                             SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                     }
                 }
                 // By now we got our block by either reusing a free one or growing the file.
-                Block block (*file, offset, 0, size);
+                Block block (file, offset, 0, size);
                 block.Write ();
             }
             return offset;
         }
 
-        void TransactedFileBTreeAllocator::Free (PtrType offset) {
+        void TransactedFileBTreeAllocator::Free (TransactedFile::AddressType offset) {
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
                 LockGuard<SpinLock> guard (spinLock);
-                Block block (*file, offset);
+                Block block (file, offset);
                 block.Read ();
                 if (!block.IsFree ()) {
-                    PtrType clearOffset = block.GetOffset ();
-                    ui64 clearLength = block.GetSize ();
+                    TransactedFile::AddressType clearOffset = block.GetOffset ();
+                    TransactedFile::SizeType clearLength = block.GetSize ();
                     // Consolidate adjacent free blocks.
-                    Block prev (*file);
+                    Block prev (file);
                     if (block.Prev (prev) && prev.IsFree ()) {
                         btree->Remove (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                         if (IsSecure ()) {
@@ -199,14 +216,14 @@ namespace thekogans {
                         else {
                             // Since block will grow to occupy prev,
                             // it's offset is no longer valid.
-                            Block oldBlock (*file, block.GetOffset ());
+                            Block oldBlock (file, block.GetOffset ());
                             oldBlock.Clear ();
                         }
                         // Back up to cover the prev.
                         block.SetOffset (block.GetOffset () - Block::SIZE - prev.GetSize ());
                         block.SetSize (block.GetSize () + Block::SIZE + prev.GetSize ());
                     }
-                    Block next (*file);
+                    Block next (file);
                     if (block.Next (next) && next.IsFree ()) {
                         btree->Remove (BTree::Key (next.GetSize (), next.GetOffset ()));
                         if (IsSecure ()) {
@@ -216,7 +233,7 @@ namespace thekogans {
                         else {
                             // Since block will grow to occupy next,
                             // next offset is no longer valid.
-                            Block oldNext (*file, next.GetOffset ());
+                            Block oldNext (file, next.GetOffset ());
                             oldNext.Clear ();
                         }
                         // Expand to swallow the next.
@@ -229,7 +246,7 @@ namespace thekogans {
                         block.SetFree (true);
                         block.Write ();
                         if (IsSecure ()) {
-                            TransactedFile::Range range (*file, clearOffset, clearLength, false);
+                            TransactedFile::Range range (file, clearOffset, clearLength, false);
                             range.Seek (
                                 SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         }
@@ -248,15 +265,15 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::Allocator::PtrType TransactedFileBTreeAllocator::Realloc (
-                PtrType offset,
+        TransactedFile::AddressType TransactedFileBTreeAllocator::Realloc (
+                TransactedFile::AddressType offset,
                 std::size_t size,
                 bool moveData) {
             if (offset == 0) {
                 offset = Alloc (size);
             }
             else if (size > 0) {
-                Block block (*file, offset);
+                Block block (file, offset);
                 block.Read ();
                 if (size < MIN_USER_DATA_SIZE) {
                     size = MIN_USER_DATA_SIZE;
@@ -266,8 +283,8 @@ namespace thekogans {
                     offset = Alloc (size);
                     if (moveData) {
                         TransactedFile::Range oldRange (
-                            *file, block.GetOffset (), block.GetSize ());
-                        TransactedFile::Range range (*file, offset, size, false);
+                            file, block.GetOffset (), block.GetSize ());
+                        TransactedFile::Range range (file, offset, size, false);
                         range.Seek (
                             oldRange.Read (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         // Assume that Alloc always gives back clean blocks.
@@ -282,13 +299,13 @@ namespace thekogans {
                     if (remainder >= MIN_BLOCK_SIZE) {
                         LockGuard<SpinLock> guard (spinLock);
                         Block next (
-                            *file,
+                            file,
                             offset + size + Block::SIZE,
                             Block::FLAGS_FREE,
                             remainder - Block::SIZE);
                         next.Write ();
                         if (IsSecure ()) {
-                            TransactedFile::Range range (*file, next.GetOffset (), next.GetSize (), false);
+                            TransactedFile::Range range (file, next.GetOffset (), next.GetSize (), false);
                             range.Seek (
                                 SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                         }
@@ -313,18 +330,16 @@ namespace thekogans {
             return serializer;
         }
 
-        void TransactedFileBTreeAllocator::Read (
-                const SerializableHeader &header_,
-                Serializer &serializer) {
+        void TransactedFileBTreeAllocator::Read (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
-            Allocator::Read (header_, serializer);
+            Allocator::Read (serializer);
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
                 serializer >> header;
                 btree.Reset (
                     new BTree (
-                        *this,
+                        file,
                         header.btreeOffset,
                         btreeEntriesPerNode,
                         btreeNodesPerPage,
@@ -346,51 +361,20 @@ namespace thekogans {
             return serializer;
         }
 
-        void TransactedFileBTreeAllocator::Write (Serializer &serializer) const {
+        void TransactedFileBTreeAllocator::Write (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
             Allocator::Write (serializer);
             serializer << MAGIC32 << header;
         }
 
-        void TransactedFileBTreeAllocator::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr file,
-                int phase) noexcept {
-            // We live inside block 1. It's set aside for us by TransactedFile::Init.
-            // We don't need to allocate it.
-            if (phase == TransactedFile::COMMIT_PHASE_2) {
-                // Since allocator block is special (it's first and unresizable)...
-                SerializableHeader allocatorHeader;
-                {
-                    // ...extract the original SerializableHeader...
-                    TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
-                    range >> allocatorHeader;
-                }
-                {
-                    TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE, false);
-                    // skip over serializable header.
-                    range.Seek (allocatorHeader.Size (), SEEK_CUR);
-                    // ...and force the allocator to write that particular
-                    // version of itself so as not to overflow the first block.
-                    Serializer::ContextGuard guard (range, allocatorHeader);
-                    range << *this;
-                }
-            }
-        }
-
-        void TransactedFileBTreeAllocator::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr file) noexcept {
-            TransactedFile::BlockRange range (*file, Allocator::Block::HEADER_SIZE);
-            range >> *this;
-        }
-
-        void TransactedFileBTreeAllocator::OnTransactedFileObjectAlloc (
+        void TransactedFileBTreeAllocator::OnTransactedFileObjectAllocRange (
                 TransactedFile::Object::SharedPtr object) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = object->GetOffset ();
             SetDirty (true);
         }
 
-        void TransactedFileBTreeAllocator::OnTransactedFileObjectFree (
+        void TransactedFileBTreeAllocator::OnTransactedFileObjectFreeRange (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = 0;

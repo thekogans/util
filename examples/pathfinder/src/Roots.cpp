@@ -31,7 +31,7 @@ namespace thekogans {
             thekogans::pathfinder::Roots,
             1,
             0,
-            util::Serializable::TYPE)
+            util::TransactedFile::Object::TYPE)
 
         void Roots::ScanRoot (
                 const std::string &path,
@@ -47,7 +47,7 @@ namespace thekogans {
                 root.Reset (new Root (path));
                 util::Subscriber<RootEvents>::Subscribe (*root);
                 value.push_back (root);
-                Produce (
+                util::Producer<RootsEvents>::Produce (
                     std::bind (
                         &RootsEvents::OnRootsRootCreated,
                         std::placeholders::_1,
@@ -55,6 +55,7 @@ namespace thekogans {
                         root));
             }
             root->Scan (ignoreList);
+            SetDirty (true);
         }
 
         bool Roots::EnableRoot (const std::string &path) {
@@ -62,7 +63,8 @@ namespace thekogans {
                 if (value[i]->GetPath () == path) {
                     if (!value[i]->IsActive ()) {
                         value[i]->SetActive (true);
-                        Produce (
+                        SetDirty (true);
+                        util::Producer<RootsEvents>::Produce (
                             std::bind (
                                 &RootsEvents::OnRootsRootEnabled,
                                 std::placeholders::_1,
@@ -80,7 +82,8 @@ namespace thekogans {
                 if (value[i]->GetPath () == path) {
                     if (value[i]->IsActive ()) {
                         value[i]->SetActive (false);
-                        Produce (
+                        SetDirty (true);
+                        util::Producer<RootsEvents>::Produce (
                             std::bind (
                                 &RootsEvents::OnRootsRootDisabled,
                                 std::placeholders::_1,
@@ -100,7 +103,8 @@ namespace thekogans {
                     value.erase (value.begin () + i);
                     util::Subscriber<RootEvents>::Unsubscribe (*root);
                     root->Delete ();
-                    Produce (
+                    SetDirty (true);
+                    util::Producer<RootsEvents>::Produce (
                         std::bind (
                             &RootsEvents::OnRootsRootDeleted,
                             std::placeholders::_1,
@@ -129,10 +133,8 @@ namespace thekogans {
             }
         }
 
-        void Roots::Read (
-                const util::SerializableHeader &header,
-                util::Serializer &serializer) {
-            util::ArrayValue<Root::SharedPtr>::Read (header, serializer);
+        void Roots::Read (util::Serializer &serializer) {
+            util::ArrayValue<Root::SharedPtr>::Read (serializer);
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 util::Subscriber<RootEvents>::Subscribe (*value[i]);
             }

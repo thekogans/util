@@ -202,13 +202,11 @@ namespace thekogans {
             return *this + FromNanoseconds (nanoseconds);
         }
 
-        void TimeSpec::Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) {
+        void TimeSpec::Read (Serializer &serializer) {
             serializer >> seconds >> nanoseconds;
         }
 
-        void TimeSpec::Write (Serializer &serializer) const {
+        void TimeSpec::Write (Serializer &serializer) {
             serializer << seconds << nanoseconds;
         }
 
@@ -219,24 +217,24 @@ namespace thekogans {
 
         void TimeSpec::ReadXML (
                 const SerializableHeader & /*header*/,
-                const pugi::xml_node &node) {
+                pugi::xml_node &node) {
             seconds = stringToui64 (node.attribute (ATTR_SECONDS).value ());
             nanoseconds = stringToi32 (node.attribute (ATTR_NANOSECONDS).value ());
         }
 
-        void TimeSpec::WriteXML (pugi::xml_node &node) const {
+        void TimeSpec::WriteXML (pugi::xml_node &node) {
             node.append_attribute (ATTR_SECONDS).set_value (i64Tostring (seconds).c_str ());
             node.append_attribute (ATTR_NANOSECONDS).set_value (i32Tostring (nanoseconds).c_str ());
         }
 
         void TimeSpec::ReadJSON (
                 const SerializableHeader & /*header*/,
-                const JSON::Object &object) {
+                JSON::Object &object) {
             seconds = object.Get<JSON::Number> (ATTR_SECONDS)->To<i64> ();
             nanoseconds = object.Get<JSON::Number> (ATTR_NANOSECONDS)->To<i32> ();
         }
 
-        void TimeSpec::WriteJSON (JSON::Object &object) const {
+        void TimeSpec::WriteJSON (JSON::Object &object) {
             object.Add (ATTR_SECONDS, seconds);
             object.Add (ATTR_NANOSECONDS, nanoseconds);
         }

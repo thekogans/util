@@ -458,15 +458,12 @@ namespace thekogans {
                 virtual std::size_t Size () const noexcept override;
                 /// \brief
                 /// Read the key from the given serializer.
-                /// \param[in] header \see{SerializableHeader}.
                 /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (
-                    const SerializableHeader & /*header*/,
-                    Serializer &serializer) override;
+                virtual void Read (Serializer &serializer) override;
                 /// \brief
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) const override;
+                virtual void Write (Serializer &serializer) override;
 
                 /// \brief
                 /// Read the Serializable from an XML DOM.
@@ -474,22 +471,22 @@ namespace thekogans {
                 /// \param[in] node XML DOM representation of a Serializable.
                 virtual void ReadXML (
                     const SerializableHeader & /*header*/,
-                    const pugi::xml_node &node) override;
+                    pugi::xml_node &node) override;
                 /// \brief
                 /// Write the Serializable to the XML DOM.
                 /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) const override;
+                virtual void WriteXML (pugi::xml_node &node) override;
 
                 /// \brief
                 /// Read the Serializable from an JSON DOM.
                 /// \param[in] node JSON DOM representation of a Serializable.
                 virtual void ReadJSON (
                     const SerializableHeader & /*header*/,
-                    const JSON::Object &object) override;
+                    JSON::Object &object) override;
                 /// \brief
                 /// Write the Serializable to the JSON DOM.
                 /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) const override;
+                virtual void WriteJSON (JSON::Object &object) override;
             };
 
             /// \brief

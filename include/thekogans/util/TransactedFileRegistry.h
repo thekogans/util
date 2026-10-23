@@ -22,9 +22,7 @@
 /// Registry provides global associative storage for \see{TransactedFile}
 /// clients. Use it to store and retrieve practically any value derived
 /// from \see{Serializable}. The key type is std::string.
-struct _LIB_THEKOGANS_UTIL_DECL Registry :
-        public Serializable,
-        public TransactionParticipant {
+struct _LIB_THEKOGANS_UTIL_DECL Registry : public virtual Object {
     /// \brief
     /// Registry is a \see{DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Registry)
@@ -38,15 +36,17 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry :
 
     /// \brief
     /// ctor.
-    Registry () :
-        TransactionParticipant (nullptr) {}
+    Registry (
+        TransactedFile::SharedPtr file = nullptr,
+        AddressType offset = 0) :
+        Object (file, offset) {}
 
     /// \brief
     /// Given a key, retrieve the associated value. If key is not found,
     /// return nullptr.
     /// \param[in] key Key whose value to retrieve.
     /// \return Value @ key, nullptr if key is not found.
-    virtual Serializable::SharedPtr GetValue (const std::string & /*key*/) = 0;
+    virtual Object::SharedPtr GetValue (const std::string & /*key*/) = 0;
     /// \brief
     /// Given a key, do one of the following three;
     /// 1. If value != nullptr and key is not found, insert new key/value.
@@ -56,8 +56,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry :
     /// \param[in] value Value to set/replace/delete.
     virtual void SetValue (
         const std::string & /*key*/,
-        Serializable::SharedPtr /*value*/) = 0;
-
+        Object::SharedPtr /*value*/) = 0;
 
     /// \brief
     /// Registry is neither copy constructable, nor assignable.

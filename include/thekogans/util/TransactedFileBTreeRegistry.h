@@ -67,25 +67,25 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL Header {
                 /// \brief
                 /// \see{TransactedFileBTree::Header} offset.
-                TransactedFile::Allocator::PtrType btreeOffset;
+                TransactedFile::AddressType btreeOffset;
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
                     UI32_SIZE + // magic
-                    TransactedFile::Allocator::PTR_TYPE_SIZE; // btreeOffset
+                    TransactedFile::AddressTypeSize; // btreeOffset
 
                 /// \brief
                 /// ctor.
-                Header () :
-                    btreeOffset (0) {}
+                Header (TransactedFile::AddressType btreeOffset_ = 0) :
+                    btreeOffset (btreeOffset_) {}
             } header;
             /// \brief
             /// \see{TransactedFileBTree} used to store key/values.
             TransactedFileBTree::SharedPtr btree;
             /// \brief
             /// Synchronization lock.
-            mutable SpinLock spinLock;
+            SpinLock spinLock;
 
         public:
             /// \brief
@@ -103,21 +103,19 @@ namespace thekogans {
             /// \param[in] nodesPerPage Number of \see{TransactedFileBTree::Node}s per allocator page.
             /// \param[in] allocator_ Where \see{TransactedFileBTree::Node} pages come from.
             TransactedFileBTreeRegistry (
+                TransactedFile::SharedPtr file = nullptr,
+                TransactedFile::AddressType offset = 0,
                 bool valueAsObject_ = true,
                 std::size_t entriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ()) :
-                valueAsObject (valueAsObject_),
-                entriesPerNode (entriesPerNode_),
-                nodesPerPage (nodesPerPage_),
-                allocator (allocator_) {}
+                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
             /// return nullptr.
             /// \param[in] key Key whose value to retrieve.
             /// \return Value @ key, nullptr if key is not found.
-            virtual Serializable::SharedPtr GetValue (const std::string &key) override;
+            virtual TransactedFile::Object::SharedPtr GetValue (const std::string &key) override;
             /// \brief
             /// Given a key, do one of the following three;
             /// 1. If value != nullptr and key is not found, insert new key/value.
@@ -127,52 +125,38 @@ namespace thekogans {
             /// \param[in] value Value to set/replace/delete.
             virtual void SetValue (
                 const std::string &key,
-                Serializable::SharedPtr value) override;
+                TransactedFile::Object::SharedPtr value) override;
 
         protected:
             // Serializable
             /// \brief
             /// Read the \see{Header} from the file.
-            /// \param[in] header \see{SerializableHeader} governig the underlying data.
             /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
-            virtual void Read (
-                const SerializableHeader & /*header*/,
-                Serializer &serializer) override;
+            virtual void Read (Serializer &serializer) override;
             /// \brief
             /// Write the \see{Header} to the file.
             /// \param[in] serializer \see{Serializer} to write the \see{Header} to.
-            virtual void Write (Serializer &serializer) const override;
+            virtual void Write (Serializer &serializer) override;
 
-            // TransactedFileEvents
-            /// \brief
-            /// Transaction is committing. Depending on the phase do whatever
-            /// is appropriate.
-            /// If your object derives from \see{TransactedFile::TransactionParticipant}
-            /// all this is done under the hood for you. All you will need
-            /// to do is implement Alloc (phase 1) and Flush (phase 2).
-            /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
-            virtual void OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr file,
-                int phase) noexcept override;
-            /// \brief
-            /// Transaction is aborting. Time to reload the object.
-            /// If your object derives from \see{TransactedFile::TransactionParticipant}
-            /// all this is done under the hood for you. All you will need
-            /// to do is implement Reload.
-            virtual void OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr file) noexcept override;
+            // TransactedFile::Object
+            virtual void Init (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::AddressType offset) noexcept override {
+                TransactedFile::Object::Init (file, offset);
+                btree->Init (file, header.btreeOffset);
+            }
 
             // TransactedFile::ObjectEvents
             /// \brief
             /// \see{TransactedFileBTree} allocated a block for it's \see{TransactedFileBTree::Header}.
             /// \param[in] object \see{TransactedFileBTree} whose offset has become valid.
-            virtual void OnTransactedFileObjectAlloc (
+            virtual void OnTransactedFileObjectAllocRange (
                 TransactedFile::Object::SharedPtr object) noexcept override;
             /// \brief
             /// \see{TransactedFileBTree} freed its \see{TransactedFileBTree::Header} block.
             /// \param[in] object \see{TransactedFileBTree} whose \see{TransactedFileBTree::Header}
             /// has become invalid.
-            virtual void OnTransactedFileObjectFree (
+            virtual void OnTransactedFileObjectFreeRange (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 
             /// \brief
@@ -188,10 +172,7 @@ namespace thekogans {
 
             /// \brief
             /// TransactedFileBTreeRegistry is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFileBTreeRegistry)
-            /// \brief
-            /// TransactedFileBTreeRegistry is neither move constructable, nor move assignable.
-            THEKOGANS_UTIL_DISALLOW_MOVE_AND_ASSIGN (TransactedFileBTreeRegistry)
+            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFileBTreeRegistry)
         };
 
     } // namespace util
