@@ -21,7 +21,6 @@
 #include <cstddef>
 #include <string>
 #include <ostream>
-#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Flags.h"
@@ -29,7 +28,6 @@
 #include "thekogans/util/DynamicCreatable.h"
 #include "thekogans/util/SerializableHeader.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/JSON.h"
 #include "thekogans/util/Buffer.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/ValueParser.h"
@@ -83,21 +81,13 @@ namespace thekogans {
             /// and you need to call Size to get the size of this instance.
             /// \return Serializable class size.
             virtual std::size_t ClassSize () const noexcept = 0;
-            /// \brief
-            /// DynamicClassSize is a hook. It allows you to calculate class size at runtime.
-            /// If you classes are a fixed size but cannot be determined at compile time
-            /// override this function and calculate it at runtime.
-            /// \return Dynamic class size.
-            virtual std::size_t DynamicClassSize () const noexcept {
-                return ClassSize ();
-            }
 
             /// \brief
             /// Return the serializable instance size (excluding the header).
             /// Overide this method if your class instances are variable size.
             /// \return Serializable instance size.
             virtual std::size_t Size () const noexcept {
-                return DynamicClassSize ();
+                return ClassSize ();
             }
             /// \brief
             /// Read the serializable from the given serializer.
@@ -109,58 +99,6 @@ namespace thekogans {
             /// the version and the amount of space you have to write.
             /// \param[out] serializer Serializer to write the serializable to.
             virtual void Write (Serializer & /*serializer*/) = 0;
-
-            /// \brief
-            /// Return the serializable XML size.
-            /// \return Serializable XML size.
-            virtual std::size_t SizeXML () const noexcept {
-                assert (0);
-                return 0;
-            }
-            /// \brief
-            /// Read the Serializable from an XML DOM.
-            /// \param[in] node XML DOM representation of a Serializable.
-            virtual void ReadXML (
-                    const SerializableHeader & /*header*/,
-                    pugi::xml_node & /*node*/) {
-                assert (0);
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "ReadXML is unimplemented for: %s.", Type ());
-            }
-            /// \brief
-            /// Write the Serializable to the XML DOM.
-            /// \param[out] node Parent node.
-            virtual void WriteXML (pugi::xml_node & /*node*/) {
-                assert (0);
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "WriteXML is unimplemented for: %s.", Type ());
-            }
-
-            /// \brief
-            /// Return the serializable JSON size.
-            /// \return Serializable JSON size.
-            virtual std::size_t SizeJSON () const noexcept {
-                assert (0);
-                return 0;
-            }
-            /// \brief
-            /// Read the Serializable from an JSON DOM.
-            /// \param[in] node JSON DOM representation of a Serializable.
-            virtual void ReadJSON (
-                    const SerializableHeader & /*header*/,
-                    JSON::Object & /*object*/) {
-                assert (0);
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "ReadJSON is unimplemented for: %s.", Type ());
-            }
-            /// \brief
-            /// Write a Serializable to the JSON DOM.
-            /// \param[out] node Parent node.
-            virtual void WriteJSON (JSON::Object & /*object*/) {
-                assert (0);
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "WriteJSON is unimplemented for: %s.", Type ());
-            }
         };
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)
@@ -353,12 +291,6 @@ namespace thekogans {
             /// \brief
             /// Binary blob.
             Buffer buffer;
-            /// \brief
-            /// XML blob.
-            pugi::xml_node node;
-            /// \brief
-            /// JSON blob.
-            JSON::Object object;
 
             /// \brief
             /// Return the serializable version.
@@ -380,38 +312,6 @@ namespace thekogans {
             /// Write the serializable to the given serializer.
             /// \param[out] serializer Serializer to write the serializable to.
             virtual void Write (Serializer &serializer) override;
-
-            /// \brief
-            /// Return the serializable XML size.
-            /// \return Serializable XML size.
-            virtual std::size_t SizeXML () const noexcept override;
-            /// \brief
-            /// Read the Serializable from an XML DOM.
-            /// \param[in] header_ SerializableHeader to deserialize.
-            /// \param[in] node XML DOM representation of a Serializable.
-            virtual void ReadXML (
-                const SerializableHeader &header_,
-                pugi::xml_node &node_) override;
-            /// \brief
-            /// Write a Serializable to the XML DOM.
-            /// \param[out] node_ Parent node.
-            virtual void WriteXML (pugi::xml_node &node_) override;
-
-            /// \brief
-            /// Return the serializable JSON size.
-            /// \return Serializable JSON size.
-            virtual std::size_t SizeJSON () const noexcept override;
-            /// \brief
-            /// Read the Serializable from an JSON DOM.
-            /// \param[in] header_ SerializableHeader to deserialize.
-            /// \param[in] object_ JSON DOM representation of a Serializable.
-            virtual void ReadJSON (
-                const SerializableHeader &header_,
-                JSON::Object &object_) override;
-            /// \brief
-            /// Write a Serializable to the JSON DOM.
-            /// \param[out] object_ Parent node.
-            virtual void WriteJSON (JSON::Object &object_) override;
         };
 
         /// \brief
@@ -423,45 +323,12 @@ namespace thekogans {
             Serializer &serializer,
             Serializable &serializable);
         /// \brief
-        /// Serializable insertion operator.
-        /// \param[in] node Where to serialize the serializable.
-        /// \param[in] serializable Serializable to serialize.
-        /// \return node.
-        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
-            pugi::xml_node &node,
-            Serializable &serializable);
-        /// \brief
-        /// Serializable insertion operator.
-        /// \param[in] object Where to serialize the serializable.
-        /// \param[in] serializable Serializable to serialize.
-        /// \return node.
-        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
-            JSON::Object &object,
-            Serializable &serializable);
-
-        /// \brief
         /// Serializable extraction operator.
         /// \param[in] serializer Serializer to extract from.
         /// \param[out] serializable Serializable to extract.
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
-            Serializable &serializable);
-        /// \brief
-        /// Serializable extraction operator.
-        /// \param[in] node Serializer to extract from.
-        /// \param[out] serializable Serializable to extract.
-        /// \return serializer.
-        _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-            pugi::xml_node &node,
-            Serializable &serializable);
-        /// \brief
-        /// Serializable extraction operator.
-        /// \param[in] object Serializer to extract from.
-        /// \param[out] serializable Serializable to extract.
-        /// \return serializer.
-        _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-            JSON::Object &object,
             Serializable &serializable);
 
         /// \brief
@@ -471,22 +338,6 @@ namespace thekogans {
         /// \return serializer.
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
             Serializer &serializer,
-            Serializable::SharedPtr &serializable);
-        /// \brief
-        /// Serializable::SharedPtr extraction operator.
-        /// \param[in] node Serializer to extract from.
-        /// \param[out] serializable Serializable to extract.
-        /// \return serializer.
-        _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-            pugi::xml_node &node,
-            Serializable::SharedPtr &serializable);
-        /// \brief
-        /// Serializable::SharedPtr extraction operator.
-        /// \param[in] object Serializer to extract from.
-        /// \param[out] serializable Serializable to extract.
-        /// \return serializer.
-        _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-            JSON::Object &object,
             Serializable::SharedPtr &serializable);
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS(_T)
@@ -499,22 +350,6 @@ namespace thekogans {
                 serializer >> base;\
                 serializable = base;\
                 return serializer;\
-            }\
-            inline const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (\
-                    pugi::xml_node &node,\
-                    _T::SharedPtr &serializable) {\
-                thekogans::util::Serializable::SharedPtr base;\
-                node >> base;\
-                serializable = base;\
-                return node;\
-            }\
-            inline const thekogans::util::JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (\
-                    thekogans::util::JSON::Object &object,\
-                    _T::SharedPtr &serializable) {\
-                thekogans::util::Serializable::SharedPtr base;\
-                object >> base;\
-                serializable = base;\
-                return object;\
             }
 
         /// \struct ValueParser<SerializableHeader> Serializable.h thekogans/util/Serializable.h

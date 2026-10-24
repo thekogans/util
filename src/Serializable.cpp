@@ -106,80 +106,12 @@ namespace thekogans {
                 buffer.GetDataAvailableForReading ());
         }
 
-        std::size_t Blob::SizeXML () const noexcept {
-            return header.size;
-        }
-
-        void Blob::ReadXML (
-                const SerializableHeader &header_,
-                pugi::xml_node &node_) {
-            header = header_;
-            for (pugi::xml_attribute attribute = node_.first_attribute ();
-                    attribute; attribute = attribute.next_attribute ()) {
-                node.append_copy (attribute);
-            }
-            for (pugi::xml_node child = node_.first_child ();
-                    child; child = child.next_sibling ()) {
-                node.append_copy (child);
-            }
-        }
-
-        void Blob::WriteXML (pugi::xml_node &node_) {
-            for (pugi::xml_attribute attribute = node.first_attribute ();
-                    attribute; attribute = attribute.next_attribute ()) {
-                node_.append_copy (attribute);
-            }
-            for (pugi::xml_node child = node.first_child ();
-                    child; child = child.next_sibling ()) {
-                node_.append_copy (child);
-            }
-        }
-
-        std::size_t Blob::SizeJSON () const noexcept {
-            return header.size;
-        }
-
-        void Blob::ReadJSON (
-                const SerializableHeader &header_,
-                JSON::Object &object_) {
-            header = header_;
-            object = object_;
-        }
-
-        void Blob::WriteJSON (JSON::Object &object_) {
-            object_ = object;
-        }
-
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 Serializable &serializable) {
             serializer << serializable.GetHeader (serializer.context);
             serializable.Write (serializer);
             return serializer;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
-                pugi::xml_node &node,
-                Serializable &serializable) {
-            node <<
-                SerializableHeader (
-                    serializable.Type (),
-                    serializable.Version (),
-                    serializable.SizeXML ());
-            serializable.WriteXML (node);
-            return node;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
-                JSON::Object &object,
-                Serializable &serializable) {
-            object <<
-                SerializableHeader (
-                    serializable.Type (),
-                    serializable.Version (),
-                    serializable.SizeJSON ());
-            serializable.WriteJSON (object);
-            return object;
         }
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
@@ -206,56 +138,6 @@ namespace thekogans {
                     serializable.Type ());
             }
             return serializer;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-                pugi::xml_node &node,
-                Serializable &serializable) {
-            SerializableHeader header;
-            node >> header;
-            if (header.type == serializable.Type ()) {
-                if (header.version <= serializable.Version ()) {
-                    serializable.ReadXML (header, node);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%u) is greater then the Serializable version (%u).",
-                        header.version,
-                        serializable.Version ());
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Header type (%s) is not the same as Serializable type (%s).",
-                    header.type.c_str (),
-                    serializable.Type ());
-            }
-            return node;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-                JSON::Object &object,
-                Serializable &serializable) {
-            SerializableHeader header;
-            object >> header;
-            if (header.type == serializable.Type ()) {
-                if (header.version <= serializable.Version ()) {
-                    serializable.ReadJSON (header, object);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%u) is greater then the Serializable version (%u).",
-                        header.version,
-                        serializable.Version ());
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Header type (%s) is not the same as Serializable type (%s).",
-                    header.type.c_str (),
-                    serializable.Type ());
-            }
-            return object;
         }
 
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
@@ -287,56 +169,6 @@ namespace thekogans {
                     header.type.c_str ());
             }
             return serializer;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-                pugi::xml_node &node,
-                Serializable::SharedPtr &serializable) {
-            SerializableHeader header;
-            node >> header;
-            serializable = Serializable::CreateType (header.type.c_str ());
-            if (serializable != nullptr) {
-                if (header.version <= serializable->Version ()) {
-                    serializable->ReadXML (header, node);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%u) is greater then the Serializable version (%u).",
-                        header.version,
-                        serializable->Version ());
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to create a Serializable of type: %s.",
-                    header.type.c_str ());
-            }
-            return node;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-                JSON::Object &object,
-                Serializable::SharedPtr &serializable) {
-            SerializableHeader header;
-            object >> header;
-            serializable = Serializable::CreateType (header.type.c_str ());
-            if (serializable != nullptr) {
-                if (header.version <= serializable->Version ()) {
-                    serializable->ReadJSON (header, object);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%u) is greater then the Serializable version (%u).",
-                        header.version,
-                        serializable->Version ());
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to create a Serializable of type: %s.",
-                    header.type.c_str ());
-            }
-            return object;
         }
 
         void ValueParser<Serializable>::Reset (Serializer &serializer) {

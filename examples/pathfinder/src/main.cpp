@@ -108,11 +108,13 @@ int main (
                 Database::Instance ()->GetRegistry ()->GetValue ("roots");
             if (roots == nullptr) {
                 roots.Reset (new Roots (Database::Instance ()->GetFile ()));
+                Database::Instance ()->GetRegistry ()->InsertValue ("roots", roots);
             }
-            IgnoreList::SharedPtr ignoreList =
+            IgnoreList::SharedPtr ignoreList ignoreList =
                 Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
             if (ignoreList == nullptr) {
                 ignoreList.Reset (new IgnoreList (Database::Instance ()->GetFile ()));
+                Database::Instance ()->GetRegistry ()->InsertValue ("ignore_list", ignorelist);
             }
             if (Options::Instance ()->action == "scan_root") {
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
@@ -123,7 +125,6 @@ int main (
                         roots->ScanRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
-                        Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                         transaction.Commit ();
                     }
                 }
@@ -140,7 +141,6 @@ int main (
                         roots->EnableRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
-                    Database::Instance ()->GetRegistry ()->SetValue ("roots", roots);
                     transaction.Commit ();
                 }
                 else {

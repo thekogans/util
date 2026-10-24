@@ -210,35 +210,6 @@ namespace thekogans {
             serializer << seconds << nanoseconds;
         }
 
-        namespace {
-            const char * const ATTR_SECONDS = "Seconds";
-            const char * const ATTR_NANOSECONDS = "Nanoseconds";
-        }
-
-        void TimeSpec::ReadXML (
-                const SerializableHeader & /*header*/,
-                pugi::xml_node &node) {
-            seconds = stringToui64 (node.attribute (ATTR_SECONDS).value ());
-            nanoseconds = stringToi32 (node.attribute (ATTR_NANOSECONDS).value ());
-        }
-
-        void TimeSpec::WriteXML (pugi::xml_node &node) {
-            node.append_attribute (ATTR_SECONDS).set_value (i64Tostring (seconds).c_str ());
-            node.append_attribute (ATTR_NANOSECONDS).set_value (i32Tostring (nanoseconds).c_str ());
-        }
-
-        void TimeSpec::ReadJSON (
-                const SerializableHeader & /*header*/,
-                JSON::Object &object) {
-            seconds = object.Get<JSON::Number> (ATTR_SECONDS)->To<i64> ();
-            nanoseconds = object.Get<JSON::Number> (ATTR_NANOSECONDS)->To<i32> ();
-        }
-
-        void TimeSpec::WriteJSON (JSON::Object &object) {
-            object.Add (ATTR_SECONDS, seconds);
-            object.Add (ATTR_NANOSECONDS, nanoseconds);
-        }
-
     #if defined (THEKOGANS_UTIL_CONFIG_Debug)
         namespace {
             inline bool IsNormalized (const TimeSpec &timeSpec) {

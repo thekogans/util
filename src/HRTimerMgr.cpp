@@ -43,74 +43,6 @@ namespace thekogans {
             serializer << name << attributes;
         }
 
-        namespace {
-            const char * const TAG_ATTRIBUTES = "Attributes";
-            const char * const TAG_ATTRIBUTE = "Attribute";
-            const char * const ATTR_NAME = "Name";
-            const char * const ATTR_VALUE = "Value";
-        }
-
-        void HRTimerMgr::TimerInfoBase::ReadXML (
-                const SerializableHeader & /*header*/,
-                pugi::xml_node &node) {
-            name = node.attribute (ATTR_NAME).value ();
-            attributes.clear ();
-            pugi::xml_node attributesNode = node.child (TAG_ATTRIBUTES);
-            for (const auto &child : attributesNode.children ()) {
-                std::string name = child.attribute (ATTR_NAME).value ();
-                std::string value = child.attribute (ATTR_NAME).value ();
-                if (!name.empty () && !value.empty ()) {
-                    attributes.push_back (Attribute (name, value));
-                }
-            }
-        }
-
-        void HRTimerMgr::TimerInfoBase::WriteXML (pugi::xml_node &node) {
-            node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
-            if (!attributes.empty ()) {
-                pugi::xml_node attributesNode = node.append_child (TAG_ATTRIBUTES);
-                for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                    pugi::xml_node attributeNode = attributesNode.append_child (TAG_ATTRIBUTE);
-                    attributeNode.append_attribute (ATTR_NAME).set_value (
-                        Encodestring (attributes[i].first).c_str ());
-                    attributeNode.append_attribute (ATTR_VALUE).set_value (
-                        Encodestring (attributes[i].second).c_str ());
-                }
-            }
-        }
-
-        void HRTimerMgr::TimerInfoBase::ReadJSON (
-                const SerializableHeader & /*header*/,
-                JSON::Object &object) {
-            name = object.Get<JSON::String> (ATTR_NAME)->value;
-            util::JSON::Array::SharedPtr attributesArray = object.Get<JSON::Array> (TAG_ATTRIBUTES);
-            if (attributesArray != nullptr) {
-                for (std::size_t i = 0, count = attributesArray->GetValueCount (); i < count; ++i) {
-                    util::JSON::Object::SharedPtr attributeObject =
-                        attributesArray->Get<util::JSON::Object> (i);
-                    std::string name = attributeObject->Get<JSON::String> (ATTR_NAME)->value;
-                    std::string value = attributeObject->Get<JSON::String> (ATTR_VALUE)->value;
-                    if (!name.empty () && !value.empty ()) {
-                        attributes.push_back (Attribute (name, value));
-                    }
-                }
-            }
-        }
-
-        void HRTimerMgr::TimerInfoBase::WriteJSON (JSON::Object &object) {
-            object.Add<const std::string &> (ATTR_NAME, name);
-            if (!attributes.empty ()) {
-                util::JSON::Array::SharedPtr attributesArray (new util::JSON::Array);
-                for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                    util::JSON::Object::SharedPtr attributeObject (new util::JSON::Object);
-                    attributeObject->Add<const std::string &> (ATTR_NAME, attributes[i].first);
-                    attributeObject->Add<const std::string &> (ATTR_VALUE, attributes[i].second);
-                    attributesArray->Add (attributeObject);
-                }
-                object.Add (TAG_ATTRIBUTES, attributesArray);
-            }
-        }
-
         ////////////////////////////////////////////////////////////////////////////////////////
 
         #if !defined (THEKOGANS_UTIL_MIN_TIMER_INFOS_IN_PAGE)
@@ -129,43 +61,6 @@ namespace thekogans {
 
         void HRTimerMgr::TimerInfo::Stop () {
             stop = HRTimer::Click ();
-        }
-
-        namespace {
-            const char * const TAG_TIMER = "Timer";
-            const char * const ATTR_START = "Start";
-            const char * const ATTR_STOP = "Stop";
-            const char * const ATTR_ELAPSED = "Elapsed";
-        }
-
-        void HRTimerMgr::TimerInfo::ToXML (pugi::xml_node &node) const {
-            node.set_name (TAG_TIMER);
-            node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
-            node.append_attribute (ATTR_START).set_value (ui64Tostring (start).c_str ());
-            node.append_attribute (ATTR_STOP).set_value (ui64Tostring (stop).c_str ());
-            node.append_attribute (ATTR_ELAPSED).set_value (
-                f64Tostring (
-                    HRTimer::ToSeconds (
-                        HRTimer::ComputeElapsedTime (start, stop))).c_str ());
-            for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                node.append_attribute (attributes[i].first.c_str ()).set_value (
-                    Encodestring (attributes[i].second).c_str ());
-            }
-        }
-
-        void HRTimerMgr::TimerInfo::ToJSON (JSON::Object &object) const {
-            object.Add<const std::string &> (ATTR_NAME, name);
-            object.Add (ATTR_START, start);
-            object.Add (ATTR_STOP, stop);
-            object.Add<const std::string &> (ATTR_ELAPSED,
-                f64Tostring (
-                    HRTimer::ToSeconds (
-                        HRTimer::ComputeElapsedTime (start, stop))));
-            for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                object.Add<const std::string &> (
-                    attributes[i].first,
-                    Encodestring (attributes[i].second));
-            }
         }
 
         void HRTimerMgr::TimerInfo::GetStats (
@@ -192,34 +87,6 @@ namespace thekogans {
         void HRTimerMgr::TimerInfo::Write (Serializer &serializer) {
             TimerInfoBase::Write (serializer);
             serializer << start << stop;
-        }
-
-        void HRTimerMgr::TimerInfo::ReadXML (
-                const SerializableHeader &header,
-                pugi::xml_node &node) {
-            TimerInfoBase::ReadXML (header, node);
-            start = stringToui64 (node.attribute (ATTR_START).value ());
-            stop = stringToui64 (node.attribute (ATTR_STOP).value ());
-        }
-
-        void HRTimerMgr::TimerInfo::WriteXML (pugi::xml_node &node) {
-            TimerInfoBase::WriteXML (node);
-            node.append_attribute (ATTR_START).set_value (ui64Tostring (start).c_str ());
-            node.append_attribute (ATTR_STOP).set_value (ui64Tostring (stop).c_str ());
-        }
-
-        void HRTimerMgr::TimerInfo::ReadJSON (
-                const SerializableHeader &header,
-                JSON::Object &object) {
-            TimerInfoBase::ReadJSON (header, object);
-            start = object.Get<JSON::Number> (ATTR_START)->To<ui64> ();
-            stop = object.Get<JSON::Number> (ATTR_STOP)->To<ui64> ();
-        }
-
-        void HRTimerMgr::TimerInfo::WriteJSON (JSON::Object &object) {
-            TimerInfoBase::WriteJSON (object);
-            object.Add (ATTR_START, start);
-            object.Add (ATTR_STOP, stop);
         }
 
         ////////////////////////////////////////////////////////////////////////////////////////
@@ -259,75 +126,6 @@ namespace thekogans {
             if (!open.empty ()) {
                 closed.push_back (open.back ());
                 open.pop_back ();
-            }
-        }
-
-        namespace {
-            const char * const TAG_SCOPE = "Scope";
-            const char * const ATTR_COUNT = "Count";
-            const char * const ATTR_MIN = "Min";
-            const char * const ATTR_MAX = "Max";
-            const char * const ATTR_AVERAGE = "Average";
-            const char * const ATTR_TOTAL = "Total";
-            const char * const TAG_OPEN_SCOPES = "OpenScopes";
-            const char * const TAG_CLOSED_SCOPES = "ClosedScopes";
-        }
-
-        void HRTimerMgr::ScopeInfo::ToXML (pugi::xml_node &node) const {
-            ui32 count = 0;
-            ui64 min = UI64_MAX;
-            ui64 max = 0;
-            ui64 average = 0;
-            ui64 total = 0;
-            GetStats (count, min, max, average, total);
-            node.set_name (TAG_SCOPE);
-            node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
-            node.append_attribute (ATTR_COUNT).set_value (ui32Tostring (count).c_str ());
-            node.append_attribute (ATTR_MIN).set_value (
-                f64Tostring (HRTimer::ToSeconds (min)).c_str ());
-            node.append_attribute (ATTR_MAX).set_value (
-                f64Tostring (HRTimer::ToSeconds (max)).c_str ());
-            node.append_attribute (ATTR_AVERAGE).set_value (
-                f64Tostring (HRTimer::ToSeconds (average)).c_str ());
-            node.append_attribute (ATTR_TOTAL).set_value (
-                f64Tostring (HRTimer::ToSeconds (total)).c_str ());
-            for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                node.append_attribute (attributes[i].first.c_str ()).set_value (
-                    Encodestring (attributes[i].second).c_str ());
-            }
-            if (!closed.empty ()) {
-                pugi::xml_node scopes = node.append_child (TAG_CLOSED_SCOPES);
-                for (auto timerInfo : closed) {
-                    pugi::xml_node scope = scopes.append_child (pugi::node_element);
-                    timerInfo->ToXML (scope);
-                }
-            }
-        }
-
-        void HRTimerMgr::ScopeInfo::ToJSON (JSON::Object &object) const {
-            ui32 count = 0;
-            ui64 min = UI64_MAX;
-            ui64 max = 0;
-            ui64 average = 0;
-            ui64 total = 0;
-            GetStats (count, min, max, average, total);
-            object.Add<const std::string &> (ATTR_NAME, name);
-            object.Add (ATTR_COUNT, count);
-            object.Add (ATTR_MIN, HRTimer::ToSeconds (min));
-            object.Add (ATTR_MAX, HRTimer::ToSeconds (max));
-            object.Add (ATTR_AVERAGE, HRTimer::ToSeconds (average));
-            object.Add (ATTR_TOTAL, HRTimer::ToSeconds (total));
-            for (std::size_t i = 0, count = attributes.size (); i < count; ++i) {
-                object.Add<const std::string &> (attributes[i].first, attributes[i].second);
-            }
-            if (!closed.empty ()) {
-                JSON::Array::SharedPtr scopes (new JSON::Array);
-                object.Add (TAG_CLOSED_SCOPES, scopes);
-                for (auto timerInfo : closed) {
-                    JSON::Object::SharedPtr scope (new JSON::Object);
-                    timerInfo->ToJSON (*scope);
-                    scopes->Add (scope);
-                }
             }
         }
 
@@ -416,137 +214,9 @@ namespace thekogans {
             }
         }
 
-        void HRTimerMgr::ScopeInfo::ReadXML (
-                const SerializableHeader &header,
-                pugi::xml_node &node) {
-            TimerInfoBase::ReadXML (header, node);
-            {
-                open.clear ();
-                pugi::xml_node openScopes = node.child (TAG_OPEN_SCOPES);
-                for (pugi::xml_node child = openScopes.first_child ();
-                        !child.empty (); child = child.next_sibling ()) {
-                    if (child.type () == pugi::node_element) {
-                        std::string childName = child.name ();
-                        if (childName == TAG_SCOPE) {
-                            TimerInfoBase::SharedPtr timerInfo;
-                            child >> timerInfo;
-                            open.push_back (timerInfo);
-                        }
-                    }
-                }
-            }
-            {
-                closed.clear ();
-                pugi::xml_node closedScopes = node.child (TAG_CLOSED_SCOPES);
-                for (pugi::xml_node child = closedScopes.first_child ();
-                        !child.empty (); child = child.next_sibling ()) {
-                    if (child.type () == pugi::node_element) {
-                        std::string childName = child.name ();
-                        if (childName == TAG_SCOPE) {
-                            TimerInfoBase::SharedPtr timerInfo;
-                            child >> timerInfo;
-                            closed.push_back (timerInfo);
-                        }
-                    }
-                }
-            }
-        }
-
-        void HRTimerMgr::ScopeInfo::WriteXML (pugi::xml_node &node) {
-            TimerInfoBase::WriteXML (node);
-            {
-                pugi::xml_node openScopes = node.append_child (TAG_OPEN_SCOPES);
-                for (auto timerInfo : open) {
-                    pugi::xml_node openScope = openScopes.append_child (TAG_SCOPE);
-                    openScope << *timerInfo;
-                }
-            }
-            {
-                pugi::xml_node closedScopes = node.append_child (TAG_CLOSED_SCOPES);
-                for (auto timerInfo : closed) {
-                    pugi::xml_node closedScope = closedScopes.append_child (TAG_SCOPE);
-                    closedScope << *timerInfo;
-                }
-            }
-        }
-
-        void HRTimerMgr::ScopeInfo::ReadJSON (
-                const SerializableHeader &header,
-                JSON::Object &object) {
-            TimerInfoBase::ReadJSON (header, object);
-            {
-                open.clear ();
-                util::JSON::Array::SharedPtr openScopes =
-                    object.Get<util::JSON::Array> (TAG_OPEN_SCOPES);
-                if (openScopes != nullptr) {
-                    for (std::size_t i = 0, count = openScopes->GetValueCount (); i < count; ++i) {
-                        util::JSON::Object::SharedPtr openScope =
-                            openScopes->Get<util::JSON::Object> (i);
-                        TimerInfoBase::SharedPtr timerInfo;
-                        *openScope >> timerInfo;
-                        open.push_back (timerInfo);
-                    }
-                }
-            }
-            {
-                closed.clear ();
-                util::JSON::Array::SharedPtr closedScopes =
-                    object.Get<util::JSON::Array> (TAG_CLOSED_SCOPES);
-                if (closedScopes != nullptr) {
-                    for (std::size_t i = 0, count = closedScopes->GetValueCount (); i < count; ++i) {
-                        util::JSON::Object::SharedPtr closedScope =
-                            closedScopes->Get<util::JSON::Object> (i);
-                        TimerInfoBase::SharedPtr timerInfo;
-                        *closedScope >> timerInfo;
-                        closed.push_back (timerInfo);
-                    }
-                }
-            }
-        }
-
-        void HRTimerMgr::ScopeInfo::WriteJSON (JSON::Object &object) {
-            TimerInfoBase::WriteJSON (object);
-            {
-                util::JSON::Array::SharedPtr openScopes (new util::JSON::Array);
-                for (auto timerInfo : open) {
-                    util::JSON::Object::SharedPtr openScope (new util::JSON::Object);
-                    *openScope << *timerInfo;
-                    openScopes->Add (openScope);
-                }
-                object.Add (TAG_OPEN_SCOPES, openScopes);
-            }
-            {
-                util::JSON::Array::SharedPtr closedScopes (new util::JSON::Array);
-                for (auto timerInfo : closed) {
-                    util::JSON::Object::SharedPtr closedScope (new util::JSON::Object);
-                    *closedScope << *timerInfo;
-                    closedScopes->Add (closedScope);
-                }
-                object.Add (TAG_CLOSED_SCOPES, closedScopes);
-            }
-        }
-
         ////////////////////////////////////////////////////////////////////////////////////////
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::HRTimerMgr, 1, 0)
-
-
-        std::string HRTimerMgr::ToXMLString (
-                std::size_t indentationLevel,
-                std::size_t indentationWidth) const {
-            pugi::xml_document document;
-            pugi::xml_node node = document.append_child (TAG_SCOPE);
-            root.ToXML (node);
-            return FormatDocument (document, indentationLevel, indentationWidth);
-        }
-
-        std::string HRTimerMgr::ToJSONString (
-                std::size_t indentationLevel,
-                std::size_t indentationWidth) const {
-            JSON::Object object;
-            root.ToJSON (object);
-            return JSON::FormatValue (object, indentationLevel, indentationWidth);
-        }
 
         std::size_t HRTimerMgr::Size () const noexcept {
             return root.Size ();
@@ -558,26 +228,6 @@ namespace thekogans {
 
         void HRTimerMgr::Write (Serializer &serializer) {
             serializer << root;
-        }
-
-        void HRTimerMgr::ReadXML (
-                const SerializableHeader & /*header*/,
-                pugi::xml_node &node) {
-            node >> root;
-        }
-
-        void HRTimerMgr::WriteXML (pugi::xml_node &node) {
-            node << root;
-        }
-
-        void HRTimerMgr::ReadJSON (
-                const SerializableHeader & /*header*/,
-                JSON::Object &object) {
-            object >> root;
-        }
-
-        void HRTimerMgr::WriteJSON (JSON::Object &object) {
-            object << root;
         }
 
     } // namespace util

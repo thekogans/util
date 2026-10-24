@@ -229,6 +229,7 @@ namespace thekogans {
                 TransactedFile::Object::SharedPtr value;
                 valueRange >> value;
                 entries[index].value = value.Release ();
+                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[index].value);
             }
             return entries[index].value;
         }
@@ -236,11 +237,17 @@ namespace thekogans {
         void TransactedFileBTree::Node::SetValue (
                 ui32 index,
                 TransactedFile::Object::SharedPtr value) {
-            entries[index].value = value.Release ();
-            if (btree->header.IsValueAsObject ()) {
-                entries[index].value->SetDirty (true);
+            if (entries[index].value != nullptr && entries[index].value != value.Get ()) {
+                entries[index].value->Release ();
             }
-            SetDirty (true);
+            entries[index].value = value.Release ();
+            if (entries[index].value) {
+                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[index].value);
+            }
+            if (btree->header.IsValueAsObject ()) {
+                entries[index].value->SetDirty ();
+            }
+            SetDirty ();
         }
 
         TransactedFileBTree::Node *TransactedFileBTree::Node::GetChild (ui32 index) {
@@ -252,10 +259,8 @@ namespace thekogans {
             }
             else {
                 --index;
-                if (entries[index].right == nullptr &&
-                        entries[index].rightOffset != 0) {
-                    entries[index].right = Alloc (
-                        file, entries[index].rightOffset, btree);
+                if (entries[index].right == nullptr && entries[index].rightOffset != 0) {
+                    entries[index].right = Alloc (file, entries[index].rightOffset, btree);
                 }
                 return entries[index].right;
             }
@@ -397,7 +402,7 @@ namespace thekogans {
                     entries[index].key = leaf->entries[0].key;
                     entries[index].valueOffset = leaf->entries[0].valueOffset;
                     entries[index].value = leaf->entries[0].value;
-                    SetDirty (true);
+                    SetDirty ();
                     child->Remove (*leaf->entries[0].key);
                     if (child->IsPoor ()) {
                         RestoreBalance (index);
@@ -461,7 +466,7 @@ namespace thekogans {
             left->entries[lastIndex].right = right;
             entries[index] = left->entries[lastIndex];
             left->RemoveEntry (lastIndex);
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTree::Node::RotateLeft (
@@ -477,7 +482,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             entries[index] = right->entries[0];
             right->RemoveEntry (0);
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTree::Node::Merge (
@@ -490,7 +495,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            right->FreeRange ();
+            right->FreeBlock ();
             right->Release ();
         }
 
@@ -503,8 +508,8 @@ namespace thekogans {
                 entries + splitIndex,
                 node->count * sizeof (Entry));
             count = splitIndex;
-            node->SetDirty (true);
-            SetDirty (true);
+            node->SetDirty ();
+            SetDirty ();
         }
 
         void TransactedFileBTree::Node::Concatenate (Node *node) {
@@ -514,8 +519,8 @@ namespace thekogans {
                 node->count * sizeof (Entry));
             count += node->count;
             node->count = 0;
-            node->SetDirty (true);
-            SetDirty (true);
+            node->SetDirty ();
+            SetDirty ();
         }
 
         void TransactedFileBTree::Node::InsertEntry (
@@ -526,7 +531,7 @@ namespace thekogans {
                 entries + index,
                 (count++ - index) * sizeof (Entry));
             entries[index] = entry;
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
@@ -534,7 +539,7 @@ namespace thekogans {
                 entries + index,
                 entries + index + 1,
                 (--count - index) * sizeof (Entry));
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTree::Node::Harakiri () {
@@ -566,10 +571,10 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTree::Node::FreeRange () {
+        void TransactedFileBTree::Node::FreeBlock () {
             file->GetAllocator ()->Free (keyValueOffset);
             keyValueOffset = 0;
-            Object::FreeRange ();
+            Object::FreeBlock ();
         }
 
         void TransactedFileBTree::Node::Read (Serializer &serializer) {
@@ -603,6 +608,7 @@ namespace thekogans {
                             TransactedFile::Object::SharedPtr value;
                             keyValueRange >> value;
                             entries[i].value = value.Release ();
+                            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[i].value);
                         }
                     }
                 }
@@ -619,21 +625,16 @@ namespace thekogans {
             if (count > 0) {
                 // Calculate key/value sizes.
                 std::size_t keyValueSize = 0;
-                std::vector<std::pair<std::size_t, std::size_t>> keyValueSizes;
                 if (btree->header.IsValueAsObject ()) {
                     for (ui32 i = 0; i < count; ++i) {
-                        std::size_t keySize = entries[i].key->GetSize (btree->header.keyContext);
-                        keyValueSize += keySize;
-                        keyValueSizes.push_back (std::pair<std::size_t, std::size_t> (keySize, 0));
+                        keyValueSize += entries[i].key->GetSize (btree->header.keyContext);
                     }
                 }
                 else {
                     for (ui32 i = 0; i < count; ++i) {
-                        std::size_t keySize = entries[i].key->GetSize (btree->header.keyContext);;
-                        keyValueSize += keySize;
-                        std::size_t valueSize = entries[i].value->GetSize (btree->header.valueContext);
-                        keyValueSize += valueSize;
-                        keyValueSizes.push_back (std::pair<std::size_t, std::size_t> (keySize, valueSize));
+                        keyValueSize +=
+                            entries[i].key->GetSize (btree->header.keyContext) +
+                            entries[i].value->GetSize (btree->header.valueContext);
                     }
                 }
                 keyValueOffset = file->GetAllocator ()->Realloc (keyValueOffset, keyValueSize, false);
@@ -644,11 +645,7 @@ namespace thekogans {
                 TransactedFile::BlockRange keyValueRange (file, keyValueOffset, false);
                 keyValueRange.context = btree->header.keyContext;
                 for (ui32 i = 0; i < count; ++i) {
-                    std::size_t position = keyValueRange.Tell ();
                     keyValueRange << *entries[i].key;
-                    if (keyValueRange.Tell () - position > keyValueSizes[i].first) {
-                        std::cout << "1\n";
-                    }
                     if (btree->header.IsValueAsObject ()) {
                         if (entries[i].value != nullptr) {
                             entries[i].valueOffset = entries[i].value->GetOffset ();
@@ -663,14 +660,10 @@ namespace thekogans {
                 if (!btree->header.IsValueAsObject ()) {
                     keyValueRange.context = btree->header.valueContext;
                     for (ui32 i = 0; i < count; ++i) {
-                        std::size_t position = keyValueRange.Tell ();
                         keyValueRange << *entries[i].value;
-                        if (keyValueRange.Tell () - position > keyValueSizes[i].second) {
-                            std::cout << "2\n";
-                        }
                     }
                 }
-                if (file->GetAllocator ()->IsSecure ()) {
+                if (file->IsSecure ()) {
                     // Zero out the unused portion of the keyValueRange to
                     // prevent leaking sensitive data.
                     keyValueRange.Seek (
@@ -780,11 +773,11 @@ namespace thekogans {
                     if (!IsDirty () &&
                             (header.rootOffset == 0 ||
                                 root->GetOffset () != header.rootOffset)) {
-                        SetDirty (true);
+                        SetDirty ();
                     }
                     key.Release ();
                     if (header.IsValueAsObject ()) {
-                        value->SetDirty (true);
+                        value->SetDirty ();
                     }
                     value.Release ();
                 }
@@ -803,13 +796,13 @@ namespace thekogans {
                     if (root->IsEmpty () && root->GetChild (0) != nullptr) {
                         Node *node = root;
                         root = root->GetChild (0);
-                        node->FreeRange ();
+                        node->FreeBlockx ();
                         node->Release ();
                     }
                     if (!IsDirty () &&
                             (header.rootOffset == 0 ||
                                 root->GetOffset () != header.rootOffset)) {
-                        SetDirty (true);
+                        SetDirty ();
                     }
                 }
                 return removed;
@@ -858,10 +851,10 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTree::FreeRange () {
+        void TransactedFileBTree::FreeBlock () {
             Node::FreeSubtree (*this, header.rootOffset);
             header.rootOffset = 0;
-            Object::FreeRange ();
+            Object::FreeBlock ();
             root->Release ();
             root = Node::Alloc (file, header.rootOffset, this);
         }

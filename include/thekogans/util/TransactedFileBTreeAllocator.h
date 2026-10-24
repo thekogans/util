@@ -41,8 +41,8 @@ namespace thekogans {
         /// (see \see{TransactedFile::Range}). Every attempt is made to avoid that.
         /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
-                public TransactedFile::Allocator,
-                public Subscriber<TransactedFile::ObjectEvents> {
+                public TransactedFile::Object,
+                public TransactedFile::Allocator {
             /// \brief
             /// TransactedFileBTreeAllocator is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeAllocator)
@@ -97,7 +97,7 @@ namespace thekogans {
         public:
             /// \brief
             /// Allocator size on disk.
-            static const std::size_t SIZE = Allocator::Header::SIZE + Header::SIZE;
+            static const std::size_t SIZE = Header::SIZE;
 
             // NOTE: The following constants are meant to be tuned during
             // system integration to provide the best performance for your
@@ -112,7 +112,6 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] secure true == zero out free blocks.
             /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit
             /// in to a \see{BlockAllocator} page.
@@ -120,7 +119,6 @@ namespace thekogans {
             TransactedFileBTreeAllocator (
                 TransactedFile::SharedPtr file = nullptr,
                 TransactedFile::AddressType offset = 0,
-                bool secure = false,
                 std::size_t btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
                 util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
@@ -130,7 +128,7 @@ namespace thekogans {
             /// Allocate a block.
             /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
-            virtual TransactedFile::AddressType Alloc (std::size_t size) override;
+            virtual TransactedFile::AddressType Alloc (TransactedFile::SizeType size) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] offset Offset of block to free.
@@ -145,7 +143,7 @@ namespace thekogans {
             /// offset.
             virtual TransactedFile::AddressType Realloc (
                 TransactedFile::AddressType offset,
-                std::size_t newSize,
+                TransactedFile::SizeType newSize,
                 bool moveData = true) override;
 
         private:
@@ -164,18 +162,6 @@ namespace thekogans {
                 TransactedFile::Object::Init (file, offset);
                 btree->Init (file, header.btreeOffset);
             }
-
-            // TransactedFile::ObjectEvents
-            /// \brief
-            /// \see{BTree} allocated it's header block.
-            /// \param[in] object \see{BTree} that allocated it's header block.
-            virtual void OnTransactedFileObjectAllocRange (
-                TransactedFile::Object::SharedPtr object) noexcept override;
-            /// \brief
-            /// \see{BTree} freed it's header block.
-            /// \param[in] object \see{BTree} that freed it's header block.
-            virtual void OnTransactedFileObjectFreeRange (
-                TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 
             /// \brief
             /// Needs access to private members.

@@ -26,7 +26,6 @@
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/PageMap.h"
 #include "thekogans/util/NullLock.h"
-#include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
@@ -51,10 +50,6 @@ namespace thekogans {
         /// Subscribe to TransactedFileEvents to receive transaction notifications.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileEvents {
             /// \brief
-            /// dtor.
-            virtual ~TransactedFileEvents () {}
-
-            /// \brief
             /// Transaction is committing. Depending on the phase do whatever
             /// is appropriate.
             /// If your object derives from \see{TransactedFile::Object}
@@ -62,13 +57,13 @@ namespace thekogans {
             /// to do is implement Size, Read and Write.
             /// \param[in] file TransactedFile comming the transaction.
             /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
-            virtual void OnTransactedFileTransactionCommit (
+            virtual void OnTransactedFileCommit (
                 RefCounted::SharedPtr<TransactedFile> /*file*/,
                 int phase) noexcept {}
             /// \brief
             /// Transaction is aborting.
             /// \param[in] file TransactedFile abortig the transaction.
-            virtual void OnTransactedFileTransactionAbort (
+            virtual void OnTransactedFileAbort (
                 RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
         };
 
@@ -79,45 +74,10 @@ namespace thekogans {
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
-        /// TransactedFile is the heart of a structured data management system.
-        /// Together with \see{TransactedFile::Allocator}, \see{TransactedFile::Registry},
-        /// and \see{TransactedFile::Object} they form the core of an OODBMS engine.
-        /// TransactedFile is designed to be used in one of two distinct modes;
-        /// 1. Fully structured, taking advantage of the classes mentioned above
-        /// and 2. As a very powerful and efficient replacement for \see{File} where
-        /// you use the built in page caching machinery to speed up reads and writes
-        /// but is otherwise unstructured.
-        /// ************************** PLEASE READ ****************************
-        /// VERY IMPORTANT: In general, TransactedFile is NOT thread safe. Specifically
-        /// the legacy \see{File} API is not. I felt introducing a lock with every API
-        /// access would be very costly performance wise. And even if I did, the API
-        /// design is such that certain common operations (Seek/Read, Seek/Write) would
-        /// still not be safe as they would not execute atomicaly. Instead, a higher
-        /// level API (ReadEx, WriteEx, Grow, Shrink) is introduced. Together with
-        /// \see{TransactedFile::Range} and it's derivatives and \see{TransactedFile::Allocator}
-        /// and it's derivatives the following multi-threaded use case is prescribed;
-        ///
-        /// main thread;
-        ///   open/create file.
-        ///   release master threads.
-        ///   close file.
-        ///
-        /// master thread;
-        ///   if writting
-        ///     start transaction. This will lock the file for exclusive access.
-        ///   release worker threads that use \see{TransactedFile::Allocator} to
-        ///     allocate blocs and \see{TransactedFile::Range} to read and write them.
-        ///     It's highly recommended that you use \see{TransactedFile::TransactionParticipant}
-        ///     and \see{TransactedFile::Object}. \see{TransactedFile::Regitry}
-        ///     can also be used to store global heap objects based on \see{Serializable}.
-        ///   wait for workers to enter a barrier (i.e. signal they're done).
-        ///   if writting
-        ///     optionally delete cache.
-        ///     commit transaction.
-        /// *******************************************************************
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFile :
                 private File,
                 public Producer<TransactedFileEvents>,
+                public Subscriber<TransactedFileEvents>,
                 public TransactedFileAddressSpaceType::PageSource {
             /// \brief
             /// TransactedFile participates in the \see{DynamicCreatable}
@@ -149,46 +109,6 @@ namespace thekogans {
             /// Commit phase 2 (flush).
             static const int COMMIT_PHASE_2;
 
-            /// \struct TransactedFile::Transaction TransactedFile.h thekogans/util/TransactedFile.h
-            ///
-            /// \brief
-            /// A very simple transaction scope guard.
-            /// Call Commit before the end of the
-            /// scope to commit the transaction.
-            /// NOTE: If you're only reading the file, this is unnecessary.
-            struct _LIB_THEKOGANS_UTIL_DECL Transaction {
-            private:
-                /// \see{TransactedFile} we're guarding.
-                TransactedFile &file;
-                /// \brief
-                /// This guard will serialize all transactions.
-                LockGuard<Mutex> guard;
-
-            public:
-                /// \brief
-                /// ctor.
-                /// \param[in] file_ \see{TransactedFile} to transact.
-                explicit Transaction (TransactedFile &file_) :
-                    file (file_),
-                    guard (file.mutex) {}
-                /// \brief
-                /// dtor. Abort an uncommitted transaction.
-                ~Transaction ();
-
-                /// \brief
-                /// Commit transaction before dtor aborts it.
-                /// NOTE: You can call Commit as many times as you like in the
-                /// scope of a single transaction. Effectively turning Commit
-                /// in to Checkpoint. That's only an illusion since there is
-                /// no Rollback.
-                /// \param[in] clearCache true == Clear \see{PageMap} cache after committing.
-                void Commit (bool clearCache = false);
-
-                /// \brief
-                /// Transaction is neither copy or move constructable, nor assignable.
-                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Transaction)
-            };
-
         private:
             /// \brief
             /// File size.
@@ -197,25 +117,83 @@ namespace thekogans {
             /// \see{PageMap} used to map file pages.
             AddressSpaceType::SharedPtr pageMap;
             /// \brief
-            /// For use by \see{Transaction}.
-            Mutex mutex;
-            /// \brief
             /// Synchronization lock.
             SpinLock spinLock;
 
         public:
             #include "thekogans/util/TransactedFileRange.h"
+            #include "thekogans/util/TransactedFileBlock.h"
             #include "thekogans/util/TransactedFileObject.h"
             #include "thekogans/util/TransactedFileAllocator.h"
-            #include "thekogans/util/TransactedFileRegistry.h"
 
         private:
+            /// \struct TransactedFile::Header TransactedFile.h thekogans/util/TransactedFile.h
+            ///
+            /// \brief
+            struct _LIB_THEKOGANS_UTIL_DECL Header {
+                /// \brief
+                /// When creating a new heap, this flag will stamp the structure
+                /// of \see{Block} so that if you ever try to open it with a
+                /// wrongly compiled version of thekogans_util it will complain
+                /// instead of corrupting your data.
+                static const ui32 FLAGS_BLOCK_USES_MAGIC = 1;
+                /// \brief
+                /// If set, zero out freed blocks.
+                static const ui32 FLAGS_SECURE = 2;
+                /// \brief
+                /// Heap flags.
+                Flags32 flags;
+                AddressType allocatorOffset;
+                /// \brief
+                /// Contains the offset of the \see{Registry}.
+                AddressType user1Offset;
+                AddressType user2Offset;
+                // NOTE: If you add new fields, adjust the SIZE and increment
+                // the version of your derivative and add if statements to operator
+                // << and >> to read and write them. And don't forget to rebuild
+                // all dependent allocators as it's likely they will have based
+                // their header extensions by deriving from this one.
+
+                /// \brief
+                /// The size of the header on disk.
+                static constexpr std::size_t SIZE =
+                    UI32_SIZE +       // magic
+                    UI32_SIZE +       // flags
+                    AddressTypeSize + // allocatorOffset
+                    AddressTypeSize + // user1Offset
+                    AddressTypeSize;  // user2Offset
+
+                /// \brief
+                /// ctor.
+                /// \param[in] flags_ 0 or FLAGS_SECURE.
+                Header (ui16 flags_ = 0) :
+                        flags (flags_),
+                        allocatorOffset (0),
+                        user1Offset (0),
+                        user2Offset (0) {
+                #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
+                #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                }
+
+                /// \brief
+                /// Return true if this heap was created with a version of thekogans_util
+                /// that was built with THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC.
+                /// \return true == FLAGS_BLOCK_USES_MAGIC is set.
+                inline bool IsBlockUsesMagic () const {
+                    return flags.Test (FLAGS_BLOCK_USES_MAGIC);
+                }
+                /// \brief
+                /// Return true if secure.
+                /// \return true == secure.
+                inline bool IsSecure () const {
+                    return flags.Test (FLAGS_SECURE);
+                }
+            } header;
+
             /// \brief
             /// \see{Allocator} associated with this file.
             Allocator::SharedPtr allocator;
-            /// \brief
-            /// \see{Registry} associated with this file.
-            Registry::SharedPtr registry;
 
         public:
             /// \brief
@@ -223,14 +201,10 @@ namespace thekogans {
             /// \param[in] endianness File endianness.
             /// \param[in] handle OS file handle.
             /// \param[in] path File path.
-            /// \param[in] allocator \see{Allocator} to attach to this file.
-            /// \param[in] registry \see{Registry} to attach to this file.
             TransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                const std::string &path = std::string (),
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr registry = nullptr);
+                const std::string &path = std::string ());
             /// \brief
             /// ctor. Open or create the file.
             /// \param[in] endianness File endianness.
@@ -244,8 +218,6 @@ namespace thekogans {
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
         #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] allocator \see{Allocator} to attach to this file.
-            /// \param[in] registry \see{Registry} to attach to this file.
             TransactedFile (
                 Endianness endianness,
                 const std::string &path,
@@ -253,16 +225,18 @@ namespace thekogans {
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
                 DWORD dwCreationDisposition = OPEN_ALWAYS,
-                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL);
             #else // defined (TOOLCHAIN_OS_Windows)
                 i32 flags = O_RDWR | O_CREAT,
-                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH,
+                i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr registry = nullptr);
             /// \brief
             /// dtor. Close the file.
             virtual ~TransactedFile ();
+
+            inline bool IsSecure () const noexcept {
+                return header.IsSecure ();
+            }
 
             /// \brief
             /// Return the file path.
@@ -284,9 +258,7 @@ namespace thekogans {
             /// Since registry is constant after Init, this API
             /// is thread safe.
             /// \return registry.
-            inline Registry::SharedPtr GetRegistry () const {
-                return registry;
-            }
+            void SetAllocator (Allocator::SharedPtr allocator);
 
             /// \brief
             /// Return file size in bytes.
@@ -323,25 +295,21 @@ namespace thekogans {
             /// \param[in] flags POSIX open parameter.
             /// \param[in] mode POSIX open parameter.
         #endif // defined (TOOLCHAIN_OS_Windows)
-            /// \param[in] allocator \see{Allocator} to attach to this file.
-            /// \param[in] registry \see{Registry} to attach to this file.
-            void OpenEx (
+            virtual void Open (
                 const std::string &path,
             #if defined (TOOLCHAIN_OS_Windows)
                 DWORD dwDesiredAccess = GENERIC_READ | GENERIC_WRITE,
                 DWORD dwShareMode = FILE_SHARE_READ | FILE_SHARE_WRITE,
                 DWORD dwCreationDisposition = OPEN_EXISTING,
-                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL,
+                DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL) override;
             #else // defined (TOOLCHAIN_OS_Windows)
                 i32 flags = O_RDWR,
-                i32 mode = S_IRUSR | S_IWUSR,
+                i32 mode = S_IRUSR | S_IWUSR) override;
             #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr registry = nullptr);
             /// \brief
             /// Close the file.
             /// Thread safe.
-            void CloseEx ();
+            virtual void Close () override;
 
             /// \brief
             /// Thread safe version of Read.
@@ -352,7 +320,7 @@ namespace thekogans {
             std::size_t ReadEx (
                 AddressType offset,
                 void *buffer,
-                std::size_t count);
+                SizeType count);
             /// \brief
             /// Thread safe version of Write.
             /// \param[in] offset Start of range.
@@ -362,7 +330,7 @@ namespace thekogans {
             std::size_t WriteEx (
                 AddressType offset,
                 const void *buffer,
-                std::size_t count);
+                SizeType count);
 
             /// \brief
             /// Grow the file by the given amount.
@@ -376,6 +344,17 @@ namespace thekogans {
             /// \param[in] amount Amount to shrink the file by.
             /// \return New file size.
             SizeType Shrink (SizeType amount);
+
+            /// \brief
+            /// Commit the current transaction.
+            /// Used by \see{Transaction} to commit the current changes.
+            /// Thread safe.
+            void Commit (bool clearCache = false);
+            /// \brief
+            /// Abort the current transaction.
+            /// Used by \see{Transaction} dtor to abort uncommitted changes.
+            /// Thread safe.
+            void Abort ();
 
         private:
             // PageSource
@@ -407,43 +386,25 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Called during file open. If the file is empty and an
-            /// \see{Allocator} and an optional \see{Registry} were
-            /// provided, they are used to initialize the file (make
-            /// is strucured). If the file is not empty and at least
-            /// an \see{Allocator} was provided, the file is assumed
-            /// to be structured and the \see{Allocator} and an optional
-            /// \see{Registry} will come from the file. If no \see{Allocator}
-            /// was provided the file is assumed to be unstrucured.
-            /// \param[in] allocator_ \see{Allocator} to attach to this file.
-            /// If nullptr, use \see{TransactedFileBTreeAllocator}.
-            /// \param[in] registry_ \see{Registry} to attach to this file.
-            /// If nullptr, use \see{TransactedFileBTreeRegistry}.
-            /// NOT thread safe.
-            void Init (
-                Allocator::SharedPtr allocator_ = nullptr,
-                Registry::SharedPtr registry_ = nullptr);
-            /// \brief
-            /// Used by Open to apply the log before opening the file.
-            /// \path path File path.
-            static void CommitLog (const std::string &path);
-            /// \brief
-            /// Commit the current transaction.
-            /// Used by \see{Transaction} to commit the current changes.
-            /// Thread safe.
-            void Commit (bool clearCache = false);
-            /// \brief
-            /// Abort the current transaction.
-            /// Used by \see{Transaction} dtor to abort uncommitted changes.
-            /// Thread safe.
-            void Abort ();
-
-            /// \brief
             /// This is a wrapper around pageMap.GetPage.
             /// Thread safe.
             /// \param[in] offset Offset whose page to return.
             /// \return Page that covers the neighborhood around the given offset.
             AddressSpaceType::Page::SharedPtr GetPage (AddressType offset);
+
+            virtual void OnTransactedFileCommit (
+                RefCounted::SharedPtr<TransactedFile> /*file*/,
+                int phase) noexcept override;
+            /// \brief
+            /// Transaction is aborting.
+            /// \param[in] file TransactedFile abortig the transaction.
+            virtual void OnTransactedFileAbort (
+                RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept override;
+
+            /// \brief
+            /// Used by Open to apply the log before opening the file.
+            /// \path path File path.
+            static void CommitLog (const std::string &path);
 
             /// \brief
             /// Given a file path, use the full file name to create
@@ -452,10 +413,6 @@ namespace thekogans {
             /// \param[in] path File path to turn in to log path.
             /// \return Log path based on the passed in file path.
             static std::string GetLogPath (const std::string &path);
-
-            /// \brief
-            /// Needs access to allocator and regitry.
-            friend struct SimpleTransactedFile;
 
             /// \brief
             /// TransactedFile is neither copy or move constructable, nor assignable.
@@ -482,10 +439,6 @@ namespace thekogans {
         /// Implement \see{TransactedFile::Allocator} extraction operators.
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Allocator)
 
-        /// \brief
-        /// Implement \see{TransactedFile::Registry} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Registry)
-
         /// \struct SimpleTransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
@@ -504,10 +457,8 @@ namespace thekogans {
             SimpleTransactedFile (
                 Endianness endianness = HostEndian,
                 THEKOGANS_UTIL_HANDLE handle = THEKOGANS_UTIL_INVALID_HANDLE_VALUE,
-                const std::string &path = std::string (),
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr registry = nullptr) :
-                TransactedFile (endianness, handle, path, allocator, registry) {}
+                const std::string &path = std::string ()) :
+                TransactedFile (endianness, handle, path) {}
             /// \brief
             /// ctor. Abstracts most useful functionality from POSIX open.
             /// \param[in] endianness File endianness.
@@ -516,9 +467,7 @@ namespace thekogans {
             SimpleTransactedFile (
                 Endianness endianness,
                 const std::string &path,
-                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr registry = nullptr);
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
 
             /// \brief
             /// Open the file.
@@ -526,9 +475,7 @@ namespace thekogans {
             /// \param[in] flags File open flags.
             void SimpleOpen (
                 const std::string &path,
-                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create,
-                Allocator::SharedPtr allocator = nullptr,
-                Registry::SharedPtr registry = nullptr);
+                Flags32 flags = SimpleFile::ReadWrite | SimpleFile::Create);
 
             /// \brief
             /// SimpleTransactedFile is neither copy or move constructable, nor assignable.

@@ -17,6 +17,7 @@
 
 #include "thekogans/util/TransactedFile.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/TransactedFileBTreeAllocator.h"
     #include "thekogans/util/TransactedFileBTree.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -27,7 +28,8 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void TransactedFile::Object::StaticInit () {
-            thekogans::util::TransactedFileBTree::StaticInit ();
+            TransactedFileBTreeAllocator::StaticInit ();
+            TransactedFileBTree::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -44,63 +46,69 @@ namespace thekogans {
                 });
         }
 
-        void TransactedFile::Object::SetDirty (bool dirty) {
-            if (dirty) {
-                file->Subscribe (*this);
-            }
-            else {
-                file->Unsubscribe (*this);
-            }
+        void TransactedFile::Object::SetDirty () {
+            Subscriber<TransactedFileEvents>::Subscribe (*file);
+            Produce (
+                std::bind (
+                    &ObjectEvents::OnTransactedFileObjectDirty,
+                    std::placeholders::_1,
+                    this));
         }
 
-        TransactedFile::AddressType TransactedFile::Object::ForceFlush () {
-            if (IsDirty ()) {
-                AllocRange ();
-                Flush ();
-                SetDirty (false);
-            }
-            return GetOffset ();
-        }
-
-        void TransactedFile::Object::AllocRange () {
-            if (DynamicClassSize () == 0 || offset == 0) {
+        void TransactedFile::Object::AllocBlock () {
+            std::size_t size = GetSize ();
+            if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
                 AddressType newOffset =
-                    file->GetAllocator ()->Realloc (offset, GetSize (), false);
+                    file->GetAllocator ()->Realloc (offset, size, false);
                 if (offset != newOffset) {
                     if (offset != 0) {
                         Produce (
                             std::bind (
-                                &ObjectEvents::OnTransactedFileObjectFreeRange,
+                                &ObjectEvents::OnTransactedFileObjectFreeBlock,
                                 std::placeholders::_1,
                                 this));
                     }
                     offset = newOffset;
+                    for (auto &tracker : trackers) {
+                        SharedPtr object = tracker.object.GetSharedPtr ();
+                        if (object != nullptr) {
+                            *tracker.offset = newOffset;
+                            object->SetDirty ();
+                        }
+                    }
                     Produce (
                         std::bind (
-                            &ObjectEvents::OnTransactedFileObjectAllocRange,
+                            &ObjectEvents::OnTransactedFileObjectAllocBlock,
                             std::placeholders::_1,
                             this));
                 }
             }
         }
 
-        void TransactedFile::Object::FreeRange () {
+        void TransactedFile::Object::FreeBlock () {
             if (offset != 0) {
                 file->GetAllocator ()->Free (offset);
                 Produce (
                     std::bind (
-                        &ObjectEvents::OnTransactedFileObjectFreeRange,
+                        &ObjectEvents::OnTransactedFileObjectFreeBlock,
                         std::placeholders::_1,
                         this));
                 offset = 0;
+                for (auto &tracker : trackers) {
+                    SharedPtr object = tracker.object.GetSharedPtr ();
+                    if (object != nullptr) {
+                        *tracker.offset = 0;
+                        object->SetDirty ();
+                    }
+                }
             }
         }
 
         void TransactedFile::Object::Flush () {
             if (offset != 0) {
-                BlockRange range (file, offset, false);
+                TransactedFile::BlockRange range (file, offset, false);
                 range << *this;
-                if (file->GetAllocator ()->IsSecure ()) {
+                if (file->IsSecure ()) {
                     range.Seek (
                         SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
                         SEEK_CUR);
@@ -110,17 +118,17 @@ namespace thekogans {
 
         void TransactedFile::Object::Reload () {
             if (offset != 0) {
-                BlockRange range (file, offset);
+                TransactedFile::BlockRange range (file, offset);
                 range >> *this;
             }
         }
 
-        void TransactedFile::Object::OnTransactedFileTransactionCommit (
+        void TransactedFile::Object::OnTransactedFileCommit (
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
             THEKOGANS_UTIL_TRY {
                 if (phase == TransactedFile::COMMIT_PHASE_1) {
-                    AllocRange ();
+                    AllocBlock ();
                 }
                 else if (phase == TransactedFile::COMMIT_PHASE_2) {
                     Flush ();
@@ -129,7 +137,7 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void TransactedFile::Object::OnTransactedFileTransactionAbort (
+        void TransactedFile::Object::OnTransactedFileAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
             THEKOGANS_UTIL_TRY {
                 Reload ();

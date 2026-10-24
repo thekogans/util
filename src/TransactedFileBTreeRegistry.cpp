@@ -51,7 +51,7 @@ namespace thekogans {
                         entriesPerNode,
                         nodesPerPage,
                         allocator)) {
-            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+            btree->Track (this, &header.btreeOffset);
             Reload ();
         }
 
@@ -99,7 +99,7 @@ namespace thekogans {
                         entriesPerNode,
                         nodesPerPage,
                         allocator));
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+                btree->Track (this, &header.btreeOffset);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -118,20 +118,6 @@ namespace thekogans {
         void TransactedFileBTreeRegistry::Write (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
             serializer << MAGIC32 << header;
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectAllocRange (
-                TransactedFile::Object::SharedPtr object) noexcept {
-            LockGuard<SpinLock> guard (spinLock);
-            header.btreeOffset = object->GetOffset ();
-            SetDirty (true);
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectFreeRange (
-                TransactedFile::Object::SharedPtr /*object*/) noexcept {
-            LockGuard<SpinLock> guard (spinLock);
-            header.btreeOffset = 0;
-            SetDirty (true);
         }
 
     } // namespace util

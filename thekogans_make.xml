@@ -170,15 +170,14 @@
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFile.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocator.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileBlock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeAllocatorBTree.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeKeys.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileObject.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileObjects.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileRange.h</cpp_header>
-    <cpp_header>$(organization)/$(project_directory)/TransactedFileRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Types.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ValueParser.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Variant.h</cpp_header>
@@ -706,16 +705,14 @@
     <cpp_source>Timer.cpp</cpp_source>
     <cpp_source>TimeSpec.cpp</cpp_source>
     <cpp_source>TransactedFile.cpp</cpp_source>
-    <cpp_source>TransactedFileAllocator.cpp</cpp_source>
+    <cpp_source>TransactedFileBlock.cpp</cpp_source>
     <cpp_source>TransactedFileBTree.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeAllocator.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeAllocatorBTree.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeKeys.cpp</cpp_source>
-    <cpp_source>TransactedFileBTreeRegistry.cpp</cpp_source>
     <cpp_source>TransactedFileObject.cpp</cpp_source>
     <cpp_source>TransactedFileObjects.cpp</cpp_source>
     <cpp_source>TransactedFileRange.cpp</cpp_source>
-    <cpp_source>TransactedFileRegistry.cpp</cpp_source>
     <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>

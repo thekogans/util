@@ -29,21 +29,22 @@ struct Object;
 /// 'children' events and be notified when containing child offset changed.
 struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// \brief
-    /// dtor.
-    virtual ~ObjectEvents () {}
-
-    /// \brief
-    /// \see{Object} allocated a block in the file.
+    /// \see{Object} allocated it's master block.
     /// \param[in] object \see{Object} whose offset has become valid.
-    virtual void OnTransactedFileObjectAllocRange (
+    virtual void OnTransactedFileObjectAllocBlock (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
     /// \brief
-    /// \see{Object} freed its file block.
+    /// \see{Object} freed its master file block.
     /// \param[in] object \see{Object} whose offset has become invalid.
     /// VERY IMPORTANT SEMANTICS: When you get this notification,
     /// object->GetOffset () will still point to the old offset (which
     /// has been freed).
-    virtual void OnTransactedFileObjectFreeRange (
+    virtual void OnTransactedFileObjectFreeBlock (
+        RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+    /// \brief
+    /// \see{Object} is dirty.
+    /// \param[in] object \see{Object} that became dirty.
+    virtual void OnTransactedFileObjectDirty (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 };
 
@@ -75,6 +76,11 @@ protected:
     /// \brief
     /// Our address inside the \see{TransactedFile}.
     AddressType offset;
+    struct Tracker {
+        WeakPtr object{nullptr};
+        AddressType *offset{nullptr};
+    };
+    std::vector<Tracker> trackers;
 
 public:
     Object (
@@ -103,18 +109,24 @@ public:
     }
 
     inline bool IsDirty () {
-        return file->IsSubscribed (*this);
+        return Subscriber<TransactedFileEvents>::IsSubscribed (*file);
     }
     /// \brief
-    /// Subscribe to \see{TransactedFileEvents}.
-    /// \param[in] dirty == true, Subcribe.
-    /// dirty == false, Unsubscribe.
-    void SetDirty (bool dirty);
+    /// Subscribe to \see{TransactedFileEvents} and notify subscribers that we're dirty.
+    void SetDirty ();
 
-    /// \brief
-    /// If the object is dirty, flush it's cache to disk.
-    /// \return GetOffset ().
-    AddressType ForceFlush ();
+    void Track (SharedPtr object, AddressType *offset) {
+        trackers.push_back ({object, offset});
+    }
+
+    void Untrack (SharedPtr object) {
+        for (std::size_t i = 0, count = trackers.size (); i < count; ++i) {
+            if (trackers[i].object == object.Get ()) {
+                trackers.erase (trackers.begin () + i);
+                break;
+            }
+        }
+    }
 
     virtual void Init (
             TransactedFile::SharedPtr file_,
@@ -125,13 +137,13 @@ public:
 
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
-    virtual void AllocRange ();
+    virtual void AllocBlock ();
     /// \brief
     /// Default free implementation for single block objects.
     /// If your objects contain internal pointers to other
     /// blocks you will need to implement this method and
     /// properly free the containing blocks.
-    virtual void FreeRange ();
+    virtual void FreeBlock ();
     /// \brief
     /// Flush the internal cache to file.
     virtual void Flush ();
@@ -142,18 +154,16 @@ public:
 protected:
     // TransactedFileEvents
     /// \brief
-    /// Transaction is commiting. Flush the internal cache to file.
-    /// \param[in] file \see{TransactedFile} commiting the transaction.
-    virtual void OnTransactedFileTransactionCommit (
+    /// File is commiting. Allocate a block ans flush the internal cache.
+    /// \param[in] file \see{TransactedFile} commiting the changes.
+    virtual void OnTransactedFileCommit (
         TransactedFile::SharedPtr /*file*/,
         int phase) noexcept override;
     /// \brief
-    /// Transaction is aborting. Reload the internal cache from file.
-    /// \param[in] file \see{TransactedFile} aborting the transaction.
-    virtual void OnTransactedFileTransactionAbort (
+    /// File is aborting. Reload the internal cache.
+    /// \param[in] file \see{TransactedFile} aborting the changes.
+    virtual void OnTransactedFileAbort (
         TransactedFile::SharedPtr /*file*/) noexcept override;
-
-    friend struct TransactedFile;
 
     /// \brief
     /// Object is neither copy constructable, nor assignable.

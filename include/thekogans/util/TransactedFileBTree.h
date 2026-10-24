@@ -607,7 +607,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the node size on disk.
                 /// \return Node size.
-                virtual std::size_t DynamicClassSize () const noexcept override {
+                virtual std::size_t Size () const noexcept override {
                     return
                         UI32_SIZE + // magic
                         UI32_SIZE + // count
@@ -630,7 +630,7 @@ namespace thekogans {
                 // TransactedFile::Object
                 /// \brief
                 /// We need to free keyValueOffset.
-                virtual void FreeRange () override;
+                virtual void FreeBlock () override;
 
                 /// \brief
                 /// Needs access to Free.
@@ -732,14 +732,14 @@ namespace thekogans {
             // TransactedFile::Objects
             /// \brief
             /// We have a pointer to root we need to dispose of.
-            virtual void FreeRange () override;
+            virtual void FreeBlock () override;
 
         protected:
             // Serializable
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
-            virtual std::size_t DynamicClassSize () const noexcept override {
+            virtual std::size_t Size () const noexcept override {
                 return header.Size ();
             }
             /// \brief

@@ -299,7 +299,7 @@ private:
         /// \brief
         /// Return the node size.
         /// \return btree.allocator.btreeNodeFileSize.
-        virtual std::size_t DynamicClassSize () const noexcept override {
+        virtual std::size_t Size () const noexcept override {
             return FileSize (btree->header.entriesPerNode);
         }
         /// \brief
@@ -364,7 +364,7 @@ protected:
     /// \brief
     /// Our size is \see{Header::SIZE}.
     /// \return \see{Header::SIZE}.
-    virtual std::size_t DynamicClassSize () const noexcept override {
+    virtual std::size_t Size () const noexcept override {
         return Header::SIZE;
     }
     /// \brief
@@ -387,7 +387,7 @@ protected:
     /// \brief
     /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
     /// Also free the \see{Node} hierarchy @root.
-    virtual void FreeRange () override;
+    virtual void FreeBlock () override;
 
     /// \brief
     /// Needs access to private members.

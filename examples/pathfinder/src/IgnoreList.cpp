@@ -34,7 +34,7 @@ namespace thekogans {
                 }
             }
             value.push_back (ignore);
-            SetDirty (true);
+            SetDirty ();
             return true;
         }
 
@@ -42,7 +42,7 @@ namespace thekogans {
             for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                 if (value[i] == ignore) {
                     value.erase (value.begin () + i);
-                    SetDirty (true);
+                    SetDirty ();
                     return true;
                 }
             }
