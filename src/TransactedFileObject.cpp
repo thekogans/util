@@ -44,6 +44,19 @@ namespace thekogans {
                 });
         }
 
+
+        void TransactedFile::Object::SetAggregate (bool aggregate_) {
+            if (aggregate != aggregate_) {
+                aggregate = aggregate_;
+                if (aggregate) {
+                    file->Unsubscribe (*this);
+                }
+                else {
+                    SetDirty ();
+                }
+            }
+        }
+
         void TransactedFile::Object::SetDirty () {
             if (!aggregate) {
                 file->Subscribe (*this);
@@ -58,7 +71,7 @@ namespace thekogans {
         void TransactedFile::Object::AllocBlock () {
             if (!aggregate) {
                 std::size_t size = GetSize ();
-                if (offset == 0 || size > Allocator::Block::GetSize (file, offset)) {
+                if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
                     AddressType newOffset =
                         file->GetAllocator ()->Realloc (offset, size, false);
                     if (offset != newOffset) {

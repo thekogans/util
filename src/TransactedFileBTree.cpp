@@ -608,7 +608,7 @@ namespace thekogans {
                         for (ui32 i = 0; i < count; ++i) {
                             TransactedFile::Object::SharedPtr value;
                             keyValueRange >> value;
-                            value->Aggregate ();
+                            value->SetAggregate (true);
                             entries[i].value = value.Release ();
                             Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[i].value);
                         }
@@ -730,8 +730,7 @@ namespace thekogans {
             if (key.IsKindOf (header.keyContext.type.c_str ())) {
                 it.Clear ();
                 ui32 index = 0;
-                for (Node *node = root; node != nullptr;
-                        node = node->GetChild (index)) {
+                for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
                         it.Reset (node, index);
                         break;
@@ -772,15 +771,11 @@ namespace thekogans {
                 }
                 // If we inserted the key/value pair, take ownership.
                 if (result == Node::Inserted) {
-                    if (!IsDirty () &&
-                            (header.rootOffset == 0 ||
-                                root->GetOffset () != header.rootOffset)) {
+                    if (header.rootOffset == 0 || root->GetOffset () != header.rootOffset) {
                         SetDirty ();
                     }
                     key.Release ();
-                    if (!header.IsValueAsObject ()) {
-                        value->Aggregate ();
-                    }
+                    value->SetAggregate (!header.IsValueAsObject ());
                     value.Release ();
                 }
                 return result == Node::Inserted;
@@ -801,9 +796,7 @@ namespace thekogans {
                         node->FreeBlock ();
                         node->Release ();
                     }
-                    if (!IsDirty () &&
-                            (header.rootOffset == 0 ||
-                                root->GetOffset () != header.rootOffset)) {
+                    if (header.rootOffset == 0 || root->GetOffset () != header.rootOffset) {
                         SetDirty ();
                     }
                 }

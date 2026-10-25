@@ -45,11 +45,11 @@ namespace thekogans {
             Reload ();
         }
 
-        TransactedFile::AddressType TransactedFileBTreeAllocator::Alloc (std::size_t size) {
+        TransactedFile::AddressType TransactedFileBTreeAllocator::Alloc (TransactedFile::SizeType size) {
             TransactedFile::AddressType offset = 0;
             if (size > 0) {
-                if (size < MIN_USER_DATA_SIZE) {
-                    size = MIN_USER_DATA_SIZE;
+                if (size < TransactedFile::MIN_USER_DATA_SIZE) {
+                    size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
                 LockGuard<SpinLock> guard (spinLock);
                 BTree::Key result = btree->Find (BTree::Key (size, 0));
@@ -99,39 +99,39 @@ namespace thekogans {
                     // next.offset = result.offset + size + Block::SIZE;
                     // next.size = result.size - size - Block::SIZE;
                     ui64 remainder = result.size - size;
-                    if (remainder >= MIN_BLOCK_SIZE) {
+                    if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
                         // Check to see if the block would straddle a page boundary...
                         ui64 pageOffset = offset & file->GetPageMask ();
-                        if (pageOffset + size + Block::HEADER_SIZE > file->GetPageSize ()) {
+                        if (pageOffset + size + TransactedFile::Block::HEADER_SIZE > file->GetPageSize ()) {
                             // ...it would. Now check to see if the block would fit aligned...
                             remainder = file->GetPageSize () - pageOffset;
-                            if (remainder >= MIN_USER_DATA_SIZE + Block::HEADER_SIZE &&
-                                    result.size >= remainder + size + Block::HEADER_SIZE) {
+                            if (remainder >= TransactedFile::MIN_USER_DATA_SIZE + TransactedFile::Block::HEADER_SIZE &&
+                                    result.size >= remainder + size + TransactedFile::Block::HEADER_SIZE) {
                                 // ...it would. Add a filler block.
-                                Block prev (
+                                TransactedFile::Block prev (
                                     file,
                                     result.offset,
-                                    Block::FLAGS_FREE,
-                                    remainder - Block::HEADER_SIZE);
+                                    TransactedFile::Block::FLAGS_FREE,
+                                    remainder - TransactedFile::Block::HEADER_SIZE);
                                 prev.Write ();
                                 btree->Insert (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                                 // Adjust result to account for the filler block so that downstream
                                 // calculations have the right values.
-                                result.size -= remainder + Block::HEADER_SIZE;
-                                result.offset += remainder + Block::HEADER_SIZE;
+                                result.size -= remainder + TransactedFile::Block::HEADER_SIZE;
+                                result.offset += remainder + TransactedFile::Block::HEADER_SIZE;
                             }
                         }
                         // We get our offset here, potentially adjusted by the filler block above.
                         offset = result.offset;
                         // We check to see if there's enough remaining after allocation to split the block...
                         remainder = result.size - size;
-                        if (remainder >= MIN_BLOCK_SIZE) {
+                        if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
                             // ...there is. Add a free block.
-                            Block next (
+                            TransactedFile::Block next (
                                 file,
-                                result.offset + size + Block::SIZE,
-                                Block::FLAGS_FREE,
-                                remainder - Block::SIZE);
+                                result.offset + size + TransactedFile::Block::SIZE,
+                                TransactedFile::Block::FLAGS_FREE,
+                                remainder - TransactedFile::Block::SIZE);
                             next.Write ();
                             btree->Insert (BTree::Key (next.GetSize (), next.GetOffset ()));
                         }
@@ -160,26 +160,26 @@ namespace thekogans {
                     // and align us with a page boundary. Otherwise, because
                     // there can be no gaps between blocks, we will straddle
                     // a page boundary.
-                    if (remainder < size + Block::SIZE && remainder >= MIN_BLOCK_SIZE &&
-                            size <= (file->GetPageSize () - Block::SIZE)) {
-                        Block prev (
+                    if (remainder < size + TransactedFile::Block::SIZE && remainder >= TransactedFile::MIN_BLOCK_SIZE &&
+                            size <= (file->GetPageSize () - TransactedFile::Block::SIZE)) {
+                        TransactedFile::Block prev (
                             file,
-                            file->Grow (remainder) + Block::HEADER_SIZE,
-                            Block::FLAGS_FREE,
-                            remainder - Block::SIZE);
+                            file->Grow (remainder) + TransactedFile::Block::HEADER_SIZE,
+                            TransactedFile::Block::FLAGS_FREE,
+                            remainder - TransactedFile::Block::SIZE);
                         prev.Write ();
                         btree->Insert (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                     }
                     // Otherwise, we fit in the ramainder. Check if what will remain
                     // after our allocation would be too small for a block and cause
                     // the next allocation to straddle the page boundry...
-                    else if (remainder - size - Block::SIZE < MIN_BLOCK_SIZE) {
+                    else if (remainder - size - TransactedFile::Block::SIZE < TransactedFile::MIN_BLOCK_SIZE) {
                         // ...it is. Round up the size request to align the next
                         // allocation to a page boundary.
-                        size = remainder - Block::SIZE;
+                        size = remainder - TransactedFile::Block::SIZE;
                     }
                     // No free block large enough is found? Grow the file.
-                    offset = file->Grow (Block::SIZE + size) + Block::HEADER_SIZE;
+                    offset = file->Grow (TransactedFile::Block::SIZE + size) + TransactedFile::Block::HEADER_SIZE;
                     // Most file systems will fill the new space with '0' bytes
                     // but we can't take a chance and do it ourselves.
                     if (IsSecure ()) {
@@ -189,7 +189,7 @@ namespace thekogans {
                     }
                 }
                 // By now we got our block by either reusing a free one or growing the file.
-                Block block (file, offset, 0, size);
+                TransactedFile::Block block (file, offset, 0, size);
                 block.Write ();
             }
             return offset;
@@ -199,45 +199,45 @@ namespace thekogans {
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
                 LockGuard<SpinLock> guard (spinLock);
-                Block block (file, offset);
+                TransactedFile::Block block (file, offset);
                 block.Read ();
                 if (!block.IsFree ()) {
                     TransactedFile::AddressType clearOffset = block.GetOffset ();
                     TransactedFile::SizeType clearLength = block.GetSize ();
                     // Consolidate adjacent free blocks.
-                    Block prev (file);
+                    TransactedFile::Block prev (file);
                     if (block.Prev (prev) && prev.IsFree ()) {
                         btree->Remove (BTree::Key (prev.GetSize (), prev.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume prev body is clear.
-                            clearOffset -= Block::HEADER_SIZE;
-                            clearLength += Block::HEADER_SIZE;
+                            clearOffset -= TransactedFile::Block::HEADER_SIZE;
+                            clearLength += TransactedFile::Block::HEADER_SIZE;
                         }
                         else {
                             // Since block will grow to occupy prev,
                             // it's offset is no longer valid.
-                            Block oldBlock (file, block.GetOffset ());
+                            TransactedFile::Block oldBlock (file, block.GetOffset ());
                             oldBlock.Clear ();
                         }
                         // Back up to cover the prev.
-                        block.SetOffset (block.GetOffset () - Block::SIZE - prev.GetSize ());
-                        block.SetSize (block.GetSize () + Block::SIZE + prev.GetSize ());
+                        block.SetOffset (block.GetOffset () - TransactedFile::Block::SIZE - prev.GetSize ());
+                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + prev.GetSize ());
                     }
-                    Block next (file);
+                    TransactedFile::Block next (file);
                     if (block.Next (next) && next.IsFree ()) {
                         btree->Remove (BTree::Key (next.GetSize (), next.GetOffset ()));
                         if (IsSecure ()) {
                             // Assume next body is clear.
-                            clearLength += Block::HEADER_SIZE;
+                            clearLength += TransactedFile::Block::HEADER_SIZE;
                         }
                         else {
                             // Since block will grow to occupy next,
                             // next offset is no longer valid.
-                            Block oldNext (file, next.GetOffset ());
+                            TransactedFile::Block oldNext (file, next.GetOffset ());
                             oldNext.Clear ();
                         }
                         // Expand to swallow the next.
-                        block.SetSize (block.GetSize () + Block::SIZE + next.GetSize ());
+                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + next.GetSize ());
                     }
                     // If we're not the last block...
                     if (!block.IsLast ()) {
@@ -253,7 +253,7 @@ namespace thekogans {
                     }
                     else {
                         // If we are, truncate the heap.
-                        file->Shrink (Block::SIZE + block.GetSize ());
+                        file->Shrink (TransactedFile::Block::SIZE + block.GetSize ());
                     }
                 }
                 else {
@@ -267,16 +267,16 @@ namespace thekogans {
 
         TransactedFile::AddressType TransactedFileBTreeAllocator::Realloc (
                 TransactedFile::AddressType offset,
-                std::size_t size,
+                TransactedFile::SizeType size,
                 bool moveData) {
             if (offset == 0) {
                 offset = Alloc (size);
             }
             else if (size > 0) {
-                Block block (file, offset);
+                TransactedFile::Block block (file, offset);
                 block.Read ();
-                if (size < MIN_USER_DATA_SIZE) {
-                    size = MIN_USER_DATA_SIZE;
+                if (size < TransactedFile::MIN_USER_DATA_SIZE) {
+                    size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
                 if (block.GetSize () < size) {
                     // Grow the block.
@@ -296,13 +296,13 @@ namespace thekogans {
                     // Shrink the block.
                     // If the new size leaves room for another block, split existing block.
                     ui64 remainder = block.GetSize () - size;
-                    if (remainder >= MIN_BLOCK_SIZE) {
+                    if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
                         LockGuard<SpinLock> guard (spinLock);
-                        Block next (
+                        TransactedFile::Block next (
                             file,
-                            offset + size + Block::SIZE,
-                            Block::FLAGS_FREE,
-                            remainder - Block::SIZE);
+                            offset + size + TransactedFile::Block::SIZE,
+                            TransactedFile::Block::FLAGS_FREE,
+                            remainder - TransactedFile::Block::SIZE);
                         next.Write ();
                         if (IsSecure ()) {
                             TransactedFile::Range range (file, next.GetOffset (), next.GetSize (), false);

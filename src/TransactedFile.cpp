@@ -342,40 +342,31 @@ namespace thekogans {
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_) {
             if (size == 0) {
-                {
-                    Transaction transaction (*this);
-                    if (allocator_ != nullptr) {
-                        allocator = allocator_;
-                        allocator->Init (this, 0);
-                    }
-                    else {
-                        allocator.Reset (new TransactedFileBTreeAllocator (this));
-                    }
-                    allocator->SetDirty ();
-                    transaction.Commit ();
+                Transaction transaction (*this);
+                if (allocator_ != nullptr) {
+                    allocator = allocator_;
+                    allocator->Init (this, 0);
                 }
+                else {
+                    allocator.Reset (new TransactedFileBTreeAllocator (this));
+                }
+                allocator->AllocBlock ();
                 assert (allocator->offset == Allocator::Block::HEADER_SIZE);
-                {
-                    Transaction transaction (*this);
-                    if (registry_ != nullptr) {
-                        registry = registry_;
-                        registry->Init (this, 0);
-                    }
-                    else {
-                        registry.Reset (new TransactedFileBTreeRegistry (this));
-                    }
-                    registry->SetDirty ();
-                    transaction.Commit ();
+                if (registry_ != nullptr) {
+                    registry = registry_;
+                    registry->Init (this, 0);
                 }
-                {
-                    Transaction transaction (*this);
-                    allocator->SetRegistryOffset (registry->GetOffset ());
-                    transaction.Commit ();
+                else {
+                    registry.Reset (new TransactedFileBTreeRegistry (this));
                 }
+                registry->AllocBlock ();
+                registry->SetDirty ();
+                allocator->SetRegistryOffset (registry->GetOffset ());
+                transaction.Commit ();
             }
             else {
                 {
-                    BlockRange range (this, Allocator::Block::HEADER_SIZE);
+                    BlockRange range (this, TransactedFile::Block::HEADER_SIZE);
                     range >> allocator;
                     assert (allocator != nullptr && allocator->file == this);
                 }

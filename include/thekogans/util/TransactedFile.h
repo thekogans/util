@@ -205,6 +205,7 @@ namespace thekogans {
 
         public:
             #include "thekogans/util/TransactedFileRange.h"
+            #include "thekogans/util/TransactedFileBlock.h"
             #include "thekogans/util/TransactedFileObject.h"
             #include "thekogans/util/TransactedFileAllocator.h"
             #include "thekogans/util/TransactedFileRegistry.h"

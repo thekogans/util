@@ -144,11 +144,11 @@ target_sources(thekogans_util PRIVATE
     src/SizeT.cpp src/SlabAllocatorDetail.cpp src/SlabAllocatorImpl.cpp src/SpinLock.cpp
     src/SpinRWLock.cpp src/StdAllocator.cpp src/StringUtils.cpp src/SystemInfo.cpp
     src/Thread.cpp src/Thread2.cpp src/ThreadRunLoop.cpp src/Timer.cpp src/TimeSpec.cpp
-    src/TransactedFile.cpp src/TransactedFileAllocator.cpp src/TransactedFileBTree.cpp
-    src/TransactedFileBTreeAllocator.cpp src/TransactedFileBTreeAllocatorBTree.cpp
-    src/TransactedFileBTreeKeys.cpp src/TransactedFileBTreeRegistry.cpp
-    src/TransactedFileObject.cpp src/TransactedFileObjects.cpp src/TransactedFileRange.cpp
-    src/TransactedFileRegistry.cpp src/ValueParser.cpp src/Variant.cpp
+    src/TransactedFile.cpp src/TransactedFileAllocator.cpp src/TransactedFileBlock.cpp
+    src/TransactedFileBTree.cpp src/TransactedFileBTreeAllocator.cpp
+    src/TransactedFileBTreeAllocatorBTree.cpp src/TransactedFileBTreeKeys.cpp
+    src/TransactedFileBTreeRegistry.cpp src/TransactedFileObject.cpp src/TransactedFileObjects.cpp
+    src/TransactedFileRange.cpp src/TransactedFileRegistry.cpp src/ValueParser.cpp src/Variant.cpp
     src/Vectorizer.cpp src/Version.cpp src/XMLUtils.cpp
 
     # Integrated 3rdparty code

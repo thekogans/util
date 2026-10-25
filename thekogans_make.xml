@@ -170,6 +170,7 @@
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFile.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocator.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileBlock.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeAllocatorBTree.h</cpp_header>
@@ -707,6 +708,7 @@
     <cpp_source>TimeSpec.cpp</cpp_source>
     <cpp_source>TransactedFile.cpp</cpp_source>
     <cpp_source>TransactedFileAllocator.cpp</cpp_source>
+    <cpp_source>TransactedFileBlock.cpp</cpp_source>
     <cpp_source>TransactedFileBTree.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeAllocator.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeAllocatorBTree.cpp</cpp_source>

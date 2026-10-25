@@ -130,7 +130,7 @@ namespace thekogans {
             /// Allocate a block.
             /// \param[in] size Size of block to allocate.
             /// \return Offset to the allocated block.
-            virtual TransactedFile::AddressType Alloc (std::size_t size) override;
+            virtual TransactedFile::AddressType Alloc (TransactedFile::SizeType size) override;
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] offset Offset of block to free.
@@ -145,7 +145,7 @@ namespace thekogans {
             /// offset.
             virtual TransactedFile::AddressType Realloc (
                 TransactedFile::AddressType offset,
-                std::size_t newSize,
+                TransactedFile::SizeType newSize,
                 bool moveData = true) override;
 
         private:

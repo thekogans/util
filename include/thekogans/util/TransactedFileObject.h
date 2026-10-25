@@ -105,10 +105,7 @@ public:
         return offset;
     }
 
-    inline void Aggregate () {
-        file->Unsubscribe (*this);
-        aggregate = true;
-    }
+    void SetAggregate (bool aggregate_);
 
     inline bool IsDirty () {
         return file->IsSubscribed (*this);
