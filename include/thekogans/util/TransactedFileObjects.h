@@ -36,37 +36,22 @@ namespace thekogans {
                 public virtual TransactedFile::Object,
                 public StringValue {
             /// \brief
-            /// StringObject is a \see{TransactedFile}.
+            /// StringObject is a \see{TransactedFile::Object}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringObject)
 
             /// \brief
-            /// The actual string.
-            std::string value;
-
-            /// \brief
             /// ctor.
-            /// \param[in] value_ std::string to initialize this value with.
-            StringObject (const std::string &value_ = std::string ()) :
-                value (value_) {}
+            /// \param[in] value std::string to initialize this value with.
+            StringObject (
+                TransactedFile::SharedPtr file = nullptr,
+                TransactedFile::AddressType offset = 0,
+                const std::string &value = std::string ()) :
+                TransactedFile::Object (file, offset),
+                StringValue (value) {}
 
-            // TransactedFile
-            /// \brief
-            /// Return the serialized value size.
-            /// \return Serialized value size.
-            virtual std::size_t Size () const noexcept override {
-                return Serializer::Size (value);
-            }
-            /// \brief
-            /// Read the value from the given serializer.
-            /// \param[in] serializer \see{Serializer} to read the value from.
-            virtual void Read (Serializer &serializer) override {
-                serializer >> value;
-            }
-            /// \brief
-            /// Write the value to the given serializer.
-            /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) override {
-                serializer << value;
+            void SetValue (const std::string &value_) {
+                value = value_;
+                SetDirty ();
             }
         };
 
@@ -79,117 +64,28 @@ namespace thekogans {
                 public virtual TransactedFile::Object,
                 public ArrayValue<T> {
             /// \brief
-            /// The actual array.
-            std::vector<T> value;
+            /// StringArrayObject is a \see{TransactedFile::Object}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ArrayObject<T>)
 
             /// \brief
             /// ctor.
             /// \param[in] value_ Value to initialize with.
-            ArrayObject (const std::vector<T> &value_ = std::vector<T> {}) :
-                value (value_) {}
+            ArrayObject (
+                TransactedFile::SharedPtr file = nullptr,
+                TransactedFile::AddressType offset = 0,
+                const std::vector<T> &value = std::vector<T> {}) :
+                TransactedFile::Object (file, offset),
+                ArrayValue<T> (value) {}
 
-            /// \brief
-            /// Return array length.
-            /// \return Array length.
-            inline std::size_t GetLength () const {
-                return value.size ();
-            }
-
-            /// \brief
-            /// const (rvalue) element accessor.
-            /// \param[in] index Element index to return.
-            /// \return reference to element at index.
-            inline const T &operator [] (std::size_t index) const {
-                if (index < value.size ()) {
-                    return value[index];
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
-                }
-            }
-            /// \brief
-            /// lvalue element accessor.
-            /// \param[in] index Element index to return.
-            /// \return Reference to element at index.
-            inline T &operator [] (std::size_t index) {
-                if (index < value.size ()) {
-                    return value[index];
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                        THEKOGANS_UTIL_OS_ERROR_CODE_EOVERFLOW);
-                }
-            }
-
-            // TransactedFile
-            /// \brief
-            /// Return the serialized value size.
-            /// \return Serialized value size.
-            virtual std::size_t Size () const noexcept override {
-                return Serializer::Size (value);
-            }
-            /// \brief
-            /// Read the value from the given serializer.
-            /// \param[in] serializer \see{Serializer} to read the value from.
-            virtual void Read (Serializer &serializer) override {
-                serializer >> value;
-            }
-            /// \brief
-            /// Write the value to the given serializer.
-            /// \param[out] serializer \see{Serializer} to write the value to.
-            virtual void Write (Serializer &serializer) override {
-                serializer << value;
+            void AddValue (const T &value_) {
+                this->value.push_back (value_);
+                SetDirty ();
             }
         };
 
-        /// \struct StringArrayObject TransactedFileObjects.h thekogans/util/TransactedFileObjects.h
-        ///
-        /// \brief
-        /// Specialization of \see{ArrayObject} for std::string.
-        struct _LIB_THEKOGANS_UTIL_DECL StringArrayObject : public ArrayObject<std::string> {
-            /// \brief
-            /// StringArrayObject is a \see{TransactedFile}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringArrayObject)
-
-            /// \brief
-            /// ctor.
-            /// \param[in] object Optional std::string array to initialize with.
-            StringArrayObject (const std::vector<std::string> &value = std::vector<std::string> ()) :
-                ArrayObject<std::string> (value) {}
-        };
-
-        /// \struct StringArrayObject TransactedFileObjects.h thekogans/util/TransactedFileObjects.h
-        ///
-        /// \brief
-        /// Specialization of \see{ArrayObject} for TransactedFile::AddressType.
-        struct _LIB_THEKOGANS_UTIL_DECL AddressArrayObject : public ArrayObject<TransactedFile::AddressType> {
-            /// \brief
-            /// AddressArrayObject is a \see{TransactedFile}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (AddressArrayObject)
-
-            /// \brief
-            /// ctor.
-            /// \param[in] object Optional TransactedFile::AddressType array to initialize with.
-            AddressArrayObject (const std::vector<TransactedFile::AddressType> &value = std::vector<TransactedFile::AddressType> ()) :
-                ArrayObject<TransactedFile::AddressType> (value) {}
-        };
-
-        /// \struct GUIDArrayObject TransactedFileObjects.h thekogans/util/TransactedFileObjects.h
-        ///
-        /// \brief
-        /// Specialization of \see{ArrayObject} for \see{GUID}.
-        struct _LIB_THEKOGANS_UTIL_DECL GUIDArrayObject : public ArrayObject<GUID> {
-            /// \brief
-            /// GUIDArrayObject is a \see{TransactedFile}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDArrayObject)
-
-            /// \brief
-            /// ctor.
-            /// \param[in] object Optional \see{GUID} array to initialize with.
-            GUIDArrayObject (const std::vector<GUID> &value = std::vector<GUID> ()) :
-                ArrayObject<GUID> (value) {}
-        };
+        using StringArrayObject = ArrayObject<std::string>;
+        using AddressArrayObject = ArrayObject<TransactedFile::AddressType>;
+        using GUIDArrayObject = ArrayObject<GUID>;
 
     } // namespace util
 } // namespace thekogans

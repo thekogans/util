@@ -25,17 +25,17 @@ namespace thekogans {
             1,
             0,
             Serializable::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::StringArrayValue,
             1,
             0,
             Serializable::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::AddressArrayValue,
             1,
             0,
             Serializable::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::GUIDArrayValue,
             1,
             0,

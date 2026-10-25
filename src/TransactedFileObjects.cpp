@@ -25,17 +25,17 @@ namespace thekogans {
             1,
             0,
             TransactedFile::Object::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::StringArrayObject,
             1,
             0,
             TransactedFile::Object::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::AddressArrayObject,
             1,
             0,
             TransactedFile::Object::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::GUIDArrayObject,
             1,
             0,

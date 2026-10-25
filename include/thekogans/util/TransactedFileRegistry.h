@@ -47,16 +47,10 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry : public virtual Object {
     /// \param[in] key Key whose value to retrieve.
     /// \return Value @ key, nullptr if key is not found.
     virtual Object::SharedPtr GetValue (const std::string & /*key*/) = 0;
-    /// \brief
-    /// Given a key, do one of the following three;
-    /// 1. If value != nullptr and key is not found, insert new key/value.
-    /// 2. If value != nullptr and key is found, replace the old value with new.
-    /// 3. if value == nullptr, and key if found, delete the key from the registry.
-    /// \param[in] key Key to search/delete.
-    /// \param[in] value Value to set/replace/delete.
-    virtual void SetValue (
-        const std::string & /*key*/,
-        Object::SharedPtr /*value*/) = 0;
+    virtual bool InsertValue (
+        const std::string &key,
+        TransactedFile::Object::SharedPtr value) = 0;
+    virtual void RemoveValue (const std::string &key) = 0;
 
     /// \brief
     /// Registry is neither copy constructable, nor assignable.

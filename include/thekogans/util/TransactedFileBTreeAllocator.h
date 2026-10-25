@@ -169,12 +169,12 @@ namespace thekogans {
             /// \brief
             /// \see{BTree} allocated it's header block.
             /// \param[in] object \see{BTree} that allocated it's header block.
-            virtual void OnTransactedFileObjectAllocRange (
+            virtual void OnTransactedFileObjectAllocBlock (
                 TransactedFile::Object::SharedPtr object) noexcept override;
             /// \brief
             /// \see{BTree} freed it's header block.
             /// \param[in] object \see{BTree} that freed it's header block.
-            virtual void OnTransactedFileObjectFreeRange (
+            virtual void OnTransactedFileObjectFreeBlock (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 
             /// \brief

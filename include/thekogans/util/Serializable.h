@@ -83,21 +83,13 @@ namespace thekogans {
             /// and you need to call Size to get the size of this instance.
             /// \return Serializable class size.
             virtual std::size_t ClassSize () const noexcept = 0;
-            /// \brief
-            /// DynamicClassSize is a hook. It allows you to calculate class size at runtime.
-            /// If you classes are a fixed size but cannot be determined at compile time
-            /// override this function and calculate it at runtime.
-            /// \return Dynamic class size.
-            virtual std::size_t DynamicClassSize () const noexcept {
-                return ClassSize ();
-            }
 
             /// \brief
             /// Return the serializable instance size (excluding the header).
             /// Overide this method if your class instances are variable size.
             /// \return Serializable instance size.
             virtual std::size_t Size () const noexcept {
-                return DynamicClassSize ();
+                return ClassSize ();
             }
             /// \brief
             /// Read the serializable from the given serializer.

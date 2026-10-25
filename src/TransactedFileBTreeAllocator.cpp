@@ -367,18 +367,18 @@ namespace thekogans {
             serializer << MAGIC32 << header;
         }
 
-        void TransactedFileBTreeAllocator::OnTransactedFileObjectAllocRange (
+        void TransactedFileBTreeAllocator::OnTransactedFileObjectAllocBlock (
                 TransactedFile::Object::SharedPtr object) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = object->GetOffset ();
-            SetDirty (true);
+            SetDirty ();
         }
 
-        void TransactedFileBTreeAllocator::OnTransactedFileObjectFreeRange (
+        void TransactedFileBTreeAllocator::OnTransactedFileObjectFreeBlock (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = 0;
-            SetDirty (true);
+            SetDirty ();
         }
 
     } // namespace util

@@ -25,6 +25,15 @@
 #include "thekogans/pathfinder/Roots.h"
 
 namespace thekogans {
+    namespace util {
+
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
+            thekogans::util::ArrayValue<thekogans::pathfinder::Root::SharedPtr>,
+            1,
+            0,
+            util::Serializable::TYPE)
+
+    }
     namespace pathfinder {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
@@ -55,7 +64,7 @@ namespace thekogans {
                         root));
             }
             root->Scan (ignoreList);
-            SetDirty (true);
+            SetDirty ();
         }
 
         bool Roots::EnableRoot (const std::string &path) {
@@ -63,7 +72,7 @@ namespace thekogans {
                 if (value[i]->GetPath () == path) {
                     if (!value[i]->IsActive ()) {
                         value[i]->SetActive (true);
-                        SetDirty (true);
+                        SetDirty ();
                         util::Producer<RootsEvents>::Produce (
                             std::bind (
                                 &RootsEvents::OnRootsRootEnabled,
@@ -82,7 +91,7 @@ namespace thekogans {
                 if (value[i]->GetPath () == path) {
                     if (value[i]->IsActive ()) {
                         value[i]->SetActive (false);
-                        SetDirty (true);
+                        SetDirty ();
                         util::Producer<RootsEvents>::Produce (
                             std::bind (
                                 &RootsEvents::OnRootsRootDisabled,
@@ -103,7 +112,7 @@ namespace thekogans {
                     value.erase (value.begin () + i);
                     util::Subscriber<RootEvents>::Unsubscribe (*root);
                     root->Delete ();
-                    SetDirty (true);
+                    SetDirty ();
                     util::Producer<RootsEvents>::Produce (
                         std::bind (
                             &RootsEvents::OnRootsRootDeleted,

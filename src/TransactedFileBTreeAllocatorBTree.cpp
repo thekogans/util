@@ -221,7 +221,7 @@ namespace thekogans {
                     }
                     entries[index].key = leaf->entries[0].key;
                     child->Remove (leaf->entries[0].key);
-                    SetDirty (true);
+                    SetDirty ();
                     if (child->IsPoor ()) {
                         RestoreBalance (index);
                     }
@@ -284,7 +284,7 @@ namespace thekogans {
             left->entries[lastIndex].rightNode = right;
             entries[index] = left->entries[lastIndex];
             left->RemoveEntry (lastIndex);
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::RotateLeft (
@@ -300,7 +300,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             entries[index] = right->entries[0];
             right->RemoveEntry (0);
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Merge (
@@ -313,7 +313,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            right->FreeRange ();
+            right->FreeBlock ();
             right->Release ();
         }
 
@@ -325,8 +325,8 @@ namespace thekogans {
                 entries + splitIndex,
                 node->count * sizeof (Entry));
             count = splitIndex;
-            SetDirty (true);
-            node->SetDirty (true);
+            SetDirty ();
+            node->SetDirty ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Concatenate (Node *node) {
@@ -336,8 +336,8 @@ namespace thekogans {
                 node->count * sizeof (Entry));
             count += node->count;
             node->count = 0;
-            SetDirty (true);
-            node->SetDirty (true);
+            SetDirty ();
+            node->SetDirty ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::InsertEntry (
@@ -348,7 +348,7 @@ namespace thekogans {
                 entries + index,
                 (count++ - index) * sizeof (Entry));
             entries[index] = entry;
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::RemoveEntry (ui32 index) {
@@ -356,7 +356,7 @@ namespace thekogans {
                 entries + index,
                 entries + index + 1,
                 (--count - index) * sizeof (Entry));
-            SetDirty (true);
+            SetDirty ();
         }
 
         void TransactedFileBTreeAllocator::BTree::Node::Reset () {
@@ -469,7 +469,7 @@ namespace thekogans {
             }
             if (!IsDirty () &&
                     (header.rootOffset == 0 || root->GetOffset () != header.rootOffset)) {
-                SetDirty (true);
+                SetDirty ();
             }
         }
 
@@ -479,22 +479,22 @@ namespace thekogans {
                 if (root->IsEmpty () && root->GetChild (0) != nullptr) {
                     Node *node = root;
                     root = root->GetChild (0);
-                    node->FreeRange ();
+                    node->FreeBlock ();
                     node->Release ();
                 }
                 if (!IsDirty () &&
                         (header.rootOffset == 0 ||
                             root->GetOffset () != header.rootOffset)) {
-                    SetDirty (true);
+                    SetDirty ();
                 }
             }
             return removed;
         }
 
-        void TransactedFileBTreeAllocator::BTree::FreeRange () {
+        void TransactedFileBTreeAllocator::BTree::FreeBlock () {
             Node::FreeSubtree (file, header.rootOffset);
             header.rootOffset = 0;
-            Object::FreeRange ();
+            Object::FreeBlock ();
             root->Release ();
             root = Node::Alloc (file, header.rootOffset, this);
         }

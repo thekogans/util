@@ -44,7 +44,6 @@ namespace thekogans {
         ///     }
         /// };
         /// \endcode
-
         template <typename T>
         struct Subscriber :
                 public virtual RefCounted,

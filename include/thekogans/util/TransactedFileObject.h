@@ -35,7 +35,7 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// \brief
     /// \see{Object} allocated a block in the file.
     /// \param[in] object \see{Object} whose offset has become valid.
-    virtual void OnTransactedFileObjectAllocRange (
+    virtual void OnTransactedFileObjectAllocBlock (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
     /// \brief
     /// \see{Object} freed its file block.
@@ -43,7 +43,9 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// VERY IMPORTANT SEMANTICS: When you get this notification,
     /// object->GetOffset () will still point to the old offset (which
     /// has been freed).
-    virtual void OnTransactedFileObjectFreeRange (
+    virtual void OnTransactedFileObjectFreeBlock (
+        RefCounted::SharedPtr<Object> /*object*/) noexcept {}
+    virtual void OnTransactedFileObjectDirty (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 };
 
@@ -75,6 +77,7 @@ protected:
     /// \brief
     /// Our address inside the \see{TransactedFile}.
     AddressType offset;
+    bool aggregate{false};
 
 public:
     Object (
@@ -102,6 +105,11 @@ public:
         return offset;
     }
 
+    inline void Aggregate () {
+        file->Unsubscribe (*this);
+        aggregate = true;
+    }
+
     inline bool IsDirty () {
         return file->IsSubscribed (*this);
     }
@@ -109,12 +117,7 @@ public:
     /// Subscribe to \see{TransactedFileEvents}.
     /// \param[in] dirty == true, Subcribe.
     /// dirty == false, Unsubscribe.
-    void SetDirty (bool dirty);
-
-    /// \brief
-    /// If the object is dirty, flush it's cache to disk.
-    /// \return GetOffset ().
-    AddressType ForceFlush ();
+    void SetDirty ();
 
     virtual void Init (
             TransactedFile::SharedPtr file_,
@@ -125,13 +128,13 @@ public:
 
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
-    virtual void AllocRange ();
+    virtual void AllocBlock ();
     /// \brief
     /// Default free implementation for single block objects.
     /// If your objects contain internal pointers to other
     /// blocks you will need to implement this method and
     /// properly free the containing blocks.
-    virtual void FreeRange ();
+    virtual void FreeBlock ();
     /// \brief
     /// Flush the internal cache to file.
     virtual void Flush ();

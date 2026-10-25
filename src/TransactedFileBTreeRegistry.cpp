@@ -61,19 +61,17 @@ namespace thekogans {
             return btree->Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
 
-        void TransactedFileBTreeRegistry::SetValue (
+        bool TransactedFileBTreeRegistry::InsertValue (
                 const std::string &key,
                 TransactedFile::Object::SharedPtr value) {
             LockGuard<SpinLock> guard (spinLock);
-            if (value == nullptr) {
-                btree->Remove (StringKey (key));
-            }
-            else {
-                TransactedFileBTree::Iterator it;
-                if (!btree->Insert (new StringKey (key), value, it)) {
-                    it.SetValue (value);
-                }
-            }
+            TransactedFileBTree::Iterator it;
+            return btree->Insert (new StringKey (key), value, it);
+        }
+
+        void TransactedFileBTreeRegistry::RemoveValue (const std::string &key) {
+            LockGuard<SpinLock> guard (spinLock);
+            btree->Remove (StringKey (key));
         }
 
         inline Serializer &operator >> (
@@ -120,18 +118,18 @@ namespace thekogans {
             serializer << MAGIC32 << header;
         }
 
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectAllocRange (
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectAllocBlock (
                 TransactedFile::Object::SharedPtr object) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = object->GetOffset ();
-            SetDirty (true);
+            SetDirty ();
         }
 
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectFreeRange (
+        void TransactedFileBTreeRegistry::OnTransactedFileObjectFreeBlock (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             header.btreeOffset = 0;
-            SetDirty (true);
+            SetDirty ();
         }
 
     } // namespace util

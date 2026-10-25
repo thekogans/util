@@ -51,13 +51,13 @@ namespace thekogans {
                     &RootEvents::OnRootDeleteBegin,
                     std::placeholders::_1,
                     this));
-            pathBTree->FreeRange ();
+            pathBTree->FreeBlock ();
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeletedPathBTree,
                     std::placeholders::_1,
                     this));
-            componentBTree->FreeRange ();
+            componentBTree->FreeBlock ();
             Produce (
                 std::bind (
                     &RootEvents::OnRootDeletedComponentBTree,
@@ -185,7 +185,8 @@ namespace thekogans {
                 IgnoreList::SharedPtr ignoreList) {
             util::GUIDKey::SharedPtr pathKey (
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
-            util::StringObject::SharedPtr pathValue (new util::StringObject (path));
+            util::StringObject::SharedPtr pathValue (
+                new util::StringObject (pathBTree->GetFile (), 0, path));
             util::TransactedFileBTree::Iterator it;
             if (pathBTree->Insert (pathKey, pathValue, it)) {
                 Produce (
@@ -203,13 +204,15 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 for (; it != components.end (); ++it) {
                     util::StringKey::SharedPtr componentKey (new util::StringKey (*it, true));
-                    util::GUIDArrayObject::SharedPtr componentValue (
-                        new util::GUIDArrayObject (std::vector<util::GUID> {pathKey->key}));
                     util::TransactedFileBTree::Iterator jt;
-                    if (!componentBTree->Insert (componentKey, componentValue, jt)) {
-                        componentValue = jt.GetValue ();
-                        componentValue->value.push_back (pathKey->key);
-                        jt.SetValue (componentValue);
+                    if (componentBTree->Find (*componentKey, jt)) {
+                        util::GUIDArrayObject::SharedPtr componentValue = jt.GetValue ();
+                        componentValue->AddValue (pathKey->key);
+                    }
+                    else {
+                        util::GUIDArrayObject::SharedPtr componentValue (
+                            new util::GUIDArrayObject (componentBTree->GetFile (), 0, {pathKey->key}));
+                        componentBTree->Insert (componentKey, componentValue, jt);
                     }
                 }
             }

@@ -75,6 +75,10 @@ namespace thekogans {
         template<typename T>
         struct ArrayValue : public virtual Serializable {
             /// \brief
+            /// StringArrayValue is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ArrayValue<T>)
+
+            /// \brief
             /// The actual array.
             std::vector<T> value;
 
@@ -139,53 +143,9 @@ namespace thekogans {
             }
         };
 
-        /// \struct StringArrayValue SerializableValues.h thekogans/util/SerializableValues.h
-        ///
-        /// \brief
-        /// Specialization of \see{ArrayValue} for std::string.
-        struct _LIB_THEKOGANS_UTIL_DECL StringArrayValue : public ArrayValue<std::string> {
-            /// \brief
-            /// StringArrayValue is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringArrayValue)
-
-            /// \brief
-            /// ctor.
-            /// \param[in] value Optional std::string array to initialize with.
-            StringArrayValue (const std::vector<std::string> &value = std::vector<std::string> ()) :
-                ArrayValue<std::string> (value) {}
-        };
-
-        /// \struct StringArrayValue SerializableValues.h thekogans/util/SerializableValues.h
-        ///
-        /// \brief
-        /// Specialization of \see{ArrayValue} for TransactedFile::AddressType.
-        struct _LIB_THEKOGANS_UTIL_DECL AddressArrayValue : public ArrayValue<TransactedFile::AddressType> {
-            /// \brief
-            /// AddressArrayValue is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (AddressArrayValue)
-
-            /// \brief
-            /// ctor.
-            /// \param[in] value Optional TransactedFile::AddressType array to initialize with.
-            AddressArrayValue (const std::vector<TransactedFile::AddressType> &value = std::vector<TransactedFile::AddressType> ()) :
-                ArrayValue<TransactedFile::AddressType> (value) {}
-        };
-
-        /// \struct GUIDArrayValue SerializableValues.h thekogans/util/SerializableValues.h
-        ///
-        /// \brief
-        /// Specialization of \see{ArrayValue} for \see{GUID}.
-        struct _LIB_THEKOGANS_UTIL_DECL GUIDArrayValue : public ArrayValue<GUID> {
-            /// \brief
-            /// GUIDArrayValue is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDArrayValue)
-
-            /// \brief
-            /// ctor.
-            /// \param[in] value Optional \see{GUID} array to initialize with.
-            GUIDArrayValue (const std::vector<GUID> &value = std::vector<GUID> ()) :
-                ArrayValue<GUID> (value) {}
-        };
+        using StringArrayValue = ArrayValue<std::string>;
+        using AddressArrayValue = ArrayValue<TransactedFile::AddressType>;
+        using GUIDArrayValue = ArrayValue<GUID>;
 
     } // namespace util
 } // namespace thekogans

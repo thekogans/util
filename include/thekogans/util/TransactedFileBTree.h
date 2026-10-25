@@ -201,10 +201,6 @@ namespace thekogans {
                 /// If we're not finished, return the value associated with the current entry.
                 /// \return Value associated with the current entry.
                 TransactedFile::Object::SharedPtr GetValue () const;
-                /// \brief
-                /// If we're not finished, set the value associated with the current entry.
-                /// \param[in] value New \see{Value} to associate with the current entry.
-                void SetValue (TransactedFile::Object::SharedPtr value);
 
             private:
                 /// \brief
@@ -306,7 +302,9 @@ namespace thekogans {
             ///
             /// \brief
             /// TransactedFileBTree nodes store sorted key/value pairs and pointers to children nodes.
-            struct Node : public TransactedFile::Object {
+            struct Node :
+                    public TransactedFile::Object,
+                    public Subscriber<TransactedFile::ObjectEvents> {
                 /// \brief
                 /// Node is a \see{Serializable}.
                 THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Node)
@@ -607,7 +605,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the node size on disk.
                 /// \return Node size.
-                virtual std::size_t DynamicClassSize () const noexcept override {
+                virtual std::size_t Size () const noexcept override {
                     return
                         UI32_SIZE + // magic
                         UI32_SIZE + // count
@@ -630,7 +628,23 @@ namespace thekogans {
                 // TransactedFile::Object
                 /// \brief
                 /// We need to free keyValueOffset.
-                virtual void FreeRange () override;
+                virtual void FreeBlock () override;
+
+                // TransactedFile::ObjectEvents
+                virtual void OnTransactedFileObjectAllocBlock (
+                        RefCounted::SharedPtr<Object> /*object*/) noexcept override {
+                    SetDirty ();
+                }
+                virtual void OnTransactedFileObjectFreeBlock (
+                        RefCounted::SharedPtr<Object> /*object*/) noexcept override {
+                    SetDirty ();
+                }
+                virtual void OnTransactedFileObjectDirty (
+                        RefCounted::SharedPtr<Object> object) noexcept override {
+                    if (!btree->header.IsValueAsObject ()) {
+                        SetDirty ();
+                    }
+                }
 
                 /// \brief
                 /// Needs access to Free.
@@ -732,14 +746,14 @@ namespace thekogans {
             // TransactedFile::Objects
             /// \brief
             /// We have a pointer to root we need to dispose of.
-            virtual void FreeRange () override;
+            virtual void FreeBlock () override;
 
         protected:
             // Serializable
             /// \brief
             /// Return the \see{Header} size.
             /// \return \see{Header} size.
-            virtual std::size_t DynamicClassSize () const noexcept override {
+            virtual std::size_t Size () const noexcept override {
                 return header.Size ();
             }
             /// \brief

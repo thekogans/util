@@ -406,7 +406,7 @@ public:
     inline void SetRegistryOffset (AddressType registryOffset) {
         if (header.registryOffset != registryOffset) {
             header.registryOffset = registryOffset;
-            SetDirty (true);
+            SetDirty ();
         }
     }
 

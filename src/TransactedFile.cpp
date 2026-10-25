@@ -351,7 +351,7 @@ namespace thekogans {
                     else {
                         allocator.Reset (new TransactedFileBTreeAllocator (this));
                     }
-                    allocator->SetDirty (true);
+                    allocator->SetDirty ();
                     transaction.Commit ();
                 }
                 assert (allocator->offset == Allocator::Block::HEADER_SIZE);
@@ -364,7 +364,7 @@ namespace thekogans {
                     else {
                         registry.Reset (new TransactedFileBTreeRegistry (this));
                     }
-                    registry->SetDirty (true);
+                    registry->SetDirty ();
                     transaction.Commit ();
                 }
                 {

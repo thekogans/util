@@ -44,52 +44,48 @@ namespace thekogans {
                 });
         }
 
-        void TransactedFile::Object::SetDirty (bool dirty) {
-            if (dirty) {
+        void TransactedFile::Object::SetDirty () {
+            if (!aggregate) {
                 file->Subscribe (*this);
             }
-            else {
-                file->Unsubscribe (*this);
-            }
+            Produce (
+                std::bind (
+                    &ObjectEvents::OnTransactedFileObjectDirty,
+                    std::placeholders::_1,
+                    this));
         }
 
-        TransactedFile::AddressType TransactedFile::Object::ForceFlush () {
-            if (IsDirty ()) {
-                AllocRange ();
-                Flush ();
-                SetDirty (false);
-            }
-            return GetOffset ();
-        }
-
-        void TransactedFile::Object::AllocRange () {
-            if (DynamicClassSize () == 0 || offset == 0) {
-                AddressType newOffset =
-                    file->GetAllocator ()->Realloc (offset, GetSize (), false);
-                if (offset != newOffset) {
-                    if (offset != 0) {
+        void TransactedFile::Object::AllocBlock () {
+            if (!aggregate) {
+                std::size_t size = GetSize ();
+                if (offset == 0 || size > Allocator::Block::GetSize (file, offset)) {
+                    AddressType newOffset =
+                        file->GetAllocator ()->Realloc (offset, size, false);
+                    if (offset != newOffset) {
+                        if (offset != 0) {
+                            Produce (
+                                std::bind (
+                                    &ObjectEvents::OnTransactedFileObjectFreeBlock,
+                                    std::placeholders::_1,
+                                    this));
+                        }
+                        offset = newOffset;
                         Produce (
                             std::bind (
-                                &ObjectEvents::OnTransactedFileObjectFreeRange,
+                                &ObjectEvents::OnTransactedFileObjectAllocBlock,
                                 std::placeholders::_1,
                                 this));
                     }
-                    offset = newOffset;
-                    Produce (
-                        std::bind (
-                            &ObjectEvents::OnTransactedFileObjectAllocRange,
-                            std::placeholders::_1,
-                            this));
                 }
             }
         }
 
-        void TransactedFile::Object::FreeRange () {
-            if (offset != 0) {
+        void TransactedFile::Object::FreeBlock () {
+            if (offset != 0 && !aggregate) {
                 file->GetAllocator ()->Free (offset);
                 Produce (
                     std::bind (
-                        &ObjectEvents::OnTransactedFileObjectFreeRange,
+                        &ObjectEvents::OnTransactedFileObjectFreeBlock,
                         std::placeholders::_1,
                         this));
                 offset = 0;
@@ -97,7 +93,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::Flush () {
-            if (offset != 0) {
+            if (offset != 0 && !aggregate) {
                 BlockRange range (file, offset, false);
                 range << *this;
                 if (file->GetAllocator ()->IsSecure ()) {
@@ -109,7 +105,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::Reload () {
-            if (offset != 0) {
+            if (offset != 0 && !aggregate) {
                 BlockRange range (file, offset);
                 range >> *this;
             }
@@ -118,23 +114,27 @@ namespace thekogans {
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
-            THEKOGANS_UTIL_TRY {
-                if (phase == TransactedFile::COMMIT_PHASE_1) {
-                    AllocRange ();
+            if (!aggregate) {
+                THEKOGANS_UTIL_TRY {
+                    if (phase == TransactedFile::COMMIT_PHASE_1) {
+                        AllocBlock ();
+                    }
+                    else if (phase == TransactedFile::COMMIT_PHASE_2) {
+                        Flush ();
+                    }
                 }
-                else if (phase == TransactedFile::COMMIT_PHASE_2) {
-                    Flush ();
-                }
+                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
             }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
         void TransactedFile::Object::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
-            THEKOGANS_UTIL_TRY {
-                Reload ();
+            if (!aggregate) {
+                THEKOGANS_UTIL_TRY {
+                    Reload ();
+                }
+                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
             }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
     } // namespace util

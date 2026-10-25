@@ -116,16 +116,10 @@ namespace thekogans {
             /// \param[in] key Key whose value to retrieve.
             /// \return Value @ key, nullptr if key is not found.
             virtual TransactedFile::Object::SharedPtr GetValue (const std::string &key) override;
-            /// \brief
-            /// Given a key, do one of the following three;
-            /// 1. If value != nullptr and key is not found, insert new key/value.
-            /// 2. If value != nullptr and key is found, replace the old value with new.
-            /// 3. if value == nullptr, and key if found, delete the key from the registry.
-            /// \param[in] key Key to search/delete.
-            /// \param[in] value Value to set/replace/delete.
-            virtual void SetValue (
+            virtual bool InsertValue (
                 const std::string &key,
                 TransactedFile::Object::SharedPtr value) override;
+            virtual void RemoveValue (const std::string &key) override;
 
         protected:
             // Serializable
@@ -150,13 +144,13 @@ namespace thekogans {
             /// \brief
             /// \see{TransactedFileBTree} allocated a block for it's \see{TransactedFileBTree::Header}.
             /// \param[in] object \see{TransactedFileBTree} whose offset has become valid.
-            virtual void OnTransactedFileObjectAllocRange (
+            virtual void OnTransactedFileObjectAllocBlock (
                 TransactedFile::Object::SharedPtr object) noexcept override;
             /// \brief
             /// \see{TransactedFileBTree} freed its \see{TransactedFileBTree::Header} block.
             /// \param[in] object \see{TransactedFileBTree} whose \see{TransactedFileBTree::Header}
             /// has become invalid.
-            virtual void OnTransactedFileObjectFreeRange (
+            virtual void OnTransactedFileObjectFreeBlock (
                 TransactedFile::Object::SharedPtr /*object*/) noexcept override;
 
             /// \brief
