@@ -17,6 +17,8 @@
 
 #include "thekogans/util/TransactedFile.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/TransactedFileBTreeAllocator.h"
+    #include "thekogans/util/TransactedFileBTreeRegistry.h"
     #include "thekogans/util/TransactedFileBTree.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -27,7 +29,9 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void TransactedFile::Object::StaticInit () {
-            thekogans::util::TransactedFileBTree::StaticInit ();
+            TransactedFileBTreeAllocator::StaticInit ();
+            TransactedFileBTreeRegistry::StaticInit ();
+            TransactedFileBTree::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -49,7 +53,7 @@ namespace thekogans {
             if (aggregate != aggregate_) {
                 aggregate = aggregate_;
                 if (aggregate) {
-                    file->Unsubscribe (*this);
+                    file->Producer<TransactedFileEvents>::Unsubscribe (*this);
                 }
                 else {
                     SetDirty ();
@@ -59,7 +63,7 @@ namespace thekogans {
 
         void TransactedFile::Object::SetDirty () {
             if (!aggregate) {
-                file->Subscribe (*this);
+                file->Producer<TransactedFileEvents>::Subscribe (*this);
             }
             Produce (
                 std::bind (
@@ -109,7 +113,7 @@ namespace thekogans {
             if (offset != 0 && !aggregate) {
                 BlockRange range (file, offset, false);
                 range << *this;
-                if (file->GetAllocator ()->IsSecure ()) {
+                if (file->IsSecure ()) {
                     range.Seek (
                         SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
                         SEEK_CUR);

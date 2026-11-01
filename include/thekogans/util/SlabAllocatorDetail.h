@@ -113,9 +113,9 @@ namespace thekogans {
             /// for \see{Singleton} (from which it is derived). If you're deriving
             /// your allocator from SlabAllocator (aka ScopedSlabAllocator), it is
             /// completely ignored.
-            template <template <typename> typename T>
+            template<template<typename> typename T>
             struct InstanceCreator {
-                template <typename U> using template_type = T<U>;
+                template<typename U> using template_type = T<U>;
             };
 
             /// \brief
@@ -209,7 +209,7 @@ namespace thekogans {
             };
 
             // Match Case B: Unified Policy::Derive tag found! Dig inside it.
-            template <std::size_t Default, std::size_t S, std::size_t T, typename... Rest>
+            template<std::size_t Default, std::size_t S, std::size_t T, typename... Rest>
             struct GetSlotsPerPage<Default, Policy::DeriveTLCSize<S, T>, Rest...> {
                 static constexpr std::size_t value = S; // Pull out the slots configuration
             };
@@ -274,7 +274,7 @@ namespace thekogans {
             };
 
             // Match Case: If we encounter the InstanceCreator type tag wrapper, extract its template type!
-            template<typename T, typename DefaultType, template <typename> typename CurrentTemplate, typename... Rest>
+            template<typename T, typename DefaultType, template<typename> typename CurrentTemplate, typename... Rest>
             struct GetInstanceCreatorPolicyHelper<T, DefaultType, Policy::InstanceCreator<CurrentTemplate>, Rest...> {
                 using type = typename Policy::InstanceCreator<CurrentTemplate>::template template_type<T>;
             };
@@ -315,16 +315,16 @@ namespace thekogans {
             struct IsValidSlabPolicy<Policy::Lock<L>> : std::true_type {};
             template<typename A>
             struct IsValidSlabPolicy<Policy::PageAllocator<A>> : std::true_type {};
-            template<template <typename> typename C>
+            template<template<typename> typename C>
             struct IsValidSlabPolicy<Policy::InstanceCreator<C>> : std::true_type {};
-            template <std::size_t SlotsPerPage, std::size_t ThreadDensity>
+            template<std::size_t SlotsPerPage, std::size_t ThreadDensity>
             struct IsValidSlabPolicy<Policy::DeriveTLCSize<SlotsPerPage, ThreadDensity>> : std::true_type {};
-            template <std::size_t TLCSize, std::size_t ThreadDensity>
+            template<std::size_t TLCSize, std::size_t ThreadDensity>
             struct IsValidSlabPolicy<Policy::DeriveSlotsPerPage<TLCSize, ThreadDensity>> : std::true_type {};
-            template <std::size_t ThreadDensity>
+            template<std::size_t ThreadDensity>
             struct IsValidSlabPolicy<Policy::DeriveSlotsPerPageAndTLCSize<ThreadDensity>> : std::true_type {};
             // Helper to evaluate the entire variadic pack at once
-            template <typename... Policies>
+            template<typename... Policies>
             constexpr bool ValidatePolicies () {
                 return (IsValidSlabPolicy<Policies>::value && ...);
             }
@@ -403,16 +403,16 @@ namespace thekogans {
                     ui64 current = leasedBits.load (std::memory_order_relaxed);
                     while (true) {
                         // Find the first available zero bit.
-                        int free_bit = countr_one (current);
-                        if (free_bit >= MAX_INDEX) {
+                        int freeBit = countr_one (current);
+                        if (THEKOGANS_UTIL_UNLIKELY (freeBit >= MAX_INDEX)) {
                             // Out of IDs! Handle catastrophic overflow or expand bitmask.
                             throw std::runtime_error ("Exceeded maximum concurrent allocators.");
                         }
-                        ui64 next = current | (1ULL << free_bit);
+                        ui64 next = current | (1ULL << freeBit);
                         if (leasedBits.compare_exchange_weak (current, next,
                                 std::memory_order_acquire,
                                 std::memory_order_relaxed)) {
-                            return static_cast<std::size_t> (free_bit);
+                            return static_cast<std::size_t> (freeBit);
                         }
                         // If exchange failed, current is updated automatically; retry loop.
                     }
@@ -463,7 +463,7 @@ namespace thekogans {
             ///
             /// \tparam T The type that we are allocating for.
             /// \tparam Policies A pack of policies you want to modify. The order is irrelevant!
-            template <typename T, typename... Policies>
+            template<typename T, typename... Policies>
             struct SlabAllocator {
             private:
                 static_assert (ValidatePolicies<Policies...> (),
@@ -643,12 +643,12 @@ namespace thekogans {
                                 reinterpret_cast<std::byte *> (this + 1) + header.slotCount * slotSize);
                         }
                         if (THEKOGANS_UTIL_UNLIKELY (++header.slotCount == maxSlots)) {
-                            // Page is full. Evict it from the partial list so that no one asks
-                            // it for slots again. Yes the page is now floating out there in the
-                            // either completely inaccessible until someone decides to free one
-                            // of it's slots or if the allocator is scoped and it's dtor fires.
-                            // Either way full pages get evicted from the partial list so as not
-                            //to waste time traversion over them when allocating.
+                            // The page is full. Evict it from the partial list so that no one
+                            // asks it for slots again. Yes the page is now floating out there
+                            // in the either completely inaccessible until someone decides to
+                            // free one of it's slots or if the allocator is scoped and it's
+                            // dtor fires. Either way full pages get evicted from the partial
+                            // list so as not to waste time traversing over them when allocating.
                             header.allocator.storage.partialPageList = header.partialNext;
                             header.partialNext = nullptr;
                         }
@@ -659,6 +659,12 @@ namespace thekogans {
                     /// Return a previously Alloc(ated) slot back to the free list.
                     /// \param[in] ptr Slot pointer to free.
                     inline void Free (Slot *slot) noexcept {
+                        // The page is transitioning from full to partial.
+                        // Wire it back in to the partial list.
+                        if (THEKOGANS_UTIL_UNLIKELY (header.slotCount == maxSlots)) {
+                            header.partialNext = header.allocator.storage.partialPageList;
+                            header.allocator.storage.partialPageList = this;
+                        }
                         slot->next = header.freeList;
                         header.freeList = slot;
                         --header.slotCount;
@@ -666,12 +672,6 @@ namespace thekogans {
                             if (THEKOGANS_UTIL_UNLIKELY (header.slotCount == 0)) {
                                 header.freeList = nullptr;
                             }
-                        }
-                        // The page transitioned from full to partial.
-                        // Wire it back in to our list from the either.
-                        if (THEKOGANS_UTIL_UNLIKELY (header.slotCount + 1 == maxSlots)) {
-                            header.partialNext = header.allocator.storage.partialPageList;
-                            header.allocator.storage.partialPageList = this;
                         }
                     }
                 };
@@ -727,7 +727,7 @@ namespace thekogans {
                     inline void Release () noexcept {
                         if (slotList != nullptr) {
                             Page *page = slotList->GetPage (pageMask);
-                            // Event though, technically, GetPage can return nullptr,
+                            // Even though, technically, GetPage can return nullptr,
                             // these are our internal slots not some random void *
                             // passed to Free. If they are not pointing to valid pages
                             // something is very seriously wrong with the data and perhaps
@@ -817,7 +817,6 @@ namespace thekogans {
                         TLC &tlc = GetTLC (storage.tlcIndex);
                         // See if we have a free slot in our local cache.
                         if (THEKOGANS_UTIL_UNLIKELY (tlc.slotList == nullptr)) {
-                            static thread_local ThreadLifetimeManager lifecycleManager;
                             // No banana. Let's seed the TLC.
                             static constexpr std::size_t batchTarget = TLCSize / 2;
                             // Persistent outer loop forces lock retention until TLC target is met.
@@ -922,11 +921,11 @@ namespace thekogans {
                 }
             };
 
-            template <typename T, typename... Policies>
+            template<typename T, typename... Policies>
             thread_local std::array<
                 typename SlabAllocator<T, Policies...>::TLC,
                 TLCIndexBroker::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
-            template <typename T, typename... Policies>
+            template<typename T, typename... Policies>
             TLCIndexBroker SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
         } // namespace detail
 

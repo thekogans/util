@@ -54,27 +54,26 @@ namespace thekogans {
             /// \param[in] allocator \see{util::Allocator} for \see{util::TransactedFileBTreeAllocator}
             /// and \see{util::TransactedFileBTree}.
             Database (
-                const std::string &path = Options::Instance ()->dbPath,
-                bool secure = false,
-                std::size_t allocatorEntriesPerNode =
-                    util::TransactedFileBTreeAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t allocatorNodesPerPage =
-                    util::TransactedFileBTreeAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
-                bool registryValueAsObject = true,
-                std::size_t registryEntriesPerNode =
-                    util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t registryNodesPerPage =
-                    util::TransactedFileBTreeRegistry::DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ()) :
-                file (
-                    new util::SimpleTransactedFile (
+                    const std::string &path = Options::Instance ()->dbPath,
+                    bool secure = false,
+                    std::size_t allocatorEntriesPerNode =
+                        util::TransactedFileBTreeAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                    std::size_t allocatorNodesPerPage =
+                        util::TransactedFileBTreeAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
+                    bool registryValueAsObject = true,
+                    std::size_t registryEntriesPerNode =
+                        util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                    std::size_t registryNodesPerPage =
+                        util::TransactedFileBTreeRegistry::DEFAULT_BTREE_NODES_PER_PAGE,
+                    util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ()) :
+                    file (util::TransactedFile::Open (path)) {
+                if (file == nullptr) {
+                    file = util::TransactedFile::Create (
                         util::HostEndian,
                         path,
-                        util::SimpleFile::ReadWrite | util::SimpleFile::Create,
                         new util::TransactedFileBTreeAllocator (
                             nullptr,
                             0,
-                            secure,
                             allocatorEntriesPerNode,
                             allocatorNodesPerPage,
                             allocator),
@@ -84,7 +83,9 @@ namespace thekogans {
                             registryValueAsObject,
                             registryEntriesPerNode,
                             registryNodesPerPage,
-                            allocator))) {}
+                            allocator));
+                }
+            }
 
             /// \brief
             /// Return the file.

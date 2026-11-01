@@ -305,6 +305,9 @@ namespace thekogans {
                             // below.
                             it = subscribers.erase (it);
                         }
+                        else {
+                            ++it;
+                        }
                     }
                     if (unsubscribe) {
                         subscribers.clear ();

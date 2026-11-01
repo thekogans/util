@@ -39,10 +39,8 @@ namespace thekogans {
 
             IgnoreList (
                 util::TransactedFile::SharedPtr file = nullptr,
-                util::TransactedFile::AddressType offset = 0,
-                const std::vector<std::string> &value = std::vector<std::string> ()) :
-                util::TransactedFile::Object (file, offset),
-                util::StringArrayValue (value) {}
+                util::TransactedFile::AddressType offset = 0) :
+                util::TransactedFile::Object (file, offset) {}
 
             /// \brief
             /// Add a new pattern to the list.

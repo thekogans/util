@@ -17,6 +17,7 @@
 
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/SlabAllocatorHeap.h"
 
 namespace thekogans {
@@ -48,25 +49,26 @@ namespace thekogans {
             }
         }
 
-        void *SlabAllocatorHeap::Alloc (std::size_t size) {
+        tk_mem_t SlabAllocatorHeap::Alloc (std::size_t size) {
             if (THEKOGANS_UTIL_UNLIKELY (size < minSize || size > maxSize)) {
-                return nullptr;
+                return tk_mem_t {nullptr, 0};
             }
-            return pools[TrailingZeroBitCount (size) - minExp]->Alloc ();
+            std::size_t poolIndex = TrailingZeroBitCount (Align (size)) - minExp;
+            return tk_mem_t{pools[poolIndex]->Alloc (), poolIndex};
         }
 
-        void SlabAllocatorHeap::Free (
-                void *ptr,
-                std::size_t size) {
-            if (THEKOGANS_UTIL_UNLIKELY (ptr == nullptr || size < minSize || size > maxSize)) {
+        std::size_t SlabAllocatorHeap::GetMemSize (tk_mem_t mem) {
+            return 1ULL << (mem.poolIndex + minExp);
+        }
+
+        void SlabAllocatorHeap::Free (tk_mem_t mem) {
+            if (THEKOGANS_UTIL_UNLIKELY (mem.ptr == nullptr || mem.poolIndex >= numPools)) {
                 return;
             }
-            pools[TrailingZeroBitCount (size) - minExp]->Free (ptr);
+            pools[mem.poolIndex]->Free (mem.ptr);
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (
-            thekogans::util::GlobalSlabAllocatorHeap,
-            Allocator::TYPE)
+        using GlobalSlabAllocatorHeap = Singleton<SlabAllocatorHeap>;
 
         void tk_malloc_init (
                 std::size_t minExp,
@@ -76,12 +78,15 @@ namespace thekogans {
         }
 
         tk_mem_t tk_malloc (std::size_t size) noexcept {
-            size = Align (size);
-            return tk_mem_t{GlobalSlabAllocatorHeap::Instance ()->Alloc (size), size};
+            return GlobalSlabAllocatorHeap::Instance ()->Alloc (size);
+        }
+
+        std::size_t tk_mem_size (tk_mem_t mem) noexcept {
+            return GlobalSlabAllocatorHeap::Instance ()->GetMemSize (mem);
         }
 
         void tk_free (tk_mem_t mem) noexcept {
-            GlobalSlabAllocatorHeap::Instance ()->Free (mem.ptr, mem.size);
+            GlobalSlabAllocatorHeap::Instance ()->Free (mem);
         }
 
     } // namespace util

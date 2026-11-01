@@ -36,7 +36,7 @@ namespace thekogans {
                 std::size_t entriesPerNode_,
                 std::size_t nodesPerPage_,
                 util::Allocator::SharedPtr allocator_) :
-                TransactedFile::Registry (file, offset),
+                TransactedFile::Object (file, offset),
                 valueAsObject (valueAsObject_),
                 entriesPerNode (entriesPerNode_),
                 nodesPerPage (nodesPerPage_),
@@ -51,7 +51,7 @@ namespace thekogans {
                         entriesPerNode,
                         nodesPerPage,
                         allocator)) {
-            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+            btree->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             Reload ();
         }
 
@@ -87,6 +87,7 @@ namespace thekogans {
             serializer >> magic;
             if (magic == MAGIC32) {
                 serializer >> header;
+                btree->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                 btree.Reset (
                     new TransactedFileBTree (
                         file,
@@ -97,7 +98,7 @@ namespace thekogans {
                         entriesPerNode,
                         nodesPerPage,
                         allocator));
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+                btree->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

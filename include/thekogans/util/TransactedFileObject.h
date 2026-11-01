@@ -81,10 +81,10 @@ protected:
 
 public:
     Object (
-        TransactedFile::SharedPtr file_ = nullptr,
-        AddressType offset_ = 0) :
-        file (file_),
-        offset (offset_) {}
+        TransactedFile::SharedPtr file = nullptr,
+        AddressType offset = 0) :
+        file (nullptr),
+        offset (0) {Init (file, offset);}
 
     static DynamicCreatable::SharedPtr CreateObject (
         const char *type,
@@ -108,7 +108,7 @@ public:
     void SetAggregate (bool aggregate_);
 
     inline bool IsDirty () {
-        return file->IsSubscribed (*this);
+        return file->Producer<TransactedFileEvents>::IsSubscribed (*this);
     }
     /// \brief
     /// Subscribe to \see{TransactedFileEvents}.
@@ -121,6 +121,9 @@ public:
             AddressType offset_) noexcept {
         file = file_;
         offset = offset_;
+        if (file != nullptr && offset == 0) {
+            SetDirty ();
+        }
     }
 
     /// \brief

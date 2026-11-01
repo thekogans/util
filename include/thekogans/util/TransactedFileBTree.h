@@ -355,9 +355,10 @@ namespace thekogans {
                     /// \param[in] value_ Entry value.
                     Entry (
                         Key *key_ = nullptr,
+                        TransactedFile::AddressType valueOffset_ = 0,
                         TransactedFile::Object *value_ = nullptr) :
                         key (key_),
-                        valueOffset (0),
+                        valueOffset (valueOffset_),
                         value (value_),
                         rightOffset (0),
                         right (nullptr) {}

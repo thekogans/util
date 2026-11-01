@@ -42,13 +42,6 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE (
-            thekogans::util::TransactedFile,
-            Serializer::TYPE, RandomSeekSerializer::TYPE)
-
-        const int TransactedFile::COMMIT_PHASE_1 = 1;
-        const int TransactedFile::COMMIT_PHASE_2 = 2;
-
         THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS_T (TransactedFile::AddressSpaceType::Page)
 
         TransactedFile::Transaction::~Transaction () {
@@ -64,38 +57,6 @@ namespace thekogans {
                 true);
         }
 
-#if 0
-        void TransactedFile::Transaction::Commit (bool clearCache) {
-            // We must account for objects that dirty other objects during commit.
-            // We keep looping, collecting the newly dirtied ones and make them
-            // clean again. Eventually the noise will settle down. Even though
-            // this might look cheotic and unpredictable, in reallity I find this
-            // much more reasuring then devising ellaborate synchonizaton schemes.
-            while (file.GetSubscriberCount () != 0) {
-                std::vector<SharedSubscriberInfo> subscribers;
-                file.GetSubscribers (subscribers, true);
-                for (const auto &subscriber : subscribers) {
-                    subscriber.second->DeliverEvent (
-                        std::bind (
-                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
-                            std::placeholders::_1,
-                            &file,
-                            COMMIT_PHASE_1),
-                        subscriber.first);
-                }
-                for (const auto &subscriber : subscribers) {
-                    subscriber.second->DeliverEvent (
-                        std::bind (
-                            &TransactedFileEvents::OnTransactedFileTransactionCommit,
-                            std::placeholders::_1,
-                            &file,
-                            COMMIT_PHASE_2),
-                        subscriber.first);
-                }
-            }
-            file.Commit (clearCache);
-        }
-#else
         void TransactedFile::Transaction::Commit (bool clearCache) {
             std::vector<SharedSubscriberInfo> totalCommittedObjects;
             totalCommittedObjects.reserve (file.GetSubscriberCount () * 2);
@@ -140,7 +101,6 @@ namespace thekogans {
             }
             file.Commit (clearCache);
         }
-#endif
 
         namespace {
             std::size_t GetPhysicalSectorSize (THEKOGANS_UTIL_HANDLE handle) {
@@ -165,104 +125,137 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::TransactedFile (
-                Endianness endianness,
-                THEKOGANS_UTIL_HANDLE handle,
-                const std::string &path,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) :
-                File (endianness, handle, path),
-                size (0) {
-            if (IsOpen ()) {
-                size = GetSize ();
-                pageMap.Reset (
-                    new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
-                Init (allocator, registry);
-            }
-        }
-
-        TransactedFile::TransactedFile (
-                Endianness endianness,
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess | GENERIC_WRITE,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
-                i32 mode,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) :
-                File (endianness),
-                size (0) {
-            OpenEx (
-                path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                flags,
-                mode,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                allocator,
-                registry);
-        }
-
-        TransactedFile::~TransactedFile () {
-            THEKOGANS_UTIL_TRY {
-                CloseEx ();
-            }
-            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-        }
-
-        void TransactedFile::OpenEx (
-                const std::string &path,
-            #if defined (TOOLCHAIN_OS_Windows)
-                DWORD dwDesiredAccess,
-                DWORD dwShareMode,
-                DWORD dwCreationDisposition,
-                DWORD dwFlagsAndAttributes,
-            #else // defined (TOOLCHAIN_OS_Windows)
-                i32 flags,
-                i32 mode,
-            #endif // defined (TOOLCHAIN_OS_Windows)
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) {
-            CloseEx ();
-            CommitLog (path);
+        TransactedFile::TransactedFile (const std::string &path) :
+                size (0),
+                pageMap (nullptr),
+                allocator (nullptr),
+                registry (nullptr) {
+            AddRef ();
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
         #if defined (TOOLCHAIN_OS_Windows)
-            Open (
+            File::Open (
                 path,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
+                GENERIC_READ | GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                OPEN_EXISTING,
+                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
         #else // defined (TOOLCHAIN_OS_Windows)
+            i32 flags = O_RDWR;
         #if defined (TOOLCHAIN_OS_Linux)
             flags |= O_DIRECT;
         #endif // defined (TOOLCHAIN_OS_Linux)
-            Open (path, flags, mode);
+            File::Open (path, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         #if defined (TOOLCHAIN_OS_OSX)
             fcntl (handle, F_NOCACHE, 1);
         #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
             size = GetSize ();
-            pageMap.Reset (
-                new AddressSpaceType (
-                    32, 8, 20, GetPhysicalSectorSize (handle)));
-            Init (allocator, registry);
+            pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
+            BlockRange headerRange (this, Block::HEADER_SIZE);
+            header.Read (headerRange);
+            BlockRange allocayorRange (this, header.allocatorOffset);
+            allocayorRange >> allocator;
+            BlockRange registryRange (this, header.registryOffset);
+            registryRange >> registry;
         }
 
-        void TransactedFile::CloseEx () {
+        TransactedFile::TransactedFile (
+                Endianness endianness,
+                const std::string &path,
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_) :
+                size (0),
+                pageMap (nullptr),
+                allocator (allocator_),
+                registry (registry_) {
+            AddRef ();
+            // Turn off OS page buffering. With PageMap's page alignment,
+            // we don't need the cost of extra copying.
+        #if defined (TOOLCHAIN_OS_Windows)
+            File::Open (
+                path,
+                GENERIC_READ | GENERIC_WRITE,
+                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                CREATE_ALWAYS,
+                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
+        #else // defined (TOOLCHAIN_OS_Windows)
+            i32 flags = O_RDWR | O_CREAT | O_TRUNC;
+        #if defined (TOOLCHAIN_OS_Linux)
+            flags |= O_DIRECT;
+        #endif // defined (TOOLCHAIN_OS_Linux)
+            File::Open (path, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+        #if defined (TOOLCHAIN_OS_OSX)
+            fcntl (handle, F_NOCACHE, 1);
+        #endif // defined (TOOLCHAIN_OS_OSX)
+        #endif // defined (TOOLCHAIN_OS_Windows)
+            pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
+            Transaction transaction (*this);
+            Grow (Block::SIZE + Header::SIZE);
+            Block block (this, Block::HEADER_SIZE, 0, Header::SIZE);
+            block.Write ();
+            Subscriber<TransactedFileEvents>::Subscribe (*this);
+            allocator->Init (this, 0);
+            registry->Init (this, 0);
+            transaction.Commit ();
+        }
+
+        TransactedFile::~TransactedFile () {
+            THEKOGANS_UTIL_TRY {
+                Close ();
+            }
+            THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void TransactedFile::SetAllocatorOffset (AddressType allocatorOffset) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (header.allocatorOffset != allocatorOffset) {
+                header.allocatorOffset = allocatorOffset;
+                Subscriber<TransactedFileEvents>::Subscribe (*this);
+            }
+        }
+
+        void TransactedFile::SetRegistryOffset (AddressType registryOffset) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (header.registryOffset != registryOffset) {
+                header.registryOffset = registryOffset;
+                Subscriber<TransactedFileEvents>::Subscribe (*this);
+            }
+        }
+
+        void TransactedFile::SetUserOffset (AddressType userOffset) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (header.userOffset != userOffset) {
+                header.userOffset = userOffset;
+                Subscriber<TransactedFileEvents>::Subscribe (*this);
+            }
+        }
+
+        TransactedFile::SharedPtr TransactedFile::Open (const std::string &path) {
+            if (Path (path).Exists ()) {
+                CommitLog (path);
+                return SharedPtr (new TransactedFile (path), false);
+            }
+            return nullptr;
+        }
+
+        TransactedFile::SharedPtr TransactedFile::Create (
+                Endianness endianness,
+                const std::string &path,
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry,
+                bool overwrite) {
+            if (Path (path).Exists () && !overwrite) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "TransactedFile %s exists.", path.c_str ());
+            }
+            return SharedPtr (new TransactedFile (endianness, path, allocator, registry), false);
+        }
+
+        void TransactedFile::Close () {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
-                Close ();
+                File::Close ();
                 size = 0;
                 pageMap.Reset ();
                 allocator.Reset ();
@@ -338,44 +331,19 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Init (
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) {
-            if (size == 0) {
-                Transaction transaction (*this);
-                if (allocator_ != nullptr) {
-                    allocator = allocator_;
-                    allocator->Init (this, 0);
-                }
-                else {
-                    allocator.Reset (new TransactedFileBTreeAllocator (this));
-                }
-                allocator->AllocBlock ();
-                assert (allocator->offset == Allocator::Block::HEADER_SIZE);
-                if (registry_ != nullptr) {
-                    registry = registry_;
-                    registry->Init (this, 0);
-                }
-                else {
-                    registry.Reset (new TransactedFileBTreeRegistry (this));
-                }
-                registry->AllocBlock ();
-                registry->SetDirty ();
-                allocator->SetRegistryOffset (registry->GetOffset ());
-                transaction.Commit ();
+        void TransactedFile::OnTransactedFileTransactionCommit (
+                TransactedFile::SharedPtr file,
+                int phase) noexcept {
+            if (phase == COMMIT_PHASE_2) {
+                Range range (this, Block::HEADER_SIZE, Header::SIZE, false);
+                header.Write (range);
             }
-            else {
-                {
-                    BlockRange range (this, TransactedFile::Block::HEADER_SIZE);
-                    range >> allocator;
-                    assert (allocator != nullptr && allocator->file == this);
-                }
-                {
-                    BlockRange range (this, allocator->GetRegistryOffset ());
-                    range >> registry;
-                    assert (registry != nullptr && registry->file == this);
-                }
-            }
+        }
+
+        void TransactedFile::OnTransactedFileTransactionAbort (
+                TransactedFile::SharedPtr file) noexcept {
+            Range range (this, Block::HEADER_SIZE, Header::SIZE);
+            header.Read (range);
         }
 
         void TransactedFile::CommitLog (const std::string &path) {
@@ -441,7 +409,7 @@ namespace thekogans {
                 }
                 // At this point the log is commited and closed.
                 // If we can't complete the commit (exception),
-                // next time OpenEx (above) will use CommitLog
+                // next time Open (above) will use CommitLog
                 // before opening the file.
                 pageMap->Flush (*this, clearCache);
                 SetSize (size);
@@ -477,6 +445,31 @@ namespace thekogans {
                 GUID::FromBuffer (name.data (), name.size ()).ToHexString () + ".log";
         }
 
+        void TransactedFile::Header::Read (Serializer &serializer) {
+            ui32 magic;
+            serializer >> magic;
+            if (magic == MAGIC32) {
+                serializer >> flags >> allocatorOffset >> registryOffset >> userOffset;
+            #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                if (!IsBlockUsesMagic ()) {
+            #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                if (IsBlockUsesMagic ()) {
+            #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "This TransactedFile file cannot be opened by this version of %s.",
+                        THEKOGANS_UTIL);
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt TransactedFile file.");
+            }
+        }
+
+        void TransactedFile::Header::Write (Serializer &serializer) {
+            serializer << MAGIC32 << flags << allocatorOffset << registryOffset << userOffset;
+        }
+
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
                 TransactedFile::Range &range,
                 TransactedFile::Object::SharedPtr &object) {
@@ -502,86 +495,6 @@ namespace thekogans {
                     header.type.c_str ());
             }
             return range;
-        }
-
-        SimpleTransactedFile::SimpleTransactedFile (
-                Endianness endianness,
-                const std::string &path,
-                Flags32 flags,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) :
-                TransactedFile (endianness) {
-            SimpleOpen (path, flags, allocator, registry);
-        }
-
-        void SimpleTransactedFile::SimpleOpen (
-                const std::string &path,
-                Flags32 flags,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) {
-        #if defined (TOOLCHAIN_OS_Windows)
-            DWORD dwDesiredAccess = 0;
-            DWORD dwShareMode = 0;
-            if (flags.Test (SimpleFile::ReadOnly)) {
-                dwDesiredAccess |= GENERIC_READ;
-                dwShareMode |= FILE_SHARE_READ;
-            }
-            if (flags.Test (SimpleFile::WriteOnly)) {
-                dwDesiredAccess |= GENERIC_WRITE;
-                dwShareMode |= FILE_SHARE_WRITE | FILE_SHARE_DELETE;
-            }
-            if (flags.Test (SimpleFile::Append)) {
-                dwDesiredAccess |= FILE_APPEND_DATA;
-            }
-            DWORD dwCreationDisposition = 0;
-            if (flags.Test (SimpleFile::Create)) {
-                if (flags.Test (SimpleFile::Truncate)) {
-                    dwCreationDisposition |= CREATE_ALWAYS;
-                }
-                else {
-                    dwCreationDisposition |= OPEN_ALWAYS;
-                }
-            }
-            else if (flags.Test (SimpleFile::Truncate)) {
-                dwCreationDisposition |= TRUNCATE_EXISTING;
-            }
-            else {
-                dwCreationDisposition |= OPEN_EXISTING;
-            }
-            DWORD dwFlagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-            TransactedFile::OpenEx (
-                path,
-                dwDesiredAccess,
-                dwShareMode,
-                dwCreationDisposition,
-                dwFlagsAndAttributes,
-                allocator,
-                registry);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            i32 flags_ = 0;
-            if (flags.Test (SimpleFile::ReadOnly)) {
-                if (flags.Test (SimpleFile::WriteOnly)) {
-                    flags_ |= O_RDWR;
-                }
-                else {
-                    flags_ |= O_RDONLY;
-                }
-            }
-            else if (flags.Test (SimpleFile::WriteOnly)) {
-                flags_ |= O_WRONLY;
-            }
-            if (flags.Test (SimpleFile::Create)) {
-                flags_ |= O_CREAT;
-            }
-            if (flags.Test (SimpleFile::Truncate)) {
-                flags_ |= O_TRUNC;
-            }
-            if (flags.Test (SimpleFile::Append)) {
-                flags_ |= O_APPEND;
-            }
-            i32 mode = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-            TransactedFile::OpenEx (path, flags_, mode, allocator, registry);
-        #endif // defined (TOOLCHAIN_OS_Windows)
         }
 
     } // namespace util

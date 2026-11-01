@@ -47,7 +47,7 @@ namespace thekogans {
                     const T &denominator,
                     T &quotient,
                     T &remainder) {
-                static const int bits = sizeof (T) * CHAR_BIT;
+                static const int bits = BitWidth<T>::value;
                 if (denominator == 0) {
                     throw std::domain_error ("divide by zero");
                 }

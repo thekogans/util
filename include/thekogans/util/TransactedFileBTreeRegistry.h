@@ -139,6 +139,10 @@ namespace thekogans {
                 TransactedFile::Object::Init (file, offset);
                 btree->Init (file, header.btreeOffset);
             }
+            virtual void AllocBlock () override {
+                TransactedFile::Object::AllocBlock ();
+                file->SetRegistryOffset (offset);
+            }
 
             // TransactedFile::ObjectEvents
             /// \brief

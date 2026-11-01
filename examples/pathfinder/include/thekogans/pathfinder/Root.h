@@ -38,29 +38,29 @@ namespace thekogans {
             virtual ~RootEvents () {}
 
             virtual void OnRootScanBegin (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
             virtual void OnRootScanPath (
                 util::RefCounted::SharedPtr<Root> /*root*/,
-                const std::string & /*path*/) throw () {}
+                const std::string & /*path*/) noexcept {}
             virtual void OnRootScanEnd (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
 
             virtual void OnRootDeleteBegin (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
             virtual void OnRootDeletedPathBTree (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
             virtual void OnRootDeletedComponentBTree (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
             virtual void OnRootDeleteEnd (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
 
             virtual void OnRootFindBegin (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
             virtual void OnRootFindPath (
                 util::RefCounted::SharedPtr<Root> /*root*/,
-                const std::string & /*path*/) throw () {}
+                const std::string & /*path*/) noexcept {}
             virtual void OnRootFindEnd (
-                util::RefCounted::SharedPtr<Root> /*root*/) throw () {}
+                util::RefCounted::SharedPtr<Root> /*root*/) noexcept {}
         };
 
         struct Root : public util::Producer<RootEvents> {

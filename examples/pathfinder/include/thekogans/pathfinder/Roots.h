@@ -50,28 +50,28 @@ namespace thekogans {
             /// \param[in] root New \see{Root}.
             virtual void OnRootsRootCreated (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
-                Root::SharedPtr /*root*/) throw () {}
+                Root::SharedPtr /*root*/) noexcept {}
             /// \brief
             /// A \see{Root} was enabled.
             /// \param[in] roots Pointer to \see{Roots}.
             /// \param[in] root \see{Root} that was enabled.
             virtual void OnRootsRootEnabled (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
-                Root::SharedPtr /*root*/) throw () {}
+                Root::SharedPtr /*root*/) noexcept {}
             /// \brief
             /// A \see{Root} was disabled.
             /// \param[in] roots Pointer to \see{Roots}.
             /// \param[in] root \see{Root}. that was disabled.
             virtual void OnRootsRootDisabled (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
-                Root::SharedPtr /*root*/) throw () {}
+                Root::SharedPtr /*root*/) noexcept {}
             /// \brief
             /// A \see{Root} was deleted.
             /// \param[in] roots Pointer to \see{Roots}
             /// \param[in] root \see{Root} that was deleted.
             virtual void OnRootsRootDeleted (
                 util::RefCounted::SharedPtr<Roots> /*roots*/,
-                Root::SharedPtr /*root*/) throw () {}
+                Root::SharedPtr /*root*/) noexcept {}
         };
 
         /// \struct Roots Roots.h thekogans/pathfinder/Roots.h
@@ -134,10 +134,10 @@ namespace thekogans {
             // util::Subscriber<RootEvents>.
             virtual void OnRootScanPath (
                 Root::SharedPtr /*root*/,
-                const std::string &path) throw () override;
+                const std::string &path) noexcept override;
             virtual void OnRootFindPath (
                 Root::SharedPtr /*root*/,
-                const std::string &path) throw () override;
+                const std::string &path) noexcept override;
         };
 
     } // namespace pathfinder

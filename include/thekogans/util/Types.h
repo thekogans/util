@@ -27,6 +27,7 @@
 #include <cstdlib>
 #include <cstdarg>
 #include <climits>
+#include <type_traits>
 #include "thekogans/util/Config.h"
 
 /// \brief
@@ -94,40 +95,6 @@ namespace thekogans {
         /// 64 bit float type.
         using f64 = double;
 
-        /// \brief
-        /// bool type size.
-        static constexpr std::size_t BOOL_SIZE = sizeof (ui8);
-        /// \brief
-        /// Signed 8 bit type size.
-        static constexpr std::size_t I8_SIZE = sizeof (i8);
-        /// \brief
-        /// Unsigned 8 bit type size.
-        static constexpr std::size_t UI8_SIZE = sizeof (ui8);
-        /// \brief
-        /// Signed 16 bit type size.
-        static constexpr std::size_t I16_SIZE = sizeof (i16);
-        /// \brief
-        /// Unsigned 16 bit type size.
-        static constexpr std::size_t UI16_SIZE = sizeof (ui16);
-        /// \brief
-        /// Signed 32 bit type size.
-        static constexpr std::size_t I32_SIZE = sizeof (i32);
-        /// \brief
-        /// Unsigned 32 bit type size.
-        static constexpr std::size_t UI32_SIZE = sizeof (ui32);
-        /// \brief
-        /// Signed 64 bit type size.
-        static constexpr std::size_t I64_SIZE = sizeof (i64);
-        /// \brief
-        /// Unsigned 64 bit type size.
-        static constexpr std::size_t UI64_SIZE = sizeof (ui64);
-        /// \brief
-        /// 32 bit float type size.
-        static constexpr std::size_t F32_SIZE = sizeof (f32);
-        /// \brief
-        /// 64 bit float type size.
-        static constexpr std::size_t F64_SIZE = sizeof (f64);
-
         /// \struct Width Types.h thekogans/util/Types.h
         ///
         /// \brief
@@ -146,6 +113,40 @@ namespace thekogans {
         struct BitWidth {
             static constexpr std::size_t value = Width<T>::value * CHAR_BIT;
         };
+
+        /// \brief
+        /// bool type size.
+        static constexpr std::size_t BOOL_SIZE = Width<ui8>::value;
+        /// \brief
+        /// Signed 8 bit type size.
+        static constexpr std::size_t I8_SIZE = Width<i8>::value;
+        /// \brief
+        /// Unsigned 8 bit type size.
+        static constexpr std::size_t UI8_SIZE = Width<ui8>::value;
+        /// \brief
+        /// Signed 16 bit type size.
+        static constexpr std::size_t I16_SIZE = Width<i16>::value;
+        /// \brief
+        /// Unsigned 16 bit type size.
+        static constexpr std::size_t UI16_SIZE = Width<ui16>::value;
+        /// \brief
+        /// Signed 32 bit type size.
+        static constexpr std::size_t I32_SIZE = Width<i32>::value;
+        /// \brief
+        /// Unsigned 32 bit type size.
+        static constexpr std::size_t UI32_SIZE = Width<ui32>::value;
+        /// \brief
+        /// Signed 64 bit type size.
+        static constexpr std::size_t I64_SIZE = Width<i64>::value;
+        /// \brief
+        /// Unsigned 64 bit type size.
+        static constexpr std::size_t UI64_SIZE = Width<ui64>::value;
+        /// \brief
+        /// 32 bit float type size.
+        static constexpr std::size_t F32_SIZE = Width<f32>::value;
+        /// \brief
+        /// 64 bit float type size.
+        static constexpr std::size_t F64_SIZE = Width<f64>::value;
 
     } // namespace util
 } // namespace thekogans
@@ -184,19 +185,19 @@ namespace thekogans {
 
         /// \brief
         /// Natural machine word size.
-        static constexpr std::size_t MACHINE_WORD_SIZE = sizeof (MachineWord);
+        static constexpr std::size_t MACHINE_WORD_SIZE = Width<MachineWord>::value;
         /// \brief
         /// ssize_t type size.
-        static constexpr std::size_t SSIZE_T_SIZE = sizeof (ssize_t);
+        static constexpr std::size_t SSIZE_T_SIZE = Width<ssize_t>::value;
         /// \brief
         /// std::size_t type size.
-        static constexpr std::size_t SIZE_T_SIZE = sizeof (std::size_t);
+        static constexpr std::size_t SIZE_T_SIZE = Width<std::size_t>::value;
         /// \brief
         /// wchar_t type size.
-        static constexpr std::size_t CHAR_SIZE = sizeof (char);
+        static constexpr std::size_t CHAR_SIZE = Width<char>::value;
         /// \brief
         /// wchar_t type size.
-        static constexpr std::size_t WCHAR_T_SIZE = sizeof (wchar_t);
+        static constexpr std::size_t WCHAR_T_SIZE = Width<wchar_t>::value;
 
         /// \brief
         /// Serialized size of Endianness.
@@ -272,14 +273,22 @@ namespace thekogans {
         #define THEKOGANS_UTIL_INVALID_SESSION_ID_VALUE -1
     #endif // defined (TOOLCHAIN_OS_Windows)
 
-        /// \def THEKOGANS_UTIL_IS_ODD(value)
+        /// \brief
         /// Evaluates to true if the given value is odd.
         /// \param[in] value Value to test for odd.
-        #define THEKOGANS_UTIL_IS_ODD(value) (((value) & 1) == 1)
-        /// \def THEKOGANS_UTIL_IS_EVEN(value)
+        template<typename T>
+        constexpr bool IsOdd (T value) {
+            static_assert (std::is_integral_v<T>, "value must be an integral type.");
+            return (value & 1) != 0;
+        }
+        /// \brief
         /// Evaluates to true if the given value is even.
         /// \param[in] value Value to test for even.
-        #define THEKOGANS_UTIL_IS_EVEN(value) (((value) & 1) == 0)
+        template<typename T>
+        constexpr bool IsEven (T value) {
+            static_assert (std::is_integral_v<T>, "value must be an integral type.");
+            return (value & 1) == 0;
+        }
 
         /// \brief
         /// VERY IMPORTANT: index = 0 - most significant byte/word/doubleword
@@ -403,8 +412,7 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_ARRAY_SIZE(array)
         /// Calculate the number of elements in an array.
         /// \param[in] array Array whos size to calculate.
-        #define THEKOGANS_UTIL_ARRAY_SIZE(array)\
-            (sizeof (array) / sizeof (array[0]))
+        #define THEKOGANS_UTIL_ARRAY_SIZE(array) (sizeof (array) / sizeof (array[0]))
 
         /// \def THEKOGANS_UTIL_MERGE(prefix, lineNumber)
         /// Concatenate a prefix and line number for a unique name.

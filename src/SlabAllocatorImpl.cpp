@@ -46,6 +46,12 @@ namespace thekogans {
         }
 
         void SlabAllocatorImpl::Page::Free (Slot *slot) noexcept {
+            // The page is transitioning from full to partial.
+            // Wire it back in to the partial list.
+            if (THEKOGANS_UTIL_UNLIKELY (header.slotCount == header.allocator.slotsPerPage)) {
+                header.partialNext = header.allocator.partialPageList;
+                header.allocator.partialPageList = this;
+            }
             slot->next = header.freeList;
             header.freeList = slot;
             --header.slotCount;
@@ -54,12 +60,6 @@ namespace thekogans {
                 // so that Alloc grabs contiguous, cache friendly
                 // slots instead of pointer hoping.
                 header.freeList = nullptr;
-            }
-            // The page transitioned from full to partial.
-            // Wire it back in to partialPageList list.
-            if (THEKOGANS_UTIL_UNLIKELY (header.slotCount + 1 == header.allocator.slotsPerPage)) {
-                header.partialNext = header.allocator.partialPageList;
-                header.allocator.partialPageList = this;
             }
         }
 

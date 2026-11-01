@@ -211,8 +211,8 @@ namespace thekogans {
                 valueRange.factory = btree->valueFactory;
                 TransactedFile::Object::SharedPtr value;
                 valueRange >> value;
+                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*value);
                 entries[index].value = value.Release ();
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[index].value);
             }
             return entries[index].value;
         }
@@ -608,9 +608,9 @@ namespace thekogans {
                         for (ui32 i = 0; i < count; ++i) {
                             TransactedFile::Object::SharedPtr value;
                             keyValueRange >> value;
+                            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*value);
                             value->SetAggregate (true);
                             entries[i].value = value.Release ();
-                            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[i].value);
                         }
                     }
                 }
@@ -665,7 +665,7 @@ namespace thekogans {
                         keyValueRange << *entries[i].value;
                     }
                 }
-                if (file->GetAllocator ()->IsSecure ()) {
+                if (file->IsSecure ()) {
                     // Zero out the unused portion of the keyValueRange to
                     // prevent leaking sensitive data.
                     keyValueRange.Seek (
@@ -753,7 +753,7 @@ namespace thekogans {
                     (header.valueContext.NeedType () ||
                         value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
-                Node::Entry entry (key.Get (), value.Get ());
+                Node::Entry entry (key.Get (), value->GetOffset (), value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
                     // The path to the leaf node is full.

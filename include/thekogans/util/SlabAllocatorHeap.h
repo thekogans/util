@@ -20,13 +20,18 @@
 
 #include <cstddef>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
-#include "thekogans/util/Allocator.h"
-#include "thekogans/util/Singleton.h"
 #include "thekogans/util/SlabAllocatorImpl.h"
 
 namespace thekogans {
     namespace util {
+
+        /// \struct tk_mem_t
+        /// \brief The native return token for the high-performance heap.
+        /// maps perfectly to ARM64 registers (x0/x1) for zero-copy passing.
+        struct tk_mem_t {
+            void *ptr{nullptr};
+            std::size_t poolIndex{0};
+        };
 
         /// \struct SlabAllocatorHeap SlabAllocatorHeap.h thekogans/util/SlabAllocatorHeap.h
         ///
@@ -56,96 +61,45 @@ namespace thekogans {
                 {512, 64}, // 256B - 512B
                 {256, 32},
                 {128, 16},
-                {64,  8},
-                {32,  4},  // 1KiB - 8KiB
-                {32,  4},
-                {16,  2},
-                {16,  2},  // 16KiB - 64KiB
-                {8,   1},
-                {8,   1},  // 128KiB - 256KiB
-                {4,   1},
-                {2,   1},
-                {2,   1},
-                {2,   1}   // 512KiB - 4MiB
+                { 64, 8},
+                { 32, 4},  // 1KiB - 8KiB
+                { 32, 4},
+                { 16, 2},
+                { 16, 2},  // 16KiB - 64KiB
+                {  8, 1},
+                {  8, 1},  // 128KiB - 256KiB
+                {  4, 1},
+                {  2, 1},
+                {  2, 1},
+                {  2, 1}   // 512KiB - 4MiB
             };
 
             explicit SlabAllocatorHeap (
                 std::size_t minExp_ = DEFAULT_MIN_EXP,
                 std::size_t maxExp_ = DEFAULT_MAX_EXP,
                 const std::pair<std::size_t, std::size_t> poolConfig[] = DEFAULT_POOL_CONFIG);
+            /// \brief
+            /// dtor.
             ~SlabAllocatorHeap ();
 
             /// \brief
             /// Allocate a block from system heap.
             /// \param[in] size Size of block to allocate.
-            /// \return Pointer to the allocated block (0 if out of memory).
-            void *Alloc (std::size_t size);
+            /// \return Token (tk_mem_t) containing the block and the SlabAllocator index.
+            tk_mem_t Alloc (std::size_t size);
+            /// \brief
+            /// Return the true allocated block size (alligned to power of 2).
+            /// \param[in] mem tk_mem_t returned by Alloc.
+            /// \return True allocated block size.
+            std::size_t GetMemSize (tk_mem_t mem);
             /// \brief
             /// Free a previously Alloc(ated) block.
-            /// \param[in] ptr Pointer to the block returned by Alloc.
-            /// \param[in] size Same size parameter previously passed in to Alloc.
-            void Free (
-                void *ptr,
-                std::size_t size);
+            /// \param[in] mem Same tk_mem_t previously returned by Alloc.
+            void Free (tk_mem_t mem);
         };
 
-        /// \struct GlobalSlabAllocatorHeap SlabAllocatorHeap.h thekogans/util/SlabAllocatorHeap.h
-        ///
         /// \brief
-        /// GlobalSlabAllocatorHeap is part of the \see{Allocator} framework.
-        struct _LIB_THEKOGANS_UTIL_DECL GlobalSlabAllocatorHeap :
-                public Allocator,
-                public SlabAllocatorHeap,
-                public Singleton<
-                    GlobalSlabAllocatorHeap,
-                    SpinLock,
-                    RefCountedInstanceCreator<GlobalSlabAllocatorHeap>,
-                    NullInstanceDestroyer<GlobalSlabAllocatorHeap>> {
-            /// \brief
-            /// SlabAllocatorHeap participates in the \see{DynamicCreatable}
-            /// dynamic discovery and creation.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (GlobalSlabAllocatorHeap)
-
-            /// \brief
-            /// ctor.
-            /// Define the parameters of the global heap allocator.
-            /// \param[in] minExp The smallest object (2^minExp).
-            /// \param[in] maxExp The largest object (2^maxExp).
-            /// \param[in] poolConfig An array of maxExp - minExp + 1
-            /// std::pair<std::size_t /*SlotsPerPage*/, std::size_t /*TLCSize*/>.
-            explicit GlobalSlabAllocatorHeap (
-                std::size_t minExp = DEFAULT_MIN_EXP,
-                std::size_t maxExp = DEFAULT_MAX_EXP,
-                const std::pair<std::size_t, std::size_t> poolConfig[] = DEFAULT_POOL_CONFIG) :
-                SlabAllocatorHeap (minExp, maxExp, poolConfig) {}
-
-            /// \brief
-            /// Allocate a block from system heap.
-            /// \param[in] size Size of block to allocate.
-            /// \return Pointer to the allocated block (0 if out of memory).
-            virtual void *Alloc (std::size_t size) override {
-                return SlabAllocatorHeap::Alloc (size);
-            }
-            /// \brief
-            /// Free a previously Alloc(ated) block.
-            /// \param[in] ptr Pointer to the block returned by Alloc.
-            /// \param[in] size Same size parameter previously passed in to Alloc.
-            virtual void Free (
-                    void *ptr,
-                    std::size_t size) override {
-                SlabAllocatorHeap::Free (ptr, size);
-            }
-        };
-
-        /// \struct tk_mem_t
-        /// \brief The native return token for the high-performance heap.
-        /// maps perfectly to ARM64 registers (x0/x1) for zero-copy passing.
-        struct tk_mem_t {
-            void *ptr{nullptr};
-            std::size_t size{0};
-        };
-
-        /// \brief Initialize the GlobalSlabAllocatorHeap.
+        /// Initialize the GlobalSlabAllocatorHeap \see{Singleton}.
         /// \param[in] minExp The smallest object (2^minExp).
         /// \param[in] maxExp The largest object (2^maxExp).
         /// \param[in] poolConfig An array of maxExp - minExp + 1 pairs of <SlotsPerPage, TLCSize>.
@@ -157,12 +111,18 @@ namespace thekogans {
         /// \brief
         /// Direct lock-free replacement for std::malloc.
         /// \param[in] size Size of block to allocate.
-        /// \return A token containing the block pointer and the exact aligned capacity allocated.
+        /// \return A token containing the block pointer and the pool index.
         [[nodiscard]] tk_mem_t tk_malloc (std::size_t size) noexcept;
 
         /// \brief
-        /// Companion to tk_malloc. Bypasses metadata tracking via O(1) size lookups.
-        /// \param[in] mem The memory token originally returned by tk_malloc.
+        /// Return the true allocated block size (alligned to power of 2).
+        /// \param[in] mem tk_mem_t returned by tk_malloc.
+        /// \return True allocated block size.
+        std::size_t tk_mem_size (tk_mem_t mem) noexcept;
+
+        /// \brief
+        /// Companion to tk_malloc.
+        /// \param[in] mem tk_mem_t returned by tk_malloc.
         void tk_free (tk_mem_t mem) noexcept;
 
     } // namespace util

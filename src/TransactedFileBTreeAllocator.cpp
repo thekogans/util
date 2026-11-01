@@ -31,17 +31,16 @@ namespace thekogans {
         TransactedFileBTreeAllocator::TransactedFileBTreeAllocator (
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset,
-                bool secure,
                 std::size_t btreeEntriesPerNode_,
                 std::size_t btreeNodesPerPage_,
                 util::Allocator::SharedPtr allocator_) :
-                Allocator (file, offset, secure),
+                TransactedFile::Object (file, offset),
                 btreeEntriesPerNode (btreeEntriesPerNode_),
                 btreeNodesPerPage (btreeNodesPerPage_),
                 allocator (allocator_),
                 btree (new BTree (file, 0, btreeEntriesPerNode, btreeNodesPerPage, allocator)),
                 btreeNodeFileSize (BTree::Node::FileSize (btreeNodesPerPage)) {
-            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+            btree->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             Reload ();
         }
 
@@ -182,7 +181,7 @@ namespace thekogans {
                     offset = file->Grow (TransactedFile::Block::SIZE + size) + TransactedFile::Block::HEADER_SIZE;
                     // Most file systems will fill the new space with '0' bytes
                     // but we can't take a chance and do it ourselves.
-                    if (IsSecure ()) {
+                    if (file->IsSecure ()) {
                         TransactedFile::Range range (file, offset, size, false);
                         range.Seek (
                             SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
@@ -208,7 +207,7 @@ namespace thekogans {
                     TransactedFile::Block prev (file);
                     if (block.Prev (prev) && prev.IsFree ()) {
                         btree->Remove (BTree::Key (prev.GetSize (), prev.GetOffset ()));
-                        if (IsSecure ()) {
+                        if (file->IsSecure ()) {
                             // Assume prev body is clear.
                             clearOffset -= TransactedFile::Block::HEADER_SIZE;
                             clearLength += TransactedFile::Block::HEADER_SIZE;
@@ -226,7 +225,7 @@ namespace thekogans {
                     TransactedFile::Block next (file);
                     if (block.Next (next) && next.IsFree ()) {
                         btree->Remove (BTree::Key (next.GetSize (), next.GetOffset ()));
-                        if (IsSecure ()) {
+                        if (file->IsSecure ()) {
                             // Assume next body is clear.
                             clearLength += TransactedFile::Block::HEADER_SIZE;
                         }
@@ -245,7 +244,7 @@ namespace thekogans {
                         btree->Insert (BTree::Key (block.GetSize (), block.GetOffset ()));
                         block.SetFree (true);
                         block.Write ();
-                        if (IsSecure ()) {
+                        if (file->IsSecure ()) {
                             TransactedFile::Range range (file, clearOffset, clearLength, false);
                             range.Seek (
                                 SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
@@ -304,7 +303,7 @@ namespace thekogans {
                             TransactedFile::Block::FLAGS_FREE,
                             remainder - TransactedFile::Block::SIZE);
                         next.Write ();
-                        if (IsSecure ()) {
+                        if (file->IsSecure ()) {
                             TransactedFile::Range range (file, next.GetOffset (), next.GetSize (), false);
                             range.Seek (
                                 SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
@@ -332,11 +331,11 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::Read (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
-            Allocator::Read (serializer);
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
                 serializer >> header;
+                btree->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                 btree.Reset (
                     new BTree (
                         file,
@@ -344,7 +343,7 @@ namespace thekogans {
                         btreeEntriesPerNode,
                         btreeNodesPerPage,
                         allocator));
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*btree);
+                btree->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 btreeNodeFileSize = BTree::Node::FileSize (btree->header.entriesPerNode);
             }
             else {
@@ -363,7 +362,6 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocator::Write (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
-            Allocator::Write (serializer);
             serializer << MAGIC32 << header;
         }
 

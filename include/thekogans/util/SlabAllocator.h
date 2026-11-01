@@ -31,11 +31,11 @@ namespace thekogans {
     namespace util {
 
         // The Scoped / Local version. Will clean up after itself.
-        template <typename T, typename... Policies>
+        template<typename T, typename... Policies>
         using ScopedSlabAllocator = detail::SlabAllocator<T, Policies...>;
 
         // The Global Singleton version. Will NOT clean up after itself.
-        template <typename T, typename... Policies>
+        template<typename T, typename... Policies>
         using GlobalSlabAllocator = Singleton<
             detail::SlabAllocator<T, Policy::IsSingleton<true>, Policies...>,
             typename detail::GetTypePolicy<Policy::Lock, SpinLock, Policies...>::type,
@@ -43,12 +43,12 @@ namespace thekogans {
             NullInstanceDestroyer<detail::SlabAllocator<T, Policy::IsSingleton<true>, Policies...>>>;
 
         // Scoped / Single Threaded version. Will clean up after itself.
-        template <typename T, typename... Policies>
+        template<typename T, typename... Policies>
         using PersonalScopedSlabAllocator =
             ScopedSlabAllocator<T, Policy::TLCSize<0>, Policy::Lock<NullLock>, Policies...>;
 
         // The Global / Single Threaded version. Will NOT clean up after itself.
-        template <typename T, typename... Policies>
+        template<typename T, typename... Policies>
         using PersonalGlobalSlabAllocator =
             GlobalSlabAllocator<T, Policy::TLCSize<0>, Policy::Lock<NullLock>, Policies...>;
 

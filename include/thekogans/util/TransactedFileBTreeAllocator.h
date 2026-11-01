@@ -97,7 +97,7 @@ namespace thekogans {
         public:
             /// \brief
             /// Allocator size on disk.
-            static const std::size_t SIZE = Allocator::Header::SIZE + Header::SIZE;
+            static const std::size_t SIZE = Header::SIZE;
 
             // NOTE: The following constants are meant to be tuned during
             // system integration to provide the best performance for your
@@ -120,7 +120,6 @@ namespace thekogans {
             TransactedFileBTreeAllocator (
                 TransactedFile::SharedPtr file = nullptr,
                 TransactedFile::AddressType offset = 0,
-                bool secure = false,
                 std::size_t btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
                 std::size_t btreeNodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
                 util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
@@ -163,6 +162,10 @@ namespace thekogans {
                     TransactedFile::AddressType offset) noexcept override {
                 TransactedFile::Object::Init (file, offset);
                 btree->Init (file, header.btreeOffset);
+            }
+            virtual void AllocBlock () override {
+                TransactedFile::Object::AllocBlock ();
+                file->SetAllocatorOffset (offset);
             }
 
             // TransactedFile::ObjectEvents

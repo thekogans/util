@@ -68,17 +68,17 @@ namespace thekogans {
         }
 
         bool Roots::EnableRoot (const std::string &path) {
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                if (value[i]->GetPath () == path) {
-                    if (!value[i]->IsActive ()) {
-                        value[i]->SetActive (true);
+            for (auto root : value) {
+                if (root->GetPath () == path) {
+                    if (!root->IsActive ()) {
+                        root->SetActive (true);
                         SetDirty ();
                         util::Producer<RootsEvents>::Produce (
                             std::bind (
                                 &RootsEvents::OnRootsRootEnabled,
                                 std::placeholders::_1,
                                 this,
-                                value[i]));
+                                root));
                     }
                     return true;
                 }
@@ -87,17 +87,17 @@ namespace thekogans {
         }
 
         bool Roots::DisableRoot (const std::string &path) {
-            for (std::size_t i = 0, count = value.size (); i < count; ++i) {
-                if (value[i]->GetPath () == path) {
-                    if (value[i]->IsActive ()) {
-                        value[i]->SetActive (false);
+            for (auto root : value) {
+                if (root->GetPath () == path) {
+                    if (root->IsActive ()) {
+                        root->SetActive (false);
                         SetDirty ();
                         util::Producer<RootsEvents>::Produce (
                             std::bind (
                                 &RootsEvents::OnRootsRootDisabled,
                                 std::placeholders::_1,
                                 this,
-                                value[i]));
+                                root));
                     }
                     return true;
                 }
@@ -151,13 +151,13 @@ namespace thekogans {
 
         void Roots::OnRootScanPath (
                 Root::SharedPtr /*root*/,
-                const std::string &path) throw () {
+                const std::string &path) noexcept {
             std::cout << path << "\n";
         }
 
         void Roots::OnRootFindPath (
                 Root::SharedPtr /*root*/,
-                const std::string &path) throw () {
+                const std::string &path) noexcept {
             std::cout << path << "\n";
         }
 

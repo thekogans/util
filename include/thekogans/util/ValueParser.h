@@ -32,7 +32,6 @@ namespace thekogans {
         /// \brief
         /// ValueParser is a template used to incrementally assemble values from stream
         /// like \see{Serializer}s.
-
         template<typename T>
         struct ValueParser {
         private:
@@ -86,7 +85,6 @@ namespace thekogans {
         ///
         /// \brief
         /// Specialization of ValueParser for ui8 *.
-
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<ui8 *> {
         private:
@@ -135,7 +133,6 @@ namespace thekogans {
         /// \brief
         /// Specialization of ValueParser for \see{SizeT}. \see{SizeT} can be any unsigned
         /// type (ui8, ui16, ui32, ui64, SizeT).
-
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<SizeT> {
             enum Type {
@@ -215,7 +212,6 @@ namespace thekogans {
         /// length prefixed (Pascal) or delimited (C). The length prefix can be any unsigned
         /// type (\see{ui8}, \see{ui16}, \see{ui32}, \see{ui64}, \see{SizeT}). The delimiter
         /// can be of any length.
-
         template<>
         struct _LIB_THEKOGANS_UTIL_DECL ValueParser<std::string> {
         private:
