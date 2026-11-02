@@ -17,7 +17,6 @@
 
 #include <cstring>
 #include <regex>
-#include "thekogans/util/Heap.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
@@ -27,7 +26,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::StringKey, 1, 0, TransactedFileBTree::Key::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (StringKey)
 
         i32 StringKey::PrefixCompare (const Key &key_) const {
             return ignoreCase ?
@@ -43,7 +41,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::GUIDKey, 1, GUID::SIZE, TransactedFileBTree::Key::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (GUIDKey)
 
         i32 GUIDKey::PrefixCompare (const Key &key_) const {
             return StringCompare (hexString.c_str (), key_.ToString ().c_str (), hexString.size ());

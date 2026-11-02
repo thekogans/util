@@ -292,7 +292,8 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_);
+                Registry::SharedPtr registry_,
+                bool forceTruncate);
 
         public:
             /// \brief

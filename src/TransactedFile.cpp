@@ -125,6 +125,23 @@ namespace thekogans {
             }
         }
 
+        namespace {
+            struct HandleGuard {
+                THEKOGANS_UTIL_HANDLE handle;
+                bool dismissed = false;
+                ~HandleGuard () {
+                    if (!dismissed && handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
+                        // If we exit via exception, close the handle immediately
+                    #if defined (TOOLCHAIN_OS_Windows)
+                        ::CloseHandle (handle);
+                    #else
+                        ::close (handle);
+                    #endif
+                    }
+                }
+            };
+        }
+
         TransactedFile::TransactedFile (const std::string &path) :
                 size (0),
                 pageMap (nullptr),
@@ -150,6 +167,7 @@ namespace thekogans {
             fcntl (handle, F_NOCACHE, 1);
         #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
+            HandleGuard guard{handle};
             size = GetSize ();
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             BlockRange headerRange (this, Block::HEADER_SIZE);
@@ -158,13 +176,15 @@ namespace thekogans {
             allocayorRange >> allocator;
             BlockRange registryRange (this, header.registryOffset);
             registryRange >> registry;
+            guard.dismissed = true;
         }
 
         TransactedFile::TransactedFile (
                 Endianness endianness,
                 const std::string &path,
                 Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) :
+                Registry::SharedPtr registry_,
+                bool forceTruncate) :
                 size (0),
                 pageMap (nullptr),
                 allocator (allocator_),
@@ -173,14 +193,16 @@ namespace thekogans {
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
         #if defined (TOOLCHAIN_OS_Windows)
+            DWORD disposition = forceTruncate ? TRUNCATE_EXISTING : CREATE_NEW;
             File::Open (
                 path,
                 GENERIC_READ | GENERIC_WRITE,
                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                CREATE_ALWAYS,
+                disposition,
                 FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
         #else // defined (TOOLCHAIN_OS_Windows)
-            i32 flags = O_RDWR | O_CREAT | O_TRUNC;
+            i32 flags = O_RDWR | O_CREAT;
+            flags |= forceTruncate ? O_TRUNC : O_EXCL;
         #if defined (TOOLCHAIN_OS_Linux)
             flags |= O_DIRECT;
         #endif // defined (TOOLCHAIN_OS_Linux)
@@ -189,6 +211,7 @@ namespace thekogans {
             fcntl (handle, F_NOCACHE, 1);
         #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
+            HandleGuard guard{handle};
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Transaction transaction (*this);
             Grow (Block::SIZE + Header::SIZE);
@@ -198,6 +221,7 @@ namespace thekogans {
             allocator->Init (this, 0);
             registry->Init (this, 0);
             transaction.Commit ();
+            guard.dismissed = true;
         }
 
         TransactedFile::~TransactedFile () {
@@ -245,11 +269,14 @@ namespace thekogans {
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry,
                 bool overwrite) {
-            if (Path (path).Exists () && !overwrite) {
+            bool exists = Path (path).Exists ();
+            if (exists && !overwrite) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "TransactedFile %s exists.", path.c_str ());
             }
-            return SharedPtr (new TransactedFile (endianness, path, allocator, registry), false);
+            return SharedPtr (
+                new TransactedFile (
+                    endianness, path, allocator, registry, exists && overwrite), false);
         }
 
         void TransactedFile::Close () {

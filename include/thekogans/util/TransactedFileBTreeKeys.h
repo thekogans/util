@@ -20,6 +20,7 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
+#include "thekogans/util/SlabAllocator.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/util/GUID.h"
@@ -40,7 +41,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringKey)
             /// \brief
             /// StringKey has a private heap to help with memory fragmentation.
-            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (StringKey)
 
             /// \brief
             /// The actual key.
@@ -111,7 +112,7 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (GUIDKey)
             /// \brief
             /// GUIDKey has a private heap to help with memory fragmentation.
-            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (GUIDKey)
 
             /// \brief
             /// The actual key.

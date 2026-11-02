@@ -211,7 +211,7 @@ namespace thekogans {
                 valueRange.factory = btree->valueFactory;
                 TransactedFile::Object::SharedPtr value;
                 valueRange >> value;
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*value);
+                value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 entries[index].value = value.Release ();
             }
             return entries[index].value;
@@ -359,7 +359,7 @@ namespace thekogans {
                 // either be overwritten or removed below.
                 entries[index].key->Release ();
                 if (entries[index].value != nullptr) {
-                    entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
+                    entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                     entries[index].value->Release ();
                 }
                 if (child != nullptr) {
@@ -371,8 +371,7 @@ namespace thekogans {
                     entries[index].valueOffset = leaf->entries[0].valueOffset;
                     entries[index].value = leaf->entries[0].value;
                     if (entries[index].value != nullptr) {
-                        entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
-                        Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[index].value);
+                        entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                     }
                     SetDirty ();
                     child->Remove (*leaf->entries[0].key);
@@ -438,8 +437,7 @@ namespace thekogans {
             left->entries[lastIndex].right = right;
             entries[index] = left->entries[lastIndex];
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[index].value);
+                entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }
             left->RemoveEntry (lastIndex);
             SetDirty ();
@@ -458,8 +456,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             entries[index] = right->entries[0];
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[index].value);
+                entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }
             right->RemoveEntry (0);
             SetDirty ();
@@ -489,8 +486,8 @@ namespace thekogans {
                 node->count * sizeof (Entry));
             for (ui32 i = 0; i < node->count; ++i) {
                 if (node->entries[i].value != nullptr) {
-                    node->entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
-                    node->Subscriber<TransactedFile::ObjectEvents>::Subscribe (*node->entries[i].value);
+                    node->entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                    node->entries[i].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
                 }
             }
             count = splitIndex;
@@ -507,8 +504,8 @@ namespace thekogans {
             count += node->count;
             for (ui32 i = oldCount; i < count; ++i) {
                 if (entries[i].value != nullptr) {
-                    entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
-                    Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[i].value);
+                    entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
+                    entries[i].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
             }
             node->count = 0;
@@ -525,15 +522,14 @@ namespace thekogans {
                 (count++ - index) * sizeof (Entry));
             entries[index] = entry;
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
-                Subscriber<TransactedFile::ObjectEvents>::Subscribe (*entries[index].value);
+                entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }
             SetDirty ();
         }
 
         void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
+                entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
             }
             std::memcpy (
                 entries + index,
@@ -559,7 +555,7 @@ namespace thekogans {
                         entries[i].key = nullptr;
                     }
                     if (entries[i].value != nullptr) {
-                        entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe ();
+                        entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                         entries[i].value->Release ();
                         entries[i].value = nullptr;
                     }
@@ -608,7 +604,7 @@ namespace thekogans {
                         for (ui32 i = 0; i < count; ++i) {
                             TransactedFile::Object::SharedPtr value;
                             keyValueRange >> value;
-                            Subscriber<TransactedFile::ObjectEvents>::Subscribe (*value);
+                            value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                             value->SetAggregate (true);
                             entries[i].value = value.Release ();
                         }
