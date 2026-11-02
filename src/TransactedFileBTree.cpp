@@ -168,6 +168,8 @@ namespace thekogans {
                 TransactedFile::AddressType offset) {
             if (offset != 0) {
                 TransactedFile::BlockRange range (btree.file, offset);
+                SerializableHeader header;
+                range >> header;
                 ui32 magic;
                 range >> magic;
                 if (magic == MAGIC32) {

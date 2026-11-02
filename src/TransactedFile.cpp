@@ -271,8 +271,7 @@ namespace thekogans {
                 bool overwrite) {
             bool exists = Path (path).Exists ();
             if (exists && !overwrite) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "TransactedFile %s exists.", path.c_str ());
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("TransactedFile %s exists.", path.c_str ());
             }
             return SharedPtr (
                 new TransactedFile (

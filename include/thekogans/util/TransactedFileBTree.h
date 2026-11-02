@@ -364,13 +364,13 @@ namespace thekogans {
                         right (nullptr) {}
 
                     /// \brief
-                    /// Entry size on disk.
+                    /// Entry size on disk (IsValueAsObject).
                     static const std::size_t SIZE_WITH_VALUE =
                         TransactedFile::AddressTypeSize + // valueOffset;
                         TransactedFile::AddressTypeSize;  // rightOffset;
 
                     /// \brief
-                    /// Entry size on disk.
+                    /// Entry size on disk (!IsValueAsObject).
                     static const std::size_t SIZE_WITHOUT_VALUE =
                         TransactedFile::AddressTypeSize; // rightOffset;
                 };
@@ -419,13 +419,6 @@ namespace thekogans {
                 /// Return value at entry index.
                 /// \return Value at entry index.
                 TransactedFile::Object::SharedPtr GetValue (ui32 index);
-                /// \brief
-                /// Set value at the given \see{Entry} index.
-                /// \param[in] index \see{Entry} index to set the new value at.
-                /// \param[in] value New \see{Value} to set.
-                void SetValue (
-                    ui32 index,
-                    TransactedFile::Object::SharedPtr value);
                 /// \brief
                 /// Return the left child of an entry at the given index.
                 /// NOTE: If you need the very last (right) child, call
@@ -665,7 +658,7 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] file \see{TransactedFile} where the btree resides.
-            /// \param[in] offset Heap offset of the \see{Header} block.
+            /// \param[in] offset \see{TransactedFile} offset of the \see{Header} block.
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
             /// will store any type derived from \see{TransactedFile::Object}.
