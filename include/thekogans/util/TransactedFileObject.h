@@ -62,13 +62,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Object :
     /// Object is a \see{util::DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Object)
 
-#if defined (THEKOGANS_UTIL_TYPE_Static)
-    /// \brief
-    /// Register all known derivatives. This method is meant to be added
-    /// to as new Allocator derivatives are added to the system.
-    static void StaticInit ();
-#endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
 protected:
     /// \brief
     /// \see{TransactedFile} whose \see{TransactedFileEvents}
@@ -86,10 +79,70 @@ public:
         file (nullptr),
         offset (0) {Init (file, offset);}
 
+    /// \brief
+    /// Type deleter method.
+    using DeleterType =
+        std::function<void (
+            TransactedFile::SharedPtr /*file*/,
+            AddressType /*offset*/)>;
+    /// \brief
+    /// Maps type name to it's deleter method.
+    using DeleterMapType = std::unordered_map<
+        const char *, DeleterType, CharPtrHash, CharPtrEqual>;
+
+    static DeleterMapType &GetDeleters () {
+        static DeleterMapType deleters;
+        return deleters;
+    }
+
     static DynamicCreatable::SharedPtr CreateObject (
         const char *type,
         TransactedFile::SharedPtr file,
         AddressType offset);
+    static void DeleteObject (
+        const char *type,
+        TransactedFile::SharedPtr file,
+        AddressType offset);
+    static void FreeObject (
+            TransactedFile::SharedPtr file,
+            AddressType offset) {
+        file->GetAllocator ()->Free (offset);
+    }
+
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    /// \brief
+    /// Register all known bases. This method is meant to be added
+    /// to as new DynamicCreatable bases are added to the system.
+    /// NOTE: If you create DynamicCreatable bases (see \see{Hash},
+    /// \see{Allocator}...) you should add your own static initializer
+    /// to register their derived classes.
+    static void StaticInit ();
+#else // defined (THEKOGANS_UTIL_TYPE_Static)
+    /// \struct DynamicCreatable::BaseMapInitializer DynamicCreatable.h
+    /// thekogans/util/DynamicCreatable.h
+    ///
+    /// \brief
+    /// BaseMapInitializer is used to initialize the DynamicCreatable::Map.
+    /// It should not be used directly, and instead is included
+    /// in THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE/
+    /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE.
+    /// If you are deriving from DynamicCreatable, add
+    /// THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (for base classes) or
+    /// THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (for derived classes) to it's
+    /// declaration, and THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE to it's definition.
+    struct _LIB_THEKOGANS_UTIL_DECL DeleterMapInitializer {
+        /// \brief
+        /// ctor.
+        /// \param[in] type DynamicCreatable type (it's class name).
+        /// \param[in] deleter DynamicCreatable creation factory.
+        DeleterMapInitializer (
+                const char *type,
+                DeleterType deleter) {
+            DeleterMapType &deleterMap = GetDeleters ();
+            deleterMap[type] = deleter;
+        }
+    };
+#endif // defined (THEKOGANS_UTIL_TYPE_Shared)
 
     /// \brief
     /// Return the file.

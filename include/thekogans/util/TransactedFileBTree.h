@@ -47,7 +47,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTree : public TransactedFile::Object {
             /// \brief
             /// TransactedFileBTree is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTree)
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTree)
 
             /// \struct TransactedFileBTree::Key TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
             ///

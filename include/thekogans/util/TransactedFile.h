@@ -533,6 +533,45 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
 
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        /// \def THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Declare the static base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+        public:\
+            static void StaticInitEx ();
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Define the static base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+            void _T::StaticInitEx () {\
+                StaticInit ();\
+                thekogans::util::TransactedFile::Object::DeleterMapType &deleterMap =\
+                    thekogans::util::TransactedFile::Object::GetDeleters ();\
+                deleterMap[_T::TYPE] = _T::FreeObject;\
+            }
+    #else // defined (THEKOGANS_UTIL_TYPE_Static)
+        /// \def THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Declare the shared base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+        public:\
+            static const thekogans::util::TransactedFile::Object::DeleterMapInitializer deleterMapInitializer;
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Define the shared base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+            const thekogans::util::TransactedFile::Object::DeleterMapInitializer _T::deleterMapInitializer (\
+                _T::TYPE, _T::FreeObject);
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT(_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (_T)\
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (\
+                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
             TransactedFile::Range &range,
             TransactedFile::Object::SharedPtr &object);

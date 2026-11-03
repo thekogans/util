@@ -501,8 +501,13 @@ namespace thekogans {
                 TransactedFile::Object::SharedPtr &object) {
             SerializableHeader header;
             range >> header;
-            object = TransactedFile::Object::CreateObject (
-                header.type.c_str (), range.GetFile (), range.GetOffset ());
+            if (range.factory != nullptr) {
+                object = range.factory (range.parameters);
+            }
+            else {
+                object = TransactedFile::Object::CreateObject (
+                    header.type.c_str (), range.GetFile (), range.GetOffset ());
+            }
             if (object != nullptr) {
                 if (header.version <= object->Version ()) {
                     Serializer::ContextGuard guard (range, header);

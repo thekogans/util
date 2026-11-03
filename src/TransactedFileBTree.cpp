@@ -170,33 +170,47 @@ namespace thekogans {
                 TransactedFile::BlockRange range (btree.file, offset);
                 SerializableHeader header;
                 range >> header;
-                ui32 magic;
-                range >> magic;
-                if (magic == MAGIC32) {
-                    ui32 count;
-                    range >> count;
-                    if (count > 0) {
-                        TransactedFile::AddressType leftOffset;
-                        TransactedFile::AddressType keyValueOffset;
-                        range >> leftOffset >> keyValueOffset;
-                        btree.GetFile ()->GetAllocator ()->Free (keyValueOffset);
-                        FreeSubtree (btree, leftOffset);
-                        for (ui32 i = 0; i < count; ++i) {
-                            if (btree.header.IsValueAsObject ()) {
-                                TransactedFile::AddressType valueOffset;
-                                range >> valueOffset;
-                                btree.GetFile ()->GetAllocator ()->Free (valueOffset);
+                if (header.type == TYPE) {
+                    ui32 magic;
+                    range >> magic;
+                    if (magic == MAGIC32) {
+                        ui32 count;
+                        range >> count;
+                        if (count > 0) {
+                            TransactedFile::AddressType leftOffset;
+                            TransactedFile::AddressType keyValueOffset;
+                            range >> leftOffset >> keyValueOffset;
+                            btree.GetFile ()->GetAllocator ()->Free (keyValueOffset);
+                            FreeSubtree (btree, leftOffset);
+                            for (ui32 i = 0; i < count; ++i) {
+                                if (btree.header.IsValueAsObject ()) {
+                                    TransactedFile::AddressType valueOffset;
+                                    range >> valueOffset;
+                                    TransactedFile::BlockRange valueRange (btree.file, valueOffset);
+                                    TransactedFile::Object::SharedPtr value;
+                                    valueRange >> value;
+                                    if (value != nullptr) {
+                                        value->FreeBlock ();
+                                    }
+                                }
+                                TransactedFile::AddressType rightOffset;
+                                range >> rightOffset;
+                                FreeSubtree (btree, rightOffset);
                             }
-                            TransactedFile::AddressType rightOffset;
-                            range >> rightOffset;
-                            FreeSubtree (btree, rightOffset);
                         }
+                        btree.GetFile ()->GetAllocator ()->Free (offset);
                     }
-                    btree.GetFile ()->GetAllocator ()->Free (offset);
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                            offset);
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                        "Header type: %s != TransactedFileBTree::Node type: %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                        header.type.c_str (),
+                        TYPE,
                         offset);
                 }
             }
@@ -679,11 +693,10 @@ namespace thekogans {
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (
             thekogans::util::TransactedFileBTree,
             1,
-            0,
-            TransactedFile::Object::TYPE)
+            0)
 
         TransactedFileBTree::TransactedFileBTree (
                 TransactedFile::SharedPtr file,

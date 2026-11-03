@@ -31,7 +31,7 @@ namespace thekogans {
         void TransactedFile::Object::StaticInit () {
             TransactedFileBTreeAllocator::StaticInit ();
             TransactedFileBTreeRegistry::StaticInit ();
-            TransactedFileBTree::StaticInit ();
+            TransactedFileBTree::StaticInitEx ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
@@ -48,6 +48,15 @@ namespace thekogans {
                 });
         }
 
+        void TransactedFile::Object::DeleteObject (
+                const char *type,
+                TransactedFile::SharedPtr file,
+                AddressType offset) {
+            DeleterMapType::const_iterator it = GetDeleters ().find (type);
+            if (it != GetDeleters ().end ()) {
+                it->second (file, offset);
+            }
+        }
 
         void TransactedFile::Object::SetAggregate (bool aggregate_) {
             if (aggregate != aggregate_) {

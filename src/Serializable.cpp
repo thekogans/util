@@ -46,8 +46,8 @@ namespace thekogans {
             TransactedFile::Registry::StaticInit ();
             TransactedFileBTree::Key::StaticInit ();
             StringValue::StaticInit ();
-            PtrValue::StaticInit ();
             StringArrayValue::StaticInit ();
+            AddressArrayValue::StaticInit ();
             GUIDArrayValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
