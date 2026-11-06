@@ -80,10 +80,6 @@ protected:
     /// corruption.
     struct _LIB_THEKOGANS_UTIL_DECL Header {
         /// \brief
-        /// Allocator derivatives can use this flag to start their own flag list
-        /// without fear of stepping on Allocator's toes.
-        static const ui32 FLAGS_FIRST_ALLOCATOR_FLAG = 1 << 16;
-        /// \brief
         /// A combination of FLAGS_FREE and allocator specific flags.
         Flags32 flags;
         /// \brief
@@ -130,9 +126,12 @@ protected:
         /// Read the header from the disk.
         /// \param[in] file File to read from.
         /// \param[in] offset Offset where the header begins.
+        /// \param[in] header true == true, we're parsing the header,
+        /// flase == we're parsing the footer.
         void Read (
             TransactedFile::SharedPtr file,
-            AddressType offset);
+            AddressType offset,
+            bool header);
         /// \brief
         /// Write the header to the disk.
         /// \param[in] file TransactedFile to write to.
@@ -143,15 +142,75 @@ protected:
     } header;
 
 public:
+    struct _LIB_THEKOGANS_UTIL_DECL Exception : public util::Exception {
+        /// \brief
+        /// Header magic is corrupt.
+        static constexpr THEKOGANS_UTIL_ERROR_CODE CORRUPT_HEADER = 1;
+        /// \brief
+        /// Footer magic is corrupt.
+        static constexpr THEKOGANS_UTIL_ERROR_CODE CORRUPT_FOOTER = 2;
+        /// \brief
+        /// Header and Footer don't match.
+        static constexpr THEKOGANS_UTIL_ERROR_CODE HEADER_FOOTER_MISMATCH = 3;
+
+    private:
+        AddressType offset;
+        ui32 magic;
+        Header header;
+        Header footer;
+
+    public:
+        Exception (
+            THEKOGANS_UTIL_ERROR_CODE errorCode,
+            const char *message,
+            AddressType offset_,
+            ui32 magic_) :
+            util::Exception (errorCode, message),
+            offset (offset_),
+            magic (magic_) {}
+        Exception (
+            THEKOGANS_UTIL_ERROR_CODE errorCode,
+            const char *message,
+            AddressType offset_,
+            const Header &header_,
+            const Header &footer_) :
+            util::Exception (errorCode, message),
+            offset (offset_),
+            magic (0),
+            header (header_),
+            footer (footer_) {}
+
+        inline AddressType GetOffset () const noexcept {
+            return offset;
+        }
+        inline ui32 GetMagic () const noexcept {
+            return magic;
+        }
+        inline Flags32 GetHeaderFlags () const noexcept {
+            return header.flags;
+        }
+        inline SizeType GetHeaderSize () const noexcept {
+            return header.size;
+        }
+        inline Flags32 GetFooterFlags () const noexcept {
+            return footer.flags;
+        }
+        inline SizeType GetFooterSize () const noexcept {
+            return footer.size;
+        }
+    };
+
     /// \brief
     /// If this flag is set, the block is free. Otherwise it's allocated.
-    static const ui32 FLAGS_FREE = 1;
+    static constexpr ui32 FLAGS_FREE = 1;
     /// \brief
     /// Exposed because header is private.
-    static const std::size_t HEADER_SIZE = Header::SIZE;
+    static constexpr std::size_t HEADER_SIZE = Header::SIZE;
     /// \brief
     /// Block size on disk.
-    static const std::size_t SIZE = HEADER_SIZE + HEADER_SIZE;
+    static constexpr std::size_t SIZE = HEADER_SIZE + HEADER_SIZE;
+
+    static constexpr AddressType BLOCK_0_OFFSET = HEADER_SIZE;
 
     /// \brief
     /// ctor.
@@ -220,7 +279,7 @@ public:
     /// Return true if this is the first block in the heap.
     /// \return true == first block in the heap.
     inline bool IsFirst () const {
-        return GetOffset () == HEADER_SIZE;
+        return GetOffset () == BLOCK_0_OFFSET;
     }
     /// \brief
     /// Return true if this is the last block in the heap.

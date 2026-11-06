@@ -62,6 +62,8 @@ struct _LIB_THEKOGANS_UTIL_DECL Object :
     /// Object is a \see{util::DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Object)
 
+    static constexpr ui32 MAGIC = 0x4F424A21; // 'OBJ!'
+
 protected:
     /// \brief
     /// \see{TransactedFile} whose \see{TransactedFileEvents}
@@ -71,6 +73,7 @@ protected:
     /// Our address inside the \see{TransactedFile}.
     AddressType offset;
     bool aggregate{false};
+    bool destroyed{false};
 
 public:
     Object (
@@ -99,37 +102,21 @@ public:
         const char *type,
         TransactedFile::SharedPtr file,
         AddressType offset);
-    static void DeleteObject (
-        const char *type,
+    static void DestroyObject (
         TransactedFile::SharedPtr file,
         AddressType offset);
     static void FreeObject (
-            TransactedFile::SharedPtr file,
-            AddressType offset) {
-        file->GetAllocator ()->Free (offset);
-    }
+        TransactedFile::SharedPtr file,
+        AddressType offset);
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     /// \brief
-    /// Register all known bases. This method is meant to be added
-    /// to as new DynamicCreatable bases are added to the system.
-    /// NOTE: If you create DynamicCreatable bases (see \see{Hash},
-    /// \see{Allocator}...) you should add your own static initializer
-    /// to register their derived classes.
     static void StaticInit ();
 #else // defined (THEKOGANS_UTIL_TYPE_Static)
-    /// \struct DynamicCreatable::BaseMapInitializer DynamicCreatable.h
-    /// thekogans/util/DynamicCreatable.h
+    /// \struct TransactedFile::Object::DeleterMapInitializer TransactedFileObject.h
+    /// thekogans/util/TransactedFileObject.h
     ///
     /// \brief
-    /// BaseMapInitializer is used to initialize the DynamicCreatable::Map.
-    /// It should not be used directly, and instead is included
-    /// in THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE/
-    /// THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE.
-    /// If you are deriving from DynamicCreatable, add
-    /// THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE (for base classes) or
-    /// THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE (for derived classes) to it's
-    /// declaration, and THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE to it's definition.
     struct _LIB_THEKOGANS_UTIL_DECL DeleterMapInitializer {
         /// \brief
         /// ctor.
@@ -158,7 +145,19 @@ public:
         return offset;
     }
 
+    // Serializable
+    /// \brief
+    /// Return the binary size of the serializable including the header.
+    /// \param[in] context Partially filled in \see{SerializableHeader}.
+    /// \return Size of the binary serializable including the header.
+    virtual std::size_t GetSize (
+        const SerializableHeader &context = SerializableHeader ()) const noexcept override;
+
     void SetAggregate (bool aggregate_);
+
+    inline bool IsDestroyed () const {
+        return destroyed;
+    }
 
     inline bool IsDirty () {
         return file->Producer<TransactedFileEvents>::IsSubscribed (*this);
@@ -208,8 +207,6 @@ protected:
     /// \param[in] file \see{TransactedFile} aborting the transaction.
     virtual void OnTransactedFileTransactionAbort (
         TransactedFile::SharedPtr /*file*/) noexcept override;
-
-    friend struct TransactedFile;
 
     /// \brief
     /// Object is neither copy constructable, nor assignable.

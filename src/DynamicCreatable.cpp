@@ -43,7 +43,7 @@ namespace thekogans {
             Logger::StaticInit ();
             Serializer::StaticInit ();
             Serializable::StaticInit ();
-            TransactedFile::Registry::StaticInit ();
+            TransactedFile::Object::StaticInit ();
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (

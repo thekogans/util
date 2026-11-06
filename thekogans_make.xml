@@ -176,6 +176,8 @@
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeAllocatorBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeKeys.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileDictionary.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileHashDictionary.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileObject.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileObjects.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileRange.h</cpp_header>
@@ -713,9 +715,11 @@
     <cpp_source>TransactedFileBTreeAllocatorBTree.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeKeys.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeRegistry.cpp</cpp_source>
+    <cpp_source>TransactedFileHashDictionary.cpp</cpp_source>
     <cpp_source>TransactedFileObject.cpp</cpp_source>
     <cpp_source>TransactedFileObjects.cpp</cpp_source>
     <cpp_source>TransactedFileRange.cpp</cpp_source>
+    <cpp_source>TransactedFileSystemDictionary.cpp</cpp_source>
     <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>
     <cpp_source>Vectorizer.cpp</cpp_source>

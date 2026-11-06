@@ -17,6 +17,7 @@
 
 #include "thekogans/util/TransactedFile.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/TransactedFileHashDictionary.h"
     #include "thekogans/util/TransactedFileBTreeAllocator.h"
     #include "thekogans/util/TransactedFileBTreeRegistry.h"
     #include "thekogans/util/TransactedFileBTree.h"
@@ -29,8 +30,11 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void TransactedFile::Object::StaticInit () {
-            TransactedFileBTreeAllocator::StaticInit ();
-            TransactedFileBTreeRegistry::StaticInit ();
+            TransactedFileHashDictionary::StaticInitEx ();
+            TransactedFileBTreeAllocator::BTree::Node::StaticInitEx ();
+            TransactedFileBTreeAllocator::BTree::StaticInitEx ();
+            TransactedFileBTreeAllocator::StaticInitEx ();
+            TransactedFileBTreeRegistry::StaticInitEx ();
             TransactedFileBTree::StaticInitEx ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -48,14 +52,51 @@ namespace thekogans {
                 });
         }
 
-        void TransactedFile::Object::DeleteObject (
-                const char *type,
+        void TransactedFile::Object::DestroyObject (
                 TransactedFile::SharedPtr file,
                 AddressType offset) {
-            DeleterMapType::const_iterator it = GetDeleters ().find (type);
-            if (it != GetDeleters ().end ()) {
-                it->second (file, offset);
+            if (file != nullptr && offset != 0) {
+                SerializableHeader header;
+                BlockRange range (file, offset);
+                range >> header;
+                DeleterMapType::const_iterator it = GetDeleters ().find (header.type.c_str ());
+                if (it != GetDeleters ().end ()) {
+                    it->second (file, offset);
+                }
             }
+        }
+
+        void TransactedFile::Object::FreeObject (
+                TransactedFile::SharedPtr file,
+                AddressType offset) {
+            file->GetAllocator ()->Free (offset);
+            file->Producer<TransactedFileStructureEvents>::Produce (
+                std::bind (
+                    &TransactedFileStructureEvents::OnTransactedFileOffsetDestroyed,
+                    std::placeholders::_1,
+                    file,
+                    offset));
+        }
+
+        namespace {
+            inline std::size_t HeaderSize (const SerializableHeader &header) {
+                std::size_t size = 0;
+                if (!header.NeedType ()) {
+                    size += TransactedFile::Dictionary::TypeIdTypeSize;
+                }
+                if (!header.NeedVersion ()) {
+                    size += Serializer::Size (header.version);
+                }
+                if (!header.NeedSize ()) {
+                    size += Serializer::Size (header.size);
+                }
+                return size;
+            }
+        }
+
+        std::size_t TransactedFile::Object::GetSize (const SerializableHeader &context) const noexcept {
+            SerializableHeader header = GetHeader (context);
+            return HeaderSize (header) + (context.NeedSize () ? header.size : context.size);
         }
 
         void TransactedFile::Object::SetAggregate (bool aggregate_) {
@@ -108,7 +149,7 @@ namespace thekogans {
 
         void TransactedFile::Object::FreeBlock () {
             if (offset != 0 && !aggregate) {
-                file->GetAllocator ()->Free (offset);
+                FreeObject (file, offset);
                 Produce (
                     std::bind (
                         &ObjectEvents::OnTransactedFileObjectFreeBlock,

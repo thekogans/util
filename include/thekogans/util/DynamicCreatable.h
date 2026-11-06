@@ -761,6 +761,20 @@ namespace thekogans {
         // above) and construct your own THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE
         // macro by copying one of the above and replacing the Create macro.
 
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_HAVE_CREATE(_T, ...)
+        /// Dynamic discovery macro. Instantiate one of these in the class cpp file.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_HAVE_CREATE(_T, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (_T, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_HAVE_CREATE_T(_T, ...)
+        /// Dynamic discovery macro for template types. Instantiate one of these
+        /// in the class cpp file of the template types you're specializing.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_HAVE_CREATE_T(_T, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE_T (_T, ##__VA_ARGS__)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_MAP_INIT (_T)
+
     } // namespace util
 } // namespace thekogans
 

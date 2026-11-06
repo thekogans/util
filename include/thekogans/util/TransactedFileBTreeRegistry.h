@@ -43,7 +43,7 @@ namespace thekogans {
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// Declare \see{RefCounted} pointers.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeRegistry)
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeRegistry)
 
         private:
             /// \brief

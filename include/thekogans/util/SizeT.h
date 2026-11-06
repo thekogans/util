@@ -39,13 +39,7 @@ namespace thekogans {
         /// \brief
         /// SizeT implements an architecture independent, Prefix-encoded, variable length,
         /// serializable std::size_t.
-
         struct _LIB_THEKOGANS_UTIL_DECL SizeT {
-            /// \brief
-            /// SizeT has a private heap to help with memory
-            /// management, performance, and global heap fragmentation.
-            THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
-
             /// \brief
             /// Min serialized SizeT size.
             static const std::size_t MIN_SIZE = UI8_SIZE;
@@ -60,13 +54,13 @@ namespace thekogans {
             /// \brief
             /// ctor.
             /// \param[in] value_ Value to initialize to.
-            SizeT (ui64 value_ = 0) :
+            constexpr SizeT (ui64 value_ = 0) :
                 value (value_) {}
 
             /// \brief
             /// Return the serialized size of the current value.
             /// \return Serialized size of the current value.
-            inline std::size_t Size () const {
+            inline constexpr std::size_t Size () const {
                 return (63 - __builtin_clzll (value | 1)) / 7 + 1;
             }
 
@@ -75,7 +69,7 @@ namespace thekogans {
             /// (including the first byte).
             /// \param[in] firstByte Encodes the total size of the serialized SizeT.
             /// \return Size of the serialized SizeT.
-            static inline std::size_t Size (ui32 firstByte) {
+            static inline constexpr std::size_t Size (ui32 firstByte) {
                 return __builtin_ctz (firstByte | 0x100) + 1;
             }
 

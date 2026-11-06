@@ -117,7 +117,6 @@ namespace thekogans {
             ///
             /// \brief
             /// Delivers the event immediately to the subscriber.
-            /// NOTE: The event is being delivered while the producer's subscribers is held.
             struct ImmediateEventDeliveryPolicy : public EventDeliveryPolicy {
                 /// \brief
                 /// Deliver the given event immediately to the given subscriber.

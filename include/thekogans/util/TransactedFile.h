@@ -44,6 +44,10 @@ namespace thekogans {
         /// Forward declaration of \see{SimpleTransactedFile} needed by \see{TransactedFile}.
         struct SimpleTransactedFile;
 
+        /// \brief
+        /// We do our own locking.
+        using TransactedFileAddressSpaceType = PageMap<ui64, BitWidth<ui64>::value, NullLock>;
+
         /// \struct TransactedFileEvents TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
@@ -71,9 +75,14 @@ namespace thekogans {
                 RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
         };
 
-        /// \brief
-        /// We do our own locking.
-        using TransactedFileAddressSpaceType = PageMap<ui64, BitWidth<ui64>::value, NullLock>;
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileStructureEvents {
+            virtual ~TransactedFileStructureEvents () {}
+
+            // Broadcast for terminal file destructions
+            virtual void OnTransactedFileOffsetDestroyed (
+                RefCounted::SharedPtr<TransactedFile> /*file*/,
+                TransactedFileAddressSpaceType::AddressType offset) noexcept {}
+        };
 
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
@@ -117,6 +126,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFile :
                 private File,
                 public Producer<TransactedFileEvents>,
+                public Producer<TransactedFileStructureEvents>,
                 public Subscriber<TransactedFileEvents>,
                 public TransactedFileAddressSpaceType::PageSource {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFile)
@@ -204,6 +214,7 @@ namespace thekogans {
                 /// \brief
                 /// Heap flags.
                 Flags32 flags;
+                AddressType dictionaryOffset;
                 AddressType allocatorOffset;
                 /// \brief
                 /// Contains the offset of the \see{Registry}.
@@ -220,6 +231,7 @@ namespace thekogans {
                 static const std::size_t SIZE =
                     UI32_SIZE +       // magic
                     UI32_SIZE +       // flags
+                    AddressTypeSize + // dictionaryOffset
                     AddressTypeSize + // allocatorOffset
                     AddressTypeSize + // regisryOffset
                     AddressTypeSize;  // userOffset
@@ -229,6 +241,7 @@ namespace thekogans {
                 /// \param[in] flags_ 0 or FLAGS_SECURE.
                 Header (ui16 flags_ = 0) :
                         flags (flags_),
+                        dictionaryOffset (0),
                         allocatorOffset (0),
                         registryOffset (0),
                         userOffset (0) {
@@ -271,10 +284,14 @@ namespace thekogans {
             #include "thekogans/util/TransactedFileRange.h"
             #include "thekogans/util/TransactedFileBlock.h"
             #include "thekogans/util/TransactedFileObject.h"
+            #include "thekogans/util/TransactedFileDictionary.h"
             #include "thekogans/util/TransactedFileAllocator.h"
             #include "thekogans/util/TransactedFileRegistry.h"
 
         private:
+            /// \brief
+            /// \see{Allocator} associated with this file.
+            Dictionary::SharedPtr dictionary;
             /// \brief
             /// \see{Allocator} associated with this file.
             Allocator::SharedPtr allocator;
@@ -291,6 +308,8 @@ namespace thekogans {
             TransactedFile (
                 Endianness endianness,
                 const std::string &path,
+                bool secure,
+                Dictionary::SharedPtr dictionary_,
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_,
                 bool forceTruncate);
@@ -313,6 +332,17 @@ namespace thekogans {
             inline bool IsSecure () const {
                 return header.IsSecure ();
             }
+
+            /// \brief
+            /// Return the header.dictionaryOffset;
+            /// \return header.dictionaryOffset;
+            inline AddressType GetDictionaryOffset () const {
+                return header.dictionaryOffset;
+            }
+            /// \brief
+            /// Set the header.dictionaryOffset.
+            /// \param[in] dictionaryOffset New dictionaryOffset.
+            void SetDictionaryOffset (AddressType dictionaryOffset);
 
             /// \brief
             /// Return the header.allocatorOffset;
@@ -348,6 +378,9 @@ namespace thekogans {
             /// \param[in] userOffset New userOffset to set.
             void SetUserOffset (AddressType userOffset);
 
+            Dictionary::SharedPtr GetDictionary () const {
+                return dictionary;
+            }
             /// \brief
             /// Return the \see{Allocator} attached to thi file.
             /// Since allocator is constant after Init, this API
@@ -403,6 +436,8 @@ namespace thekogans {
             static SharedPtr Create (
                 Endianness endianness,
                 const std::string &path,
+                bool secure,
+                Dictionary::SharedPtr dictionary,
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry,
                 bool overwrite = false);
@@ -544,7 +579,7 @@ namespace thekogans {
         /// Define the static base map initializer. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
             void _T::StaticInitEx () {\
-                StaticInit ();\
+                _T::StaticInit ();\
                 thekogans::util::TransactedFile::Object::DeleterMapType &deleterMap =\
                     thekogans::util::TransactedFile::Object::GetDeleters ();\
                 deleterMap[_T::TYPE] = _T::FreeObject;\
@@ -572,6 +607,21 @@ namespace thekogans {
                 _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
 
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_HAVE_CREATE(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE (\
+                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
+            TransactedFile::Range &range,
+            const SerializableHeader &header);
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
+            TransactedFile::Range &range,
+            TransactedFile::Object &object);
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
+            TransactedFile::Range &range,
+            SerializableHeader &header);
+
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
             TransactedFile::Range &range,
             TransactedFile::Object::SharedPtr &object);
@@ -587,6 +637,10 @@ namespace thekogans {
                 object = base;\
                 return range;\
             }
+
+        /// \brief
+        /// Implement \see{TransactedFile::Dictionary} extraction operators.
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Dictionary)
 
         /// \brief
         /// Implement \see{TransactedFile::Allocator} extraction operators.

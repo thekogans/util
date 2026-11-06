@@ -197,7 +197,7 @@ namespace thekogans {
             /// \param[in] t Type whose Size function to call.
             /// \return Size of serialized type.
             template<typename T>
-            static std::size_t Size (const T &t) {
+            static constexpr std::size_t Size (const T &t) {
                 return t.Size ();
             }
 
@@ -305,7 +305,7 @@ namespace thekogans {
             /// Return serialized size of std::string.
             /// \param[in] value std::string whose size to return.
             /// \return Serialized size of std::string.
-            static std::size_t Size (const std::string &value) {
+            static constexpr std::size_t Size (const std::string &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
@@ -341,7 +341,7 @@ namespace thekogans {
             /// Return serialized size of std::wstring.
             /// \param[in] value std::wstring whose size to return.
             /// \return Serialized size of std::wstring.
-            static std::size_t Size (const std::wstring &value) {
+            static constexpr std::size_t Size (const std::wstring &value) {
                 return SizeT (value.size ()).Size () + value.size () * WCHAR_T_SIZE;
             }
 
@@ -361,7 +361,7 @@ namespace thekogans {
             /// Return serialized size of \see{SecureString}.
             /// \param[in] value \see{SecureString} whose size to return.
             /// \return Serialized size of \see{SecureString}.
-            static std::size_t Size (const SecureString &value) {
+            static constexpr std::size_t Size (const SecureString &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
@@ -608,7 +608,7 @@ namespace thekogans {
             /// Return serialized size of an \see{Attribute}.
             /// \param[in] value \see{Attribute} whose size to return.
             /// \return Serialized size of \see{Attribute}.
-            static std::size_t Size (const Attribute &value) {
+            static constexpr std::size_t Size (const Attribute &value) {
                 return Size (value.first) + Size (value.second);
             }
 
@@ -627,7 +627,7 @@ namespace thekogans {
             /// Return serialized size of const std::vector<T> &.
             /// \return Serialized size of const std::vector<T> &.
             template<typename T>
-            static std::size_t Size (const std::vector<T> &value) {
+            static constexpr std::size_t Size (const std::vector<T> &value) {
                 std::size_t size = SizeT (value.size ()).Size ();
                 for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                     size += Size (value[i]);
@@ -674,14 +674,14 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const std::vector<i8> &.
             /// \return Serialized size of const std::vector<i8> &.
-            static std::size_t Size (const std::vector<i8> &value) {
+            static constexpr std::size_t Size (const std::vector<i8> &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
             /// \brief
             /// Return serialized size of const std::vector<ui8> &.
             /// \return Serialized size of const std::vector<ui8> &.
-            static std::size_t Size (const std::vector<ui8> &value) {
+            static constexpr std::size_t Size (const std::vector<ui8> &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
@@ -690,7 +690,7 @@ namespace thekogans {
             /// Return serialized size of const \see{SecureVector}<T> &.
             /// \return Serialized size of const \see{SecureVector}<T> &.
             template<typename T>
-            static std::size_t Size (const SecureVector<T> &value) {
+            static constexpr std::size_t Size (const SecureVector<T> &value) {
                 std::size_t size = SizeT (value.size ()).Size ();
                 for (std::size_t i = 0, count = value.size (); i < count; ++i) {
                     size += Size (value[i]);
@@ -737,7 +737,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const \see{SecureVector}<i8> &.
             /// \return Serialized size of const \see{SecureVector}<i8> &.
-            static std::size_t Size (const SecureVector<i8> &value) {
+            static constexpr std::size_t Size (const SecureVector<i8> &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
@@ -753,12 +753,10 @@ namespace thekogans {
             /// Return serialized size of const std::list<T> &.
             /// \return Serialized size of const std::list<T> &.
             template<typename T>
-            static std::size_t Size (const std::list<T> &value) {
+            static constexpr std::size_t Size (const std::list<T> &value) {
                 std::size_t size = SizeT (value.size ()).Size ();
-                for (typename std::list<T>::const_iterator
-                        it = value.begin (),
-                        end = value.end (); it != end; ++it) {
-                    size += Size (*it);
+                for (const auto &t : value) {
+                    size += Size (t);
                 }
                 return size;
             }
@@ -771,10 +769,8 @@ namespace thekogans {
             template<typename T>
             inline Serializer &operator << (const std::list<T> &value) {
                 *this << SizeT (value.size ());
-                for (typename std::list<T>::const_iterator
-                        it = value.begin (),
-                        end = value.end (); it != end; ++it) {
-                    *this << *it;
+                for (const auto &t : value) {
+                    *this << t;
                 }
                 return *this;
             }
@@ -803,12 +799,10 @@ namespace thekogans {
             template<
                 typename Key,
                 typename T>
-            static std::size_t Size (const std::map<Key, T> &value) {
+            static constexpr std::size_t Size (const std::map<Key, T> &value) {
                 std::size_t size = SizeT (value.size ()).Size ();
-                for (typename std::map<Key, T>::const_iterator
-                        it = value.begin (),
-                        end = value.end (); it != end; ++it) {
-                    size += Size (it->first) + Size (it->second);
+                for (const auto &[key, t] : value) {
+                    size += Size (key) + Size (t);
                 }
                 return size;
             }
@@ -823,10 +817,8 @@ namespace thekogans {
                 typename T>
             inline Serializer &operator << (const std::map<Key, T> &value) {
                 *this << SizeT (value.size ());
-                for (typename std::map<Key, T>::const_iterator
-                        it = value.begin (),
-                        end = value.end (); it != end; ++it) {
-                    *this << it->first << it->second;
+                for (const auto &[key, t] : value) {
+                    *this << key << t;
                 }
                 return *this;
             }

@@ -25,7 +25,7 @@
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Serializer.h"
-#include "thekogans/util/BlockAllocator.h"
+#include "thekogans/util/SlabAllocatorImpl.h"
 #include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/Exception.h"
 
@@ -279,16 +279,6 @@ namespace thekogans {
             /// Number of \see{Page}s per \see{Segment}.
             const std::size_t pagesPerSegment;
             /// \brief
-            /// \see{Internal} nodes are allocated from a custom
-            /// \see{BlockAllocator}. Cache it's size to speed up
-            /// allocations.
-            const std::size_t internalSize;
-            /// \brief
-            /// \see{Segment} nodes are allocated from a custom
-            /// \see{BlockAllocator}. Cache it's size to speed up
-            /// allocations.
-            const std::size_t segmentSize;
-            /// \brief
             /// \see{Segment} mask to use by the address disassembly
             /// engine as a final \see{Page} address resolution step
             /// in \see{GetPage}.
@@ -308,11 +298,11 @@ namespace thekogans {
             /// Level mask to work with the levelShift above.
             const AddressType levelMask;
             /// \brief
-            /// \see{BlockAllocator} for allocating \see{Internal} nodes.
-            BlockAllocator internalAllocator;
+            /// \see{SlabAllocatorImpl} for allocating \see{Internal} nodes.
+            SlabAllocatorImpl internalAllocator;
             /// \brief
-            /// \see{BlockAllocator} for allocating \see{Segment} nodes.
-            BlockAllocator segmentAllocator;
+            /// \see{SlabAllocatorImpl} for allocating \see{Segment} nodes.
+            SlabAllocatorImpl segmentAllocator;
             /// \brief
             /// \see{AlignedAllocator} for \see{Page::data}.
             AlignedAllocator pageAllocator;
@@ -406,7 +396,7 @@ namespace thekogans {
                 virtual ui32 GetRefCount () const = 0;
                 /// \brief
                 /// Kill yourself. Since different node types come from differernt
-                /// custom \see{BlockAllocator}s, each node type will know which
+                /// custom \see{SlabAllocatorImpl}s, each node type will know which
                 /// allocator to use for it's own demise.
                 virtual void Release () = 0;
             };
@@ -822,16 +812,14 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Allocate a segment leaf using a custom \see{BlockAllocator}.
+                /// Allocate a segment leaf using a custom \see{SlabAllocatorImpl}.
                 /// \param[in] pageMap Backpointer to \see{PageMap}.
                 /// \param[in] index Index in \see{Parent::children}.
                 /// \return The new segment node.
                 static Node *Alloc (
                         PageMap &pageMap,
                         std::size_t index) {
-                    return new (
-                        pageMap.segmentAllocator.Alloc (
-                            pageMap.segmentSize)) Segment (pageMap, index);
+                    return new (pageMap.segmentAllocator.Alloc ()) Segment (pageMap, index);
                 }
 
                 // Node
@@ -839,7 +827,7 @@ namespace thekogans {
                 /// Kill yourself.
                 virtual void Release () override {
                     this->~Segment ();
-                    this->pageMap.segmentAllocator.Free (this, this->pageMap.segmentSize);
+                    this->pageMap.segmentAllocator.Free (this);
                 }
 
             protected:
@@ -889,16 +877,14 @@ namespace thekogans {
                 }
 
                 /// \brief
-                /// Allocate an internl structure node using a custom \see{BlockAllocator}.
+                /// Allocate an internl structure node using a custom \see{SlabAllocatorImpl}.
                 /// \param[in] pageMap Backpointer to \see{PageMap}.
                 /// \param[in] index Index in \see{Parent::children}.
                 /// \return The new internal node.
                 static Node *Alloc (
                         PageMap &pageMap,
                         std::size_t index) {
-                    return new (
-                        pageMap.internalAllocator.Alloc (
-                            pageMap.internalSize)) Internal (pageMap, index);
+                    return new (pageMap.internalAllocator.Alloc ()) Internal (pageMap, index);
                 }
 
                 // Node
@@ -906,7 +892,7 @@ namespace thekogans {
                 /// Kill yourself.
                 virtual void Release () override {
                     this->~Internal ();
-                    this->pageMap.internalAllocator.Free (this, this->pageMap.internalSize);
+                    this->pageMap.internalAllocator.Free (this);
                 }
 
                 /// \brief
@@ -928,10 +914,10 @@ namespace thekogans {
             /// Default \see{Page} alignment.
             static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
             /// \brief
-            /// Default number of \see{Internal} nodes per \see{BlockAllocator} page.
+            /// Default number of \see{Internal} nodes per \see{SlabAllocatorImpl} page.
             static const std::size_t DEFAULT_INTERNAL_NODES_PER_PAGE = 16;
             /// \brief
-            /// Default number of \see{Segment} nodes per \see{BlockAllocator} page.
+            /// Default number of \see{Segment} nodes per \see{SlabAllocatorImpl} page.
             static const std::size_t DEFAULT_SEGMENT_NODES_PER_PAGE = 8;
 
             /// \brief
@@ -941,9 +927,9 @@ namespace thekogans {
             /// \param[in] bitsPerPage_ How many address bits represent a page.
             /// \param[in] pageAlignment Page alignment. Certain uses of PageMap (file buffering)
             /// require aligned pages to perform direct I/O (bypassing OS buffering).
-            /// \param[in] internalNodesPerPage Number of \see{Internal} nodes per \see{BlockAllocator} page.
-            /// \param[in] segmentNodesPerPage Number of \see{Segment} nodes per \see{BlockAllocator} page.
-            /// \param[in] allocator \see{Allocator} to use to create \see{BlockAllocator} pages.
+            /// \param[in] internalNodesPerPage Number of \see{Internal} nodes per \see{SlabAllocatorImpl} page.
+            /// \param[in] segmentNodesPerPage Number of \see{Segment} nodes per \see{SlabAllocatorImpl} page.
+            /// \param[in] allocator \see{Allocator} to use to create \see{PageAllocator} pages.
             PageMap (
                     std::size_t bitsPerSegment_,
                     std::size_t bitsPerLevel_,
@@ -960,15 +946,13 @@ namespace thekogans {
                             ~(AddressType)0 : (((AddressType)1 << bitsPerAddress) - 1)),
                     nodesPerInternal (1 << bitsPerLevel),
                     pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
-                    internalSize (Internal::Size (nodesPerInternal)),
-                    segmentSize (Segment::Size (pagesPerSegment)),
                     segmentMask (((AddressType)1 << bitsPerSegment) - 1),
                     pageSize (1 << bitsPerPage),
                     pageMask (pageSize - 1),
                     levelShift (bitsPerAddress - bitsPerLevel),
                     levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
-                    internalAllocator (internalSize, internalNodesPerPage, allocator),
-                    segmentAllocator (segmentSize, segmentNodesPerPage, allocator),
+                    internalAllocator (Internal::Size (nodesPerInternal), internalNodesPerPage, internalNodesPerPage / 4),
+                    segmentAllocator (Segment::Size (pagesPerSegment), segmentNodesPerPage, segmentNodesPerPage / 4),
                     pageAllocator (pageAlignment, allocator),
                     root (nullptr) {
                 // Validate input.
@@ -1023,16 +1007,16 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (
                     AddressType offset,
                     PageSource *pageSource) {
-                // Clean out layout page masking exactly as you do in the helper
+                // Clean out layout page masking exactly as GetPageHelper would.
                 AddressType maskedOffset = offset & ~pageMask;
                 // THE ULTRA-FAST ROUTE: Zero locks, zero synchronization!
                 // If this thread is hitting the same memory spatial locality, return instantly.
                 if (lastGetPagePage != nullptr && lastGetPagePage->offset == maskedOffset) {
                     return lastGetPagePage;
                 }
-                // THE FALLBACK SLOW ROUTE: Only lock if we must execute the tree walk
+                // THE FALLBACK SLOW ROUTE: Only lock if we must execute the tree walk.
                 LockGuard<Lock> guard (lock);
-                return GetPageHelper (maskedOffset, pageSource);
+                return GetPageHelper (offset, pageSource);
             }
 
             /// \Brief
@@ -1051,10 +1035,9 @@ namespace thekogans {
                     SizeType count) {
                 SizeType countRead = 0;
                 if (offset < maxOffset && buffer != nullptr && count > 0) {
-                    LockGuard<Lock> guard (lock);
                     ui8 *ptr = static_cast<ui8 *> (buffer);
                     while (count > 0) {
-                        typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
+                        typename Page::SharedPtr page = GetPage (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
                         // Calculate the amount we can read from this page...
@@ -1089,10 +1072,9 @@ namespace thekogans {
                 SizeType countWritten = 0;
                 // Quick bounds check.
                 if (offset < maxOffset && buffer != nullptr && count > 0) {
-                    LockGuard<Lock> guard (lock);
                     const ui8 *ptr = static_cast<const ui8 *> (buffer);
                     while (count > 0) {
-                        typename Page::SharedPtr page = GetPageHelper (offset, pageSource);
+                        typename Page::SharedPtr page = GetPage (offset, pageSource);
                         // No need to check for nullptr here as we do our own bounds check.
                         AddressType pageOffset = offset - page->offset;
                         // Calculate the amount we can write to this page...

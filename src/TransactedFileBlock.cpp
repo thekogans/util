@@ -16,6 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/StringUtils.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -23,7 +24,8 @@ namespace thekogans {
 
         void TransactedFile::Block::Header::Read (
                 TransactedFile::SharedPtr file,
-                AddressSpaceType::AddressType offset) {
+                AddressSpaceType::AddressType offset,
+                bool header) {
             Range range (file, offset, SIZE);
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
@@ -34,10 +36,14 @@ namespace thekogans {
         #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFile::Block::Header @"
-                    THEKOGANS_UTIL_UI64_FORMAT,
-                    offset);
+                throw Exception (
+                    header ? Exception::CORRUPT_HEADER : Exception::CORRUPT_FOOTER,
+                    FormatString (
+                        "Corrupt TransactedFile::Block::%s @" THEKOGANS_UTIL_UI64_FORMAT,
+                        header ? "Header" : "Footer",
+                        offset).c_str (),
+                    offset,
+                    magic);
             }
         #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         }
@@ -69,17 +75,21 @@ namespace thekogans {
         bool TransactedFile::Block::Prev (Block &prev) const {
             if (!IsFirst ()) {
                 Header footer;
-                footer.Read (file, offset - SIZE);
+                footer.Read (file, offset - SIZE, false);
                 prev.offset = offset - SIZE - footer.size;
-                prev.header.Read (file, prev.offset - HEADER_SIZE);
+                prev.header.Read (file, prev.offset - HEADER_SIZE, true);
                 if (prev.header != footer) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFile::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
-                        " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT "\n"
-                        " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
-                        prev.offset,
-                        prev.header.flags, prev.header.size,
-                        footer.flags, footer.size);
+                    throw Exception (
+                        Exception::HEADER_FOOTER_MISMATCH,
+                        FormatString (
+                            "Corrupt TransactedFile::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
+                            " prev.header.flags: %u prev.header.size: " THEKOGANS_UTIL_UI64_FORMAT "\n"
+                            " prev.footer.flags: %u prev.footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                            prev.offset,
+                            prev.header.flags, prev.header.size,
+                            footer.flags, footer.size).c_str (),
+                        offset, prev.header, footer);
+
                 }
                 return true;
             }
@@ -96,17 +106,20 @@ namespace thekogans {
         }
 
         void TransactedFile::Block::Read () {
-            header.Read (file, offset - HEADER_SIZE);
+            header.Read (file, offset - HEADER_SIZE, true);
             Header footer;
-            footer.Read (file, offset + header.size);
+            footer.Read (file, offset + header.size, false);
             if (header != footer) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFile::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
-                    " header.flags: %u header.size: " THEKOGANS_UTIL_UI64_FORMAT "\n"
-                    " footer.flags: %u footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
-                    offset,
-                    header.flags, header.size,
-                    footer.flags, footer.size);
+                throw Exception (
+                    Exception::HEADER_FOOTER_MISMATCH,
+                    FormatString (
+                        "Corrupt TransactedFile::Block @" THEKOGANS_UTIL_UI64_FORMAT "\n"
+                        " header.flags: %u header.size: " THEKOGANS_UTIL_UI64_FORMAT "\n"
+                        " footer.flags: %u footer.size: " THEKOGANS_UTIL_UI64_FORMAT,
+                        offset,
+                        header.flags, header.size,
+                        footer.flags, footer.size).c_str (),
+                    offset, header, footer);
             }
         }
 

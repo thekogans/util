@@ -25,8 +25,6 @@ namespace thekogans {
         // This code was inspired by:
         // https://github.com/stoklund/varint/blob/master/prefix_varint.cpp
 
-        THEKOGANS_UTIL_IMPLEMENT_HEAP_FUNCTIONS (SizeT)
-
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 const SizeT &sizeT) {
@@ -54,7 +52,7 @@ namespace thekogans {
                 sizeT.value = value;
                 for (std::size_t i = 1; i < bytes; ++i) {
                     serializer >> value;
-                    sizeT.value |= (ui64)value << (i << 3);
+                    sizeT.value |= static_cast<ui64> (value) << (i << 3);
                 }
                 sizeT.value >>= bytes;
             }

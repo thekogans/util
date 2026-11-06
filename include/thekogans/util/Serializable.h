@@ -63,13 +63,13 @@ namespace thekogans {
             /// serializable in to a \see{Serializer}.
             /// \param[in] context Partially filled in \see{SerializableHeader}.
             /// \return \see{SerializableHeader} containing the missing context pieces.
-            SerializableHeader GetHeader (
+            virtual SerializableHeader GetHeader (
                 const SerializableHeader &context = SerializableHeader ()) const noexcept;
             /// \brief
             /// Return the binary size of the serializable including the header.
             /// \param[in] context Partially filled in \see{SerializableHeader}.
             /// \return Size of the binary serializable including the header.
-            std::size_t GetSize (
+            virtual std::size_t GetSize (
                 const SerializableHeader &context = SerializableHeader ()) const noexcept;
 
             /// \brief
@@ -311,6 +311,22 @@ namespace thekogans {
         /// in your \see{Singleton},  template instantiation class cpp.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_ST(_T, version, classSize, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_S (_T,\
+                thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version, classSize)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE(_T, version, classSize, ...)
+        /// Serializable implementation macro. Instantiate one of these
+        /// in your class cpp.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_HAVE_CREATE (_T,\
+                thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (_T, version, classSize)
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE_T(_T, version, classSize, ...)
+        /// Serializable implementation macro. Instantiate one of these
+        /// in your template instantiation class cpp.
+        #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE_T(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_HAVE_CREATE_T (_T,\
                 thekogans::util::Serializable::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE_T (_T, version, classSize)
 

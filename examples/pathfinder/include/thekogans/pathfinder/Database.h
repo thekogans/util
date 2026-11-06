@@ -21,9 +21,9 @@
 #include <string>
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/TransactedFile.h"
+#include "thekogans/util/TransactedFileHashDictionary.h"
 #include "thekogans/util/TransactedFileBTreeAllocator.h"
 #include "thekogans/util/TransactedFileBTreeRegistry.h"
-#include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/pathfinder/Options.h"
 
 namespace thekogans {
@@ -46,44 +46,32 @@ namespace thekogans {
             /// \param[in] path Path to database file.
             /// \param[in] secure true == \see{util::FileAllocator} will zero fill freed blocks.
             /// \param[in] allocatorEntriesPerNode Number of entries per \see{util::TransactedFileBTreeAllocator::Node}.
-            /// \param[in] allocatorNodesPerPage Number of \see{util::TransactedFileBTreeAllocator::Node}s that will
-            /// fit in to a \see{util::BlockAllocator} page.
+            /// \param[in] registryValueAsObject
             /// \param[in] registryEntriesPerNode Number of entries per \see{util::TransactedFileBTree::Node}.
-            /// \param[in] registryNodesPerPage Number of \see{util::TransactedFileBTree::Node}s that will
-            /// fit in to a \see{util::BlockAllocator} page.
-            /// \param[in] allocator \see{util::Allocator} for \see{util::TransactedFileBTreeAllocator}
-            /// and \see{util::TransactedFileBTree}.
             Database (
                     const std::string &path = Options::Instance ()->dbPath,
                     bool secure = false,
                     std::size_t allocatorEntriesPerNode =
                         util::TransactedFileBTreeAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                    std::size_t allocatorNodesPerPage =
-                        util::TransactedFileBTreeAllocator::DEFAULT_BTREE_NODES_PER_PAGE,
                     bool registryValueAsObject = true,
                     std::size_t registryEntriesPerNode =
-                        util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE,
-                    std::size_t registryNodesPerPage =
-                        util::TransactedFileBTreeRegistry::DEFAULT_BTREE_NODES_PER_PAGE,
-                    util::Allocator::SharedPtr allocator = util::DefaultAllocator::Instance ()) :
+                        util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE) :
                     file (util::TransactedFile::Open (path)) {
                 if (file == nullptr) {
                     file = util::TransactedFile::Create (
                         util::HostEndian,
                         path,
+                        secure,
+                        new util::TransactedFileHashDictionary (nullptr, 0),
                         new util::TransactedFileBTreeAllocator (
                             nullptr,
                             0,
-                            allocatorEntriesPerNode,
-                            allocatorNodesPerPage,
-                            allocator),
+                            allocatorEntriesPerNode),
                         new util::TransactedFileBTreeRegistry (
                             nullptr,
                             0,
                             registryValueAsObject,
-                            registryEntriesPerNode,
-                            registryNodesPerPage,
-                            allocator));
+                            registryEntriesPerNode));
                 }
             }
 

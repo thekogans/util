@@ -625,16 +625,22 @@ namespace thekogans {
                 virtual void FreeBlock () override;
 
                 // TransactedFile::ObjectEvents
+                /// \brief
+                /// Value allocated it's block.
+                /// \param[in] value \see{TransactedFile::Object} that allocoated it's head block.
                 virtual void OnTransactedFileObjectAllocBlock (
-                        RefCounted::SharedPtr<Object> /*object*/) noexcept override {
+                        TransactedFile::Object::SharedPtr /*object*/) noexcept override {
                     SetDirty ();
                 }
+                /// \brief
+                /// Value freed it's block.
+                /// \param[in] value \see{TransactedFile::Object} that freed it's head block.
                 virtual void OnTransactedFileObjectFreeBlock (
-                        RefCounted::SharedPtr<Object> /*object*/) noexcept override {
+                        TransactedFile::Object::SharedPtr /*object*/) noexcept override {
                     SetDirty ();
                 }
                 virtual void OnTransactedFileObjectDirty (
-                        RefCounted::SharedPtr<Object> object) noexcept override {
+                        TransactedFile::Object::SharedPtr object) noexcept override {
                     if (!btree->header.IsValueAsObject ()) {
                         SetDirty ();
                     }

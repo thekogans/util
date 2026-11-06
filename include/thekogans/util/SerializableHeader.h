@@ -60,7 +60,7 @@ namespace thekogans {
             /// \param[in] type_ \see{Serializable} type (see \see{DynamicCreatable::Type}).
             /// \param[in] version_ \see{Serializable} version.
             /// \param[in] size_ \see{Serializable} size in bytes (not including the header).
-            SerializableHeader (
+            explicit SerializableHeader (
                 const std::string &type_ = std::string (),
                 ui16 version_ = 0,
                 std::size_t size_ = 0) :

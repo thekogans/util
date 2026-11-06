@@ -23,11 +23,10 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (
             thekogans::util::TransactedFileBTreeRegistry,
             1,
-            TransactedFileBTreeRegistry::Header::SIZE,
-            TransactedFile::Object::TYPE)
+            TransactedFileBTreeRegistry::Header::SIZE)
 
         TransactedFileBTreeRegistry::TransactedFileBTreeRegistry (
                 TransactedFile::SharedPtr file,

@@ -25,7 +25,7 @@
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/Subscriber.h"
-#include "thekogans/util/BlockAllocator.h"
+#include "thekogans/util/SlabAllocatorHeap.h"
 
 namespace thekogans {
     namespace util {
@@ -45,18 +45,16 @@ namespace thekogans {
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// TransactedFileBTreeAllocator is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TransactedFileBTreeAllocator)
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeAllocator)
+
+            // NOTE: The following constants are meant to be tuned during
+            // system integration to provide the best performance for your
+            // needs.
+            /// \brief
+            /// Default number of entries per \see{BTree::Node}.
+            static constexpr ui32 DEFAULT_BTREE_ENTRIES_PER_NODE = 256;
 
         private:
-            /// \brief
-            /// Number of entries per \see{BTree::Node}.
-            const std::size_t btreeEntriesPerNode;
-            /// \brief
-            /// Number of \see{BTree::Node}s that will fit in to a \see{BlockAllocator} page.
-            const std::size_t btreeNodesPerPage;
-            /// \brief
-            /// \see{util::Allocator} for \see{BTree::Node}.
-            util::Allocator::SharedPtr allocator;
             /// \struct TransactedFileBTreeAllocator::Header TransactedFileBTreeAllocator.h
             /// thekogans/util/TransactedFileBTreeAllocator.h
             ///
@@ -66,17 +64,20 @@ namespace thekogans {
                 /// \brief
                 /// Contains the offset of the \see{BTree::Header}.
                 TransactedFile::AddressType btreeOffset;
+                ui32 btreeEntriesPerNode;
 
                 /// \brief
                 /// The size of the header on disk.
                 static const std::size_t SIZE =
-                    UI32_SIZE +     // magic
-                    TransactedFile::AddressTypeSize;  // btreeOffset
+                    UI32_SIZE + // magic
+                    TransactedFile::AddressTypeSize + // btreeOffset
+                    UI32_SIZE; // btreeEntriesPerNode
 
                 /// \brief
                 /// ctor.
-                Header () :
-                    btreeOffset (0) {}
+                Header (ui32 btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE) :
+                    btreeOffset (0),
+                    btreeEntriesPerNode (btreeEntriesPerNode_) {}
             } header;
             /// \brief
             /// Include the \see{BTree} header.
@@ -86,29 +87,13 @@ namespace thekogans {
             /// \see{BTree} to manage heap free space.
             BTree::SharedPtr btree;
             /// \brief
-            /// Cache the size of the BTree::Node on disk so that we
-            /// don't pay the price of calculating it everytime \see{Alloc}
-            /// is called.
-            std::size_t btreeNodeFileSize;
-            /// \brief
             /// Synchronization lock.
             SpinLock spinLock;
 
         public:
             /// \brief
             /// Allocator size on disk.
-            static const std::size_t SIZE = Header::SIZE;
-
-            // NOTE: The following constants are meant to be tuned during
-            // system integration to provide the best performance for your
-            // needs.
-            /// \brief
-            /// Default number of entries per \see{BTree::Node}.
-            static const std::size_t DEFAULT_BTREE_ENTRIES_PER_NODE = 256;
-            /// \brief
-            /// Number of \see{BTree::Node}s that will fit in to a
-            /// \see{BlockAllocator} page.
-            static const std::size_t DEFAULT_BTREE_NODES_PER_PAGE = 10;
+            static constexpr std::size_t SIZE = Header::SIZE;
 
             /// \brief
             /// ctor.
@@ -120,9 +105,7 @@ namespace thekogans {
             TransactedFileBTreeAllocator (
                 TransactedFile::SharedPtr file = nullptr,
                 TransactedFile::AddressType offset = 0,
-                std::size_t btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t btreeNodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE);
 
             // Allocator
             /// \brief

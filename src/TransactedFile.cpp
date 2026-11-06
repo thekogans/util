@@ -49,7 +49,7 @@ namespace thekogans {
             // are noop. There will be no dirty pages to abort, and no
             // subscribers to notify.
             file.Abort ();
-            file.Produce (
+            file.Producer<TransactedFileEvents>::Produce (
                 std::bind (
                     &TransactedFileEvents::OnTransactedFileTransactionAbort,
                     std::placeholders::_1,
@@ -58,21 +58,21 @@ namespace thekogans {
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {
-            std::vector<SharedSubscriberInfo> totalCommittedObjects;
-            totalCommittedObjects.reserve (file.GetSubscriberCount () * 2);
+            std::vector<Producer<TransactedFileEvents>::SharedSubscriberInfo> totalCommittedObjects;
+            totalCommittedObjects.reserve (file.Producer<TransactedFileEvents>::GetSubscriberCount () * 2);
             // =========================================================================
             // STEP 1: DETERMINISTIC CONVERGENT SETTLEMENT LOOP (PHASE 1 ONLY)
             // =========================================================================
             std::size_t iterations = 0;
             static constexpr std::size_t MAX_CONVERGENCE_WAVES = 32;
-            while (file.GetSubscriberCount () != 0) {
+            while (file.Producer<TransactedFileEvents>::GetSubscriberCount () != 0) {
                 // DEFENSIVE CEILING: If we hit this, a cyclic dirty loop has been detected!
                 if (THEKOGANS_UTIL_UNLIKELY (++iterations > MAX_CONVERGENCE_WAVES)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP); // Crash/Abort before corrupting disk!
                 }
-                std::vector<SharedSubscriberInfo> currentDirtyBatch;
-                file.GetSubscribers (currentDirtyBatch, true);
+                std::vector<Producer<TransactedFileEvents>::SharedSubscriberInfo> currentDirtyBatch;
+                file.Producer<TransactedFileEvents>::GetSubscribers (currentDirtyBatch, true);
                 for (const auto &subscriber : currentDirtyBatch) {
                     subscriber.second->DeliverEvent (
                         std::bind (
@@ -170,10 +170,12 @@ namespace thekogans {
             HandleGuard guard{handle};
             size = GetSize ();
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
-            BlockRange headerRange (this, Block::HEADER_SIZE);
+            BlockRange headerRange (this, Block::BLOCK_0_OFFSET);
             header.Read (headerRange);
-            BlockRange allocayorRange (this, header.allocatorOffset);
-            allocayorRange >> allocator;
+            BlockRange dictionaryRange (this, header.dictionaryOffset);
+            dictionaryRange >> dictionary;
+            BlockRange allocatorRange (this, header.allocatorOffset);
+            allocatorRange >> allocator;
             BlockRange registryRange (this, header.registryOffset);
             registryRange >> registry;
             guard.dismissed = true;
@@ -182,11 +184,15 @@ namespace thekogans {
         TransactedFile::TransactedFile (
                 Endianness endianness,
                 const std::string &path,
+                bool secure,
+                Dictionary::SharedPtr dictionary_,
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_,
                 bool forceTruncate) :
+                header (secure ? Header::FLAGS_SECURE : 0),
                 size (0),
                 pageMap (nullptr),
+                dictionary (dictionary_),
                 allocator (allocator_),
                 registry (registry_) {
             AddRef ();
@@ -215,9 +221,10 @@ namespace thekogans {
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Transaction transaction (*this);
             Grow (Block::SIZE + Header::SIZE);
-            Block block (this, Block::HEADER_SIZE, 0, Header::SIZE);
+            Block block (this, Block::BLOCK_0_OFFSET, 0, Header::SIZE);
             block.Write ();
             Subscriber<TransactedFileEvents>::Subscribe (*this);
+            dictionary->Init (this, 0);
             allocator->Init (this, 0);
             registry->Init (this, 0);
             transaction.Commit ();
@@ -229,6 +236,14 @@ namespace thekogans {
                 Close ();
             }
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+        }
+
+        void TransactedFile::SetDictionaryOffset (AddressType dictionaryOffset) {
+            LockGuard<SpinLock> guard (spinLock);
+            if (header.dictionaryOffset != dictionaryOffset) {
+                header.dictionaryOffset = dictionaryOffset;
+                Subscriber<TransactedFileEvents>::Subscribe (*this);
+            }
         }
 
         void TransactedFile::SetAllocatorOffset (AddressType allocatorOffset) {
@@ -266,6 +281,8 @@ namespace thekogans {
         TransactedFile::SharedPtr TransactedFile::Create (
                 Endianness endianness,
                 const std::string &path,
+                bool secure,
+                Dictionary::SharedPtr dictionary,
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry,
                 bool overwrite) {
@@ -275,15 +292,17 @@ namespace thekogans {
             }
             return SharedPtr (
                 new TransactedFile (
-                    endianness, path, allocator, registry, exists && overwrite), false);
+                    endianness, path, secure, dictionary, allocator, registry, exists && overwrite), false);
         }
 
         void TransactedFile::Close () {
             LockGuard<SpinLock> guard (spinLock);
             if (IsOpen ()) {
                 File::Close ();
+                header = Header ();
                 size = 0;
                 pageMap.Reset ();
+                dictionary.Reset ();
                 allocator.Reset ();
                 registry.Reset ();
             }
@@ -361,14 +380,14 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 int phase) noexcept {
             if (phase == COMMIT_PHASE_2) {
-                Range range (this, Block::HEADER_SIZE, Header::SIZE, false);
+                Range range (this, Block::BLOCK_0_OFFSET, Header::SIZE, false);
                 header.Write (range);
             }
         }
 
         void TransactedFile::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            Range range (this, Block::HEADER_SIZE, Header::SIZE);
+            Range range (this, Block::BLOCK_0_OFFSET, Header::SIZE);
             header.Read (range);
         }
 
@@ -475,7 +494,7 @@ namespace thekogans {
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
-                serializer >> flags >> allocatorOffset >> registryOffset >> userOffset;
+                serializer >> flags >> dictionaryOffset >> allocatorOffset >> registryOffset >> userOffset;
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 if (!IsBlockUsesMagic ()) {
             #else // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -493,37 +512,93 @@ namespace thekogans {
         }
 
         void TransactedFile::Header::Write (Serializer &serializer) {
-            serializer << MAGIC32 << flags << allocatorOffset << registryOffset << userOffset;
+            serializer << MAGIC32 << flags << dictionaryOffset << allocatorOffset << registryOffset << userOffset;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
+                TransactedFile::Range &range,
+                const SerializableHeader &header) {
+            if (range.context.NeedType ()) {
+                range << range.GetFile ()->GetDictionary ()->GetOrCreateTypeId (header.type.c_str());
+            }
+            if (range.context.NeedVersion ()) {
+                range << header.version;
+            }
+            if (range.context.NeedSize ()) {
+                range << header.size;
+            }
+            return range;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
+                TransactedFile::Range &range,
+                TransactedFile::Object &object) {
+            range << TransactedFile::Object::MAGIC << object.GetHeader (range.context);
+            object.Write (range);
+            return range;
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
+                TransactedFile::Range &range,
+                SerializableHeader &header) {
+            if (range.context.NeedType ()) {
+                ui32 typeId;
+                range >> typeId;
+                header.type = range.GetFile ()->GetDictionary ()->ResolveTypeId (typeId);
+            }
+            else {
+                header.type = range.context.type;
+            }
+            if (range.context.NeedVersion ()) {
+                range >> header.version;
+            }
+            else {
+                header.version = range.context.version;
+            }
+            if (range.context.NeedSize ()) {
+                range >> header.size;
+            }
+            else {
+                header.size = range.context.size;
+            }
+            return range;
         }
 
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
                 TransactedFile::Range &range,
                 TransactedFile::Object::SharedPtr &object) {
-            SerializableHeader header;
-            range >> header;
-            if (range.factory != nullptr) {
-                object = range.factory (range.parameters);
-            }
-            else {
-                object = TransactedFile::Object::CreateObject (
-                    header.type.c_str (), range.GetFile (), range.GetOffset ());
-            }
-            if (object != nullptr) {
-                if (header.version <= object->Version ()) {
-                    Serializer::ContextGuard guard (range, header);
-                    object->Read (range);
+            ui32 magic;
+            range >> magic;
+            if (magic == TransactedFile::Object::MAGIC) {
+                SerializableHeader header;
+                range >> header;
+                if (range.factory != nullptr) {
+                    object = range.factory (range.parameters);
+                }
+                else {
+                    object = TransactedFile::Object::CreateObject (
+                        header.type.c_str (), range.GetFile (), range.GetOffset ());
+                }
+                if (object != nullptr) {
+                    if (header.version <= object->Version ()) {
+                        Serializer::ContextGuard guard (range, header);
+                        object->Read (range);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Header version (%u) is greater then the TransactedFile::Object version (%u).",
+                            header.version,
+                            object->Version ());
+                    }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%u) is greater then the TransactedFile::Object version (%u).",
-                        header.version,
-                        object->Version ());
+                        "Unable to create a TransactedFile::Object of type %s.",
+                        header.type.c_str ());
                 }
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Unable to create a TransactedFile::Object of type: %s.",
-                    header.type.c_str ());
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
             }
             return range;
         }
