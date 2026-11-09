@@ -35,8 +35,6 @@
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/AlignedAllocator.h"
-#include "thekogans/util/TransactedFileBTreeAllocator.h"
-#include "thekogans/util/TransactedFileBTreeRegistry.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -172,12 +170,27 @@ namespace thekogans {
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             BlockRange headerRange (this, Block::BLOCK_0_OFFSET);
             header.Read (headerRange);
-            BlockRange dictionaryRange (this, header.dictionaryOffset);
-            dictionaryRange >> dictionary;
-            BlockRange allocatorRange (this, header.allocatorOffset);
-            allocatorRange >> allocator;
-            BlockRange registryRange (this, header.registryOffset);
-            registryRange >> registry;
+            {
+                Object::SharedPtr object;
+                BlockRange dictionaryRange (this, header.dictionaryOffset);
+                dictionaryRange >> object;
+                dictionary = object;
+                assert (dictionary != nullptr);
+            }
+            {
+                Object::SharedPtr object;
+                BlockRange allocatorRange (this, header.allocatorOffset);
+                allocatorRange >> object;
+                allocator = object;
+                assert (allocator != nullptr);
+            }
+            {
+                Object::SharedPtr object;
+                BlockRange registryRange (this, header.registryOffset);
+                registryRange >> object;
+                registry = object;
+                assert (registry != nullptr);
+            }
             guard.dismissed = true;
         }
 
@@ -185,7 +198,7 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 bool secure,
-                Dictionary::SharedPtr dictionary_,
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary_,
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_,
                 bool forceTruncate) :
@@ -224,9 +237,24 @@ namespace thekogans {
             Block block (this, Block::BLOCK_0_OFFSET, 0, Header::SIZE);
             block.Write ();
             Subscriber<TransactedFileEvents>::Subscribe (*this);
-            dictionary->Init (this, 0);
-            allocator->Init (this, 0);
-            registry->Init (this, 0);
+            {
+                Object::SharedPtr object = dictionary;
+                if (object != nullptr) {
+                    object->Init (this, 0);
+                }
+            }
+            {
+                Object::SharedPtr object = allocator;
+                if (object != nullptr) {
+                    object->Init (this, 0);
+                }
+            }
+            {
+                Object::SharedPtr object = registry;
+                if (object != nullptr) {
+                    object->Init (this, 0);
+                }
+            }
             transaction.Commit ();
             guard.dismissed = true;
         }
@@ -238,7 +266,7 @@ namespace thekogans {
             THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
         }
 
-        void TransactedFile::SetDictionaryOffset (AddressType dictionaryOffset) {
+        void TransactedFile::SetTypeDictionaryOffset (AddressType dictionaryOffset) {
             LockGuard<SpinLock> guard (spinLock);
             if (header.dictionaryOffset != dictionaryOffset) {
                 header.dictionaryOffset = dictionaryOffset;
@@ -282,7 +310,7 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 bool secure,
-                Dictionary::SharedPtr dictionary,
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry,
                 bool overwrite) {
@@ -486,11 +514,27 @@ namespace thekogans {
 
         std::string TransactedFile::GetLogPath (const std::string &path) {
             std::string name = Path (path).GetFullFileName ();
-            return path + "-" +
-                GUID::FromBuffer (name.data (), name.size ()).ToHexString () + ".log";
+            return path + "-" + GUID::FromBuffer (name.data (), name.size ()).ToHexString () + ".log";
         }
 
         void TransactedFile::Header::Read (Serializer &serializer) {
+                    // ui32 magic;
+                    // log >> magic;
+                    // if (magic == MAGIC32) {
+                    //     // Log is host endian.
+                    // }
+                    // else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
+                    //     // Log is guest endian. File endianness doesn't mater as it is
+                    //     // just being patched up with dirty tiles. Obviously it is assumed
+                    //     // to be the same as the log endianness.
+                    //     log.endianness = GuestEndian;
+                    // }
+                    // else {
+                    //     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    //         "Corrupt log %s",
+                    //         logPath.c_str ());
+                    // }
+
             ui32 magic;
             serializer >> magic;
             if (magic == MAGIC32) {
@@ -513,55 +557,6 @@ namespace thekogans {
 
         void TransactedFile::Header::Write (Serializer &serializer) {
             serializer << MAGIC32 << flags << dictionaryOffset << allocatorOffset << registryOffset << userOffset;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
-                TransactedFile::Range &range,
-                const SerializableHeader &header) {
-            if (range.context.NeedType ()) {
-                range << range.GetFile ()->GetDictionary ()->GetOrCreateTypeId (header.type.c_str());
-            }
-            if (range.context.NeedVersion ()) {
-                range << header.version;
-            }
-            if (range.context.NeedSize ()) {
-                range << header.size;
-            }
-            return range;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
-                TransactedFile::Range &range,
-                TransactedFile::Object &object) {
-            range << TransactedFile::Object::MAGIC << object.GetHeader (range.context);
-            object.Write (range);
-            return range;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
-                TransactedFile::Range &range,
-                SerializableHeader &header) {
-            if (range.context.NeedType ()) {
-                ui32 typeId;
-                range >> typeId;
-                header.type = range.GetFile ()->GetDictionary ()->ResolveTypeId (typeId);
-            }
-            else {
-                header.type = range.context.type;
-            }
-            if (range.context.NeedVersion ()) {
-                range >> header.version;
-            }
-            else {
-                header.version = range.context.version;
-            }
-            if (range.context.NeedSize ()) {
-                range >> header.size;
-            }
-            else {
-                header.size = range.context.size;
-            }
-            return range;
         }
 
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (

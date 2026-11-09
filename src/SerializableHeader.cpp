@@ -23,116 +23,19 @@
 namespace thekogans {
     namespace util {
 
-        std::size_t SerializableHeader::Size (bool all) const {
-            std::size_t size_ = 0;
-            if (all || !NeedType ()) {
-                size_ += Serializer::Size (type);
-            }
-            if (all || !NeedVersion ()) {
-                size_ += Serializer::Size (version);
-            }
-            if (all || !NeedSize ()) {
-                size_ += Serializer::Size (size);
-            }
-            return size_;
-        }
-
-        void SerializableHeader::Read (Serializer &serializer) {
-            serializer >> type >> version >> size;
-        }
-
-        void SerializableHeader::Write (Serializer &serializer) const {
-            serializer << type << version << size;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
-                Serializer &serializer,
-                const SerializableHeader &header) {
-            if (serializer.context.NeedType ()) {
-                serializer << header.type;
-            }
-            if (serializer.context.NeedVersion ()) {
-                serializer << header.version;
-            }
-            if (serializer.context.NeedSize ()) {
-                serializer << header.size;
-            }
-            return serializer;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-                Serializer &serializer,
-                SerializableHeader &header) {
-            if (serializer.context.NeedType ()) {
-                serializer >> header.type;
-            }
-            else {
-                header.type = serializer.context.type;
-            }
-            if (serializer.context.NeedVersion ()) {
-                serializer >> header.version;
-            }
-            else {
-                header.version = serializer.context.version;
-            }
-            if (serializer.context.NeedSize ()) {
-                serializer >> header.size;
-            }
-            else {
-                header.size = serializer.context.size;
-            }
-            return serializer;
-        }
-
-        namespace {
-            const char * const ATTR_TYPE = "Type";
-            const char * const ATTR_VERSION = "Version";
-            const char * const ATTR_SIZE = "Size";
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
-                pugi::xml_node &node,
-                const SerializableHeader &header) {
-            node.append_attribute (ATTR_TYPE).set_value (header.type.c_str ());
-            node.append_attribute (ATTR_VERSION).set_value (ui32Tostring (header.version).c_str ());
-            node.append_attribute (ATTR_SIZE).set_value (ui64Tostring (header.size).c_str ());
-            return node;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-                const pugi::xml_node &node,
-                SerializableHeader &header) {
-            header.type = node.attribute (ATTR_TYPE).value ();
-            header.version = stringToui16 (node.attribute (ATTR_VERSION).value ());
-            header.size = stringToui64 (node.attribute (ATTR_SIZE).value ());
-            return node;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
-                JSON::Object &object,
-                const SerializableHeader &header) {
-            object.Add<const std::string &> (ATTR_TYPE, header.type);
-            object.Add<ui16> (ATTR_VERSION, header.version);
-            object.Add<ui64> (ATTR_SIZE, header.size);
-            return object;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-                const JSON::Object &object,
-                SerializableHeader &header) {
-            header.type = object.Get<JSON::String> (ATTR_TYPE)->value;
-            header.version = object.Get<JSON::Number> (ATTR_VERSION)->To<ui16> ();
-            header.size = object.Get<JSON::Number> (ATTR_SIZE)->To<ui64> ();
-            return object;
-        }
-
         void ValueParser<SerializableHeader>::Reset (Serializer &serializer) {
+            idParser.Reset ();
             typeParser.Reset ();
             versionParser.Reset ();
             sizeParser.Reset ();
             value = serializer.context;
             if (value.NeedType ()) {
-                state = STATE_TYPE;
+                if (serializer.GetTypeDictionary () != nullptr) {
+                    state = STATE_ID;
+                }
+                else {
+                    state = STATE_TYPE;
+                }
             }
             else if (value.NeedVersion ()) {
                 state = STATE_VERSION;
@@ -150,24 +53,32 @@ namespace thekogans {
                 Reset (serializer);
                 return true;
             }
-            if (state == STATE_TYPE) {
-                if (typeParser.ParseValue (serializer)) {
-                    if (Serializable::IsType (value.type.c_str ())) {
-                        if (value.NeedVersion ()) {
-                            state = STATE_VERSION;
-                        }
-                        else if (value.NeedSize ()) {
-                            state = STATE_SIZE;
-                        }
-                        else {
-                            Reset (serializer);
-                            return true;
-                        }
+            if (state == STATE_ID) {
+                if (idParser.ParseValue (serializer)) {
+                    value.type = serializer.GetTypeDictionary ()->ResolveTypeId (id);
+                    if (value.NeedVersion ()) {
+                        state = STATE_VERSION;
+                    }
+                    else if (value.NeedSize ()) {
+                        state = STATE_SIZE;
                     }
                     else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Unknown serializable type: %s.",
-                            value.type.c_str ());
+                        Reset (serializer);
+                        return true;
+                    }
+                }
+            }
+            if (state == STATE_TYPE) {
+                if (typeParser.ParseValue (serializer)) {
+                    if (value.NeedVersion ()) {
+                        state = STATE_VERSION;
+                    }
+                    else if (value.NeedSize ()) {
+                        state = STATE_SIZE;
+                    }
+                    else {
+                        Reset (serializer);
+                        return true;
                     }
                 }
             }

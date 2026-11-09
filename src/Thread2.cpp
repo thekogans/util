@@ -28,6 +28,7 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/CPU.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/TimeSpec.h"
 
 namespace thekogans {
     namespace util {

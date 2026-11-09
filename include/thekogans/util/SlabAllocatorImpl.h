@@ -38,7 +38,9 @@ namespace thekogans {
         ///
         /// \brief
         /// SlabAllocatorImpl
-        struct _LIB_THEKOGANS_UTIL_DECL SlabAllocatorImpl {
+        struct _LIB_THEKOGANS_UTIL_DECL SlabAllocatorImpl : public virtual RefCounted {
+            THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (SlabAllocatorImpl)
+
         private:
             /// \struct SlabAllocatorImpl::Page SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
             ///
@@ -303,6 +305,13 @@ namespace thekogans {
             /// \brief
             /// dtor. Return pages back to the DefaultPageAllocator.
             ~SlabAllocatorImpl () noexcept;
+
+            inline std::size_t GetSlotsPerPage () const {
+                return slotsPerPage;
+            }
+            inline std::size_t GetTLCSize () const {
+                return tlcSize;
+            }
 
             /// \brief
             /// Allocate a new slot.

@@ -143,6 +143,9 @@ public:
     }
 
     // Serializer
+    virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
+        return file->GetTypeDictionary ();
+    }
     /// \brief
     /// Read raw bytes.
     /// \param[out] buffer Where to place the bytes.

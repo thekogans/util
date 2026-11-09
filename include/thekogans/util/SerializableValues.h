@@ -51,7 +51,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized value size.
             /// \return Serialized value size.
-            virtual std::size_t Size () const noexcept override {
+            virtual std::size_t Size (Serializer &serializer) noexcept override {
                 return Serializer::Size (value);
             }
             /// \brief
@@ -126,7 +126,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized value size.
             /// \return Serialized value size.
-            virtual std::size_t Size () const noexcept override {
+            virtual std::size_t Size (Serializer &serializer) noexcept override {
                 return Serializer::Size (value);
             }
             /// \brief

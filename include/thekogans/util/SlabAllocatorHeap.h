@@ -91,7 +91,8 @@ namespace thekogans {
             /// Return the true allocated block size (alligned to power of 2).
             /// \param[in] mem tk_mem_t returned by Alloc.
             /// \return True allocated block size.
-            std::size_t GetMemSize (tk_mem_t mem);
+            std::size_t GetMemSize (std::size_t poolIndex);
+            std::size_t GetMemPoolIndex (std::size_t size);
             /// \brief
             /// Free a previously Alloc(ated) block.
             /// \param[in] mem Same tk_mem_t previously returned by Alloc.
@@ -118,7 +119,8 @@ namespace thekogans {
         /// Return the true allocated block size (alligned to power of 2).
         /// \param[in] mem tk_mem_t returned by tk_malloc.
         /// \return True allocated block size.
-        std::size_t tk_mem_size (tk_mem_t mem) noexcept;
+        std::size_t tk_mem_size (std::size_t poolIndex) noexcept;
+        std::size_t tk_mem_pool_index (std::size_t size) noexcept;
 
         /// \brief
         /// Companion to tk_malloc.

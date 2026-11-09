@@ -516,6 +516,26 @@ namespace thekogans {
             using BaseMapType = std::unordered_map<
                 const char *, TypeMapType, CharPtrHash, CharPtrEqual>;
 
+            /// \struct DynamicCreatable::TypeDictionary DynamicCreatable.h
+            /// thekogans/util/DynamicCreatable.h
+            ///
+            /// \brief
+            /// Exposes an interface to map type strings to unique id (ui32) and back.
+            struct TypeDictionary : public virtual RefCounted {
+                THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TypeDictionary)
+
+                using IdType = ui32;
+                static constexpr std::size_t IdTypeSize = Width<IdType>::value;
+
+                static constexpr IdType None = 0;
+                static constexpr IdType FirstSystemId = 1;
+                static constexpr IdType MaxReservedId = 1024;
+                static constexpr IdType FirstUserId = MaxReservedId + 1;
+
+                virtual IdType GetOrCreateTypeId (const char *type) = 0;
+                virtual const char *ResolveTypeId (IdType id) = 0;
+            };
+
             /// \brief
             /// Declare DynamicCreatable base functions.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (DynamicCreatable)

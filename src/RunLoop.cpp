@@ -17,6 +17,7 @@
 
 #include <cassert>
 #include "thekogans/util/Environment.h"
+#include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Heap.h"
 #include "thekogans/util/HRTimer.h"
 #include "thekogans/util/XMLUtils.h"
@@ -216,8 +217,6 @@ namespace thekogans {
             return !state.pendingJobs.empty () ? state.pendingJobs.pop_front () : nullptr;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::RunLoop::Stats::Job, 1, 0)
-
         RunLoop::Stats::Job &RunLoop::Stats::Job::operator = (const Job &job) {
             if (&job != this) {
                 id  = job.id;
@@ -234,62 +233,6 @@ namespace thekogans {
             endTime = 0;
             totalTime = 0;
         }
-
-        std::size_t RunLoop::Stats::Job::Size () const noexcept {
-            return Serializer::Size (id) +
-                Serializer::Size (startTime) +
-                Serializer::Size (endTime) +
-                Serializer::Size (totalTime);
-        }
-
-        void RunLoop::Stats::Job::Read (Serializer &serializer) {
-            serializer >> id >> startTime >> endTime >> totalTime;
-        }
-
-        void RunLoop::Stats::Job::Write (Serializer &serializer) {
-            serializer << id << startTime << endTime << totalTime;
-        }
-
-        namespace {
-            const char * const ATTR_ID = "Id";
-            const char * const ATTR_START_TIME = "StartTime";
-            const char * const ATTR_END_TIME = "EndTime";
-            const char * const ATTR_TOTAL_TIME = "TotalTime";
-        }
-
-        void RunLoop::Stats::Job::ReadXML (
-                const SerializableHeader & /*header*/,
-                pugi::xml_node &node) {
-            id = node.attribute (ATTR_ID).value ();
-            startTime = stringToui64 (node.attribute (ATTR_START_TIME).value ());
-            endTime = stringToui64 (node.attribute (ATTR_END_TIME).value ());
-            totalTime = stringToui64 (node.attribute (ATTR_TOTAL_TIME).value ());
-        }
-
-        void RunLoop::Stats::Job::WriteXML (pugi::xml_node &node) {
-            node.append_attribute (ATTR_ID).set_value (id.c_str ());
-            node.append_attribute (ATTR_START_TIME).set_value (ui64Tostring (startTime).c_str ());
-            node.append_attribute (ATTR_END_TIME).set_value (ui64Tostring (endTime).c_str ());
-            node.append_attribute (ATTR_TOTAL_TIME).set_value (ui64Tostring (totalTime).c_str ());
-        }
-
-        void RunLoop::Stats::Job::ReadJSON (
-                const SerializableHeader & /*header*/,
-                JSON::Object &object) {
-            id = object.Get<JSON::String> (ATTR_ID)->value;
-            startTime = object.Get<JSON::Number> (ATTR_START_TIME)->To<ui64> ();
-            endTime = object.Get<JSON::Number> (ATTR_END_TIME)->To<ui64> ();
-            totalTime = object.Get<JSON::Number> (ATTR_TOTAL_TIME)->To<ui64> ();
-        }
-
-        void RunLoop::Stats::Job::WriteJSON (JSON::Object &object) {
-            object.Add<const std::string &> (ATTR_ID, id);
-            object.Add (ATTR_START_TIME, startTime);
-            object.Add (ATTR_END_TIME, endTime);
-            object.Add (ATTR_TOTAL_TIME, totalTime);
-        }
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::RunLoop::Stats, 1, 0)
 
         RunLoop::Stats &RunLoop::Stats::operator = (const Stats &stats) {
             if (&stats != this) {
@@ -310,91 +253,6 @@ namespace thekogans {
             lastJob.Reset ();
             minJob.Reset ();
             maxJob.Reset ();
-        }
-
-        std::size_t RunLoop::Stats::Size () const noexcept {
-            return Serializer::Size (id) +
-                Serializer::Size (name) +
-                Serializer::Size (totalJobs) +
-                Serializer::Size (totalJobTime) +
-                lastJob.Size () +
-                minJob.Size () +
-                maxJob.Size ();
-        }
-
-        void RunLoop::Stats::Read (Serializer &serializer) {
-            serializer >> id >> name >> totalJobs >> totalJobTime >> lastJob >> minJob >> maxJob;
-        }
-
-        void RunLoop::Stats::Write (Serializer &serializer) {
-            serializer << id << name << totalJobs << totalJobTime << lastJob << minJob << maxJob;
-        }
-
-        namespace {
-            const char * const ATTR_NAME = "Name";
-            const char * const ATTR_TOTAL_JOBS = "TotalJobs";
-            const char * const ATTR_TOTAL_JOB_TIME = "TotalJobTime";
-            const char * const TAG_LAST_JOB = "LastJob";
-            const char * const TAG_MIN_JOB = "MinJob";
-            const char * const TAG_MAX_JOB = "MaxJob";
-        }
-
-        void RunLoop::Stats::ReadXML (
-                const SerializableHeader & /*header*/,
-                pugi::xml_node &node) {
-            id = node.attribute (ATTR_ID).value ();
-            name = Decodestring (node.attribute (ATTR_NAME).value ());
-            totalJobs = stringTosize_t (node.attribute (ATTR_TOTAL_JOBS).value ());
-            totalJobTime = stringToui64 (node.attribute (ATTR_TOTAL_JOB_TIME).value ());
-            for (auto child : node.children ()) {
-                if (child.type () == pugi::node_element) {
-                    std::string childName = child.name ();
-                    if (childName == TAG_LAST_JOB) {
-                        child >> lastJob;
-                    }
-                    else if (childName == TAG_MIN_JOB) {
-                        child >> minJob;
-                    }
-                    else if (childName == TAG_MAX_JOB) {
-                        child >> maxJob;
-                    }
-                }
-            }
-        }
-
-        void RunLoop::Stats::WriteXML (pugi::xml_node &node) {
-            node.append_attribute (ATTR_ID).set_value (id.c_str ());
-            node.append_attribute (ATTR_NAME).set_value (Encodestring (name).c_str ());
-            node.append_attribute (ATTR_TOTAL_JOBS).set_value (size_tTostring (totalJobs).c_str ());
-            node.append_attribute (ATTR_TOTAL_JOB_TIME).set_value (ui64Tostring (totalJobTime).c_str ());
-            {
-                pugi::xml_node child = node.append_child (TAG_LAST_JOB);
-                child << lastJob;
-            }
-            {
-                pugi::xml_node child = node.append_child (TAG_MIN_JOB);
-                child << minJob;
-            }
-            {
-                pugi::xml_node child = node.append_child (TAG_MAX_JOB);
-                child << maxJob;
-            }
-        }
-
-        void RunLoop::Stats::ReadJSON (
-                const SerializableHeader & /*header*/,
-                JSON::Object &object) {
-            id = object.Get<JSON::String> (ATTR_ID)->value;
-            name = object.Get<JSON::String> (ATTR_NAME)->value;
-            totalJobs = object.Get<JSON::Number> (ATTR_TOTAL_JOBS)->To<SizeT> ();
-            totalJobTime = object.Get<JSON::Number> (ATTR_TOTAL_JOB_TIME)->To<ui64> ();
-        }
-
-        void RunLoop::Stats::WriteJSON (JSON::Object &object) {
-            object.Add<const std::string &> (ATTR_ID, id);
-            object.Add<const std::string &> (ATTR_NAME, name);
-            object.Add<const SizeT &> (ATTR_TOTAL_JOBS, totalJobs);
-            object.Add (ATTR_TOTAL_JOB_TIME, totalJobTime);
         }
 
         void RunLoop::Stats::Update (

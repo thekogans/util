@@ -18,19 +18,13 @@
 #if !defined (__thekogans_util_SerializableHeader_h)
 #define __thekogans_util_SerializableHeader_h
 
-#include <cstddef>
 #include <string>
-#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/JSON.h"
+#include "thekogans/util/SizeT.h"
 
 namespace thekogans {
     namespace util {
-
-        /// \brief
-        /// Forward declaration for \see{Serializer}.
-        struct Serializer;
 
         /// \struct SerializableHeader SerializableHeader.h thekogans/util/SerializableHeader.h
         ///
@@ -99,77 +93,7 @@ namespace thekogans {
             inline bool IsFull () const {
                 return !NeedType () && !NeedVersion () && !NeedSize ();
             }
-
-            /// \brief
-            /// Return the header size.
-            /// \param[in] all true == return size of the entire structure
-            /// including the empty members.
-            /// \return SerializableHeader size.
-            std::size_t Size (bool all = false) const;
-            /// \brief
-            /// Read the entire structure from \see{Serializer} ignoring
-            /// \see{Serializer::context}.
-            /// \param[in] serializer \see{Serializer} to read the members from.
-            void Read (Serializer &serializer);
-            /// \brief
-            /// Write the entire structure to the given \see{Serializer} ignoring
-            /// \see{Serializer::context}.
-            /// \param[in] serializer \see{Serializer} to write the members to.
-            void Write (Serializer &serializer) const;
         };
-
-        /// \brief
-        /// \see{SerializableHeader} insertion operator. Write the portion of the
-        /// structure that dovetails the \see{Serializer::context}.
-        /// \param[in] serializer Where to serialize the serializable header.
-        /// \param[in] header \see{SerializableHeader} to serialize.
-        /// \return serializer.
-        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
-            Serializer &serializer,
-            const SerializableHeader &header);
-        /// \brief
-        /// \see{SerializableHeader} extraction operator. Read the portion of the
-        /// structure that dovetails the \see{Serializer::context}.
-        /// \param[in] serializer Where to deserialize the serializable header.
-        /// \param[in] header \see{SerializableHeader} to extract in to.
-        /// \return serializer.
-        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >> (
-            Serializer &serializer,
-            SerializableHeader &header);
-
-        /// \brief
-        /// \see{SerializableHeader} insertion operator.
-        /// \param[in] node Where to serialize the serializable header.
-        /// \param[in] header \see{SerializableHeader} to serialize.
-        /// \return node.
-        _LIB_THEKOGANS_UTIL_DECL pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator << (
-            pugi::xml_node &node,
-            const SerializableHeader &header);
-        /// \brief
-        /// \see{SerializableHeader} extraction operator.
-        /// \param[in] node Where to deserialize the serializable header.
-        /// \param[in] header \see{SerializableHeader} to extract in to.
-        /// \return node.
-        _LIB_THEKOGANS_UTIL_DECL const pugi::xml_node & _LIB_THEKOGANS_UTIL_API operator >> (
-            const pugi::xml_node &node,
-            SerializableHeader &header);
-
-        /// \brief
-        /// \see{SerializableHeader} insertion operator.
-        /// \param[in] object \see{JSON::Object} that will contain the serializable header.
-        /// \param[in] header \see{SerializableHeader} to insert.
-        /// \return object.
-        _LIB_THEKOGANS_UTIL_DECL JSON::Object & _LIB_THEKOGANS_UTIL_API operator << (
-            JSON::Object &object,
-            const SerializableHeader &header);
-        /// \brief
-        /// \see{SerializableHeader} extraction operator.
-        /// \param[in] object \see{JSON::Object} containing the serializable header.
-        /// \param[in] header \see{SerializableHeader} to extract in to.
-        /// \return object.
-        _LIB_THEKOGANS_UTIL_DECL const JSON::Object & _LIB_THEKOGANS_UTIL_API operator >> (
-            const JSON::Object &object,
-            SerializableHeader &header);
 
         /// \brief
         /// \see{SerializableHeader} equality operator.

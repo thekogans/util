@@ -19,13 +19,9 @@
 #define __thekogans_util_TransactedFileBTreeAllocator_h
 
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Types.h"
-#include "thekogans/util/Flags.h"
 #include "thekogans/util/SpinLock.h"
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFile.h"
-#include "thekogans/util/Subscriber.h"
-#include "thekogans/util/SlabAllocatorHeap.h"
+#include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
 
 namespace thekogans {
     namespace util {
@@ -42,59 +38,17 @@ namespace thekogans {
         /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
                 public TransactedFile::Allocator,
-                public Subscriber<TransactedFile::ObjectEvents> {
+                private TransactedFileBTreeAllocatorBTree {
             /// \brief
             /// TransactedFileBTreeAllocator is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeAllocator)
 
-            // NOTE: The following constants are meant to be tuned during
-            // system integration to provide the best performance for your
-            // needs.
-            /// \brief
-            /// Default number of entries per \see{BTree::Node}.
-            static constexpr ui32 DEFAULT_BTREE_ENTRIES_PER_NODE = 256;
-
         private:
-            /// \struct TransactedFileBTreeAllocator::Header TransactedFileBTreeAllocator.h
-            /// thekogans/util/TransactedFileBTreeAllocator.h
-            ///
-            /// \brief
-            /// Header contains the global heap values.
-            struct _LIB_THEKOGANS_UTIL_DECL Header {
-                /// \brief
-                /// Contains the offset of the \see{BTree::Header}.
-                TransactedFile::AddressType btreeOffset;
-                ui32 btreeEntriesPerNode;
-
-                /// \brief
-                /// The size of the header on disk.
-                static const std::size_t SIZE =
-                    UI32_SIZE + // magic
-                    TransactedFile::AddressTypeSize + // btreeOffset
-                    UI32_SIZE; // btreeEntriesPerNode
-
-                /// \brief
-                /// ctor.
-                Header (ui32 btreeEntriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE) :
-                    btreeOffset (0),
-                    btreeEntriesPerNode (btreeEntriesPerNode_) {}
-            } header;
-            /// \brief
-            /// Include the \see{BTree} header.
-            /// I split it out because this file was getting too big to maintain.
-            #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
-            /// \brief
-            /// \see{BTree} to manage heap free space.
-            BTree::SharedPtr btree;
             /// \brief
             /// Synchronization lock.
             SpinLock spinLock;
 
         public:
-            /// \brief
-            /// Allocator size on disk.
-            static constexpr std::size_t SIZE = Header::SIZE;
-
             /// \brief
             /// ctor.
             /// \param[in] secure true == zero out free blocks.
@@ -105,7 +59,9 @@ namespace thekogans {
             TransactedFileBTreeAllocator (
                 TransactedFile::SharedPtr file = nullptr,
                 TransactedFile::AddressType offset = 0,
-                std::size_t btreeEntriesPerNode = DEFAULT_BTREE_ENTRIES_PER_NODE);
+                std::size_t entriesPerNode = TransactedFileBTreeAllocatorBTree::DEFAULT_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = TransactedFileBTreeAllocatorBTree::DEFAULT_NODES_PER_PAGE) :
+                TransactedFileBTreeAllocatorBTree (file, offset, entriesPerNode, nodesPerPage) {}
 
             // Allocator
             /// \brief
@@ -131,101 +87,10 @@ namespace thekogans {
                 bool moveData = true) override;
 
         private:
-            // Serializable
-            /// \brief
-            /// Read the \see{Header} from the given \see{Serializer}.
-            virtual void Read (Serializer &serializer) override;
-            /// \brief
-            /// Write the \see{Header} to the given \see{Serializer}.
-            virtual void Write (Serializer &serializer) override;
-
-            // TransactedFile::Object
-            virtual void Init (
-                    TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset) noexcept override {
-                TransactedFile::Object::Init (file, offset);
-                btree->Init (file, header.btreeOffset);
-            }
             virtual void AllocBlock () override {
-                TransactedFile::Object::AllocBlock ();
+                TransactedFileBTreeAllocatorBTree::AllocBlock ();
                 file->SetAllocatorOffset (offset);
             }
-
-            // TransactedFile::ObjectEvents
-            /// \brief
-            /// \see{BTree} allocated it's header block.
-            /// \param[in] object \see{BTree} that allocated it's header block.
-            virtual void OnTransactedFileObjectAllocBlock (
-                TransactedFile::Object::SharedPtr object) noexcept override;
-            /// \brief
-            /// \see{BTree} freed it's header block.
-            /// \param[in] object \see{BTree} that freed it's header block.
-            virtual void OnTransactedFileObjectFreeBlock (
-                TransactedFile::Object::SharedPtr /*object*/) noexcept override;
-
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Header &header);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Header &header);
-
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator == (
-                const BTree::Key &key1,
-                const BTree::Key &key2);
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator != (
-                const BTree::Key &key1,
-                const BTree::Key &key2);
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator < (
-                const BTree::Key &key1,
-                const BTree::Key &key2);
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator > (
-                const BTree::Key &key1,
-                const BTree::Key &key2);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-               Serializer &serializer,
-               const BTree::Key &key);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                BTree::Key &key);
-
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const BTree::Node::Entry &entry);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                BTree::Node::Entry &entry);
-
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const BTree::Header &header);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                BTree::Header &header);
 
             /// \brief
             /// TransactedFileBTreeAllocator is neither copy constructable, nor assignable.

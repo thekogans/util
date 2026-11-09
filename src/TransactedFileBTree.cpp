@@ -27,18 +27,14 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const TransactedFileBTree::Header &header) {
-            header.keyContext.Write (serializer);
-            header.valueContext.Write (serializer);
-            serializer << header.flags << header.entriesPerNode << header.rootOffset;
+            serializer << header.keyContext << header.valueContext << header.flags << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
                 TransactedFileBTree::Header &header) {
-            header.keyContext.Read (serializer);
-            header.valueContext.Read (serializer);
-            serializer >> header.flags >> header.entriesPerNode >> header.rootOffset;
+            serializer >> header.keyContext >> header.valueContext >> header.flags >> header.entriesPerNode >> header.rootOffset;
             return serializer;
         }
 
@@ -103,7 +99,7 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::Object::SharedPtr TransactedFileBTree::Iterator::GetValue () const {
+        Serializable::SharedPtr TransactedFileBTree::Iterator::GetValue () const {
             if (!finished) {
                 assert (node.first != nullptr && node.second < node.first->count);
                 return node.first->GetValue (node.second);
@@ -122,11 +118,8 @@ namespace thekogans {
             finished = false;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::TransactedFileBTree::Node,
-            1,
-            0,
-            TransactedFile::Object::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (TransactedFileBTree::Node, 1, 0)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTree::Node)
 
         TransactedFileBTree::Node::Node (
                 TransactedFile::SharedPtr file,
@@ -137,7 +130,6 @@ namespace thekogans {
                 count (0),
                 leftOffset (0),
                 left (nullptr),
-                keyValueOffset (0),
                 entries ((Entry *)(this + 1)) {
             if (btree != nullptr) {
                 Reload ();
@@ -156,18 +148,16 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset,
                 TransactedFileBTree *btree) {
-            Node *node = new (
-                btree->nodeAllocator->Alloc (
-                    Size (btree->header.entriesPerNode))) Node (file, offset, btree);
+            Node *node = new (btree->nodeAllocator->Alloc ()) Node (file, offset, btree);
             node->AddRef ();
             return node;
         }
 
-        void TransactedFileBTree::Node::FreeSubtree (
-                TransactedFileBTree &btree,
+        void TransactedFileBTree::Node::FreeObject (
+                TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             if (offset != 0) {
-                TransactedFile::BlockRange range (btree.file, offset);
+                TransactedFile::BlockRange range (file, offset);
                 SerializableHeader header;
                 range >> header;
                 if (header.type == TYPE) {
@@ -177,28 +167,22 @@ namespace thekogans {
                         ui32 count;
                         range >> count;
                         if (count > 0) {
+                            ui32 flags;
                             TransactedFile::AddressType leftOffset;
-                            TransactedFile::AddressType keyValueOffset;
-                            range >> leftOffset >> keyValueOffset;
-                            btree.GetFile ()->GetAllocator ()->Free (keyValueOffset);
-                            FreeSubtree (btree, leftOffset);
+                            range >> flags >> leftOffset;
+                            FreeObject (file, leftOffset);
                             for (ui32 i = 0; i < count; ++i) {
-                                if (btree.header.IsValueAsObject ()) {
+                                if (flags & Header::FLAGS_VALUE_AS_OBJECT) {
                                     TransactedFile::AddressType valueOffset;
                                     range >> valueOffset;
-                                    TransactedFile::BlockRange valueRange (btree.file, valueOffset);
-                                    TransactedFile::Object::SharedPtr value;
-                                    valueRange >> value;
-                                    if (value != nullptr) {
-                                        value->FreeBlock ();
-                                    }
+                                    DestroyObject (file, valueOffset);
                                 }
                                 TransactedFile::AddressType rightOffset;
                                 range >> rightOffset;
-                                FreeSubtree (btree, rightOffset);
+                                FreeObject (file, rightOffset);
                             }
                         }
-                        btree.GetFile ()->GetAllocator ()->Free (offset);
+                        TransactedFile::Object::FreeObject (file, offset);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -220,11 +204,9 @@ namespace thekogans {
             return entries[index].key;
         }
 
-        TransactedFile::Object::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
+        Serializable::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
             if (entries[index].value == nullptr && entries[index].valueOffset != 0) {
                 TransactedFile::BlockRange valueRange (file, entries[index].valueOffset);
-                valueRange.context = btree->header.valueContext;
-                valueRange.factory = btree->valueFactory;
                 TransactedFile::Object::SharedPtr value;
                 valueRange >> value;
                 value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
@@ -375,7 +357,15 @@ namespace thekogans {
                 // either be overwritten or removed below.
                 entries[index].key->Release ();
                 if (entries[index].value != nullptr) {
-                    entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                    if (!btree->header.IsValueAsObject ()) {
+                        entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                    }
+                    else {
+                        TransactedFile::Object::SharedPtr object =
+                            Serializable::SharedPtr (entries[index].value);
+                        object->FreeBlock ();
+                        object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                    }
                     entries[index].value->Release ();
                 }
                 if (child != nullptr) {
@@ -387,7 +377,14 @@ namespace thekogans {
                     entries[index].valueOffset = leaf->entries[0].valueOffset;
                     entries[index].value = leaf->entries[0].value;
                     if (entries[index].value != nullptr) {
-                        entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                        if (!btree->header.IsValueAsObject ()) {
+                            entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
+                        }
+                        else {
+                            TransactedFile::Object::SharedPtr object =
+                                Serializable::SharedPtr (entries[index].value);
+                            object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                        }
                     }
                     SetDirty ();
                     child->Remove (*leaf->entries[0].key);
@@ -453,7 +450,14 @@ namespace thekogans {
             left->entries[lastIndex].right = right;
             entries[index] = left->entries[lastIndex];
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                if (!btree->header.IsValueAsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object =
+                        Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                }
             }
             left->RemoveEntry (lastIndex);
             SetDirty ();
@@ -472,7 +476,14 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             entries[index] = right->entries[0];
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                if (!btree->header.IsValueAsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object =
+                        Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                }
             }
             right->RemoveEntry (0);
             SetDirty ();
@@ -502,8 +513,16 @@ namespace thekogans {
                 node->count * sizeof (Entry));
             for (ui32 i = 0; i < node->count; ++i) {
                 if (node->entries[i].value != nullptr) {
-                    node->entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                    node->entries[i].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+                    if (!btree->header.IsValueAsObject ()) {
+                        node->entries[i].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                        node->entries[i].value->Producer<SerializableEvents>::Subscribe (*node);
+                    }
+                    else {
+                        TransactedFile::Object::SharedPtr object =
+                            Serializable::SharedPtr (entries[i].value);
+                        object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                        object->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+                    }
                 }
             }
             count = splitIndex;
@@ -520,8 +539,16 @@ namespace thekogans {
             count += node->count;
             for (ui32 i = oldCount; i < count; ++i) {
                 if (entries[i].value != nullptr) {
-                    entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
-                    entries[i].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                    if (!btree->header.IsValueAsObject ()) {
+                        entries[i].value->Producer<SerializableEvents>::Unsubscribe (*node);
+                        entries[i].value->Producer<SerializableEvents>::Subscribe (*this);
+                    }
+                    else {
+                        TransactedFile::Object::SharedPtr object =
+                            Serializable::SharedPtr (entries[i].value);
+                        object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
+                        object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                    }
                 }
             }
             node->count = 0;
@@ -538,14 +565,28 @@ namespace thekogans {
                 (count++ - index) * sizeof (Entry));
             entries[index] = entry;
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                if (!btree->header.IsValueAsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object =
+                        Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                }
             }
             SetDirty ();
         }
 
         void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
             if (entries[index].value != nullptr) {
-                entries[index].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                if (!btree->header.IsValueAsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object =
+                        Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                }
             }
             std::memcpy (
                 entries + index,
@@ -556,7 +597,7 @@ namespace thekogans {
 
         void TransactedFileBTree::Node::Harakiri () {
             this->~Node ();
-            btree->nodeAllocator->Free (this, Size (btree->header.entriesPerNode));
+            btree->nodeAllocator->Free (this);
         }
 
         void TransactedFileBTree::Node::Reset () {
@@ -571,7 +612,14 @@ namespace thekogans {
                         entries[i].key = nullptr;
                     }
                     if (entries[i].value != nullptr) {
-                        entries[i].value->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                        if (!btree->header.IsValueAsObject ()) {
+                            entries[i].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                        }
+                        else {
+                            TransactedFile::Object::SharedPtr object =
+                                Serializable::SharedPtr (entries[i].value);
+                            object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                        }
                         entries[i].value->Release ();
                         entries[i].value = nullptr;
                     }
@@ -584,10 +632,36 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTree::Node::FreeBlock () {
-            file->GetAllocator ()->Free (keyValueOffset);
-            keyValueOffset = 0;
-            Object::FreeBlock ();
+        std::size_t TransactedFileBTree::Node::Size (Serializer &serializer) noexcept {
+                            // magic       count
+            std::size_t size = UI32_SIZE + UI32_SIZE;
+            if (count > 0) {
+                     // flags       leftOffset
+                size += UI32_SIZE + TransactedFile::AddressTypeSize;
+                for (ui32 i = 0; i < count; ++i) {
+                    if (btree->header.IsValueAsObject ()) {
+                             // valueOffset
+                        size += TransactedFile::AddressTypeSize;
+                    }
+                         // rightOffset
+                    size += TransactedFile::AddressTypeSize;
+                }
+                {
+                    Serializer::ContextGuard guard (serializer, btree->header.keyContext, btree->keyFactory);
+                    for (ui32 i = 0; i < count; ++i) {
+                              // key
+                        size += entries[i].key->Size (serializer);
+                    }
+                }
+                if (!btree->header.IsValueAsObject ()) {
+                    Serializer::ContextGuard guard (serializer, btree->header.valueContext, btree->valueFactory);
+                    for (ui32 i = 0; i < count; ++i) {
+                             // value
+                        size += entries[i].value->Size (serializer);
+                    }
+                }
+            }
+            return size;
         }
 
         void TransactedFileBTree::Node::Read (Serializer &serializer) {
@@ -597,14 +671,8 @@ namespace thekogans {
             if (magic == MAGIC32) {
                 serializer >> count;
                 if (count > 0) {
-                    serializer >> leftOffset >> keyValueOffset;
-                    TransactedFile::BlockRange keyValueRange (file, keyValueOffset);
-                    keyValueRange.context = btree->header.keyContext;
-                    keyValueRange.factory = btree->keyFactory;
+                    serializer >> flags >> leftOffset;
                     for (ui32 i = 0; i < count; ++i) {
-                        Key::SharedPtr key;
-                        keyValueRange >> key;
-                        entries[i].key = key.Release ();
                         if (btree->header.IsValueAsObject ()) {
                             serializer >> entries[i].valueOffset;
                         }
@@ -614,14 +682,20 @@ namespace thekogans {
                         entries[i].value = nullptr;
                         serializer >> entries[i].rightOffset;
                     }
-                    if (!btree->header.IsValueAsObject ()) {
-                        keyValueRange.context = btree->header.valueContext;
-                        keyValueRange.factory = btree->valueFactory;
+                    {
+                        Serializer::ContextGuard guard (serializer, btree->header.keyContext, btree->keyFactory);
                         for (ui32 i = 0; i < count; ++i) {
-                            TransactedFile::Object::SharedPtr value;
-                            keyValueRange >> value;
-                            value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                            value->SetAggregate (true);
+                            Key::SharedPtr key;
+                            serializer >> key;
+                            entries[i].key = key.Release ();
+                        }
+                    }
+                    if (!btree->header.IsValueAsObject ()) {
+                        Serializer::ContextGuard guard (serializer, btree->header.valueContext, btree->valueFactory);
+                        for (ui32 i = 0; i < count; ++i) {
+                            Serializable::SharedPtr value;
+                            serializer >> value;
+                            value->Producer<SerializableEvents>::Subscribe (*this);
                             entries[i].value = value.Release ();
                         }
                     }
@@ -637,32 +711,12 @@ namespace thekogans {
         void TransactedFileBTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
             if (count > 0) {
-                // Calculate key/value sizes.
-                std::size_t keyValueSize = 0;
-                if (btree->header.IsValueAsObject ()) {
-                    for (ui32 i = 0; i < count; ++i) {
-                        keyValueSize += entries[i].key->GetSize (btree->header.keyContext);
-                    }
-                }
-                else {
-                    for (ui32 i = 0; i < count; ++i) {
-                        keyValueSize +=
-                            entries[i].key->GetSize (btree->header.keyContext) +
-                            entries[i].value->GetSize (btree->header.valueContext);
-                    }
-                }
-                keyValueOffset = file->GetAllocator ()->Realloc (keyValueOffset, keyValueSize, false);
-                if (left != nullptr) {
-                    leftOffset = left->GetOffset ();
-                }
-                serializer << leftOffset << keyValueOffset;
-                TransactedFile::BlockRange keyValueRange (file, keyValueOffset, false);
-                keyValueRange.context = btree->header.keyContext;
+                serializer << flags << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    keyValueRange << *entries[i].key;
                     if (btree->header.IsValueAsObject ()) {
                         if (entries[i].value != nullptr) {
-                            entries[i].valueOffset = entries[i].value->GetOffset ();
+                            entries[i].valueOffset =
+                                dynamic_cast<TransactedFile::Object *> (entries[i].value)->GetOffset ();
                         }
                         serializer << entries[i].valueOffset;
                     }
@@ -671,32 +725,22 @@ namespace thekogans {
                     }
                     serializer << entries[i].rightOffset;
                 }
-                if (!btree->header.IsValueAsObject ()) {
-                    keyValueRange.context = btree->header.valueContext;
+                {
+                    Serializer::ContextGuard guard (serializer, btree->header.keyContext);
                     for (ui32 i = 0; i < count; ++i) {
-                        keyValueRange << *entries[i].value;
+                        serializer << *entries[i].key;
                     }
                 }
-                if (file->IsSecure ()) {
-                    // Zero out the unused portion of the keyValueRange to
-                    // prevent leaking sensitive data.
-                    keyValueRange.Seek (
-                        SecureZeroMemory (
-                            keyValueRange.GetDataPtr (),
-                            keyValueRange.GetDataAvailable ()),
-                        SEEK_CUR);
+                if (!btree->header.IsValueAsObject ()) {
+                    Serializer::ContextGuard guard (serializer, btree->header.valueContext);
+                    for (ui32 i = 0; i < count; ++i) {
+                        serializer << *entries[i].value;
+                    }
                 }
-            }
-            else if (keyValueOffset != 0) {
-                file->GetAllocator ()->Free (keyValueOffset);
-                keyValueOffset = 0;
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (
-            thekogans::util::TransactedFileBTree,
-            1,
-            0)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTree, 1, 0)
 
         TransactedFileBTree::TransactedFileBTree (
                 TransactedFile::SharedPtr file,
@@ -705,8 +749,7 @@ namespace thekogans {
                 const SerializableHeader &valueContext,
                 bool valueAsObject,
                 std::size_t entriesPerNode,
-                std::size_t nodesPerPage,
-                Allocator::SharedPtr allocator) :
+                std::size_t nodesPerPage) :
                 TransactedFile::Object (file, offset),
                 header (
                     keyContext,
@@ -716,10 +759,10 @@ namespace thekogans {
                 keyFactory (Key::GetTypeFactory (keyContext.type.c_str ())),
                 valueFactory (TransactedFile::Object::GetTypeFactory (valueContext.type.c_str ())),
                 nodeAllocator (
-                    new BlockAllocator (
+                    new SlabAllocatorImpl (
                         Node::Size (entriesPerNode),
                         nodesPerPage,
-                        allocator)),
+                        nodesPerPage / 4)),
                 root (Node::Alloc (file, header.rootOffset, this)) {
             if (!Key::IsType (keyContext.type.c_str ()) ||
                     (!valueContext.NeedType () &&
@@ -757,14 +800,17 @@ namespace thekogans {
 
         bool TransactedFileBTree::Insert (
                 Key::SharedPtr key,
-                TransactedFile::Object::SharedPtr value,
+                Serializable::SharedPtr value,
                 Iterator &it) {
             if (key != nullptr && value != nullptr &&
                     key->IsKindOf (header.keyContext.type.c_str ()) &&
                     (header.valueContext.NeedType () ||
                         value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
-                Node::Entry entry (key.Get (), value->GetOffset (), value.Get ());
+                Node::Entry entry (
+                    key.Get (),
+                    header.IsValueAsObject () ? dynamic_cast<TransactedFile::Object *> (value.Get ())->GetOffset () : 0,
+                    value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
                     // The path to the leaf node is full.
@@ -786,7 +832,6 @@ namespace thekogans {
                         SetDirty ();
                     }
                     key.Release ();
-                    value->SetAggregate (!header.IsValueAsObject ());
                     value.Release ();
                 }
                 return result == Node::Inserted;
@@ -858,11 +903,9 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::FreeBlock () {
-            Node::FreeSubtree (*this, header.rootOffset);
+            Node::FreeObject (file, header.rootOffset);
             header.rootOffset = 0;
             Object::FreeBlock ();
-            root->Release ();
-            root = Node::Alloc (file, header.rootOffset, this);
         }
 
         void TransactedFileBTree::Read (Serializer &serializer) {
@@ -893,10 +936,10 @@ namespace thekogans {
             }
             root->Release ();
             nodeAllocator.Reset (
-                new BlockAllocator (
+                new SlabAllocatorImpl (
                     Node::Size (header.entriesPerNode),
-                    nodeAllocator->GetBlocksPerPage (),
-                    nodeAllocator->GetAllocator ()));
+                    nodeAllocator->GetSlotsPerPage (),
+                    nodeAllocator->GetSlotsPerPage () / 4));
             root = Node::Alloc (file, header.rootOffset, this);
         }
 

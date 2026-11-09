@@ -207,6 +207,7 @@ namespace thekogans {
                 virtual void ToJSON (JSON::Object &object) const = 0;
 
                 /// \brief
+                /// \brief
                 /// Return stats accumulated by this TimerInfoBase.
                 /// \param[out] count Number of times this block was hit.
                 /// \param[out] min Minimum time spent in the block.
@@ -224,7 +225,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the serializable size.
                 /// \return Serializable size.
-                virtual std::size_t Size () const noexcept override;
+                virtual std::size_t Size (Serializer &serializer) noexcept override;
                 /// \brief
                 /// Read the serializable from the given serializer.
                 /// \param[in] serializer \see{Serializer} to read the serializable from.
@@ -233,29 +234,6 @@ namespace thekogans {
                 /// Write the serializable to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the serializable to.
                 virtual void Write (Serializer &serializer) override;
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{SerializableHeader}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                    const SerializableHeader & /*header*/,
-                    pugi::xml_node &node) override;
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) override;
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                    const SerializableHeader & /*header*/,
-                    JSON::Object &object) override;
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) override;
             };
 
             /// \def THEKOGANS_UTIL_HRTIMERMGR_TIMERINFOBASE(_T)
@@ -339,7 +317,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the serialized key size.
                 /// \return Serialized key size.
-                virtual std::size_t Size () const noexcept override;
+                virtual std::size_t Size (Serializer &serializer) noexcept override;
 
                 /// \brief
                 /// Read the key from the given serializer.
@@ -349,29 +327,6 @@ namespace thekogans {
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) override;
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{SerializableHeader}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                    const SerializableHeader &header,
-                    pugi::xml_node &node) override;
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) override;
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                    const SerializableHeader &header,
-                    JSON::Object &object) override;
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) override;
             };
 
             /// \struct HRTimerMgr::ScopeInfo HRTimerMgr.h thekogans/util/HRTimerMgr.h
@@ -443,7 +398,7 @@ namespace thekogans {
                 /// \brief
                 /// Return the serialized key size.
                 /// \return Serialized key size.
-                virtual std::size_t Size () const noexcept override;
+                virtual std::size_t Size (Serializer &serializer) noexcept override;
 
                 /// \brief
                 /// Read the key from the given serializer.
@@ -453,29 +408,6 @@ namespace thekogans {
                 /// Write the key to the given serializer.
                 /// \param[out] serializer \see{Serializer} to write the key to.
                 virtual void Write (Serializer &serializer) override;
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{SerializableHeader}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                    const SerializableHeader &header,
-                    pugi::xml_node &node) override;
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) override;
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] node JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                    const SerializableHeader &header,
-                    JSON::Object &object) override;
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteJSON (JSON::Object &object) override;
             };
 
         private:
@@ -653,8 +585,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized key size.
             /// \return Serialized key size.
-            virtual std::size_t Size () const noexcept override;
-
+            virtual std::size_t Size (Serializer &serializer) noexcept override;
             /// \brief
             /// Read the key from the given serializer.
             /// \param[in] serializer \see{Serializer} to read the key from.
@@ -663,29 +594,6 @@ namespace thekogans {
             /// Write the key to the given serializer.
             /// \param[out] serializer \see{Serializer} to write the key to.
             virtual void Write (Serializer &serializer) override;
-
-            /// \brief
-            /// Read the Serializable from an XML DOM.
-            /// \param[in] header \see{SerializableHeader}.
-            /// \param[in] node XML DOM representation of a Serializable.
-            virtual void ReadXML (
-                const SerializableHeader & /*header*/,
-                pugi::xml_node &node) override;
-            /// \brief
-            /// Write the Serializable to the XML DOM.
-            /// \param[out] node Parent node.
-            virtual void WriteXML (pugi::xml_node &node) override;
-
-            /// \brief
-            /// Read the Serializable from an JSON DOM.
-            /// \param[in] node JSON DOM representation of a Serializable.
-            virtual void ReadJSON (
-                const SerializableHeader & /*header*/,
-                JSON::Object &object) override;
-            /// \brief
-            /// Write the Serializable to the JSON DOM.
-            /// \param[out] node Parent node.
-            virtual void WriteJSON (JSON::Object &object) override;
 
             /// \brief
             /// HRTimerMgr is neither copy constructable, nor assignable.

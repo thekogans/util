@@ -147,10 +147,9 @@ target_sources(thekogans_util PRIVATE
     src/TransactedFile.cpp src/TransactedFileAllocator.cpp src/TransactedFileBlock.cpp
     src/TransactedFileBTree.cpp src/TransactedFileBTreeAllocator.cpp
     src/TransactedFileBTreeAllocatorBTree.cpp src/TransactedFileBTreeKeys.cpp
-    src/TransactedFileBTreeRegistry.cpp src/TransactedFileHashDictionary.cpp src/TransactedFileObject.cpp
-    src/TransactedFileObjects.cpp src/TransactedFileRange.cpp src/TransactedFileRegistry.cpp
-    src/TransactedFileSystemDictionary.cpp src/ValueParser.cpp src/Variant.cpp src/Vectorizer.cpp
-    src/Version.cpp src/XMLUtils.cpp
+    src/TransactedFileBTreeRegistry.cpp src/TransactedFileObject.cpp src/TransactedFileObjects.cpp
+    src/TransactedFileRange.cpp src/TransactedFileRegistry.cpp src/TransactedFileTypeDictionary.cpp
+    src/ValueParser.cpp src/Variant.cpp src/Vectorizer.cpp src/Version.cpp src/XMLUtils.cpp
 
     # Integrated 3rdparty code
     src/3rdparty/pugixml/pugixml.cpp

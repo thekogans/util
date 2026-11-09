@@ -20,8 +20,8 @@
 
 #include <memory>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/ImplPtr.h"
 #include "thekogans/util/TimeSpec.h"
+#include "thekogans/util/ImplPtr.h"
 
 namespace thekogans {
     namespace util {

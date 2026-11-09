@@ -21,7 +21,7 @@
 #include <string>
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/TransactedFile.h"
-#include "thekogans/util/TransactedFileHashDictionary.h"
+#include "thekogans/util/TransactedFileTypeDictionary.h"
 #include "thekogans/util/TransactedFileBTreeAllocator.h"
 #include "thekogans/util/TransactedFileBTreeRegistry.h"
 #include "thekogans/pathfinder/Options.h"
@@ -52,17 +52,17 @@ namespace thekogans {
                     const std::string &path = Options::Instance ()->dbPath,
                     bool secure = false,
                     std::size_t allocatorEntriesPerNode =
-                        util::TransactedFileBTreeAllocator::DEFAULT_BTREE_ENTRIES_PER_NODE,
+                        util::TransactedFileBTreeAllocatorBTree::DEFAULT_ENTRIES_PER_NODE,
                     bool registryValueAsObject = true,
                     std::size_t registryEntriesPerNode =
-                        util::TransactedFileBTreeRegistry::DEFAULT_BTREE_ENTRIES_PER_NODE) :
+                        util::TransactedFileBTree::DEFAULT_ENTRIES_PER_NODE) :
                     file (util::TransactedFile::Open (path)) {
                 if (file == nullptr) {
                     file = util::TransactedFile::Create (
                         util::HostEndian,
                         path,
                         secure,
-                        new util::TransactedFileHashDictionary (nullptr, 0),
+                        new util::TransactedFileTypeDictionary (nullptr, 0),
                         new util::TransactedFileBTreeAllocator (
                             nullptr,
                             0,

@@ -18,7 +18,7 @@
 /// \struct TransactedFile::Allocator TransactedFileAllocator.h thekogans/util/TransactedFileAllocator.h
 ///
 /// \brief
-struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual Object {
+struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
     /// \brief
     /// Allocator is a \see{util::DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Allocator)

@@ -17,7 +17,7 @@
 
 #include "thekogans/util/TransactedFile.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
-    #include "thekogans/util/TransactedFileHashDictionary.h"
+    #include "thekogans/util/TransactedFileTypeDictionary.h"
     #include "thekogans/util/TransactedFileBTreeAllocator.h"
     #include "thekogans/util/TransactedFileBTreeRegistry.h"
     #include "thekogans/util/TransactedFileBTree.h"
@@ -30,9 +30,8 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void TransactedFile::Object::StaticInit () {
-            TransactedFileHashDictionary::StaticInitEx ();
-            TransactedFileBTreeAllocator::BTree::Node::StaticInitEx ();
-            TransactedFileBTreeAllocator::BTree::StaticInitEx ();
+            TransactedFileTypeDictionary::StaticInitEx ();
+            TransactedFileBTreeAllocatorBTree::StaticInitEx ();
             TransactedFileBTreeAllocator::StaticInitEx ();
             TransactedFileBTreeRegistry::StaticInitEx ();
             TransactedFileBTree::StaticInitEx ();
@@ -78,89 +77,66 @@ namespace thekogans {
                     offset));
         }
 
-        namespace {
-            inline std::size_t HeaderSize (const SerializableHeader &header) {
-                std::size_t size = 0;
-                if (!header.NeedType ()) {
-                    size += TransactedFile::Dictionary::TypeIdTypeSize;
-                }
-                if (!header.NeedVersion ()) {
-                    size += Serializer::Size (header.version);
-                }
-                if (!header.NeedSize ()) {
-                    size += Serializer::Size (header.size);
-                }
-                return size;
-            }
-        }
-
-        std::size_t TransactedFile::Object::GetSize (const SerializableHeader &context) const noexcept {
-            SerializableHeader header = GetHeader (context);
-            return HeaderSize (header) + (context.NeedSize () ? header.size : context.size);
-        }
-
-        void TransactedFile::Object::SetAggregate (bool aggregate_) {
-            if (aggregate != aggregate_) {
-                aggregate = aggregate_;
-                if (aggregate) {
-                    file->Producer<TransactedFileEvents>::Unsubscribe (*this);
-                }
-                else {
-                    SetDirty ();
-                }
-            }
-        }
-
         void TransactedFile::Object::SetDirty () {
-            if (!aggregate) {
-                file->Producer<TransactedFileEvents>::Subscribe (*this);
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::SetDirty on a destroyed object.");
+            file->Producer<TransactedFileEvents>::Subscribe (*this);
+            Serializable::SetDirty ();
+        }
+
+        void TransactedFile::Object::Init (
+                TransactedFile::SharedPtr file_,
+                AddressType offset_) noexcept {
+            file = file_;
+            offset = offset_;
+            if (file != nullptr && offset == 0) {
+                SetDirty ();
             }
-            Produce (
-                std::bind (
-                    &ObjectEvents::OnTransactedFileObjectDirty,
-                    std::placeholders::_1,
-                    this));
         }
 
         void TransactedFile::Object::AllocBlock () {
-            if (!aggregate) {
-                std::size_t size = GetSize ();
-                if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
-                    AddressType newOffset =
-                        file->GetAllocator ()->Realloc (offset, size, false);
-                    if (offset != newOffset) {
-                        if (offset != 0) {
-                            Produce (
-                                std::bind (
-                                    &ObjectEvents::OnTransactedFileObjectFreeBlock,
-                                    std::placeholders::_1,
-                                    this));
-                        }
-                        offset = newOffset;
-                        Produce (
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::AllocBlock on a destroyed object.");
+            std::size_t size = GetSize (*file);
+            if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
+                AddressType newOffset = file->GetAllocator ()->Realloc (offset, size, false);
+                if (offset != newOffset) {
+                    if (offset != 0) {
+                        Producer<ObjectEvents>::Produce (
                             std::bind (
-                                &ObjectEvents::OnTransactedFileObjectAllocBlock,
+                                &ObjectEvents::OnTransactedFileObjectFreeBlock,
                                 std::placeholders::_1,
                                 this));
                     }
+                    offset = newOffset;
+                    Producer<ObjectEvents>::Produce (
+                        std::bind (
+                            &ObjectEvents::OnTransactedFileObjectAllocBlock,
+                            std::placeholders::_1,
+                            this));
                 }
             }
         }
 
         void TransactedFile::Object::FreeBlock () {
-            if (offset != 0 && !aggregate) {
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::FreeBlock on a destroyed object.");
+            if (offset != 0) {
                 FreeObject (file, offset);
-                Produce (
+                Producer<ObjectEvents>::Produce (
                     std::bind (
                         &ObjectEvents::OnTransactedFileObjectFreeBlock,
                         std::placeholders::_1,
                         this));
                 offset = 0;
+                destroyed = true;
             }
         }
 
         void TransactedFile::Object::Flush () {
-            if (offset != 0 && !aggregate) {
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::Flush on a destroyed object.");
+            if (offset != 0) {
                 BlockRange range (file, offset, false);
                 range << *this;
                 if (file->IsSecure ()) {
@@ -172,7 +148,9 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::Reload () {
-            if (offset != 0 && !aggregate) {
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::Reload on a destroyed object.");
+            if (offset != 0) {
                 BlockRange range (file, offset);
                 range >> *this;
             }
@@ -181,27 +159,21 @@ namespace thekogans {
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
-            if (!aggregate) {
-                THEKOGANS_UTIL_TRY {
-                    if (phase == TransactedFile::COMMIT_PHASE_1) {
-                        AllocBlock ();
-                    }
-                    else if (phase == TransactedFile::COMMIT_PHASE_2) {
-                        Flush ();
-                    }
-                }
-                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::OnTransactedFileTransactionCommit on a destroyed object.");
+            if (phase == TransactedFile::COMMIT_PHASE_1) {
+                AllocBlock ();
+            }
+            else if (phase == TransactedFile::COMMIT_PHASE_2) {
+                Flush ();
             }
         }
 
         void TransactedFile::Object::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
-            if (!aggregate) {
-                THEKOGANS_UTIL_TRY {
-                    Reload ();
-                }
-                THEKOGANS_UTIL_CATCH_AND_LOG_SUBSYSTEM (THEKOGANS_UTIL)
-            }
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::OnTransactedFileTransactionAbort on a destroyed object.");
+            Reload ();
         }
 
     } // namespace util

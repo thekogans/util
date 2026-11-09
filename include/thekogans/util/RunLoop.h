@@ -34,17 +34,17 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/SizeT.h"
-#include "thekogans/util/Serializable.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/GUID.h"
-#include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Mutex.h"
 #include "thekogans/util/Condition.h"
 
 namespace thekogans {
     namespace util {
+
+        struct TimeSpec;
 
         /// \struct RunLoop RunLoop.h thekogans/util/RunLoop.h
         ///
@@ -53,7 +53,6 @@ namespace thekogans {
         /// \see{SystemRunLoop}. RunLoop allows you to schedule jobs (RunLoop::Job)
         /// and c++ closures (lambdas) to be executed on the thread that's running
         /// the run loop.
-
         struct _LIB_THEKOGANS_UTIL_DECL RunLoop : public virtual RefCounted {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -511,11 +510,7 @@ namespace thekogans {
             /// last - Last job.\n
             /// min - Fastest job.\n
             /// max - Slowest job.\n
-            struct _LIB_THEKOGANS_UTIL_DECL Stats : public Serializable {
-                /// \brief
-                /// RunLoop::Stats is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Stats)
-
+            struct _LIB_THEKOGANS_UTIL_DECL Stats {
                 /// \brief
                 /// Run loop id.
                 RunLoop::Id id;
@@ -532,11 +527,7 @@ namespace thekogans {
                 ///
                 /// \brief
                 /// Job stats.
-                struct _LIB_THEKOGANS_UTIL_DECL Job : public Serializable {
-                    /// \brief
-                    /// RunLoop::Stats::Job is a \see{Serializable}.
-                    THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Job)
-
+                struct _LIB_THEKOGANS_UTIL_DECL Job {
                     /// \brief
                     /// Job id.
                     RunLoop::Job::Id id;
@@ -589,45 +580,6 @@ namespace thekogans {
                     /// \brief
                     /// Reset the job stats.
                     void Reset ();
-
-                    // Serializable
-                    /// \brief
-                    /// Return the serialized job size.
-                    /// \return Serialized job size.
-                    virtual std::size_t Size () const noexcept override;
-
-                    /// \brief
-                    /// Read the key from the given serializer.
-                    /// \param[in] serializer \see{Serializer} to read the key from.
-                    virtual void Read (Serializer &serializer) override;
-                    /// \brief
-                    /// Write the key to the given serializer.
-                    /// \param[out] serializer \see{Serializer} to write the key to.
-                    virtual void Write (Serializer &serializer) override;
-
-                    /// \brief
-                    /// Read the Serializable from an XML DOM.
-                    /// \param[in] header \see{SerializableHeader}.
-                    /// \param[in] node XML DOM representation of a Serializable.
-                    virtual void ReadXML (
-                        const SerializableHeader & /*header*/,
-                        pugi::xml_node &node) override;
-                    /// \brief
-                    /// Write the Serializable to the XML DOM.
-                    /// \param[out] node Parent node.
-                    virtual void WriteXML (pugi::xml_node &node) override;
-
-                    /// \brief
-                    /// Read the Serializable from an JSON DOM.
-                    /// \param[in] header \see{SerializableHeader}.
-                    /// \param[in] object JSON DOM representation of a Serializable.
-                    virtual void ReadJSON (
-                        const SerializableHeader & /*header*/,
-                        JSON::Object &object) override;
-                    /// \brief
-                    /// Write the Serializable to the JSON DOM.
-                    /// \param[out] object Parent node.
-                    virtual void WriteJSON (JSON::Object &object) override;
                 };
                 /// \brief
                 /// Last job stats.
@@ -671,45 +623,6 @@ namespace thekogans {
                 /// \brief
                 /// Reset the RunLoop stats.
                 void Reset ();
-
-                // Serializable
-                /// \brief
-                /// Return the serialized key size.
-                /// \return Serialized key size.
-                virtual std::size_t Size () const noexcept override;
-
-                /// \brief
-                /// Read the key from the given serializer.
-                /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (Serializer &serializer) override;
-                /// \brief
-                /// Write the key to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) override;
-
-                /// \brief
-                /// Read the Serializable from an XML DOM.
-                /// \param[in] header \see{SerializableHeader}.
-                /// \param[in] node XML DOM representation of a Serializable.
-                virtual void ReadXML (
-                    const SerializableHeader & /*header*/,
-                    pugi::xml_node &node) override;
-                /// \brief
-                /// Write the Serializable to the XML DOM.
-                /// \param[out] node Parent node.
-                virtual void WriteXML (pugi::xml_node &node) override;
-
-                /// \brief
-                /// Read the Serializable from an JSON DOM.
-                /// \param[in] header \see{SerializableHeader}.
-                /// \param[in] object JSON DOM representation of a Serializable.
-                virtual void ReadJSON (
-                    const SerializableHeader & /*header*/,
-                    JSON::Object &object) override;
-                /// \brief
-                /// Write the Serializable to the JSON DOM.
-                /// \param[out] object Parent node.
-                virtual void WriteJSON (JSON::Object &object) override;
 
             private:
                 /// \brief
@@ -1280,22 +1193,6 @@ namespace thekogans {
             /// \return true == idle, false == busy.
             virtual bool IsIdle ();
         };
-
-        /// \brief
-        /// Implement RunLoop::Stats::Job extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (RunLoop::Stats::Job)
-
-        /// \brief
-        /// Implement RunLoop::Stats::Job value parser.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (RunLoop::Stats::Job)
-
-        /// \brief
-        /// Implement RunLoop::Stats extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (RunLoop::Stats)
-
-        /// \brief
-        /// Implement RunLoop::Stats value parser.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (RunLoop::Stats)
 
     } // namespace util
 } // namespace thekogans

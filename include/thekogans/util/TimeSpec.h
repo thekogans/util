@@ -30,7 +30,6 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Constants.h"
-#include "thekogans/util/Serializable.h"
 #include "thekogans/util/Exception.h"
 #if defined (TOOLCHAIN_OS_Windows)
     #include "thekogans/util/os/windows/WindowsUtils.h"
@@ -72,11 +71,7 @@ namespace thekogans {
         /// infinity   |    0     | infinity
         /// < infinity |    0     | < infinity
 
-        struct _LIB_THEKOGANS_UTIL_DECL TimeSpec : public Serializable {
-            /// \brief
-            /// TimeSpec is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (TimeSpec)
-
+        struct _LIB_THEKOGANS_UTIL_DECL TimeSpec {
             /// \brief
             /// Seconds value.
             i64 seconds;
@@ -333,40 +328,6 @@ namespace thekogans {
             /// \param[in] nanoseconds Value to add to the current value.
             /// \return *this + FromNanoseconds (nanoseconds).
             TimeSpec AddNanoseconds (i64 nanoseconds) const;
-
-            // Serializable
-            /// \brief
-            /// Read the key from the given serializer.
-            /// \param[in] serializer \see{Serializer} to read the key from.
-            virtual void Read (Serializer &serializer) override;
-            /// \brief
-            /// Write the key to the given serializer.
-            /// \param[out] serializer \see{Serializer} to write the key to.
-            virtual void Write (Serializer &serializer) override;
-
-            /// \brief
-            /// Read the Serializable from an XML DOM.
-            /// \param[in] header \see{SerializableHeader}.
-            /// \param[in] node XML DOM representation of a \see{Serializable}.
-            virtual void ReadXML (
-                const SerializableHeader & /*header*/,
-                pugi::xml_node &node) override;
-            /// \brief
-            /// Write the Serializable to the XML DOM.
-            /// \param[out] node Parent node.
-            virtual void WriteXML (pugi::xml_node &node) override;
-
-            /// \brief
-            /// Read the Serializable from an JSON DOM.
-            /// \param[in] header \see{SerializableHeader}.
-            /// \param[in] object JSON DOM representation of a \see{Serializable}.
-            virtual void ReadJSON (
-                const SerializableHeader & /*header*/,
-                JSON::Object &object) override;
-            /// \brief
-            /// Write the Serializable to the JSON DOM.
-            /// \param[out] node Parent node.
-            virtual void WriteJSON (JSON::Object &object) override;
         };
 
         /// \brief
@@ -464,14 +425,6 @@ namespace thekogans {
         /// \param[in] timeSpec How long to sleep for.
         /// IMPORTANT: timeSpec is a relative value.
         _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API Sleep (const TimeSpec &timeSpec);
-
-        /// \brief
-        /// Implement TimeSpec extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (TimeSpec)
-
-        /// \brief
-        /// Implement TimeSpec value parser.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (TimeSpec)
 
         /// \brief
         /// Convert TimeSpec to string representation.

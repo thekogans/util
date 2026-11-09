@@ -21,7 +21,7 @@
 /// Registry provides global associative storage for \see{TransactedFile}
 /// clients. Use it to store and retrieve any value derived from \see{Object}.
 /// The key type is std::string.
-struct _LIB_THEKOGANS_UTIL_DECL Registry : public virtual Object {
+struct _LIB_THEKOGANS_UTIL_DECL Registry : public virtual RefCounted {
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Registry)
 
     /// \brief

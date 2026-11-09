@@ -83,7 +83,7 @@ namespace thekogans {
             /// \brief
             /// Return the serialized key size.
             /// \return Serialized key size.
-            virtual std::size_t Size () const noexcept override {
+            virtual std::size_t Size (Serializer &serializer) noexcept override {
                 return Serializer::Size (key);
             }
 

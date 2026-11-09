@@ -22,6 +22,7 @@
 #include "thekogans/util/File.h"
 #include "thekogans/util/XMLUtils.h"
 #include "thekogans/util/SHA2.h"
+#include "thekogans/util/Buffer.h"
 #include "thekogans/util/Plugins.h"
 
 namespace thekogans {

@@ -53,12 +53,16 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (size < minSize || size > maxSize)) {
                 return tk_mem_t {nullptr, 0};
             }
-            std::size_t poolIndex = TrailingZeroBitCount (Align (size)) - minExp;
+            std::size_t poolIndex = GetMemPoolIndex (size);
             return tk_mem_t{pools[poolIndex]->Alloc (), poolIndex};
         }
 
-        std::size_t SlabAllocatorHeap::GetMemSize (tk_mem_t mem) {
-            return 1ULL << (mem.poolIndex + minExp);
+        std::size_t SlabAllocatorHeap::GetMemSize (std::size_t poolIndex) {
+            return 1ULL << (poolIndex + minExp);
+        }
+
+        std::size_t SlabAllocatorHeap::GetMemPoolIndex (std::size_t size) {
+            return TrailingZeroBitCount (Align (size)) - minExp;
         }
 
         void SlabAllocatorHeap::Free (tk_mem_t mem) {
@@ -81,8 +85,12 @@ namespace thekogans {
             return GlobalSlabAllocatorHeap::Instance ()->Alloc (size);
         }
 
-        std::size_t tk_mem_size (tk_mem_t mem) noexcept {
-            return GlobalSlabAllocatorHeap::Instance ()->GetMemSize (mem);
+        std::size_t tk_mem_size (std::size_t poolIndex) noexcept {
+            return GlobalSlabAllocatorHeap::Instance ()->GetMemSize (poolIndex);
+        }
+
+        std::size_t tk_mem_pool_index (std::size_t size) noexcept {
+            return GlobalSlabAllocatorHeap::Instance ()->GetMemPoolIndex (size);
         }
 
         void tk_free (tk_mem_t mem) noexcept {

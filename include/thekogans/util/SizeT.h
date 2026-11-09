@@ -227,7 +227,6 @@ namespace std {
     ///
     /// \brief
     /// Implementation of std::hash for thekogans::util::SizeT.
-
     template <>
     struct hash<thekogans::util::SizeT> {
         size_t operator () (const thekogans::util::SizeT &value) const {

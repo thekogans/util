@@ -39,50 +39,13 @@ namespace thekogans {
         /// store and retrieve practically any value derived from \see{Serializable}.
         /// The key type is std::string. TransactedFileBTreeRegistry is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
-                public TransactedFile::Registry,
-                public Subscriber<TransactedFile::ObjectEvents> {
+                public virtual TransactedFile::Registry,
+                private TransactedFileBTree {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeRegistry)
 
         private:
-            /// \brief
-            /// true == \see{TransactedFileBTree::Node} stores values
-            /// as \see{TransactedFile::Object}.
-            bool valueAsObject;
-            /// \brief
-            /// Number of entries per \see{TransactedFileBTree::Node}.
-            std::size_t entriesPerNode;
-            /// \brief
-            /// Number of \see{TransactedFileBTree::Node}s per allocator page.
-            std::size_t nodesPerPage;
-            /// \brief
-            /// Where \see{TransactedFileBTree::Node} pages come from.
-            Allocator::SharedPtr allocator;
-            /// \struct TransactedFileBTreeRegistry::Header TransactedFileBTreeRegistry.h
-            /// thekogans/util/TransactedFileBTreeRegistry.h
-            ///
-            /// \brief
-            /// Header stores global registry info.
-            struct _LIB_THEKOGANS_UTIL_DECL Header {
-                /// \brief
-                /// \see{TransactedFileBTree::Header} offset.
-                TransactedFile::AddressType btreeOffset;
-
-                /// \brief
-                /// The size of the header on disk.
-                static const std::size_t SIZE =
-                    UI32_SIZE + // magic
-                    TransactedFile::AddressTypeSize; // btreeOffset
-
-                /// \brief
-                /// ctor.
-                Header (TransactedFile::AddressType btreeOffset_ = 0) :
-                    btreeOffset (btreeOffset_) {}
-            } header;
-            /// \brief
-            /// \see{TransactedFileBTree} used to store key/values.
-            TransactedFileBTree::SharedPtr btree;
             /// \brief
             /// Synchronization lock.
             SpinLock spinLock;
@@ -90,10 +53,10 @@ namespace thekogans {
         public:
             /// \brief
             /// Default number of entries per \see{TransactedFileBTree::Node}.
-            static const std::size_t DEFAULT_BTREE_ENTRIES_PER_NODE = 32;
+            static const std::size_t DEFAULT_ENTRIES_PER_NODE = 32;
             /// \brief
             /// Number of \see{TransactedFileBTree::Node}s that will fit in to a \see{BlockAllocator} page.
-            static const std::size_t DEFAULT_BTREE_NODES_PER_PAGE = 5;
+            static const std::size_t DEFAULT_NODES_PER_PAGE = 5;
 
             /// \brief
             /// ctor.
@@ -101,14 +64,20 @@ namespace thekogans {
             /// as \see{TransactedFile::Object}.
             /// \param[in] entriesPerNode_ Number of entries per \see{TransactedFileBTree::Node}.
             /// \param[in] nodesPerPage Number of \see{TransactedFileBTree::Node}s per allocator page.
-            /// \param[in] allocator_ Where \see{TransactedFileBTree::Node} pages come from.
             TransactedFileBTreeRegistry (
                 TransactedFile::SharedPtr file = nullptr,
                 TransactedFile::AddressType offset = 0,
-                bool valueAsObject_ = true,
-                std::size_t entriesPerNode_ = DEFAULT_BTREE_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage_ = DEFAULT_BTREE_NODES_PER_PAGE,
-                util::Allocator::SharedPtr allocator_ = DefaultAllocator::Instance ());
+                bool valueAsObject = true,
+                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
+                std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE) :
+                TransactedFileBTree (
+                    file,
+                    offset,
+                    StringKey::GetContext (),
+                    SerializableHeader (),
+                    valueAsObject,
+                    entriesPerNode,
+                    nodesPerPage) {}
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found,
@@ -122,51 +91,11 @@ namespace thekogans {
             virtual void RemoveValue (const std::string &key) override;
 
         protected:
-            // Serializable
-            /// \brief
-            /// Read the \see{Header} from the file.
-            /// \param[in] serializer \see{Serializer} to read the \see{Header} from.
-            virtual void Read (Serializer &serializer) override;
-            /// \brief
-            /// Write the \see{Header} to the file.
-            /// \param[in] serializer \see{Serializer} to write the \see{Header} to.
-            virtual void Write (Serializer &serializer) override;
-
             // TransactedFile::Object
-            virtual void Init (
-                    TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset) noexcept override {
-                TransactedFile::Object::Init (file, offset);
-                btree->Init (file, header.btreeOffset);
-            }
             virtual void AllocBlock () override {
-                TransactedFile::Object::AllocBlock ();
+                TransactedFileBTree::AllocBlock ();
                 file->SetRegistryOffset (offset);
             }
-
-            // TransactedFile::ObjectEvents
-            /// \brief
-            /// \see{TransactedFileBTree} allocated a block for it's \see{TransactedFileBTree::Header}.
-            /// \param[in] object \see{TransactedFileBTree} whose offset has become valid.
-            virtual void OnTransactedFileObjectAllocBlock (
-                TransactedFile::Object::SharedPtr object) noexcept override;
-            /// \brief
-            /// \see{TransactedFileBTree} freed its \see{TransactedFileBTree::Header} block.
-            /// \param[in] object \see{TransactedFileBTree} whose \see{TransactedFileBTree::Header}
-            /// has become invalid.
-            virtual void OnTransactedFileObjectFreeBlock (
-                TransactedFile::Object::SharedPtr /*object*/) noexcept override;
-
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Header &header);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Header &header);
 
             /// \brief
             /// TransactedFileBTreeRegistry is neither copy constructable, nor assignable.

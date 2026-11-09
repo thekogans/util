@@ -30,8 +30,9 @@
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/Subscriber.h"
 #include "thekogans/util/IntrusiveList.h"
+#include "thekogans/util/Serializable.h"
+#include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
 
 namespace thekogans {
@@ -284,14 +285,13 @@ namespace thekogans {
             #include "thekogans/util/TransactedFileRange.h"
             #include "thekogans/util/TransactedFileBlock.h"
             #include "thekogans/util/TransactedFileObject.h"
-            #include "thekogans/util/TransactedFileDictionary.h"
             #include "thekogans/util/TransactedFileAllocator.h"
             #include "thekogans/util/TransactedFileRegistry.h"
 
         private:
             /// \brief
             /// \see{Allocator} associated with this file.
-            Dictionary::SharedPtr dictionary;
+            DynamicCreatable::TypeDictionary::SharedPtr dictionary;
             /// \brief
             /// \see{Allocator} associated with this file.
             Allocator::SharedPtr allocator;
@@ -301,15 +301,22 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] endianness File endianness.
-            /// \param[in] handle OS file handle.
             /// \param[in] path File path.
             TransactedFile (const std::string &path);
+            /// \brief
+            /// ctor.
+            /// \param[in] endianness File endianness.
+            /// \param[in] path File path.
+            /// \param[in] secure
+            /// \param[in] dictionary_
+            /// \param[in] allocator_
+            /// \param[in] registry_
+            /// \param[in] forceTruncate
             TransactedFile (
                 Endianness endianness,
                 const std::string &path,
                 bool secure,
-                Dictionary::SharedPtr dictionary_,
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary_,
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_,
                 bool forceTruncate);
@@ -336,13 +343,13 @@ namespace thekogans {
             /// \brief
             /// Return the header.dictionaryOffset;
             /// \return header.dictionaryOffset;
-            inline AddressType GetDictionaryOffset () const {
+            inline AddressType GetTypeDictionaryOffset () const {
                 return header.dictionaryOffset;
             }
             /// \brief
             /// Set the header.dictionaryOffset.
             /// \param[in] dictionaryOffset New dictionaryOffset.
-            void SetDictionaryOffset (AddressType dictionaryOffset);
+            void SetTypeDictionaryOffset (AddressType dictionaryOffset);
 
             /// \brief
             /// Return the header.allocatorOffset;
@@ -378,7 +385,7 @@ namespace thekogans {
             /// \param[in] userOffset New userOffset to set.
             void SetUserOffset (AddressType userOffset);
 
-            Dictionary::SharedPtr GetDictionary () const {
+            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
                 return dictionary;
             }
             /// \brief
@@ -437,7 +444,7 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 bool secure,
-                Dictionary::SharedPtr dictionary,
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry,
                 bool overwrite = false);
@@ -612,16 +619,6 @@ namespace thekogans {
                 _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
 
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
-            TransactedFile::Range &range,
-            const SerializableHeader &header);
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator << (
-            TransactedFile::Range &range,
-            TransactedFile::Object &object);
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
-            TransactedFile::Range &range,
-            SerializableHeader &header);
-
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
             TransactedFile::Range &range,
             TransactedFile::Object::SharedPtr &object);
@@ -637,18 +634,6 @@ namespace thekogans {
                 object = base;\
                 return range;\
             }
-
-        /// \brief
-        /// Implement \see{TransactedFile::Dictionary} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Dictionary)
-
-        /// \brief
-        /// Implement \see{TransactedFile::Allocator} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Allocator)
-
-        /// \brief
-        /// Implement \see{TransactedFile::Registry} extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Registry)
 
     } // namespace util
 } // namespace thekogans

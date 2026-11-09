@@ -17,6 +17,7 @@
 
 #include <cassert>
 #include <cwchar>
+#include "thekogans/util/TimeSpec.h"
 #include "thekogans/util/Exception.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/Buffer.h"
@@ -37,16 +38,8 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        std::size_t Serializer::Size (
-                const Serializable &value,
-                const SerializableHeader &context) {
-            return value.GetSize (context);
-        }
-
-        std::size_t Serializer::Size (
-                const Serializable::SharedPtr &value,
-                const SerializableHeader &context) {
-            return value->GetSize (context);
+        std::size_t Serializer::Size (Serializable &value) {
+            return value.GetSize (*this);
         }
 
         Serializer &Serializer::operator << (Endianness value) {
@@ -623,6 +616,86 @@ namespace thekogans {
             }
             if (endianness == GuestEndian) {
                 value = ByteSwap<GuestEndian, HostEndian> (value);
+            }
+            return *this;
+        }
+
+        std::size_t Serializer::Size (const TimeSpec &timeSpec) const noexcept {
+            return TimeSpec::SIZE;
+        }
+
+        Serializer &Serializer::operator << (const TimeSpec &timeSpec) {
+            *this << timeSpec.seconds << timeSpec.nanoseconds;
+        }
+
+        Serializer &Serializer::operator >> (TimeSpec &timeSpec) {
+            *this >> timeSpec.seconds >> timeSpec.nanoseconds;
+        }
+
+        std::size_t Serializer::Size (const SerializableHeader &header) const noexcept {
+            std::size_t size = 0;
+            if (!header.NeedType ()) {
+                if (GetTypeDictionary () != nullptr) {
+                    size += DynamicCreatable::TypeDictionary::IdTypeSize;
+                }
+                else {
+                    size += Size (header.type);
+                }
+            }
+            if (!header.NeedVersion ()) {
+                size += Size (header.version);
+            }
+            if (!header.NeedSize ()) {
+                size += Size (header.size);
+            }
+            return size;
+        }
+
+        Serializer &Serializer::operator << (const SerializableHeader &header) {
+            if (context.NeedType ()) {
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary = GetTypeDictionary ();
+                if (dictionary != nullptr) {
+                    *this << dictionary->GetOrCreateTypeId (header.type.c_str ());
+                }
+                else {
+                    *this << header.type;
+                }
+            }
+            if (context.NeedVersion ()) {
+                *this << header.version;
+            }
+            if (context.NeedSize ()) {
+                *this << header.size;
+            }
+            return *this;
+        }
+
+        Serializer &Serializer::operator >> (SerializableHeader &header) {
+            if (context.NeedType ()) {
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary = GetTypeDictionary ();
+                if (dictionary != nullptr) {
+                    DynamicCreatable::TypeDictionary::IdType id;
+                    *this >> id;
+                    header.type = dictionary->ResolveTypeId (id);
+                }
+                else {
+                    *this >> header.type;
+                }
+            }
+            else {
+                header.type = context.type;
+            }
+            if (context.NeedVersion ()) {
+                *this >> header.version;
+            }
+            else {
+                header.version = context.version;
+            }
+            if (context.NeedSize ()) {
+                *this >> header.size;
+            }
+            else {
+                header.size = context.size;
             }
             return *this;
         }

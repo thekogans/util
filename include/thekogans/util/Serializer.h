@@ -38,6 +38,7 @@ namespace thekogans {
 
         /// \brief
         /// Forward declaration of \see{Serializable}.
+        struct TimeSpec;
         struct Serializable;
 
         /// \struct Serializer Serializer.h thekogans/util/Serializer.h
@@ -103,6 +104,10 @@ namespace thekogans {
             /// \brief
             /// Default \see{Serializable} factory parameters.
             DynamicCreatable::ParametersType parameters;
+
+            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const {
+                return nullptr;
+            }
 
             /// \struct Serializer::ContextGuard Serializer.h thekogans/util/Serializer.h
             ///
@@ -204,19 +209,8 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of a \see{Serializable}.
             /// \param[in] value \see{Serializable} whose size to return.
-            /// \param[in] context Partially filled in \see{SerializableHeader}.
             /// \return Serialized size of a \see{Serializable}.
-            static std::size_t Size (
-                const Serializable &value,
-                const SerializableHeader &context = SerializableHeader ());
-            /// \brief
-            /// Return serialized size of a \see{Serializable::SharedPtr}.
-            /// \param[in] value \see{Serializable::SharedPtr} whose size to return.
-            /// \param[in] context Partially filled in \see{SerializableHeader}.
-            /// \return Serialized size of a \see{Serializable::SharedPtr}.
-            static std::size_t Size (
-                const RefCounted::SharedPtr<Serializable> &value,
-                const SerializableHeader &context = SerializableHeader ());
+            std::size_t Size (Serializable &value);
 
             /// \brief
             /// Return serialized size of an \see{Endianness}.
@@ -590,7 +584,6 @@ namespace thekogans {
             static constexpr std::size_t Size (f64 /*value*/) {
                 return F64_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{f64}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -604,6 +597,24 @@ namespace thekogans {
             /// \return *this.
             Serializer &operator >> (f64 &value);
 
+            std::size_t Size (const TimeSpec &timeSpec) const noexcept;
+            Serializer &operator << (const TimeSpec &timeSpec);
+            Serializer &operator >> (TimeSpec &timeSpec);
+
+            std::size_t Size (const SerializableHeader &header) const noexcept;
+            /// \brief
+            /// \see{SerializableHeader} insertion operator. Write the portion of the
+            /// structure that dovetails the \see{context}.
+            /// \param[in] header \see{SerializableHeader} to serialize.
+            /// \return *this.
+            Serializer &operator << (const SerializableHeader &header);
+            /// \brief
+            /// \see{SerializableHeader} extraction operator. Read the portion of the
+            /// structure that dovetails the \see{context}.
+            /// \param[in] header \see{SerializableHeader} to extract in to.
+            /// \return *this.
+            Serializer &operator >> (SerializableHeader &header);
+
             /// \brief
             /// Return serialized size of an \see{Attribute}.
             /// \param[in] value \see{Attribute} whose size to return.
@@ -611,7 +622,6 @@ namespace thekogans {
             static constexpr std::size_t Size (const Attribute &value) {
                 return Size (value.first) + Size (value.second);
             }
-
             /// \brief
             /// Serialize an \see{Attribute}.
             /// \param[in] value \see{Attribute} to serialize.

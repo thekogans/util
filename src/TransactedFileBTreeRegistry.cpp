@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include <string>
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFileBTreeRegistry.h"
@@ -23,113 +22,25 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (
-            thekogans::util::TransactedFileBTreeRegistry,
-            1,
-            TransactedFileBTreeRegistry::Header::SIZE)
-
-        TransactedFileBTreeRegistry::TransactedFileBTreeRegistry (
-                TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset,
-                bool valueAsObject_,
-                std::size_t entriesPerNode_,
-                std::size_t nodesPerPage_,
-                util::Allocator::SharedPtr allocator_) :
-                TransactedFile::Object (file, offset),
-                valueAsObject (valueAsObject_),
-                entriesPerNode (entriesPerNode_),
-                nodesPerPage (nodesPerPage_),
-                allocator (allocator_),
-                btree (
-                    new TransactedFileBTree (
-                        file,
-                        header.btreeOffset,
-                        StringKey::GetContext (),
-                        SerializableHeader (),
-                        valueAsObject,
-                        entriesPerNode,
-                        nodesPerPage,
-                        allocator)) {
-            btree->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-            Reload ();
-        }
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTreeRegistry, 1, 0)
 
         TransactedFile::Object::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             LockGuard<SpinLock> guard (spinLock);
-            TransactedFileBTree::Iterator it;
-            return btree->Find (StringKey (key), it) ? it.GetValue () : nullptr;
+            Iterator it;
+            return Find (StringKey (key), it) ? it.GetValue () : nullptr;
         }
 
         bool TransactedFileBTreeRegistry::InsertValue (
                 const std::string &key,
                 TransactedFile::Object::SharedPtr value) {
             LockGuard<SpinLock> guard (spinLock);
-            TransactedFileBTree::Iterator it;
-            return btree->Insert (new StringKey (key), value, it);
+            Iterator it;
+            return Insert (new StringKey (key), value, it);
         }
 
         void TransactedFileBTreeRegistry::RemoveValue (const std::string &key) {
             LockGuard<SpinLock> guard (spinLock);
-            btree->Remove (StringKey (key));
-        }
-
-        inline Serializer &operator >> (
-                Serializer &serializer,
-                TransactedFileBTreeRegistry::Header &header) {
-            serializer >> header.btreeOffset;
-            return serializer;
-        }
-
-        void TransactedFileBTreeRegistry::Read (Serializer &serializer) {
-            LockGuard<SpinLock> guard (spinLock);
-            ui32 magic;
-            serializer >> magic;
-            if (magic == MAGIC32) {
-                serializer >> header;
-                btree->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                btree.Reset (
-                    new TransactedFileBTree (
-                        file,
-                        header.btreeOffset,
-                        StringKey::GetContext (),
-                        SerializableHeader (),
-                        valueAsObject,
-                        entriesPerNode,
-                        nodesPerPage,
-                        allocator));
-                btree->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFileBTreeRegistry file (%s).",
-                    file->GetPath ().c_str ());
-            }
-        }
-
-        inline Serializer &operator << (
-                Serializer &serializer,
-                const TransactedFileBTreeRegistry::Header &header) {
-            serializer << header.btreeOffset;
-            return serializer;
-        }
-
-        void TransactedFileBTreeRegistry::Write (Serializer &serializer) {
-            LockGuard<SpinLock> guard (spinLock);
-            serializer << MAGIC32 << header;
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectAllocBlock (
-                TransactedFile::Object::SharedPtr object) noexcept {
-            LockGuard<SpinLock> guard (spinLock);
-            header.btreeOffset = object->GetOffset ();
-            SetDirty ();
-        }
-
-        void TransactedFileBTreeRegistry::OnTransactedFileObjectFreeBlock (
-                TransactedFile::Object::SharedPtr /*object*/) noexcept {
-            LockGuard<SpinLock> guard (spinLock);
-            header.btreeOffset = 0;
-            SetDirty ();
+            Remove (StringKey (key));
         }
 
     } // namespace util

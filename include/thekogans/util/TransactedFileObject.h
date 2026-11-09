@@ -19,8 +19,8 @@
 /// Forward declaration of \see{Object} needed by \see{ObjectEvents}.
 struct Object;
 
-/// \struct TransactedFile::ObjectEvents TransactedFile.h
-/// thekogans/util/TransactedFile.h
+/// \struct TransactedFile::ObjectEvents TransactedFileObject.h
+/// thekogans/util/TransactedFileObject.h
 ///
 /// \brief
 /// Subscribe to ObjectEvents to receive notifications about file
@@ -45,11 +45,9 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// has been freed).
     virtual void OnTransactedFileObjectFreeBlock (
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
-    virtual void OnTransactedFileObjectDirty (
-        RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 };
 
-/// \struct TransactedFile::Object TransactedFile.h thekogans/util/TransactedFile.h
+/// \struct TransactedFile::Object TransactedFileObject.h thekogans/util/TransactedFileObject.h
 ///
 /// \brief
 /// A TransactedFile Object is an object that has allocated at least one block
@@ -57,6 +55,7 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
 struct _LIB_THEKOGANS_UTIL_DECL Object :
         public virtual Serializable,
         public Subscriber<TransactedFileEvents>,
+        public Subscriber<TransactedFileStructureEvents>,
         public Producer<ObjectEvents> {
     /// \brief
     /// Object is a \see{util::DynamicCreatable} abstract base.
@@ -72,15 +71,28 @@ protected:
     /// \brief
     /// Our address inside the \see{TransactedFile}.
     AddressType offset;
-    bool aggregate{false};
     bool destroyed{false};
 
 public:
+    //          file
+    // -------+----------------+------------------+
+    // offset |   == nullptr   |   != nullptr     |
+    // -------+----------------+------------------+
+    //  == 0  | an empty shell | brand new object |
+    //        | needs Init     | dirty on create  |
+    // -------+----------------+------------------+
+    //  != 0  | harmless but   | a file backed    |
+    //        | stupid         | object           |
+    // -------+----------------+------------------+
     Object (
-        TransactedFile::SharedPtr file = nullptr,
-        AddressType offset = 0) :
-        file (nullptr),
-        offset (0) {Init (file, offset);}
+            TransactedFile::SharedPtr file_ = nullptr,
+            AddressType offset_ = 0) :
+            file (nullptr),
+            offset (0) {
+        THEKOGANS_UTIL_ASSERT (offset_ == 0 || file_ != nullptr,
+            "Invalid Object Construction: Non-zero physical offset provided without a valid TransactedFile.");
+        Init (file_, offset_);
+    }
 
     /// \brief
     /// Type deleter method.
@@ -145,16 +157,6 @@ public:
         return offset;
     }
 
-    // Serializable
-    /// \brief
-    /// Return the binary size of the serializable including the header.
-    /// \param[in] context Partially filled in \see{SerializableHeader}.
-    /// \return Size of the binary serializable including the header.
-    virtual std::size_t GetSize (
-        const SerializableHeader &context = SerializableHeader ()) const noexcept override;
-
-    void SetAggregate (bool aggregate_);
-
     inline bool IsDestroyed () const {
         return destroyed;
     }
@@ -166,17 +168,11 @@ public:
     /// Subscribe to \see{TransactedFileEvents}.
     /// \param[in] dirty == true, Subcribe.
     /// dirty == false, Unsubscribe.
-    void SetDirty ();
+    virtual void SetDirty () override;
 
     virtual void Init (
-            TransactedFile::SharedPtr file_,
-            AddressType offset_) noexcept {
-        file = file_;
-        offset = offset_;
-        if (file != nullptr && offset == 0) {
-            SetDirty ();
-        }
-    }
+        TransactedFile::SharedPtr file_,
+        AddressType offset_) noexcept;
 
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
@@ -207,6 +203,15 @@ protected:
     /// \param[in] file \see{TransactedFile} aborting the transaction.
     virtual void OnTransactedFileTransactionAbort (
         TransactedFile::SharedPtr /*file*/) noexcept override;
+
+    virtual void OnTransactedFileOffsetDestroyed (
+            RefCounted::SharedPtr<TransactedFile> /*file*/,
+            TransactedFileAddressSpaceType::AddressType offset_) noexcept override {
+        if (offset == offset_) {
+            offset = 0;
+            destroyed = true;
+        }
+    }
 
     /// \brief
     /// Object is neither copy constructable, nor assignable.
