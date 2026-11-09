@@ -626,10 +626,12 @@ namespace thekogans {
 
         Serializer &Serializer::operator << (const TimeSpec &timeSpec) {
             *this << timeSpec.seconds << timeSpec.nanoseconds;
+            return *this;
         }
 
         Serializer &Serializer::operator >> (TimeSpec &timeSpec) {
             *this >> timeSpec.seconds >> timeSpec.nanoseconds;
+            return *this;
         }
 
         std::size_t Serializer::Size (const SerializableHeader &header) const noexcept {

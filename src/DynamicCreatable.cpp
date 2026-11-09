@@ -22,7 +22,6 @@
     #include "thekogans/util/Logger.h"
     #include "thekogans/util/Serializer.h"
     #include "thekogans/util/Serializable.h"
-    #include "thekogans/util/TransactedFile.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 #include "thekogans/util/DynamicCreatable.h"
 
@@ -43,7 +42,6 @@ namespace thekogans {
             Logger::StaticInit ();
             Serializer::StaticInit ();
             Serializable::StaticInit ();
-            TransactedFile::Object::StaticInit ();
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
@@ -58,6 +56,28 @@ namespace thekogans {
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+        DynamicCreatable::TypeDictionary::IdType DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (const char *type) {
+            if (THEKOGANS_UTIL_UNLIKELY (type == nullptr || *type == '\0')) {
+                return None;
+            }
+            auto it = hashMap.find (type);
+            if (it != hashMap.end ()) {
+                return it->second;
+            }
+            IdType id = types.size ();
+            types.push_back (type);
+            hashMap[types[id].c_str ()] = FirstUserId + id;
+            return FirstUserId + id;
+        }
+
+        const char *DynamicCreatable::DefaultTypeDictionary::ResolveTypeId (IdType id) {
+            if (id < FirstUserId) {
+                return nullptr;
+            }
+            id -= FirstUserId;
+            return id < types.size () ? types[id].c_str () : nullptr;
+        }
 
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
             if (base != nullptr) {

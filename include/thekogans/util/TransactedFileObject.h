@@ -63,6 +63,11 @@ struct _LIB_THEKOGANS_UTIL_DECL Object :
 
     static constexpr ui32 MAGIC = 0x4F424A21; // 'OBJ!'
 
+    struct Header {
+        ui32 references;
+        AddressType offset;
+    };
+
 protected:
     /// \brief
     /// \see{TransactedFile} whose \see{TransactedFileEvents}

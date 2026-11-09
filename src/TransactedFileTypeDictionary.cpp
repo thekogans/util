@@ -16,33 +16,13 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <string>
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/LockGuard.h"
+#include "thekogans/util/Singleton.h"
 #include "thekogans/util/TransactedFileTypeDictionary.h"
 
 namespace thekogans {
     namespace util {
-
-        struct SystemTypeDictionary {
-            static constexpr DynamicCreatable::TypeDictionary::IdType TypeDictionary = 1;
-
-            static const char *ResolveTypeId (DynamicCreatable::TypeDictionary::IdType id) noexcept {
-                switch (id) {
-                    case TypeDictionary: {
-                        return TransactedFileTypeDictionary::TYPE;
-                    }
-                    default: {
-                        return nullptr;
-                    }
-                }
-            }
-
-            static DynamicCreatable::TypeDictionary::IdType GetReservedTypeId (const char *type) noexcept {
-                if (type == TransactedFileTypeDictionary::TYPE) {
-                    return TypeDictionary;
-                }
-                return DynamicCreatable::TypeDictionary::None;
-            }
-        };
 
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileTypeDictionary, 1, 0)
 
@@ -50,36 +30,55 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) :
                 TransactedFile::Object (file, offset) {
-            Reload ();
+        }
+
+        namespace {
+            struct SystemTypeDictionary :
+                    public DynamicCreatable::DefaultTypeDictionary,
+                    public Singleton<SystemTypeDictionary> {
+                SystemTypeDictionary () {
+                    types.push_back (TransactedFileTypeDictionary::TYPE);
+                    // Add system types here.
+                    for (std::size_t i = 0, count = types.size (); i < count; ++i) {
+                        hashMap[types[i].c_str ()] = FirstSystemId + i;
+                    }
+                }
+
+                virtual IdType GetOrCreateTypeId (const char *type) noexcept override {
+                    auto it = hashMap.find (type);
+                    return it != hashMap.end () ? it->second : None;
+                }
+
+                virtual const char *ResolveTypeId (IdType id) noexcept override {
+                    if (id > MaxReservedId) {
+                        return nullptr;
+                    }
+                    id -= FirstSystemId;
+                    return id < types.size () ? types[id].c_str () : nullptr;
+                }
+            };
         }
 
         DynamicCreatable::TypeDictionary::IdType TransactedFileTypeDictionary::GetOrCreateTypeId (const char *type) {
-            if (THEKOGANS_UTIL_UNLIKELY (type == nullptr || *type == '\0')) {
-                return 0;
-            }
-            IdType index = SystemTypeDictionary::GetReservedTypeId (type);
-            if (THEKOGANS_UTIL_UNLIKELY (index != None)) {
-                return index;
+            IdType id = SystemTypeDictionary::Instance ()->GetOrCreateTypeId (type);
+            if (THEKOGANS_UTIL_UNLIKELY (id != None)) {
+                return id;
             }
             LockGuard<SpinLock> guard (spinLock);
-            auto it = hashMap.find (type);
-            if (it != hashMap.end ()) {
-                return it->second;
+            std::size_t size = types.size ();
+            id = DefaultTypeDictionary::GetOrCreateTypeId (type);
+            if (size != types.size ()) {
+                SetDirty ();
             }
-            index = types.size ();
-            types.push_back (type);
-            hashMap[types[index].c_str ()] = FirstUserId + index;
-            SetDirty ();
-            return FirstUserId + index;
+            return id;
         }
 
-        const char *TransactedFileTypeDictionary::ResolveTypeId (IdType typeId) {
-            if (THEKOGANS_UTIL_UNLIKELY (typeId < FirstUserId)) {
-                return SystemTypeDictionary::ResolveTypeId (typeId);
+        const char *TransactedFileTypeDictionary::ResolveTypeId (IdType id) {
+            if (THEKOGANS_UTIL_UNLIKELY (id < FirstUserId)) {
+                return SystemTypeDictionary::Instance ()->ResolveTypeId (id);
             }
-            typeId -= FirstUserId;
             LockGuard<SpinLock> guard (spinLock);
-            return typeId < types.size () ? types[typeId].c_str () : nullptr;
+            return DefaultTypeDictionary::ResolveTypeId (id);
         }
 
         std::size_t TransactedFileTypeDictionary::Size (Serializer &serializer) noexcept {
@@ -105,7 +104,7 @@ namespace thekogans {
                     std::string type;
                     serializer  >> type;
                     types[i] = type;
-                    hashMap[types[i].c_str ()] = i;
+                    hashMap[types[i].c_str ()] = FirstUserId + i;
                 }
             }
             else {

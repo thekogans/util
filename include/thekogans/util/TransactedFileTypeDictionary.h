@@ -37,18 +37,13 @@ namespace thekogans {
         /// store and retrieve practically any value derived from \see{Serializable}.
         /// The key type is std::string. TransactedFileTypeDictionary is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileTypeDictionary :
-                public DynamicCreatable::TypeDictionary,
+                public DynamicCreatable::DefaultTypeDictionary,
                 public TransactedFile::Object {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileTypeDictionary)
 
         private:
-            /// \brief
-            std::vector<std::string> types;
-            using HashMapType = std::unordered_map<
-                const char *, IdType, DynamicCreatable::CharPtrHash, DynamicCreatable::CharPtrEqual>;
-            HashMapType hashMap;
             /// \brief
             /// Synchronization lock.
             SpinLock spinLock;

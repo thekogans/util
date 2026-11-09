@@ -401,6 +401,9 @@ namespace thekogans {
                     TransactedFile::SharedPtr file,
                     TransactedFile::AddressType offset,
                     TransactedFileBTree *btree);
+                static void FreeSubtree (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::AddressType offset);
                 /// \brief
                 /// Delete the node and it's sub-tree.
                 /// \param[in] fileAllocator Btree heap.

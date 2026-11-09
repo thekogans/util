@@ -21,8 +21,6 @@
     #include "thekogans/util/Directory.h"
     #include "thekogans/util/Fraction.h"
     #include "thekogans/util/HRTimerMgr.h"
-    #include "thekogans/util/RunLoop.h"
-    #include "thekogans/util/TimeSpec.h"
     #include "thekogans/util/TransactedFile.h"
     #include "thekogans/util/TransactedFileBTree.h"
     #include "thekogans/util/SerializableValues.h"
@@ -39,9 +37,7 @@ namespace thekogans {
             Fraction::StaticInit ();
             HRTimerMgr::TimerInfoBase::StaticInit ();
             HRTimerMgr::StaticInit ();
-            RunLoop::Stats::Job::StaticInit ();
-            RunLoop::Stats::StaticInit ();
-            TimeSpec::StaticInit ();
+            TransactedFile::Object::StaticInit ();
             TransactedFile::Allocator::StaticInit ();
             TransactedFile::Registry::StaticInit ();
             TransactedFileBTree::Key::StaticInit ();

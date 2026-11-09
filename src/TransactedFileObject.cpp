@@ -89,8 +89,13 @@ namespace thekogans {
                 AddressType offset_) noexcept {
             file = file_;
             offset = offset_;
-            if (file != nullptr && offset == 0) {
-                SetDirty ();
+            if (file != nullptr) {
+                if (offset != 0) {
+                    Reload ();
+                }
+                else {
+                    SetDirty ();
+                }
             }
         }
 
@@ -122,7 +127,8 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::FreeBlock on a destroyed object.");
             if (offset != 0) {
-                FreeObject (file, offset);
+                // Can't call FreeObject here. it's not virtual.
+                DestroyObject (file, offset);
                 Producer<ObjectEvents>::Produce (
                     std::bind (
                         &ObjectEvents::OnTransactedFileObjectFreeBlock,

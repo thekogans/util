@@ -536,6 +536,18 @@ namespace thekogans {
                 virtual const char *ResolveTypeId (IdType id) = 0;
             };
 
+            struct _LIB_THEKOGANS_UTIL_DECL DefaultTypeDictionary : public TypeDictionary {
+            protected:
+                /// \brief
+                std::vector<std::string> types;
+                using HashMapType = std::unordered_map<const char *, IdType, CharPtrHash, CharPtrEqual>;
+                HashMapType hashMap;
+
+            public:
+                virtual IdType GetOrCreateTypeId (const char *type) override;
+                virtual const char *ResolveTypeId (IdType id) override;
+            };
+
             /// \brief
             /// Declare DynamicCreatable base functions.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (DynamicCreatable)
