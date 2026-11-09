@@ -30,6 +30,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) :
                 TransactedFile::Object (file, offset) {
+            Reload ();
         }
 
         namespace {

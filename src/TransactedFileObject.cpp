@@ -89,13 +89,8 @@ namespace thekogans {
                 AddressType offset_) noexcept {
             file = file_;
             offset = offset_;
-            if (file != nullptr) {
-                if (offset != 0) {
-                    Reload ();
-                }
-                else {
-                    SetDirty ();
-                }
+            if (file != nullptr && offset == 0) {
+                SetDirty ();
             }
         }
 
