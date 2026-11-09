@@ -466,7 +466,7 @@ namespace thekogans {
             /// Halt compilation instantly if a user tries to build a
             /// heap for a tiny type.
             static_assert (sizeof (T) >= sizeof (void *),
-                "Type T must be at least the size of a pointer/");
+                "Type T must be at least the size of a pointer.");
 
         protected:
             /// \brief

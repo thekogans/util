@@ -21,10 +21,11 @@
 #include <cassert>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Serializable.h"
 
 namespace thekogans {
     namespace util {
+
+        struct Serializer;
 
         /// \struct Fraction Fraction.h thekogans/util/Fraction.h
         ///
@@ -39,11 +40,7 @@ namespace thekogans {
         /// be fine. If you manipulate numerator and/or denominator directly,
         /// it is your responsibility to call Fraction::Reduce () after.
 
-        struct _LIB_THEKOGANS_UTIL_DECL Fraction : public Serializable {
-            /// \brief
-            /// Fraction is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Fraction)
-
+        struct _LIB_THEKOGANS_UTIL_DECL Fraction {
             /// \brief
             /// Fraction numerator.
             ui32 numerator;
@@ -148,15 +145,9 @@ namespace thekogans {
                 return sign == Positive ? value : -value;
             }
 
-            // Serializable
-            /// \brief
-            /// Read the key from the given serializer.
-            /// \param[in] serializer \see{Serializer} to read the key from.
-            virtual void Read (Serializer &serializer) override;
-            /// \brief
-            /// Write the key to the given serializer.
-            /// \param[out] serializer \see{Serializer} to write the key to.
-            virtual void Write (Serializer &serializer) override;
+            inline constexpr std::size_t Size (Serializer & /*serializer*/) noexcept {
+                return UI32_SIZE + UI32_SIZE + UI8_SIZE;
+            }
         };
 
         /// \brief
@@ -199,6 +190,13 @@ namespace thekogans {
                 Fraction::Negative : Fraction::Positive;
             return negative;
         }
+
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >>  (
+            Serializer &serializer,
+            Fraction &fraction);
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator <<  (
+            Serializer &serializer,
+            const Fraction &fraction);
 
         /// \brief
         /// Add two fractions.
@@ -350,14 +348,6 @@ namespace thekogans {
             return fraction1.numerator * fraction2.denominator >=
                 fraction2.numerator * fraction1.denominator;
         }
-
-        /// \brief
-        /// Implement Fraction extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (Fraction)
-
-        /// \brief
-        /// Implement Fraction value parser.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (Fraction)
 
     } // namespace util
 } // namespace thekogans

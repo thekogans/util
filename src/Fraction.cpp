@@ -19,13 +19,11 @@
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/DefaultAllocator.h"
 #include "thekogans/util/StringUtils.h"
+#include "thekogans/util/Serializer.h"
 #include "thekogans/util/Fraction.h"
 
 namespace thekogans {
     namespace util {
-
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::Fraction, 1, UI32_SIZE + UI32_SIZE + UI8_SIZE)
 
         const Fraction Fraction::Zero (0, 1);
         const Fraction Fraction::One (1, 1);
@@ -154,12 +152,18 @@ namespace thekogans {
             denominator /= gcd;
         }
 
-        void Fraction::Read (Serializer &serializer) {
-            serializer >> numerator >> denominator >> (ui8 &)sign;
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >>  (
+                Serializer &serializer,
+                Fraction &fraction) {
+            serializer >> fraction.numerator >> fraction.denominator >> (ui8 &)fraction.sign;
+            return serializer;
         }
 
-        void Fraction::Write (Serializer &serializer) {
-            serializer << numerator << denominator << (ui8)sign;
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator <<  (
+                Serializer &serializer,
+                const Fraction &fraction) {
+            serializer << fraction.numerator << fraction.denominator << (ui8)fraction.sign;
+            return serializer;
         }
 
         _LIB_THEKOGANS_UTIL_DECL Fraction _LIB_THEKOGANS_UTIL_API operator + (

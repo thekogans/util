@@ -46,7 +46,11 @@ namespace thekogans {
             // If the transaction has been committed, these two statements
             // are noop. There will be no dirty pages to abort, and no
             // subscribers to notify.
-            file.Abort ();
+            {
+                LockGuard<SpinLock> guard (file.spinLock);
+                file.size = file.GetSize ();
+                file.pageMap->Clear (true);
+            }
             file.Producer<TransactedFileEvents>::Produce (
                 std::bind (
                     &TransactedFileEvents::OnTransactedFileTransactionAbort,
@@ -488,18 +492,6 @@ namespace thekogans {
                 SetSize (size);
                 Flush ();
                 Delete (logPath);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
-        }
-
-        void TransactedFile::Abort () {
-            LockGuard<SpinLock> guard (spinLock);
-            if (IsOpen ()) {
-                size = GetSize ();
-                pageMap->Clear (true);
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

@@ -208,19 +208,19 @@ namespace thekogans {
                 /// of \see{Block} so that if you ever try to open it with a
                 /// wrongly compiled version of thekogans_util it will complain
                 /// instead of corrupting your data.
-                static const ui32 FLAGS_BLOCK_USES_MAGIC = 1;
+                static constexpr ui32 FLAGS_BLOCK_USES_MAGIC = 1;
                 /// \brief
                 /// If set, zero out freed blocks.
-                static const ui32 FLAGS_SECURE = 2;
+                static constexpr ui32 FLAGS_SECURE = 2;
                 /// \brief
                 /// Heap flags.
                 Flags32 flags;
-                AddressType dictionaryOffset;
-                AddressType allocatorOffset;
+                AddressType dictionaryOffset{0};
+                AddressType allocatorOffset{0};
                 /// \brief
                 /// Contains the offset of the \see{Registry}.
-                AddressType registryOffset;
-                AddressType userOffset;
+                AddressType registryOffset{0};
+                AddressType userOffset{0};
                 // NOTE: If you add new fields, adjust the SIZE and increment
                 // the version of your derivative and add if statements to operator
                 // << and >> to read and write them. And don't forget to rebuild
@@ -229,7 +229,7 @@ namespace thekogans {
 
                 /// \brief
                 /// The size of the header on disk.
-                static const std::size_t SIZE =
+                static constexpr std::size_t SIZE =
                     UI32_SIZE +       // magic
                     UI32_SIZE +       // flags
                     AddressTypeSize + // dictionaryOffset
@@ -240,12 +240,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in] flags_ 0 or FLAGS_SECURE.
-                Header (ui16 flags_ = 0) :
-                        flags (flags_),
-                        dictionaryOffset (0),
-                        allocatorOffset (0),
-                        registryOffset (0),
-                        userOffset (0) {
+                Header (ui16 flags_ = 0) : flags (flags_) {
                 #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                     flags.Set (FLAGS_BLOCK_USES_MAGIC, true);
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
@@ -538,11 +533,6 @@ namespace thekogans {
             /// Used by \see{Transaction} to commit the current changes.
             /// Thread safe.
             void Commit (bool clearCache = false);
-            /// \brief
-            /// Abort the current transaction.
-            /// Used by \see{Transaction} dtor to abort uncommitted changes.
-            /// Thread safe.
-            void Abort ();
 
             /// \brief
             /// This is a wrapper around pageMap.GetPage.

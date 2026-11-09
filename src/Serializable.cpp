@@ -38,8 +38,6 @@ namespace thekogans {
             HRTimerMgr::TimerInfoBase::StaticInit ();
             HRTimerMgr::StaticInit ();
             TransactedFile::Object::StaticInit ();
-            TransactedFile::Allocator::StaticInit ();
-            TransactedFile::Registry::StaticInit ();
             TransactedFileBTree::Key::StaticInit ();
             StringValue::StaticInit ();
             StringArrayValue::StaticInit ();
@@ -114,24 +112,21 @@ namespace thekogans {
                 Serializable &serializable) {
             SerializableHeader header;
             serializer >> header;
-            if (header.type == serializable.Type ()) {
-                if (header.version <= serializable.Version ()) {
-                    Serializer::ContextGuard guard (serializer, header);
-                    serializable.Read (serializer);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%u) is greater then the Serializable version (%u).",
-                        header.version,
-                        serializable.Version ());
-                }
-            }
-            else {
+            if (THEKOGANS_UTIL_UNLIKELY (header.type != serializable.Type ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Header type (%s) is not the same as Serializable type (%s).",
+                    "Header type (%s) does not match Serializable type (%s).",
                     header.type.c_str (),
                     serializable.Type ());
             }
+            if (THEKOGANS_UTIL_UNLIKELY (header.version > serializable.Version ())) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Header type (%s) version (%u) is greater then Serializable version (%u).",
+                    header.type.c_str (),
+                    header.version,
+                    serializable.Version ());
+            }
+            Serializer::ContextGuard guard (serializer, header);
+            serializable.Read (serializer);
             return serializer;
         }
 
@@ -146,23 +141,20 @@ namespace thekogans {
             else {
                 serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
             }
-            if (serializable != nullptr) {
-                if (header.version <= serializable->Version ()) {
-                    Serializer::ContextGuard guard (serializer, header);
-                    serializable->Read (serializer);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header version (%u) is greater then the Serializable version (%u).",
-                        header.version,
-                        serializable->Version ());
-                }
-            }
-            else {
+            if (serializable == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Unable to create a Serializable of type: %s.",
                     header.type.c_str ());
             }
+            if (header.version > serializable->Version ()) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Header type (%s) version (%u) is greater then the Serializable version (%u).",
+                    header.type.c_str (),
+                    header.version,
+                    serializable->Version ());
+            }
+            Serializer::ContextGuard guard (serializer, header);
+            serializable->Read (serializer);
             return serializer;
         }
 

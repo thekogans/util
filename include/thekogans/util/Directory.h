@@ -31,7 +31,6 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include <cctype>
 #include <string>
-#include "pugixml/pugixml.hpp"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/SizeT.h"
@@ -39,7 +38,6 @@
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/SpinLock.h"
 #include "thekogans/util/Thread.h"
-#include "thekogans/util/Serializable.h"
 
 namespace thekogans {
     namespace util {
@@ -311,11 +309,7 @@ namespace thekogans {
             ///
             /// \brief
             /// Represents a directory entry.
-            struct _LIB_THEKOGANS_UTIL_DECL Entry : public Serializable {
-                /// \brief
-                /// Entry is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Entry)
-
+            struct _LIB_THEKOGANS_UTIL_DECL Entry {
                 /// \enum
                 /// The file system this entry came from.
                 enum {
@@ -451,19 +445,7 @@ namespace thekogans {
                         size == entry.size;
                 }
 
-                // Serializable
-                /// \brief
-                /// Return the serialized key size.
-                /// \return Serialized key size.
-                virtual std::size_t Size (Serializer &serializer) noexcept override;
-                /// \brief
-                /// Read the key from the given serializer.
-                /// \param[in] serializer \see{Serializer} to read the key from.
-                virtual void Read (Serializer &serializer) override;
-                /// \brief
-                /// Write the key to the given serializer.
-                /// \param[out] serializer \see{Serializer} to write the key to.
-                virtual void Write (Serializer &serializer) override;
+                std::size_t Size (Serializer &serializer) noexcept;
             };
 
             /// \brief
@@ -534,6 +516,13 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
         };
 
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >>  (
+            Serializer &serializer,
+            Directory::Entry &entry);
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator <<  (
+            Serializer &serializer,
+            const Directory::Entry &entry);
+
         /// \brief
         /// Compare two directory entries for equality.
         /// \param[in] entry1 First entry to compare.
@@ -584,14 +573,6 @@ namespace thekogans {
             return name != nullptr && name[0] == '.' &&
                 (name[1] == '\0' || (name[1] == '.' && name[2] == '\0'));
         }
-
-        /// \brief
-        /// Implement Directory::Entry extraction operators.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_EXTRACTION_OPERATORS (Directory::Entry)
-
-        /// \brief
-        /// Implement Directory::Entry value parser.
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VALUE_PARSER (Directory::Entry)
 
     } // namespace util
 } // namespace thekogans

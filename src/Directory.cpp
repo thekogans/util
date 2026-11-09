@@ -517,8 +517,6 @@ namespace thekogans {
             }
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (thekogans::util::Directory::Entry, 1, 0)
-
     #if defined (TOOLCHAIN_OS_Windows)
         namespace {
             inline ui64 DWORDDWORDToui64 (
@@ -707,26 +705,32 @@ namespace thekogans {
                 Serializer::Size (size);
         }
 
-        void Directory::Entry::Read (Serializer &serializer) {
-            serializer >> fileSystem >> type >> name;
-            if (fileSystem == Windows) {
-                serializer >> attributes >> creationDate;
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator >>  (
+                Serializer &serializer,
+                Directory::Entry &entry) {
+            serializer >> entry.fileSystem >> entry.type >> entry.name;
+            if (entry.fileSystem == Windows) {
+                serializer >> entry.attributes >> entry.creationDate;
             }
             else {
-                serializer >> mode >> lastStatusDate;
+                serializer >> entry.mode >> entry.lastStatusDate;
             }
-            serializer >> lastAccessedDate >> lastModifiedDate >> size;
+            serializer >> entry.lastAccessedDate >> entry.lastModifiedDate >> entry.size;
+            return serializer;
         }
 
-        void Directory::Entry::Write (Serializer &serializer) {
-            serializer << fileSystem << type << name;
-            if (fileSystem == Windows) {
-                serializer << attributes << creationDate;
+        _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator <<  (
+                Serializer &serializer,
+                const Directory::Entry &entry) {
+            serializer << entry.fileSystem << entry.type << entry.name;
+            if (entry.fileSystem == Windows) {
+                serializer << entry.attributes << entry.creationDate;
             }
             else {
-                serializer << mode << lastStatusDate;
+                serializer << entry.mode << entry.lastStatusDate;
             }
-            serializer << lastAccessedDate << lastModifiedDate << size;
+            serializer << entry.lastAccessedDate << entry.lastModifiedDate << entry.size;
+            return serializer;
         }
 
     #if defined (TOOLCHAIN_OS_Windows)

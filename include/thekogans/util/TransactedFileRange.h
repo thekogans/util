@@ -35,24 +35,16 @@
     struct Stats {
         /// \brief
         /// A count of \see{Range} (reading == true) that have been created for this file.
-        std::atomic<ui64> readingRanges;
+        std::atomic<ui64> readingRanges{0};
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
-        std::atomic<ui64> ownerReadingRanges;
+        std::atomic<ui64> ownerReadingRanges{0};
         /// \brief
         /// A count of \see{Range} (reading == false) that have been created for this file.
-        std::atomic<ui64> writingRanges;
+        std::atomic<ui64> writingRanges{0};
         /// \brief
         /// A count of the above ranges that needed to allocate their own buffer.
-        std::atomic<ui64> ownerWritingRanges;
-
-        /// \brief
-        /// ctor.
-        Stats () :
-            readingRanges (0),
-            ownerReadingRanges (0),
-            writingRanges (0),
-            ownerWritingRanges (0) {}
+        std::atomic<ui64> ownerWritingRanges{0};
     } stats;
 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
 
