@@ -103,7 +103,7 @@ namespace thekogans {
                                             // key         rightOffset
             constexpr std::size_t ENTRY_SIZE = Key::SIZE + TransactedFile::AddressTypeSize;
                 // magic       entriesPerNode  count       leftOffset                        entries
-            return UI32_SIZE + UI32_SIZE + UI32_SIZE + TransactedFile::AddressTypeSize + entriesPerNode * ENTRY_SIZE;
+            return UI32_SIZE + UI32_SIZE +     UI32_SIZE + TransactedFile::AddressTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t TransactedFileBTreeAllocatorBTree::Node::Size (std::size_t entriesPerNode) {
@@ -128,8 +128,7 @@ namespace thekogans {
             }
             else {
                 --index;
-                if (entries[index].rightNode == nullptr &&
-                    entries[index].rightOffset != 0) {
+                if (entries[index].rightNode == nullptr && entries[index].rightOffset != 0) {
                     entries[index].rightNode = Alloc (file, entries[index].rightOffset, btree);
                 }
                 return entries[index].rightNode;
@@ -309,20 +308,14 @@ namespace thekogans {
         void TransactedFileBTreeAllocatorBTree::Node::Split (Node *node) {
             ui32 splitIndex = btree->header.entriesPerNode / 2;
             node->count = count - splitIndex;
-            std::memcpy (
-                node->entries,
-                entries + splitIndex,
-                node->count * sizeof (Entry));
+            std::memcpy (node->entries, entries + splitIndex, node->count * sizeof (Entry));
             count = splitIndex;
             SetDirty ();
             node->SetDirty ();
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::Concatenate (Node *node) {
-            std::memcpy (
-                entries + count,
-                node->entries,
-                node->count * sizeof (Entry));
+            std::memcpy (entries + count, node->entries, node->count * sizeof (Entry));
             count += node->count;
             node->count = 0;
             SetDirty ();
@@ -332,19 +325,13 @@ namespace thekogans {
         void TransactedFileBTreeAllocatorBTree::Node::InsertEntry (
             const Entry &entry,
             ui32 index) {
-            std::memmove (
-                entries + index + 1,
-                entries + index,
-                (count++ - index) * sizeof (Entry));
+            std::memmove (entries + index + 1, entries + index, (count++ - index) * sizeof (Entry));
             entries[index] = entry;
             SetDirty ();
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::RemoveEntry (ui32 index) {
-            std::memcpy (
-                entries + index,
-                entries + index + 1,
-                (--count - index) * sizeof (Entry));
+            std::memcpy (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
             SetDirty ();
         }
 

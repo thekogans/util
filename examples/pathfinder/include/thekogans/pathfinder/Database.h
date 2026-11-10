@@ -46,14 +46,14 @@ namespace thekogans {
             /// \param[in] path Path to database file.
             /// \param[in] secure true == \see{util::FileAllocator} will zero fill freed blocks.
             /// \param[in] allocatorEntriesPerNode Number of entries per \see{util::TransactedFileBTreeAllocator::Node}.
-            /// \param[in] registryValueAsObject
+            /// \param[in] registryValueIsObject
             /// \param[in] registryEntriesPerNode Number of entries per \see{util::TransactedFileBTree::Node}.
             Database (
                     const std::string &path = Options::Instance ()->dbPath,
                     bool secure = false,
                     std::size_t allocatorEntriesPerNode =
                         util::TransactedFileBTreeAllocatorBTree::DEFAULT_ENTRIES_PER_NODE,
-                    bool registryValueAsObject = true,
+                    bool registryValueIsObject = true,
                     std::size_t registryEntriesPerNode =
                         util::TransactedFileBTree::DEFAULT_ENTRIES_PER_NODE) :
                     file (util::TransactedFile::Open (path)) {
@@ -70,7 +70,7 @@ namespace thekogans {
                         new util::TransactedFileBTreeRegistry (
                             nullptr,
                             0,
-                            registryValueAsObject,
+                            registryValueIsObject,
                             registryEntriesPerNode));
                 }
             }

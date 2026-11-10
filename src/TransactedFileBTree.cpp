@@ -308,7 +308,7 @@ namespace thekogans {
                 // either be overwritten or removed below.
                 entries[index].key->Release ();
                 if (entries[index].value != nullptr) {
-                    if (!btree->header.IsValueAsObject ()) {
+                    if (!btree->header.IsValueIsObject ()) {
                         entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
                     }
                     else {
@@ -328,7 +328,7 @@ namespace thekogans {
                     entries[index].valueOffset = leaf->entries[0].valueOffset;
                     entries[index].value = leaf->entries[0].value;
                     if (entries[index].value != nullptr) {
-                        if (!btree->header.IsValueAsObject ()) {
+                        if (!btree->header.IsValueIsObject ()) {
                             entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                         }
                         else {
@@ -401,7 +401,7 @@ namespace thekogans {
             left->entries[lastIndex].right = right;
             entries[index] = left->entries[lastIndex];
             if (entries[index].value != nullptr) {
-                if (!btree->header.IsValueAsObject ()) {
+                if (!btree->header.IsValueIsObject ()) {
                     entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                 }
                 else {
@@ -427,7 +427,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             entries[index] = right->entries[0];
             if (entries[index].value != nullptr) {
-                if (!btree->header.IsValueAsObject ()) {
+                if (!btree->header.IsValueIsObject ()) {
                     entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                 }
                 else {
@@ -458,13 +458,10 @@ namespace thekogans {
             assert (IsFull ());
             ui32 splitIndex = count / 2;
             node->count = count - splitIndex;
-            std::memcpy (
-                node->entries,
-                entries + splitIndex,
-                node->count * sizeof (Entry));
+            std::memcpy (node->entries, entries + splitIndex, node->count * sizeof (Entry));
             for (ui32 i = 0; i < node->count; ++i) {
                 if (node->entries[i].value != nullptr) {
-                    if (!btree->header.IsValueAsObject ()) {
+                    if (!btree->header.IsValueIsObject ()) {
                         node->entries[i].value->Producer<SerializableEvents>::Unsubscribe (*this);
                         node->entries[i].value->Producer<SerializableEvents>::Subscribe (*node);
                     }
@@ -482,15 +479,12 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::Concatenate (Node *node) {
-            std::memcpy (
-                entries + count,
-                node->entries,
-                node->count * sizeof (Entry));
+            std::memcpy (entries + count, node->entries, node->count * sizeof (Entry));
             ui32 oldCount = count;
             count += node->count;
             for (ui32 i = oldCount; i < count; ++i) {
                 if (entries[i].value != nullptr) {
-                    if (!btree->header.IsValueAsObject ()) {
+                    if (!btree->header.IsValueIsObject ()) {
                         entries[i].value->Producer<SerializableEvents>::Unsubscribe (*node);
                         entries[i].value->Producer<SerializableEvents>::Subscribe (*this);
                     }
@@ -510,13 +504,10 @@ namespace thekogans {
         void TransactedFileBTree::Node::InsertEntry (
                 const Entry &entry,
                 ui32 index) {
-            std::memmove (
-                entries + index + 1,
-                entries + index,
-                (count++ - index) * sizeof (Entry));
+            std::memmove (entries + index + 1, entries + index, (count++ - index) * sizeof (Entry));
             entries[index] = entry;
             if (entries[index].value != nullptr) {
-                if (!btree->header.IsValueAsObject ()) {
+                if (!btree->header.IsValueIsObject ()) {
                     entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                 }
                 else {
@@ -530,7 +521,7 @@ namespace thekogans {
 
         void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
             if (entries[index].value != nullptr) {
-                if (!btree->header.IsValueAsObject ()) {
+                if (!btree->header.IsValueIsObject ()) {
                     entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
                 }
                 else {
@@ -539,10 +530,7 @@ namespace thekogans {
                     object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                 }
             }
-            std::memcpy (
-                entries + index,
-                entries + index + 1,
-                (--count - index) * sizeof (Entry));
+            std::memcpy (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
             SetDirty ();
         }
 
@@ -563,7 +551,7 @@ namespace thekogans {
                         entries[i].key = nullptr;
                     }
                     if (entries[i].value != nullptr) {
-                        if (!btree->header.IsValueAsObject ()) {
+                        if (!btree->header.IsValueIsObject ()) {
                             entries[i].value->Producer<SerializableEvents>::Unsubscribe (*this);
                         }
                         else {
@@ -590,7 +578,7 @@ namespace thekogans {
                      // flags       leftOffset
                 size += UI32_SIZE + TransactedFile::AddressTypeSize;
                 for (ui32 i = 0; i < count; ++i) {
-                    if (btree->header.IsValueAsObject ()) {
+                    if (btree->header.IsValueIsObject ()) {
                              // valueOffset
                         size += TransactedFile::AddressTypeSize;
                     }
@@ -604,7 +592,7 @@ namespace thekogans {
                         size += entries[i].key->GetSize (serializer);
                     }
                 }
-                if (!btree->header.IsValueAsObject ()) {
+                if (!btree->header.IsValueIsObject ()) {
                     Serializer::ContextGuard guard (serializer, btree->header.valueContext, btree->valueFactory);
                     for (ui32 i = 0; i < count; ++i) {
                              // value
@@ -624,7 +612,7 @@ namespace thekogans {
                 if (count > 0) {
                     serializer >> flags >> leftOffset;
                     for (ui32 i = 0; i < count; ++i) {
-                        if (btree->header.IsValueAsObject ()) {
+                        if (btree->header.IsValueIsObject ()) {
                             serializer >> entries[i].valueOffset;
                         }
                         else {
@@ -641,7 +629,7 @@ namespace thekogans {
                             entries[i].key = key.Release ();
                         }
                     }
-                    if (!btree->header.IsValueAsObject ()) {
+                    if (!btree->header.IsValueIsObject ()) {
                         Serializer::ContextGuard guard (serializer, btree->header.valueContext, btree->valueFactory);
                         for (ui32 i = 0; i < count; ++i) {
                             Serializable::SharedPtr value;
@@ -664,7 +652,7 @@ namespace thekogans {
             if (count > 0) {
                 serializer << flags << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    if (btree->header.IsValueAsObject ()) {
+                    if (btree->header.IsValueIsObject ()) {
                         if (entries[i].value != nullptr) {
                             entries[i].valueOffset =
                                 dynamic_cast<TransactedFile::Object *> (entries[i].value)->GetOffset ();
@@ -682,7 +670,7 @@ namespace thekogans {
                         serializer << *entries[i].key;
                     }
                 }
-                if (!btree->header.IsValueAsObject ()) {
+                if (!btree->header.IsValueIsObject ()) {
                     Serializer::ContextGuard guard (serializer, btree->header.valueContext);
                     for (ui32 i = 0; i < count; ++i) {
                         serializer << *entries[i].value;
@@ -712,7 +700,7 @@ namespace thekogans {
                                 range >> flags >> leftOffset;
                                 Node::FreeObject (file, leftOffset);
                                 for (ui32 i = 0; i < count; ++i) {
-                                    if (flags & TransactedFileBTree::Header::FLAGS_VALUE_AS_OBJECT) {
+                                    if (flags & TransactedFileBTree::Header::FLAGS_VALUE_IS_OBJECT) {
                                         TransactedFile::AddressType valueOffset;
                                         range >> valueOffset;
                                         DestroyObject (file, valueOffset);
@@ -753,14 +741,14 @@ namespace thekogans {
                 TransactedFile::AddressType offset,
                 const SerializableHeader &keyContext,
                 const SerializableHeader &valueContext,
-                bool valueAsObject,
+                bool valueIsObject,
                 std::size_t entriesPerNode,
                 std::size_t nodesPerPage) :
                 TransactedFile::Object (file, offset),
                 header (
                     keyContext,
                     valueContext,
-                    valueAsObject ? Header::FLAGS_VALUE_AS_OBJECT : 0,
+                    valueIsObject ? Header::FLAGS_VALUE_IS_OBJECT : 0,
                     (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyContext.type.c_str ())),
                 valueFactory (TransactedFile::Object::GetTypeFactory (valueContext.type.c_str ())),
@@ -815,7 +803,7 @@ namespace thekogans {
                 it.Clear ();
                 Node::Entry entry (
                     key.Get (),
-                    header.IsValueAsObject () ? dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value)->GetOffset () : 0,
+                    header.IsValueIsObject () ? dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value)->GetOffset () : 0,
                     value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {

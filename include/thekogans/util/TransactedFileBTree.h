@@ -236,7 +236,7 @@ namespace thekogans {
                 /// \brief
                 /// Values can be stored as an aggregated \see{Serializable} array
                 /// or as references to \see{TransactedFile::Object}.
-                static const ui32 FLAGS_VALUE_AS_OBJECT = 1;
+                static const ui32 FLAGS_VALUE_IS_OBJECT = 1;
                 /// \brief
                 /// Combination of the above flags.
                 Flags32 flags;
@@ -266,8 +266,8 @@ namespace thekogans {
                 /// \brief
                 /// Return true if values are stored as objects (\see{TransactedFile::Object}).
                 /// \return true == values are stored as objects (\see{TransactedFile::Object}).
-                inline bool IsValueAsObject () const {
-                    return flags.Test (FLAGS_VALUE_AS_OBJECT);
+                inline bool IsValueIsObject () const {
+                    return flags.Test (FLAGS_VALUE_IS_OBJECT);
                 }
 
                 /// \brief
@@ -594,7 +594,7 @@ namespace thekogans {
 
                 // SerializableEvents
                 virtual void OnSerializableDirty (Serializable::SharedPtr /*serializable*/) noexcept override {
-                    if (!btree->header.IsValueAsObject ()) {
+                    if (!btree->header.IsValueIsObject ()) {
                         SetDirty ();
                     }
                 }
@@ -634,7 +634,7 @@ namespace thekogans {
             /// \param[in] keyContext \see{DynamicCreatable} key type.
             /// \param[in] valueContext \see{DynamicCreatable} value type. If empty,
             /// will store any type derived from \see{TransactedFile::Object}.
-            /// \param[in] valueAsObject true == Values are stored as seperate objects
+            /// \param[in] valueIsObject true == Values are stored as seperate objects
             /// (\see{TransactedFile::Object}). false == objects are stored
             /// in one contiguous array.
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
@@ -660,7 +660,7 @@ namespace thekogans {
                 TransactedFile::AddressType offset = 0,
                 const SerializableHeader &keyContext = SerializableHeader (),
                 const SerializableHeader &valueContext = SerializableHeader (),
-                bool valueAsObject = false,
+                bool valueIsObject = false,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE);
             /// \brief
