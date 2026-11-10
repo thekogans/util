@@ -19,6 +19,7 @@
 #define __thekogans_util_Singleton_h
 
 #include <typeinfo>
+#include <atomic>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Constants.h"
 #include "thekogans/util/RefCounted.h"

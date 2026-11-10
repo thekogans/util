@@ -447,6 +447,7 @@ namespace thekogans {
                     SerializableHeader &value_,
                     Serializer &serializer) :
                     value (value_),
+                    id (DynamicCreatable::TypeDictionary::None),
                     idParser (id),
                     typeParser (value.type),
                     versionParser (value.version),

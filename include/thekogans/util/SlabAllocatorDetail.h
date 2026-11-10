@@ -403,7 +403,7 @@ namespace thekogans {
                     ui64 current = leasedBits.load (std::memory_order_relaxed);
                     while (true) {
                         // Find the first available zero bit.
-                        int freeBit = countr_one (current);
+                        std::size_t freeBit = countr_one (current);
                         if (THEKOGANS_UTIL_UNLIKELY (freeBit >= MAX_INDEX)) {
                             // Out of IDs! Handle catastrophic overflow or expand bitmask.
                             throw std::runtime_error ("Exceeded maximum concurrent allocators.");

@@ -67,7 +67,7 @@ namespace thekogans {
             }
             LockGuard<SpinLock> guard (spinLock);
             std::size_t size = types.size ();
-            id = DefaultTypeDictionary::GetOrCreateTypeId (type);
+            id = DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (type);
             if (size != types.size ()) {
                 SetDirty ();
             }
@@ -79,7 +79,7 @@ namespace thekogans {
                 return SystemTypeDictionary::Instance ()->ResolveTypeId (id);
             }
             LockGuard<SpinLock> guard (spinLock);
-            return DefaultTypeDictionary::ResolveTypeId (id);
+            return DynamicCreatable::DefaultTypeDictionary::ResolveTypeId (id);
         }
 
         std::size_t TransactedFileTypeDictionary::Size (Serializer &serializer) noexcept {

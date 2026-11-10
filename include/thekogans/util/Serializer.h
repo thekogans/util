@@ -299,7 +299,7 @@ namespace thekogans {
             /// Return serialized size of std::string.
             /// \param[in] value std::string whose size to return.
             /// \return Serialized size of std::string.
-            static constexpr std::size_t Size (const std::string &value) {
+            static std::size_t Size (const std::string &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
@@ -335,7 +335,7 @@ namespace thekogans {
             /// Return serialized size of std::wstring.
             /// \param[in] value std::wstring whose size to return.
             /// \return Serialized size of std::wstring.
-            static constexpr std::size_t Size (const std::wstring &value) {
+            static std::size_t Size (const std::wstring &value) {
                 return SizeT (value.size ()).Size () + value.size () * WCHAR_T_SIZE;
             }
 
@@ -355,7 +355,7 @@ namespace thekogans {
             /// Return serialized size of \see{SecureString}.
             /// \param[in] value \see{SecureString} whose size to return.
             /// \return Serialized size of \see{SecureString}.
-            static constexpr std::size_t Size (const SecureString &value) {
+            static std::size_t Size (const SecureString &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
@@ -619,7 +619,7 @@ namespace thekogans {
             /// Return serialized size of an \see{Attribute}.
             /// \param[in] value \see{Attribute} whose size to return.
             /// \return Serialized size of \see{Attribute}.
-            static constexpr std::size_t Size (const Attribute &value) {
+            static std::size_t Size (const Attribute &value) {
                 return Size (value.first) + Size (value.second);
             }
             /// \brief
@@ -684,14 +684,14 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const std::vector<i8> &.
             /// \return Serialized size of const std::vector<i8> &.
-            static constexpr std::size_t Size (const std::vector<i8> &value) {
+            static std::size_t Size (const std::vector<i8> &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
             /// \brief
             /// Return serialized size of const std::vector<ui8> &.
             /// \return Serialized size of const std::vector<ui8> &.
-            static constexpr std::size_t Size (const std::vector<ui8> &value) {
+            static std::size_t Size (const std::vector<ui8> &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
@@ -747,7 +747,7 @@ namespace thekogans {
             /// \brief
             /// Return serialized size of const \see{SecureVector}<i8> &.
             /// \return Serialized size of const \see{SecureVector}<i8> &.
-            static constexpr std::size_t Size (const SecureVector<i8> &value) {
+            static std::size_t Size (const SecureVector<i8> &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
 
