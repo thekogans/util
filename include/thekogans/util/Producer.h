@@ -282,12 +282,13 @@ namespace thekogans {
             /// Return a vector of locked (SharedPtr) subscribers.
             /// \param[out] subscribers_ std::vector of \see{SharedSubscriberInfo} pairs to return.
             /// \param[in] unsubscribe true == unsubscribe all subscribers.
-            void GetSubscribers (
+            std::size_t GetSubscribers (
                     std::vector<SharedSubscriberInfo> &subscribers_,
                     bool unsubscribe = false) {
+                std::size_t count{0};
                 LockGuard<SpinLock> guard (spinLock);
                 if (!subscribers.empty ()) {
-                    subscribers_.reserve (subscribers.size ());
+                    subscribers_.reserve (subscribers_.size () + subscribers.size ());
                     for (typename Subscribers::iterator
                             it = subscribers.begin (),
                             end = subscribers.end (); it != end;) {
@@ -296,6 +297,7 @@ namespace thekogans {
                         if (subscriber != nullptr) {
                             subscribers_.push_back (
                                 SharedSubscriberInfo (subscriber, it->second.second));
+                            ++count;
                             ++it;
                         }
                         else if (!unsubscribe) {
@@ -312,6 +314,7 @@ namespace thekogans {
                         subscribers.clear ();
                     }
                 }
+                return count;
             }
 
             /// \brief

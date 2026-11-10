@@ -27,13 +27,10 @@ namespace thekogans {
                 AddressSpaceType::AddressType offset,
                 bool header) {
             Range range (file, offset, SIZE);
-        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             ui32 magic;
             range >> magic;
             if (magic == MAGIC32) {
-        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
                 range >> flags >> size;
-        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             }
             else {
                 throw Exception (
@@ -45,17 +42,13 @@ namespace thekogans {
                     offset,
                     magic);
             }
-        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
         }
 
         void TransactedFile::Block::Header::Write (
                 TransactedFile::SharedPtr file,
                 AddressSpaceType::AddressType offset) const {
             Range range (file, offset, SIZE, false);
-        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            range << MAGIC32;
-        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-            range << flags << size;
+            range << MAGIC32 << flags << size;
         }
 
         inline bool operator != (

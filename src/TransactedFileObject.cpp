@@ -80,7 +80,7 @@ namespace thekogans {
         void TransactedFile::Object::SetDirty () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::SetDirty on a destroyed object.");
-            file->Producer<TransactedFileEvents>::Subscribe (*this);
+            file->Producer<TransactedFileTransactionEvents>::Subscribe (*this);
             Serializable::SetDirty ();
         }
 

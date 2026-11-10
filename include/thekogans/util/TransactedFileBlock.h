@@ -27,17 +27,16 @@
 /// +--------+------+--------+
 /// | Header | Data | Footer |
 /// +--------+------+--------+
-///    16/12    var    16/12
+///     16      var     16
 ///
 /// Header/Footer
 /// +-------+-------+------+
 /// | magic | flags | size |
 /// +-------+-------+------+
-///    *4       4       8
+///     4       4       8
 ///
-/// * - Can be ommitted by undefining THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC
 ///
-/// Header/Footer::SIZE = 16/12
+/// Header/Footer::SIZE = 16
 ///
 /// Data
 /// +-----+
@@ -89,13 +88,7 @@ protected:
         /// \brief
         /// Size of header on disk.
         static const std::size_t SIZE =
-            // If this feature is on, every block header and footer will
-            // have magic 4 bytes (ui32) embeded. These bytes are used to
-            // check block integrity. If you absolutely must save space on
-            // your blocks (8 bytes total), turn this feature off.
-        #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             UI32_SIZE + // magic
-        #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
             UI32_SIZE + // flags
             SizeTypeSize;  // size
 

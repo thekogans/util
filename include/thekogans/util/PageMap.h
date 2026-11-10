@@ -25,6 +25,7 @@
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Serializer.h"
+#include "thekogans/util/SlabAllocator.h"
 #include "thekogans/util/SlabAllocatorImpl.h"
 #include "thekogans/util/AlignedAllocator.h"
 #include "thekogans/util/Exception.h"
@@ -416,7 +417,7 @@ namespace thekogans {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Page)
                 /// \brief
                 /// Page has a private heap.
-                THEKOGANS_UTIL_DECLARE_STD_ALLOCATOR_FUNCTIONS
+                THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (Page)
 
                 /// \brief
                 /// Page offset.

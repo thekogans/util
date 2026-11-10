@@ -26,8 +26,6 @@ project(thekogans_util
 # ==============================================================================
 # 2. Package & Feature Probing
 # ==============================================================================
-set(UTIL_FEATURES THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC)
-
 # Check for ZLIB
 find_package(ZLIB QUIET)
 if(ZLIB_FOUND)
@@ -148,8 +146,9 @@ target_sources(thekogans_util PRIVATE
     src/TransactedFileBTree.cpp src/TransactedFileBTreeAllocator.cpp
     src/TransactedFileBTreeAllocatorBTree.cpp src/TransactedFileBTreeKeys.cpp
     src/TransactedFileBTreeRegistry.cpp src/TransactedFileObject.cpp src/TransactedFileObjects.cpp
-    src/TransactedFileRange.cpp src/TransactedFileRegistry.cpp src/TransactedFileTypeDictionary.cpp
-    src/ValueParser.cpp src/Variant.cpp src/Vectorizer.cpp src/Version.cpp src/XMLUtils.cpp
+    src/TransactedFileRange.cpp src/TransactedFileRegistry.cpp src/TransactedFileTransaction.cpp
+    src/TransactedFileTypeDictionary.cpp src/ValueParser.cpp src/Variant.cpp src/Vectorizer.cpp
+    src/Version.cpp src/XMLUtils.cpp
 
     # Integrated 3rdparty code
     src/3rdparty/pugixml/pugixml.cpp

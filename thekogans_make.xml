@@ -20,9 +20,6 @@
         <feature>THEKOGANS_UTIL_HAVE_XLIB</feature>
       </if>
     </if>
-    <!-- If you don't know what this is, it's safer to leave it on.
-         See TransactedFile::Allocator::Block for explanation. -->
-    <feature>THEKOGANS_UTIL_TRANSACTED_FILE_ALLOCATOR_BLOCK_USE_MAGIC</feature>
   </features>
   <dependencies>
     <if condition = "$(have_feature -f:THEKOGANS_UTIL_HAVE_ZLIB)">
@@ -717,6 +714,7 @@
     <cpp_source>TransactedFileObject.cpp</cpp_source>
     <cpp_source>TransactedFileObjects.cpp</cpp_source>
     <cpp_source>TransactedFileRange.cpp</cpp_source>
+    <cpp_source>TransactedFileTransaction.cpp</cpp_source>
     <cpp_source>TransactedFileTypeDictionary.cpp</cpp_source>
     <cpp_source>ValueParser.cpp</cpp_source>
     <cpp_source>Variant.cpp</cpp_source>

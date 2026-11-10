@@ -51,10 +51,10 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
 ///
 /// \brief
 /// A TransactedFile Object is an object that has allocated at least one block
-/// from \see{TransactedFile::Allocator} and participates in \see{TransactedFileEvents}.
+/// from \see{TransactedFile::Allocator} and participates in \see{TransactedFileTransactionEvents}.
 struct _LIB_THEKOGANS_UTIL_DECL Object :
         public virtual Serializable,
-        public Subscriber<TransactedFileEvents>,
+        public Subscriber<TransactedFileTransactionEvents>,
         public Subscriber<TransactedFileStructureEvents>,
         public Producer<ObjectEvents> {
     /// \brief
@@ -70,7 +70,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Object :
 
 protected:
     /// \brief
-    /// \see{TransactedFile} whose \see{TransactedFileEvents}
+    /// \see{TransactedFile} whose \see{TransactedFileTransactionEvents}
     /// we're participants of.
     TransactedFile::SharedPtr file;
     /// \brief
@@ -167,10 +167,10 @@ public:
     }
 
     inline bool IsDirty () {
-        return file->Producer<TransactedFileEvents>::IsSubscribed (*this);
+        return file->Producer<TransactedFileTransactionEvents>::IsSubscribed (*this);
     }
     /// \brief
-    /// Subscribe to \see{TransactedFileEvents}.
+    /// Subscribe to \see{TransactedFileTransactionEvents}.
     /// \param[in] dirty == true, Subcribe.
     /// dirty == false, Unsubscribe.
     virtual void SetDirty () override;
@@ -196,7 +196,7 @@ public:
     virtual void Reload ();
 
 protected:
-    // TransactedFileEvents
+    // TransactedFileTransactionEvents
     /// \brief
     /// Transaction is commiting. Flush the internal cache to file.
     /// \param[in] file \see{TransactedFile} commiting the transaction.
