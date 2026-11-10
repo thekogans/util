@@ -140,22 +140,22 @@ namespace thekogans {
             BlockRange headerRange (this, Block::BLOCK_0_OFFSET);
             headerRange >> header;
             {
-                Object::SharedPtr object;
                 BlockRange dictionaryRange (this, header.dictionaryOffset);
+                Object::SharedPtr object;
                 dictionaryRange >> object;
                 dictionary = object;
                 assert (dictionary != nullptr);
             }
             {
-                Object::SharedPtr object;
                 BlockRange allocatorRange (this, header.allocatorOffset);
+                Object::SharedPtr object;
                 allocatorRange >> object;
                 allocator = object;
                 assert (allocator != nullptr);
             }
             {
-                Object::SharedPtr object;
                 BlockRange registryRange (this, header.registryOffset);
+                Object::SharedPtr object;
                 registryRange >> object;
                 registry = object;
                 assert (registry != nullptr);
@@ -227,6 +227,31 @@ namespace thekogans {
             guard.dismissed = true;
         }
 
+        TransactedFile::SharedPtr TransactedFile::Open (const std::string &path) {
+            if (Path (path).Exists ()) {
+                Transaction::CommitLog (path);
+                return SharedPtr (new TransactedFile (path), false);
+            }
+            return nullptr;
+        }
+
+        TransactedFile::SharedPtr TransactedFile::Create (
+                Endianness endianness,
+                const std::string &path,
+                bool secure,
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry,
+                bool overwrite) {
+            bool exists = Path (path).Exists ();
+            if (exists && !overwrite) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("TransactedFile %s exists.", path.c_str ());
+            }
+            return SharedPtr (
+                new TransactedFile (
+                    endianness, path, secure, dictionary, allocator, registry, exists && overwrite), false);
+        }
+
         void TransactedFile::SetTypeDictionaryOffset (AddressType dictionaryOffset) {
             LockGuard<SpinLock> guard (spinLock);
             if (header.dictionaryOffset != dictionaryOffset) {
@@ -257,31 +282,6 @@ namespace thekogans {
                 header.userOffset = userOffset;
                 Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
             }
-        }
-
-        TransactedFile::SharedPtr TransactedFile::Open (const std::string &path) {
-            if (Path (path).Exists ()) {
-                Transaction::CommitLog (path);
-                return SharedPtr (new TransactedFile (path), false);
-            }
-            return nullptr;
-        }
-
-        TransactedFile::SharedPtr TransactedFile::Create (
-                Endianness endianness,
-                const std::string &path,
-                bool secure,
-                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry,
-                bool overwrite) {
-            bool exists = Path (path).Exists ();
-            if (exists && !overwrite) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("TransactedFile %s exists.", path.c_str ());
-            }
-            return SharedPtr (
-                new TransactedFile (
-                    endianness, path, secure, dictionary, allocator, registry, exists && overwrite), false);
         }
 
         TransactedFile::SizeType TransactedFile::Grow (
@@ -315,7 +315,7 @@ namespace thekogans {
         void TransactedFile::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr file,
                 int phase) noexcept {
-            if (phase == COMMIT_PHASE_2) {
+            if (phase == Transaction::COMMIT_PHASE_2) {
                 Range range (this, Block::BLOCK_0_OFFSET, Header::SIZE, false);
                 range << header;
             }
@@ -325,45 +325,6 @@ namespace thekogans {
                 TransactedFile::SharedPtr file) noexcept {
             Range range (this, Block::BLOCK_0_OFFSET, Header::SIZE);
             range >> header;
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
-                TransactedFile::Range &range,
-                TransactedFile::Object::SharedPtr &object) {
-            ui32 magic;
-            range >> magic;
-            if (magic == TransactedFile::Object::MAGIC) {
-                SerializableHeader header;
-                range >> header;
-                if (range.factory != nullptr) {
-                    object = range.factory (range.parameters);
-                }
-                else {
-                    object = TransactedFile::Object::CreateObject (
-                        header.type.c_str (), range.GetFile (), range.GetOffset ());
-                }
-                if (object != nullptr) {
-                    if (header.version <= object->Version ()) {
-                        Serializer::ContextGuard guard (range, header);
-                        object->Read (range);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Header version (%u) is greater then the TransactedFile::Object version (%u).",
-                            header.version,
-                            object->Version ());
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Unable to create a TransactedFile::Object of type %s.",
-                        header.type.c_str ());
-                }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
-            }
-            return range;
         }
 
     } // namespace util

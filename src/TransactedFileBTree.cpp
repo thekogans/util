@@ -27,14 +27,16 @@ namespace thekogans {
         inline Serializer &operator << (
                 Serializer &serializer,
                 const TransactedFileBTree::Header &header) {
-            serializer << header.keyContext << header.valueContext << header.flags << header.entriesPerNode << header.rootOffset;
+            serializer << header.keyContext << header.valueContext <<
+                header.flags << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 
         inline Serializer &operator >> (
                 Serializer &serializer,
                 TransactedFileBTree::Header &header) {
-            serializer >> header.keyContext >> header.valueContext >> header.flags >> header.entriesPerNode >> header.rootOffset;
+            serializer >> header.keyContext >> header.valueContext >>
+                header.flags >> header.entriesPerNode >> header.rootOffset;
             return serializer;
         }
 
@@ -127,13 +129,9 @@ namespace thekogans {
                 TransactedFileBTree *btree_) :
                 TransactedFile::Object (file, offset),
                 btree (btree_),
-                count (0),
-                leftOffset (0),
-                left (nullptr),
                 entries ((Entry *)(this + 1)) {
-            if (btree != nullptr) {
-                Reload ();
-            }
+            SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
+            Reload ();
         }
 
         TransactedFileBTree::Node::~Node () {
@@ -203,52 +201,6 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Corrupt TransactedFile::Object @" THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
-                }
-            }
-        }
-
-        void TransactedFileBTree::Node::FreeObject (
-                TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset) {
-            if (offset != 0) {
-                TransactedFile::BlockRange range (file, offset);
-                SerializableHeader header;
-                range >> header;
-                if (header.type == TYPE) {
-                    ui32 magic;
-                    range >> magic;
-                    if (magic == MAGIC32) {
-                        ui32 count;
-                        range >> count;
-                        if (count > 0) {
-                            ui32 flags;
-                            range >> flags;
-                            if (flags & TransactedFileBTree::Header::FLAGS_VALUE_AS_OBJECT) {
-                                TransactedFile::AddressType leftOffset;
-                                range >> leftOffset;
-                                for (ui32 i = 0; i < count; ++i) {
-                                    TransactedFile::AddressType valueOffset;
-                                    range >> valueOffset;
-                                    DestroyObject (file, valueOffset);
-                                }
-                                TransactedFile::AddressType rightOffset;
-                                range >> rightOffset;
-                            }
-                        }
-                        TransactedFile::Object::FreeObject (file, offset);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
-                            offset);
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Header type: %s != TransactedFileBTree::Node type: %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                        header.type.c_str (),
-                        TYPE,
                         offset);
                 }
             }
@@ -704,14 +656,14 @@ namespace thekogans {
                     Serializer::ContextGuard guard (serializer, btree->header.keyContext, btree->keyFactory);
                     for (ui32 i = 0; i < count; ++i) {
                               // key
-                        size += entries[i].key->Size (serializer);
+                        size += entries[i].key->GetSize (serializer);
                     }
                 }
                 if (!btree->header.IsValueAsObject ()) {
                     Serializer::ContextGuard guard (serializer, btree->header.valueContext, btree->valueFactory);
                     for (ui32 i = 0; i < count; ++i) {
                              // value
-                        size += entries[i].value->Size (serializer);
+                        size += entries[i].value->GetSize (serializer);
                     }
                 }
             }
@@ -794,6 +746,61 @@ namespace thekogans {
             }
         }
 
+        void TransactedFileBTree::Node::FreeObject (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset) {
+            if (offset != 0) {
+                TransactedFile::BlockRange range (file, offset);
+                ui32 magic;
+                range >> magic;
+                if (magic == MAGIC) {
+                    SerializableHeader header;
+                    range >> header;
+                    if (header.type == TYPE) {
+                        ui32 magic;
+                        range >> magic;
+                        if (magic == MAGIC32) {
+                            ui32 count;
+                            range >> count;
+                            if (count > 0) {
+                                ui32 flags;
+                                range >> flags;
+                                if (flags & TransactedFileBTree::Header::FLAGS_VALUE_AS_OBJECT) {
+                                    TransactedFile::AddressType leftOffset;
+                                    range >> leftOffset;
+                                    for (ui32 i = 0; i < count; ++i) {
+                                        TransactedFile::AddressType valueOffset;
+                                        range >> valueOffset;
+                                        DestroyObject (file, valueOffset);
+                                        TransactedFile::AddressType rightOffset;
+                                        range >> rightOffset;
+                                    }
+                                }
+                            }
+                            TransactedFile::Object::FreeObject (file, offset);
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                                offset);
+                        }
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Header type: %s != TransactedFileBTree::Node type: %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                            header.type.c_str (),
+                            TYPE,
+                            offset);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt TransactedFile::Object @" THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+            }
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTree, 1, 0)
 
         TransactedFileBTree::TransactedFileBTree (
@@ -863,7 +870,7 @@ namespace thekogans {
                 it.Clear ();
                 Node::Entry entry (
                     key.Get (),
-                    header.IsValueAsObject () ? dynamic_cast<TransactedFile::Object *> (value.Get ())->GetOffset () : 0,
+                    header.IsValueAsObject () ? dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value)->GetOffset () : 0,
                     value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
@@ -956,12 +963,6 @@ namespace thekogans {
             }
         }
 
-        void TransactedFileBTree::FreeBlock () {
-            Node::FreeSubtree (file, header.rootOffset);
-            header.rootOffset = 0;
-            Object::FreeBlock ();
-        }
-
         void TransactedFileBTree::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
@@ -1000,6 +1001,44 @@ namespace thekogans {
         void TransactedFileBTree::Write (Serializer &serializer) {
             header.rootOffset = root->GetOffset ();
             serializer << MAGIC32 << header;
+        }
+
+        void TransactedFileBTree::FreeObject (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset) {
+            if (file != nullptr && offset != 0) {
+                TransactedFile::BlockRange range (file, offset);
+                ui32 magic;
+                range >> magic;
+                if (magic == MAGIC) {
+                    SerializableHeader header;
+                    range >> header;
+                    if (header.type == TYPE) {
+                        ui32 magic;
+                        range >> magic;
+                        if (magic == MAGIC32) {
+                            Header header;
+                            range >> header;
+                            Node::FreeSubtree (file, header.rootOffset);
+                            Object::FreeObject (file, offset);
+                        }
+                        else {
+                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                                "Corrupt BTree header @" THEKOGANS_UTIL_UI64_FORMAT,
+                                offset);
+                        }
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Invalid BTree header type: %s", header.type.c_str ());
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Corrupt TransactedFile::Object @" THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+            }
         }
 
     } // namespace util

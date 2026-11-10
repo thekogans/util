@@ -234,17 +234,14 @@ namespace thekogans {
                 /// Value type.
                 SerializableHeader valueContext;
                 /// \brief
-                /// Values can be stored as a single array or as first class objects
-                /// (\see{TransactedFile::SerializableObject}) in their own right.
+                /// Values can be stored as an aggregated \see{Serializable} array
+                /// or as references to \see{TransactedFile::Object}.
                 static const ui32 FLAGS_VALUE_AS_OBJECT = 1;
                 /// \brief
                 /// Combination of the above flags.
                 Flags32 flags;
                 /// \brief
                 /// Entries per node.
-                /// NOTE: Its type is ui32 because 1. we want something
-                /// fixed size and 2. if you need more than 4G enries in
-                /// one node, you don't need a btree. You need something else.
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
@@ -314,14 +311,14 @@ namespace thekogans {
                 TransactedFileBTree *btree;
                 /// \brief
                 /// Count of entries.
-                ui32 count;
-                ui32 flags;
+                ui32 count{0};
+                ui32 flags{0};
                 /// \brief
                 /// Left most child node block offset.
-                TransactedFile::AddressType leftOffset;
+                TransactedFile::AddressType leftOffset{0};
                 /// \brief
                 /// Left most child node.
-                Node *left;
+                Node *left{nullptr};
                 /// \struct TransactedFileBTree::Node::Entry TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
                 ///
                 /// \brief
@@ -338,10 +335,10 @@ namespace thekogans {
                     Serializable *value;
                     /// \brief
                     /// Right child node block offset.
-                    TransactedFile::AddressType rightOffset;
+                    TransactedFile::AddressType rightOffset{0};
                     /// \brief
                     /// Right child node.
-                    Node *right;
+                    Node *right{nullptr};
 
                     /// \brief
                     /// ctor.
@@ -357,20 +354,7 @@ namespace thekogans {
                         Serializable *value_ = nullptr) :
                         key (key_),
                         valueOffset (valueOffset_),
-                        value (value_),
-                        rightOffset (0),
-                        right (nullptr) {}
-
-                    /// \brief
-                    /// Entry size on disk (IsValueAsObject).
-                    static const std::size_t SIZE_WITH_VALUE =
-                        TransactedFile::AddressTypeSize + // valueOffset;
-                        TransactedFile::AddressTypeSize;  // rightOffset;
-
-                    /// \brief
-                    /// Entry size on disk (!IsValueAsObject).
-                    static const std::size_t SIZE_WITHOUT_VALUE =
-                        TransactedFile::AddressTypeSize; // rightOffset;
+                        value (value_) {}
                 };
                 /// \brief
                 /// Entry array. Allocated when the node is allocated.
@@ -401,14 +385,11 @@ namespace thekogans {
                     TransactedFile::SharedPtr file,
                     TransactedFile::AddressType offset,
                     TransactedFileBTree *btree);
-                static void FreeSubtree (
-                    TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset);
                 /// \brief
                 /// Delete the node and it's sub-tree.
-                /// \param[in] fileAllocator Btree heap.
+                /// \param[in] file \see{TransactedFile} where the node resides.
                 /// \param[in] offset Node offset.
-                static void FreeObject (
+                static void FreeSubtree (
                     TransactedFile::SharedPtr file,
                     TransactedFile::AddressType offset);
 
@@ -586,7 +567,6 @@ namespace thekogans {
                     return count > btree->header.entriesPerNode / 2;
                 }
 
-            protected:
                 /// \brief
                 /// Clear the cache.
                 void Reset ();
@@ -610,6 +590,15 @@ namespace thekogans {
                 /// \param[in] serializer \see{Serializer} to write the node to.
                 virtual void Write (Serializer &serializer) override;
 
+                // TransactedFile::Object
+                /// \brief
+                /// Delete the node.
+                /// \param[in] file \see{TransactedFile} to which the node belongs.
+                /// \param[in] offset Node offset.
+                static void FreeObject (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::AddressType offset);
+
                 // SerializableEvents
                 virtual void OnSerializableDirty (Serializable::SharedPtr /*serializable*/) noexcept override {
                     if (!btree->header.IsValueAsObject ()) {
@@ -632,10 +621,6 @@ namespace thekogans {
                         TransactedFile::Object::SharedPtr /*object*/) noexcept override {
                     SetDirty ();
                 }
-
-                /// \brief
-                /// Needs access to Free.
-                friend struct TransactedFileBTree;
             } *root;
 
         public:
@@ -730,11 +715,6 @@ namespace thekogans {
             /// iterator is empty.
             bool FindFirst (Iterator &it);
 
-            // TransactedFile::Objects
-            /// \brief
-            /// We have a pointer to root we need to dispose of.
-            virtual void FreeBlock () override;
-
         protected:
             // Serializable
             /// \brief
@@ -760,6 +740,13 @@ namespace thekogans {
                 TransactedFile::Object::Init (file, offset);
                 root->Init (file, header.rootOffset);
             }
+            /// \brief
+            /// Delete the btree.
+            /// \param[in] file \see{TransactedFile} to which the btree belongs.
+            /// \param[in] offset Btree offset.
+            static void FreeObject (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset);
 
         protected:
             /// \brief

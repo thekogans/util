@@ -19,7 +19,7 @@
 #define __thekogans_util_TransactedFileBTreeAllocatorBTree_h
 
 #include "thekogans/util/TransactedFile.h"
-#include "thekogans/util/SlabAllocatorHeap.h"
+#include "thekogans/util/SlabAllocatorImpl.h"
 
 namespace thekogans {
     namespace util {
@@ -84,11 +84,11 @@ namespace thekogans {
                 ui32 entriesPerNode;
                 /// \brief
                 /// Root node offset.
-                TransactedFile::AddressType rootOffset;
+                TransactedFile::AddressType rootOffset{0};
 
                 /// \brief
                 /// Size of header on disk.
-                static const std::size_t SIZE =
+                static constexpr std::size_t SIZE =
                     UI32_SIZE +     // magic
                     UI32_SIZE +     // entriesPerNode
                     TransactedFile::AddressTypeSize;  // rootOffset
@@ -97,9 +97,11 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] entriesPerNode_ Entries per node.
                 Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
-                    entriesPerNode (entriesPerNode_),
-                    rootOffset (0) {}
+                    entriesPerNode (entriesPerNode_) {}
             } header;
+            /// \brief
+            /// An instance of \see{SlabAllocatorImpl} to allocate \see{Node}s.
+            SlabAllocatorImpl::SharedPtr nodeAllocator;
             /// \struct TransactedFileBTreeAllocatorBTree::Node TransactedFileBTreeAllocatorBTree.h
             /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
             ///
@@ -108,20 +110,20 @@ namespace thekogans {
             struct Node : public TransactedFile::Object {
                 /// \brief
                 /// Object is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (Node)
+                THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (Node)
+                THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (Node)
 
                 /// \brief
-                ui32 maxEntries;
+                TransactedFileBTreeAllocatorBTree *btree;
                 /// \brief
                 /// Count of entries.
-                ui32 count;
+                ui32 count{0};
                 /// \brief
                 /// Left most child node offset.
-                TransactedFile::AddressType leftOffset;
+                TransactedFile::AddressType leftOffset{0};
                 /// \brief
                 /// Left most child node.
-                Node *leftNode;
-                tk_mem_t mem;
+                Node *leftNode{nullptr};
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -132,18 +134,16 @@ namespace thekogans {
                     Key key;
                     /// \brief
                     /// Right child node offset.
-                    TransactedFile::AddressType rightOffset;
+                    TransactedFile::AddressType rightOffset{0};
                     /// \brief
                     /// Right child node.
-                    Node *rightNode;
+                    Node *rightNode{nullptr};
 
                     /// \brief
                     /// ctor.
                     /// \param[in] key_ Entry key.
                     Entry (const Key &key_ = {0, 0}) :
-                        key (key_),
-                        rightOffset (0),
-                        rightNode (nullptr) {}
+                        key (key_) {}
                 };
                 /// \brief
                 /// Entry array. Allocated when the node is allocated.
@@ -157,22 +157,21 @@ namespace thekogans {
                 Node (
                     TransactedFile::SharedPtr file = nullptr,
                     TransactedFile::AddressType offset = 0,
-                    ui32 maxEntries_ = DEFAULT_ENTRIES_PER_NODE,
-                    tk_mem_t mem_ = {nullptr, 0});
+                    TransactedFileBTreeAllocatorBTree *btree_ = nullptr);
                 /// \brief
                 /// dtor.
                 virtual ~Node ();
 
                 /// \brief
                 /// Given the number of entries, return the node file size in bytes.
-                /// \param[in] maxEntries Entries per node.
+                /// \param[in] entriesPerNode Entries per node.
                 /// \return Size of node on disk.
-                static std::size_t FileSize (std::size_t maxEntries);
+                static std::size_t FileSize (std::size_t entriesPerNode);
                 /// \brief
                 /// Given the number of entries, return the node size in bytes.
-                /// \param[in] maxEntries Entries per node.
+                /// \param[in] entriesPerNode Entries per node.
                 /// \return Size of node in memory.
-                static std::size_t Size (std::size_t maxEntries);
+                static std::size_t Size (std::size_t entriesPerNode);
                 /// \brief
                 /// Allocate a node.
                 /// \param[in] file \see{TransactedFile} where the Node resides.
@@ -182,12 +181,12 @@ namespace thekogans {
                 static Node *Alloc (
                     TransactedFile::SharedPtr file,
                     TransactedFile::AddressType offset,
-                    ui32 maxEntries);
+                    TransactedFileBTreeAllocatorBTree *btree);
                 /// \brief
                 /// Free the subtree rooted at node.
                 /// \param[in] file \see{TransactedFile} where the Node resides.
                 /// \param[in] offset Node offset.
-                static void FreeObject (
+                static void FreeSubtree (
                     TransactedFile::SharedPtr file,
                     TransactedFile::AddressType offset);
 
@@ -239,7 +238,7 @@ namespace thekogans {
                     Node *left,
                     Node *right);
                 /// \brief
-                /// Split the node in the middle (splitIndex = maxEntries / 2).
+                /// Split the node in the middle (splitIndex = btree->header.entriesPerNode / 2).
                 /// \param[out] node Node that will receive entries >= splitIndex.
                 void Split (Node *node);
                 /// \brief
@@ -274,19 +273,19 @@ namespace thekogans {
                 /// Return true if the node is full.
                 /// \return true == node is full.
                 inline bool IsFull () const {
-                    return count == maxEntries;
+                    return count == btree->header.entriesPerNode;
                 }
                 /// \brief
                 /// Return true if less than half the nodes entries are occupied.
                 /// \return true if less than half the nodes entries are occupied.
                 inline bool IsPoor () const {
-                    return count < maxEntries / 2;
+                    return count < btree->header.entriesPerNode / 2;
                 }
                 /// \brief
                 /// Return true if more than half the nodes entries are occupied.
                 /// \return true if more than half the nodes entries are occupied.
                 inline bool IsPlentiful () const {
-                    return count > maxEntries / 2;
+                    return count > btree->header.entriesPerNode / 2;
                 }
 
             protected:
@@ -305,7 +304,7 @@ namespace thekogans {
                 /// Return the node size.
                 /// \return btree.allocator.btreeNodeFileSize.
                 virtual std::size_t Size (Serializer &serializer) noexcept override {
-                    return FileSize (maxEntries);
+                    return FileSize (btree->header.entriesPerNode);
                 }
                 /// \brief
                 /// Read the node.
@@ -379,49 +378,12 @@ namespace thekogans {
                 TransactedFile::Object::Init (file, offset);
                 root->Init (file, header.rootOffset);
             }
-
             /// \brief
             /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
             /// Also free the \see{Node} hierarchy @root.
             static void FreeObject (
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset);
-
-            /// \brief
-            /// Needs access to private members.
-            friend struct TransactedFileBTreeAllocator;
-
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator == (
-                const Key &key1,
-                const Key &key2);
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator != (
-                const Key &key1,
-                const Key &key2);
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator < (
-                const Key &key1,
-                const Key &key2);
-            /// \brief
-            /// Needs access to private members.
-            friend bool operator > (
-                const Key &key1,
-                const Key &key2);
-
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Key &key);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Key &key);
 
             /// \brief
             /// Needs access to private members.

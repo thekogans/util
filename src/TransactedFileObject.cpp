@@ -55,12 +55,19 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 AddressType offset) {
             if (file != nullptr && offset != 0) {
-                SerializableHeader header;
                 BlockRange range (file, offset);
-                range >> header;
-                DeleterMapType::const_iterator it = GetDeleters ().find (header.type.c_str ());
-                if (it != GetDeleters ().end ()) {
-                    it->second (file, offset);
+                ui32 magic;
+                range >> magic;
+                if (magic == TransactedFile::Object::MAGIC) {
+                    SerializableHeader header;
+                    range >> header;
+                    DeleterMapType::const_iterator it = GetDeleters ().find (header.type.c_str ());
+                    if (it != GetDeleters ().end ()) {
+                        it->second (file, offset);
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
                 }
             }
         }
@@ -97,7 +104,7 @@ namespace thekogans {
         void TransactedFile::Object::AllocBlock () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::AllocBlock on a destroyed object.");
-            std::size_t size = GetSize (*file);
+            std::size_t size = UI32_SIZE + GetSize (*file);
             if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
                 AddressType newOffset = file->GetAllocator ()->Realloc (offset, size, false);
                 if (offset != newOffset) {
@@ -139,7 +146,7 @@ namespace thekogans {
                 "Calling TransactedFile::Object::Flush on a destroyed object.");
             if (offset != 0) {
                 BlockRange range (file, offset, false);
-                range << *this;
+                range << MAGIC << *this;
                 if (file->IsSecure ()) {
                     range.Seek (
                         SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
@@ -153,7 +160,14 @@ namespace thekogans {
                 "Calling TransactedFile::Object::Reload on a destroyed object.");
             if (offset != 0) {
                 BlockRange range (file, offset);
-                range >> *this;
+                ui32 magic;
+                range >> magic;
+                if (magic == TransactedFile::Object::MAGIC) {
+                    range >> *this;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
+                }
             }
         }
 
@@ -162,10 +176,10 @@ namespace thekogans {
                 int phase) noexcept {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::OnTransactedFileTransactionCommit on a destroyed object.");
-            if (phase == TransactedFile::COMMIT_PHASE_1) {
+            if (phase == TransactedFile::Transaction::COMMIT_PHASE_1) {
                 AllocBlock ();
             }
-            else if (phase == TransactedFile::COMMIT_PHASE_2) {
+            else if (phase == TransactedFile::Transaction::COMMIT_PHASE_2) {
                 Flush ();
             }
         }
@@ -175,6 +189,45 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::OnTransactedFileTransactionAbort on a destroyed object.");
             Reload ();
+        }
+
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
+                TransactedFile::Range &range,
+                TransactedFile::Object::SharedPtr &object) {
+            ui32 magic;
+            range >> magic;
+            if (magic == TransactedFile::Object::MAGIC) {
+                SerializableHeader header;
+                range >> header;
+                if (range.factory != nullptr) {
+                    object = range.factory (range.parameters);
+                }
+                else {
+                    object = TransactedFile::Object::CreateObject (
+                        header.type.c_str (), range.GetFile (), range.GetOffset ());
+                }
+                if (object != nullptr) {
+                    if (header.version <= object->Version ()) {
+                        Serializer::ContextGuard guard (range, header);
+                        object->Read (range);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Header version (%u) is greater then the TransactedFile::Object version (%u).",
+                            header.version,
+                            object->Version ());
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Unable to create a TransactedFile::Object of type %s.",
+                        header.type.c_str ());
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
+            }
+            return range;
         }
 
     } // namespace util
