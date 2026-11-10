@@ -798,8 +798,9 @@ namespace thekogans {
                 Iterator &it) {
             if (key != nullptr && value != nullptr &&
                     key->IsKindOf (header.keyContext.type.c_str ()) &&
-                    (header.valueContext.NeedType () ||
-                        value->IsKindOf (header.valueContext.type.c_str ()))) {
+                    ((header.IsValueIsObject () &&
+                        dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value) != nullptr) ||
+                        header.valueContext.NeedType () || value->IsKindOf (header.valueContext.type.c_str ()))) {
                 it.Clear ();
                 Node::Entry entry (
                     key.Get (),

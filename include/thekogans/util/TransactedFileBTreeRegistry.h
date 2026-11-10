@@ -33,13 +33,19 @@ namespace thekogans {
         /// thekogans/util/TransactedFileBTreeRegistry.h
         ///
         /// \brief
-        /// TransactedFileBTreeRegistry is a \see{TransactedFile::Regitry}.
-        /// It uses a \see{TransactedFileBree} to provide global ordered,
+        /// TransactedFileBTreeRegistry is a \see{TransactedFile::Registry}.
+        /// It uses a \see{TransactedFileBTree} to provide global ordered,
         /// associative storage for \see{TransactedFile} clients. Use it to
         /// store and retrieve practically any value derived from \see{Serializable}.
         /// The key type is std::string. TransactedFileBTreeRegistry is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
-                public virtual TransactedFile::Registry,
+                public TransactedFile::Registry,
+                // As much as I'd like to hide from the rest of the world that a Registry is an Object,
+                // TransactedFile assumes it (as it should) when it rebuilds it'self from disk as well
+                // as when it first createst itself. And private inheritance prevents it from cross-typing
+                // (dynamic_cast) the Registry interface to Object. So here sits an anouncement to the rest
+                // of the world that yes, we are indeed an object.
+                public virtual TransactedFile::Object,
                 private TransactedFileBTree {
             /// \brief
             /// Declare \see{RefCounted} pointers.
@@ -55,7 +61,7 @@ namespace thekogans {
             /// Default number of entries per \see{TransactedFileBTree::Node}.
             static const std::size_t DEFAULT_ENTRIES_PER_NODE = 32;
             /// \brief
-            /// Number of \see{TransactedFileBTree::Node}s that will fit in to a \see{BlockAllocator} page.
+            /// Number of \see{TransactedFileBTree::Node}s that will fit in to a \see{SlabAllocatorImpl} page.
             static const std::size_t DEFAULT_NODES_PER_PAGE = 5;
 
             /// \brief

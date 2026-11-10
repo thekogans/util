@@ -78,7 +78,7 @@ namespace thekogans {
                 pageMask (~(pageSize - 1)),
                 slotsPerPage ((pageSize - sizeof (Page)) / slotSize),
                 tlcSize (tlcSize_),
-                tlcBatchSize (tlcSize / 2) {
+                tlcBatchSize (tlcSize > 2 ? tlcSize / 2 : 1) {
             // Validate input.
             if (slotSize < sizeof (Page::Slot *) || slotsPerPage == 0 ||
                     tlcSize == 0 || tlcSize > slotsPerPage) {

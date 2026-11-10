@@ -66,10 +66,16 @@ namespace thekogans {
                             COMMIT_PHASE_1),
                         subscriber.first);
                 }
-                totalCommittedObjects.insert (
-                    totalCommittedObjects.end (),
-                    std::make_move_iterator (currentDirtyBatch.begin ()),
-                    std::make_move_iterator (currentDirtyBatch.end ()));
+                if (totalCommittedObjects.empty ()) {
+                    totalCommittedObjects = std::move (currentDirtyBatch);
+                }
+                else {
+                    totalCommittedObjects.insert (
+                        totalCommittedObjects.end (),
+                        std::make_move_iterator (currentDirtyBatch.begin ()),
+                        std::make_move_iterator (currentDirtyBatch.end ()));
+                }
+                currentDirtyBatch.clear ();
             }
             // =========================================================================
             // STEP 2: UNIFIED FLUSH PASS (PHASE 2 ONLY)

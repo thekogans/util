@@ -102,8 +102,8 @@ namespace thekogans {
         std::size_t TransactedFileBTreeAllocatorBTree::Node::FileSize (std::size_t entriesPerNode) {
                                             // key         rightOffset
             constexpr std::size_t ENTRY_SIZE = Key::SIZE + TransactedFile::AddressTypeSize;
-                // magic       entriesPerNode  count       leftOffset                        entries
-            return UI32_SIZE + UI32_SIZE +     UI32_SIZE + TransactedFile::AddressTypeSize + entriesPerNode * ENTRY_SIZE;
+                // magic       count       leftOffset                        entries
+            return UI32_SIZE + UI32_SIZE + TransactedFile::AddressTypeSize + entriesPerNode * ENTRY_SIZE;
         }
 
         std::size_t TransactedFileBTreeAllocatorBTree::Node::Size (std::size_t entriesPerNode) {

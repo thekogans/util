@@ -82,7 +82,6 @@ namespace thekogans {
                             prev.header.flags, prev.header.size,
                             footer.flags, footer.size).c_str (),
                         offset, prev.header, footer);
-
                 }
                 return true;
             }

@@ -38,6 +38,12 @@ namespace thekogans {
         /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
                 public TransactedFile::Allocator,
+                // As much as I'd like to hide from the rest of the world that an Allocator is an Object,
+                // TransactedFile assumes it (as it should) when it rebuilds it'self from disk as well
+                // as when it first createst itself. And private inheritance prevents it from cross-typing
+                // (dynamic_cast) the Allocator interface to Object. So here sits an anouncement to the rest
+                // of the world that yes, we are indeed an Object.
+                public virtual TransactedFile::Object,
                 private TransactedFileBTreeAllocatorBTree {
             /// \brief
             /// TransactedFileBTreeAllocator is a \see{Serializable}.
@@ -51,11 +57,9 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
-            /// \param[in] secure true == zero out free blocks.
-            /// \param[in] btreeEntriesPerNode Number of entries per \see{BTree::Node}.
-            /// \param[in] btreeNodesPerPage Number of \see{BTree::Node}s that will fit
-            /// in to a \see{BlockAllocator} page.
-            /// \param[in] allocator_ \see{util::Allocator} for \see{BTree::Node}.
+            /// \param[in] entriesPerNode Number of entries per \see{BTree::Node}.
+            /// \param[in] nodesPerPage Number of \see{TransactedFileBTreeAllocatorBTree::Node}s
+            /// that will fit in to a \see{SlabAllocatorImpl} page.
             TransactedFileBTreeAllocator (
                 TransactedFile::SharedPtr file = nullptr,
                 TransactedFile::AddressType offset = 0,

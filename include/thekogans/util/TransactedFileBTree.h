@@ -44,7 +44,7 @@ namespace thekogans {
         /// for it's key and value. That means that key can be practically any random size object
         /// (as long as it derives from \see{TransactedFileBTree::Key} and implements the interface).
         /// And value can be any \see{Serializable} derived type.
-        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTree : public TransactedFile::Object {
+        struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTree : public virtual TransactedFile::Object {
             /// \brief
             /// TransactedFileBTree is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTree)

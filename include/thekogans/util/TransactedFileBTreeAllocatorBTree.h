@@ -37,7 +37,7 @@ namespace thekogans {
         /// by entries being returned if they suit the need of an allocation. It's broken
         /// out in to its own file because TransactedFileBTreeAllocator.h was getting too
         /// big to maintain.
-        struct TransactedFileBTreeAllocatorBTree : public TransactedFile::Object {
+        struct TransactedFileBTreeAllocatorBTree : public virtual TransactedFile::Object {
             /// \brief
             /// Object is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree)
