@@ -21,6 +21,7 @@
 #include <cstddef>
 #include <cassert>
 #include <new>
+#include <array>
 #include <type_traits>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Constants.h"

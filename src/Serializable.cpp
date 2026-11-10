@@ -33,8 +33,6 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void Serializable::StaticInit () {
-            Directory::Entry::StaticInit ();
-            Fraction::StaticInit ();
             HRTimerMgr::TimerInfoBase::StaticInit ();
             HRTimerMgr::StaticInit ();
             TransactedFile::Object::StaticInit ();
