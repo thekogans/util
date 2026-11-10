@@ -151,61 +151,6 @@ namespace thekogans {
             return node;
         }
 
-        void TransactedFileBTree::Node::FreeSubtree (
-                TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset) {
-            if (offset != 0) {
-                TransactedFile::BlockRange range (file, offset);
-                ui32 magic;
-                range >> magic;
-                if (magic == MAGIC) {
-                    SerializableHeader header;
-                    range >> header;
-                    if (header.type == TYPE) {
-                        range >> magic;
-                        if (magic == MAGIC32) {
-                            ui32 count;
-                            range >> count;
-                            if (count > 0) {
-                                ui32 flags;
-                                TransactedFile::AddressType leftOffset;
-                                range >> flags >> leftOffset;
-                                FreeSubtree (file, leftOffset);
-                                for (ui32 i = 0; i < count; ++i) {
-                                    if (flags & TransactedFileBTree::Header::FLAGS_VALUE_AS_OBJECT) {
-                                        TransactedFile::AddressType valueOffset;
-                                        range >> valueOffset;
-                                        DestroyObject (file, valueOffset);
-                                    }
-                                    TransactedFile::AddressType rightOffset;
-                                    range >> rightOffset;
-                                    FreeSubtree (file, rightOffset);
-                                }
-                            }
-                            TransactedFile::Object::FreeObject (file, offset);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
-                                offset);
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Header type: %s != TransactedFileBTree::Node type: %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                            header.type.c_str (),
-                            TYPE,
-                            offset);
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFile::Object @" THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
-                }
-            }
-        }
-
         TransactedFileBTree::Key::SharedPtr TransactedFileBTree::Node::GetKey (ui32 index) {
             return entries[index].key;
         }
@@ -505,7 +450,7 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            right->FreeBlock ();
+            Object::FreeObject (file, right->GetOffset ());
             right->Release ();
         }
 
@@ -757,27 +702,27 @@ namespace thekogans {
                     SerializableHeader header;
                     range >> header;
                     if (header.type == TYPE) {
-                        ui32 magic;
                         range >> magic;
                         if (magic == MAGIC32) {
                             ui32 count;
                             range >> count;
                             if (count > 0) {
                                 ui32 flags;
-                                range >> flags;
-                                if (flags & TransactedFileBTree::Header::FLAGS_VALUE_AS_OBJECT) {
-                                    TransactedFile::AddressType leftOffset;
-                                    range >> leftOffset;
-                                    for (ui32 i = 0; i < count; ++i) {
+                                TransactedFile::AddressType leftOffset;
+                                range >> flags >> leftOffset;
+                                Node::FreeObject (file, leftOffset);
+                                for (ui32 i = 0; i < count; ++i) {
+                                    if (flags & TransactedFileBTree::Header::FLAGS_VALUE_AS_OBJECT) {
                                         TransactedFile::AddressType valueOffset;
                                         range >> valueOffset;
                                         DestroyObject (file, valueOffset);
-                                        TransactedFile::AddressType rightOffset;
-                                        range >> rightOffset;
                                     }
+                                    TransactedFile::AddressType rightOffset;
+                                    range >> rightOffset;
+                                    Node::FreeObject (file, rightOffset);
                                 }
                             }
-                            TransactedFile::Object::FreeObject (file, offset);
+                            Object::FreeObject (file, offset);
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -910,7 +855,7 @@ namespace thekogans {
                     if (root->IsEmpty () && root->GetChild (0) != nullptr) {
                         Node *node = root;
                         root = root->GetChild (0);
-                        node->FreeBlock ();
+                        Object::FreeObject (file, node->GetOffset ());
                         node->Release ();
                     }
                     if (header.rootOffset == 0 || root->GetOffset () != header.rootOffset) {
@@ -1019,7 +964,7 @@ namespace thekogans {
                         if (magic == MAGIC32) {
                             Header header;
                             range >> header;
-                            Node::FreeSubtree (file, header.rootOffset);
+                            Node::FreeObject (file, header.rootOffset);
                             Object::FreeObject (file, offset);
                         }
                         else {

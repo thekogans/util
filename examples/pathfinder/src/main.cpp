@@ -107,7 +107,7 @@ int main (
             Roots::SharedPtr roots;
             IgnoreList::SharedPtr ignoreList;
             {
-                util::TransactedFile::Transaction transaction (*Database::Instance ()->GetFile ());
+                util::TransactedFile::Transaction transaction (Database::Instance ()->GetFile ());
                 roots = Database::Instance ()->GetRegistry ()->GetValue ("roots");
                 if (roots == nullptr) {
                     roots.Reset (new Roots (Database::Instance ()->GetFile ()));
@@ -125,7 +125,7 @@ int main (
                 if (!roots_.empty ()) {
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         util::TransactedFile::Transaction transaction (
-                            *Database::Instance ()->GetFile ());
+                            Database::Instance ()->GetFile ());
                         roots->ScanRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()),
                             ignoreList);
@@ -140,7 +140,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     util::TransactedFile::Transaction transaction (
-                        *Database::Instance ()->GetFile ());
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->EnableRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
@@ -155,7 +155,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     util::TransactedFile::Transaction transaction (
-                        *Database::Instance ()->GetFile ());
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->DisableRoot (
                             NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
@@ -170,7 +170,7 @@ int main (
                 const std::vector<std::string> &roots_ = Options::Instance ()->roots;
                 if (!roots_.empty ()) {
                     util::TransactedFile::Transaction transaction (
-                        *Database::Instance ()->GetFile ());
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = roots_.size (); i < count; ++i) {
                         roots->DeleteRoot (NormalizePath (util::Path (roots_[i]).MakeAbsolute ()));
                     }
@@ -207,7 +207,7 @@ int main (
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
                     util::TransactedFile::Transaction transaction (
-                        *Database::Instance ()->GetFile ());
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
                         ignoreList->AddIgnore (ignoreList_[i]);
                     }
@@ -221,7 +221,7 @@ int main (
                 const std::vector<std::string> &ignoreList_ = Options::Instance ()->ignoreList;
                 if (!ignoreList_.empty ()) {
                     util::TransactedFile::Transaction transaction (
-                        *Database::Instance ()->GetFile ());
+                        Database::Instance ()->GetFile ());
                     for (std::size_t i = 0, count = ignoreList_.size (); i < count; ++i) {
                         ignoreList->DeleteIgnore (ignoreList_[i]);
                     }

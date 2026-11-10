@@ -1198,8 +1198,7 @@ namespace thekogans {
                                 return levelMask_ == 0 ?
                                     Segment::Alloc (pageMap, index) :
                                     Internal::Alloc (pageMap, index);
-                            }
-                        );
+                            });
                     }
                     // Since tree leafs are segments, ask the one we got for the
                     // page correponding to the given address.
@@ -1227,7 +1226,7 @@ namespace thekogans {
                 if (root == nullptr) {
                     // levelMask == 0 is a corner case where one segment covers the
                     // entire address space...
-                    root = levelMask == 0 ?
+                    root = THEKOGANS_UTIL_UNLIKELY (levelMask == 0) ?
                         Segment::Alloc (*this, 0) :
                         // This is the most common case. One or more levels of internal
                         // nodes leading to segment nodes.

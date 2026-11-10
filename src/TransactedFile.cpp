@@ -78,7 +78,7 @@ namespace thekogans {
                 Serializer &serializer,
                 const TransactedFile::Header &header) {
             serializer << MAGIC32 << header.flags << header.dictionaryOffset <<
-                header.allocatorOffset << header.registryOffset << header.userOffset;
+                header.allocatorOffset << header.registryOffset;
             return serializer;
         }
 
@@ -89,7 +89,7 @@ namespace thekogans {
             serializer >> magic;
             if (magic == MAGIC32) {
                 serializer >> header.flags >> header.dictionaryOffset >>
-                    header.allocatorOffset >> header.registryOffset >> header.userOffset;
+                    header.allocatorOffset >> header.registryOffset;
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -200,7 +200,7 @@ namespace thekogans {
         #endif // defined (TOOLCHAIN_OS_Windows)
             HandleGuard guard{handle};
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
-            Transaction transaction (*this);
+            Transaction transaction (this);
             Grow (Block::SIZE + Header::SIZE);
             Block block (this, Block::BLOCK_0_OFFSET, 0, Header::SIZE);
             block.Write ();
@@ -272,14 +272,6 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             if (header.registryOffset != registryOffset) {
                 header.registryOffset = registryOffset;
-                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            }
-        }
-
-        void TransactedFile::SetUserOffset (AddressType userOffset) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (header.userOffset != userOffset) {
-                header.userOffset = userOffset;
                 Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
             }
         }

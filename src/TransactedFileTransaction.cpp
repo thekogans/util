@@ -27,32 +27,31 @@ namespace thekogans {
     namespace util {
 
         TransactedFile::Transaction::~Transaction () {
-            // If the transaction has been committed, these two statements
-            // are noop. There will be no dirty pages to abort, and no
-            // subscribers to notify.
+            // If the transaction has been committed, fte following statements are noop.
+            // There will be no dirty pages to clear, and no subscribers to notify.
             {
-                LockGuard<SpinLock> guard (file.spinLock);
-                file.size = file.GetSize ();
-                file.pageMap->Clear (true);
+                LockGuard<SpinLock> guard (file->spinLock);
+                file->size = file->GetSize ();
+                file->pageMap->Clear (true);
             }
-            file.Producer<TransactedFileTransactionEvents>::Produce (
+            file->Producer<TransactedFileTransactionEvents>::Produce (
                 std::bind (
                     &TransactedFileTransactionEvents::OnTransactedFileTransactionAbort,
                     std::placeholders::_1,
-                    &file),
+                    file),
                 true);
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {
-            std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> totalCommittedObjects;
-            totalCommittedObjects.reserve (file.Producer<TransactedFileTransactionEvents>::GetSubscriberCount () * 2);
             // =========================================================================
             // STEP 1: DETERMINISTIC CONVERGENT SETTLEMENT LOOP (PHASE 1 ONLY)
             // =========================================================================
+            std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> totalCommittedObjects;
+            totalCommittedObjects.reserve (file->Producer<TransactedFileTransactionEvents>::GetSubscriberCount () * 2);
             std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> currentDirtyBatch;
             std::size_t iterations = 0;
             static constexpr std::size_t MAX_CONVERGENCE_WAVES = 32;
-            while (file.Producer<TransactedFileTransactionEvents>::GetSubscribers (currentDirtyBatch, true) != 0) {
+            while (file->Producer<TransactedFileTransactionEvents>::GetSubscribers (currentDirtyBatch, true) != 0) {
                 // DEFENSIVE CEILING: If we hit this, a cyclic dirty loop has been detected!
                 if (THEKOGANS_UTIL_UNLIKELY (++iterations > MAX_CONVERGENCE_WAVES)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -63,7 +62,7 @@ namespace thekogans {
                         std::bind (
                             &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
                             std::placeholders::_1,
-                            &file,
+                            file,
                             COMMIT_PHASE_1),
                         subscriber.first);
                 }
@@ -80,32 +79,35 @@ namespace thekogans {
                     std::bind (
                         &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
                         std::placeholders::_1,
-                        &file,
+                        file,
                         COMMIT_PHASE_2),
                     subscriber.first);
             }
+            // =========================================================================
+            // STEP 3: WRITE AHEAD LOG (WAL)
+            // =========================================================================
             {
-                LockGuard<SpinLock> guard (file.spinLock);
-                std::string logPath = GetLogPath (file.path);
+                LockGuard<SpinLock> guard (file->spinLock);
+                std::string logPath = GetLogPath (file->path);
                 // Dump dirty pages to log.
                 {
                     SimpleFile log (
-                        file.endianness,
+                        file->endianness,
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-                    log << (ui32)0 << (ui32)0 << file.size <<
-                        (SizeType)file.pageMap->GetPageSize ();
-                    std::size_t count = file.pageMap->Log (log);
+                    log << (ui32)0 << (ui32)0 << file->size <<
+                        (SizeType)file->pageMap->GetPageSize ();
+                    std::size_t count = file->pageMap->Log (log);
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32 << (ui32)count;
                 }
                 // At this point the log is commited and closed.
                 // If we can't complete the commit (exception),
                 // next time Open (above) will use CommitLog
-                // before opening the file.
-                file.pageMap->Flush (file, clearCache);
-                file.SetSize (file.size);
-                file.Flush ();
+                // before opening the file->
+                file->pageMap->Flush (*file, clearCache);
+                file->SetSize (file->size);
+                file->Flush ();
                 File::Delete (logPath);
             }
         }

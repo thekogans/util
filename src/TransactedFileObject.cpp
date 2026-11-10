@@ -31,7 +31,6 @@ namespace thekogans {
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void TransactedFile::Object::StaticInit () {
             TransactedFileTypeDictionary::StaticInitEx ();
-            TransactedFileBTreeAllocatorBTree::StaticInitEx ();
             TransactedFileBTreeAllocator::StaticInitEx ();
             TransactedFileBTreeRegistry::StaticInitEx ();
             TransactedFileBTree::StaticInitEx ();

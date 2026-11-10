@@ -122,7 +122,6 @@ namespace thekogans {
                 /// \brief
                 /// Contains the offset of the \see{Registry}.
                 AddressType registryOffset{0};
-                AddressType userOffset{0};
                 // NOTE: If you add new fields, adjust the SIZE and increment
                 // the version of your derivative and add if statements to operator
                 // << and >> to read and write them. And don't forget to rebuild
@@ -136,8 +135,7 @@ namespace thekogans {
                     UI32_SIZE +       // flags
                     AddressTypeSize + // dictionaryOffset
                     AddressTypeSize + // allocatorOffset
-                    AddressTypeSize + // regisryOffset
-                    AddressTypeSize;  // userOffset
+                    AddressTypeSize;  // regisryOffset
 
                 /// \brief
                 /// ctor.
@@ -151,9 +149,6 @@ namespace thekogans {
                 inline bool IsSecure () const {
                     return flags.Test (FLAGS_SECURE);
                 }
-
-                void Read (Serializer &serializer);
-                void Write (Serializer &serializer);
             } header;
             /// \brief
             /// File size.
@@ -234,48 +229,17 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return the header.dictionaryOffset;
-            /// \return header.dictionaryOffset;
-            inline AddressType GetTypeDictionaryOffset () const {
-                return header.dictionaryOffset;
-            }
-            /// \brief
             /// Set the header.dictionaryOffset.
             /// \param[in] dictionaryOffset New dictionaryOffset.
             void SetTypeDictionaryOffset (AddressType dictionaryOffset);
-
-            /// \brief
-            /// Return the header.allocatorOffset;
-            /// \return header.allocatorOffset;
-            inline AddressType GetAllocatorOffset () const {
-                return header.allocatorOffset;
-            }
             /// \brief
             /// Set the header.allocatorOffset.
             /// \param[in] allocatorOffset New allocatorOffset.
             void SetAllocatorOffset (AddressType allocatorOffset);
-
-            /// \brief
-            /// Return the header.registryOffset;
-            /// \return header.registryOffset;
-            inline AddressType GetRegistryOffset () const {
-                return header.registryOffset;
-            }
             /// \brief
             /// Set the header.registryOffset.
             /// \param[in] registryOffset New registryOffset to set.
             void SetRegistryOffset (AddressType registryOffset);
-
-            /// \brief
-            /// Return the header.userOffset;
-            /// \return header.userOffset;
-            inline AddressType GetUserOffset () const {
-                return header.userOffset;
-            }
-            /// \brief
-            /// Set the header.userOffset.
-            /// \param[in] userOffset New userOffset to set.
-            void SetUserOffset (AddressType userOffset);
 
             virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
                 return dictionary;

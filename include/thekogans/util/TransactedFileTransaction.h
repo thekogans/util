@@ -30,10 +30,8 @@
 /// \struct TransactedFile::Transaction TransactedFile.h thekogans/util/TransactedFile.h
 ///
 /// \brief
-/// A very simple transaction scope guard.
-/// Call Commit before the end of the
-/// scope to commit the transaction.
-/// NOTE: If you're only reading the file, this is unnecessary.
+/// A very simple transaction scope guard. Call Commit before the end of the
+/// scope to commit the transaction. If not, the dtor will abort it.
 struct _LIB_THEKOGANS_UTIL_DECL Transaction {
     /// \brief
     /// Commit phase 1 (allocation).
@@ -45,7 +43,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Transaction {
     /// \brief
     /// ctor.
     /// \param[in] file_ \see{TransactedFile} to transact.
-    explicit Transaction (TransactedFile &file_) :
+    explicit Transaction (TransactedFile::SharedPtr file_) :
         file (file_) {}
     /// \brief
     /// dtor. Abort an uncommitted transaction.
@@ -75,7 +73,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Transaction {
 
 private:
     /// \see{TransactedFile} we're guarding.
-    TransactedFile &file;
+    TransactedFile::SharedPtr file;
 
     /// \brief
     /// Transaction is neither copy or move constructable, nor assignable.

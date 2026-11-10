@@ -135,6 +135,10 @@ public:
     }
 
     // Serializer
+    /// \brief
+    /// Return the \see{TransactedFile} \see{DynamicCreatable::TypeDictionary}.
+    /// \return \see{DynamicCreatable::TypeDictionary} used by this ranges \see{TransactedFile}
+    /// to perform type compression.
     virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
         return file->GetTypeDictionary ();
     }

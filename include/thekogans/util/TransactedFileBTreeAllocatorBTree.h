@@ -40,7 +40,8 @@ namespace thekogans {
         struct TransactedFileBTreeAllocatorBTree : public TransactedFile::Object {
             /// \brief
             /// Object is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeAllocatorBTree)
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree)
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTreeAllocatorBTree)
 
             /// \struct TransactedFileBTreeAllocatorBTree::Key TransactedFileBTreeAllocatorBTree.h
             /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
@@ -182,13 +183,6 @@ namespace thekogans {
                     TransactedFile::SharedPtr file,
                     TransactedFile::AddressType offset,
                     TransactedFileBTreeAllocatorBTree *btree);
-                /// \brief
-                /// Free the subtree rooted at node.
-                /// \param[in] file \see{TransactedFile} where the Node resides.
-                /// \param[in] offset Node offset.
-                static void FreeSubtree (
-                    TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset);
 
                 /// \brief
                 /// Return the child at the given index.
@@ -288,7 +282,6 @@ namespace thekogans {
                     return count > btree->header.entriesPerNode / 2;
                 }
 
-            protected:
                 /// \brief
                 /// Clear the cache.
                 void Reset ();
@@ -298,7 +291,6 @@ namespace thekogans {
                 /// Undo what \see{Alloc} did.
                 virtual void Harakiri () override;
 
-            protected:
                 // Serializable
                 /// \brief
                 /// Return the node size.
@@ -314,6 +306,12 @@ namespace thekogans {
                 /// Write the node.
                 /// \param[in] serializer \see{Serializer} to write the node to.
                 virtual void Write (Serializer &serializer) override;
+
+                // Object
+                /// \brief
+                static void FreeObject (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::AddressType offset);
 
                 /// \brief
                 /// Node is neither copy or move constructable, nor assignable.

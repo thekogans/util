@@ -385,13 +385,6 @@ namespace thekogans {
                     TransactedFile::SharedPtr file,
                     TransactedFile::AddressType offset,
                     TransactedFileBTree *btree);
-                /// \brief
-                /// Delete the node and it's sub-tree.
-                /// \param[in] file \see{TransactedFile} where the node resides.
-                /// \param[in] offset Node offset.
-                static void FreeSubtree (
-                    TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset);
 
                 /// \brief
                 /// Return key at entry index.
