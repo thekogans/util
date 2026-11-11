@@ -29,11 +29,9 @@ namespace thekogans {
         TransactedFile::Transaction::~Transaction () {
             // If the transaction has been committed, fte following statements are noop.
             // There will be no dirty pages to clear, and no subscribers to notify.
-            {
-                LockGuard<SpinLock> guard (file->spinLock);
-                file->size = file->GetSize ();
-                file->pageMap->Clear (true);
-            }
+            file->phase = PHASE_ABORT;
+            file->size = file->GetSize ();
+            file->pageMap->Clear (true);
             file->Producer<TransactedFileTransactionEvents>::Produce (
                 std::bind (
                     &TransactedFileTransactionEvents::OnTransactedFileTransactionAbort,
@@ -43,9 +41,21 @@ namespace thekogans {
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {
+            struct PhaseGuard {
+                TransactedFile::SharedPtr file;
+                PhaseGuard (TransactedFile::SharedPtr file_) :
+                    file (file_) {}
+                ~PhaseGuard () {
+                    file->phase = 0;
+                }
+                void SetPhase (int phase) {
+                    file->phase = phase;
+                }
+            } guard (file);
             // =========================================================================
             // STEP 1: DETERMINISTIC CONVERGENT SETTLEMENT LOOP (PHASE 1 ONLY)
             // =========================================================================
+            guard.SetPhase (PHASE_ALLOC);
             std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> totalCommittedObjects;
             totalCommittedObjects.reserve (file->Producer<TransactedFileTransactionEvents>::GetSubscriberCount () * 2);
             std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> currentDirtyBatch;
@@ -63,7 +73,7 @@ namespace thekogans {
                             &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
                             std::placeholders::_1,
                             file,
-                            COMMIT_PHASE_1),
+                            PHASE_ALLOC),
                         subscriber.first);
                 }
                 if (totalCommittedObjects.empty ()) {
@@ -78,44 +88,62 @@ namespace thekogans {
                 currentDirtyBatch.clear ();
             }
             // =========================================================================
+            // STEP 1.5: DEDUPLICATE COMMITTED OBJECTS (ZERO EXTRA ALLOCATIONS)
+            // =========================================================================
+            using SubscriberInfo = Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo;
+            std::sort (
+                totalCommittedObjects.begin (),
+                totalCommittedObjects.end (),
+                [] (const SubscriberInfo &a, const SubscriberInfo &b) {
+                    return a.first.Get () < b.first.Get ();
+                });
+            totalCommittedObjects.erase (
+                std::unique (
+                    totalCommittedObjects.begin (),
+                    totalCommittedObjects.end (),
+                    [] (const SubscriberInfo &a, const SubscriberInfo &b) {
+                        return a.first.Get () == b.first.Get ();
+                    }),
+                totalCommittedObjects.end ());
+            // =========================================================================
             // STEP 2: UNIFIED FLUSH PASS (PHASE 2 ONLY)
             // =========================================================================
+            guard.SetPhase (PHASE_FLUSH);
             for (const auto &subscriber : totalCommittedObjects) {
                 subscriber.second->DeliverEvent (
                     std::bind (
                         &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
                         std::placeholders::_1,
                         file,
-                        COMMIT_PHASE_2),
+                        PHASE_FLUSH),
                     subscriber.first);
             }
             // =========================================================================
             // STEP 3: WRITE AHEAD LOG (WAL)
             // =========================================================================
+            guard.SetPhase (PHASE_WAL);
+            std::string logPath = GetLogPath (file->path);
+            // Dump dirty pages to log.
             {
-                LockGuard<SpinLock> guard (file->spinLock);
-                std::string logPath = GetLogPath (file->path);
-                // Dump dirty pages to log.
-                {
-                    SimpleFile log (
-                        file->endianness,
-                        logPath,
-                        SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-                    log << (ui32)0 << (ui32)0 << file->size <<
-                        (SizeType)file->pageMap->GetPageSize ();
-                    std::size_t count = file->pageMap->Log (log);
-                    log.Seek (0, SEEK_SET);
-                    log << MAGIC32 << (ui32)count;
-                }
-                // At this point the log is commited and closed.
-                // If we can't complete the commit (exception),
-                // next time Open (above) will use CommitLog
-                // before opening the file->
-                file->pageMap->Flush (*file, clearCache);
-                file->SetSize (file->size);
-                file->Flush ();
-                File::Delete (logPath);
+                SimpleFile log (
+                    file->endianness,
+                    logPath,
+                    SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
+                log << (ui32)0 << (ui32)0 << file->size << (SizeType)file->pageMap->GetPageSize ();
+                std::size_t count = file->pageMap->Log (log);
+                log.Flush ();
+                log.Seek (0, SEEK_SET);
+                log << MAGIC32 << (ui32)count;
+                log.Flush ();
             }
+            // At this point the log is commited and closed.
+            // If we can't complete the commit (exception),
+            // next time Open (above) will use CommitLog
+            // before opening the file->
+            file->pageMap->Flush (*file, clearCache);
+            file->SetSize (file->size);
+            file->Flush ();
+            File::Delete (logPath);
         }
 
         void TransactedFile::Transaction::CommitLog (const std::string &path) {

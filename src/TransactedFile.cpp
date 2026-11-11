@@ -31,6 +31,7 @@
 #include "thekogans/util/Path.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/TransactedFileTypeDictionary.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -92,13 +93,13 @@ namespace thekogans {
                     header.allocatorOffset >> header.registryOffset;
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFile file.");
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt TransactedFile file.");
             }
             return serializer;
         }
 
-        TransactedFile::TransactedFile (const std::string &path) {
+        TransactedFile::TransactedFile (const std::string &path) :
+                dictionary (new TransactedFileTypeDictionary) {
             AddRef ();
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
@@ -133,9 +134,7 @@ namespace thekogans {
                 endianness = GuestEndian;
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Corrupt TransactedFile %s",
-                    path.c_str ());
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt TransactedFile %s", path.c_str ());
             }
             BlockRange headerRange (this, Block::BLOCK_0_OFFSET);
             headerRange >> header;
@@ -172,7 +171,7 @@ namespace thekogans {
                 Registry::SharedPtr registry_,
                 bool forceTruncate) :
                 File (endianness),
-                header (secure ? Header::FLAGS_SECURE : 0),
+                header{secure ? Header::FLAGS_SECURE : 0},
                 dictionary (dictionary_),
                 allocator (allocator_),
                 registry (registry_) {
@@ -245,77 +244,39 @@ namespace thekogans {
                 bool overwrite) {
             bool exists = Path (path).Exists ();
             if (exists && !overwrite) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("TransactedFile %s exists.", path.c_str ());
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s exists.", path.c_str ());
             }
             return SharedPtr (
                 new TransactedFile (
                     endianness, path, secure, dictionary, allocator, registry, exists && overwrite), false);
         }
 
-        void TransactedFile::SetTypeDictionaryOffset (AddressType dictionaryOffset) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (header.dictionaryOffset != dictionaryOffset) {
-                header.dictionaryOffset = dictionaryOffset;
-                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            }
-        }
-
-        void TransactedFile::SetAllocatorOffset (AddressType allocatorOffset) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (header.allocatorOffset != allocatorOffset) {
-                header.allocatorOffset = allocatorOffset;
-                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            }
-        }
-
-        void TransactedFile::SetRegistryOffset (AddressType registryOffset) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (header.registryOffset != registryOffset) {
-                header.registryOffset = registryOffset;
-                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            }
-        }
-
         TransactedFile::SizeType TransactedFile::Grow (
                 SizeType amount) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (IsOpen ()) {
-                SizeType oldSize = size;
-                size += MIN (pageMap->GetMaxOffset () - size, amount);
-                return oldSize;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
+            SizeType oldSize = size;
+            size += MIN (pageMap->GetMaxOffset () - size, amount);
+            return oldSize;
         }
 
         TransactedFile::SizeType TransactedFile::Shrink (
                 SizeType amount) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (IsOpen ()) {
-                size -= MIN (amount, size.load (std::memory_order_relaxed));
-                pageMap->Shrink (size);
-                return size;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EBADF);
-            }
+            size -= MIN (amount, size.load (std::memory_order_relaxed));
+            pageMap->Shrink (size);
+            return size;
         }
 
         void TransactedFile::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr file,
                 int phase) noexcept {
-            if (phase == Transaction::COMMIT_PHASE_2) {
-                Range range (this, Block::BLOCK_0_OFFSET, Header::SIZE, false);
+            if (phase == Transaction::PHASE_FLUSH) {
+                BlockRange range (this, Block::BLOCK_0_OFFSET, false);
                 range << header;
             }
         }
 
         void TransactedFile::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr file) noexcept {
-            Range range (this, Block::BLOCK_0_OFFSET, Header::SIZE);
+            BlockRange range (this, Block::BLOCK_0_OFFSET);
             range >> header;
         }
 

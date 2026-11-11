@@ -636,18 +636,20 @@ namespace thekogans {
 
         std::size_t Serializer::Size (const SerializableHeader &header) const noexcept {
             std::size_t size = 0;
-            if (!header.NeedType ()) {
-                if (GetTypeDictionary () != nullptr) {
+            if (context.NeedType ()) {
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary = GetTypeDictionary ();
+                if (dictionary != nullptr) {
+                    dictionary->GetOrCreateTypeId (header.type.c_str ());
                     size += DynamicCreatable::TypeDictionary::IdTypeSize;
                 }
                 else {
                     size += Size (header.type);
                 }
             }
-            if (!header.NeedVersion ()) {
+            if (context.NeedVersion ()) {
                 size += Size (header.version);
             }
-            if (!header.NeedSize ()) {
+            if (context.NeedSize ()) {
                 size += Size (header.size);
             }
             return size;

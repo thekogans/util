@@ -205,8 +205,8 @@ protected:
         TransactedFile::SharedPtr /*file*/) noexcept override;
 
     virtual void OnTransactedFileOffsetDestroyed (
-            RefCounted::SharedPtr<TransactedFile> /*file*/,
-            TransactedFileAddressSpaceType::AddressType offset_) noexcept override {
+            TransactedFile::SharedPtr /*file*/,
+            AddressSpaceType::AddressType offset_) noexcept override {
         if (offset == offset_) {
             offset = 0;
             destroyed = true;

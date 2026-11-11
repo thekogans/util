@@ -73,10 +73,10 @@ namespace thekogans {
 
         const char *DynamicCreatable::DefaultTypeDictionary::ResolveTypeId (IdType id) {
             if (id < FirstUserId) {
-                return nullptr;
+                return "";
             }
             id -= FirstUserId;
-            return id < types.size () ? types[id].c_str () : nullptr;
+            return id < types.size () ? types[id].c_str () : "";
         }
 
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {

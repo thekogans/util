@@ -21,15 +21,9 @@
 #include <string>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/Constants.h"
 #include "thekogans/util/Flags.h"
 #include "thekogans/util/PageMap.h"
-#include "thekogans/util/NullLock.h"
-#include "thekogans/util/LockGuard.h"
-#include "thekogans/util/Exception.h"
-#include "thekogans/util/LoggerMgr.h"
 #include "thekogans/util/File.h"
-#include "thekogans/util/IntrusiveList.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Subscriber.h"
 #include "thekogans/util/Producer.h"
@@ -40,10 +34,6 @@ namespace thekogans {
         /// \brief
         /// Forward declaration of \see{TransactedFile} needed by \see{TransactedFileTransactionEvents}.
         struct TransactedFile;
-
-        /// \brief
-        /// We do our own locking.
-        using TransactedFileAddressSpaceType = PageMap<ui64, BitWidth<ui64>::value, NullLock>;
 
         /// \struct TransactedFileTransactionEvents TransactedFile.h thekogans/util/TransactedFile.h
         ///
@@ -78,7 +68,7 @@ namespace thekogans {
             // Broadcast for terminal file destructions
             virtual void OnTransactedFileOffsetDestroyed (
                 RefCounted::SharedPtr<TransactedFile> /*file*/,
-                TransactedFileAddressSpaceType::AddressType offset) noexcept {}
+                PageMap64::AddressType offset) noexcept {}
         };
 
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
@@ -89,10 +79,10 @@ namespace thekogans {
                 public Producer<TransactedFileTransactionEvents>,
                 public Producer<TransactedFileStructureEvents>,
                 public Subscriber<TransactedFileTransactionEvents>,
-                public TransactedFileAddressSpaceType::PageSource {
+                public PageMap64::PageSource {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFile)
 
-            using AddressSpaceType = TransactedFileAddressSpaceType;
+            using AddressSpaceType = PageMap64;
             using AddressType = AddressSpaceType::AddressType;
             static constexpr std::size_t AddressTypeSize = AddressSpaceType::AddressTypeSize;
             using SizeType = AddressSpaceType::SizeType;
@@ -116,17 +106,12 @@ namespace thekogans {
                 static constexpr ui32 FLAGS_SECURE = 1;
                 /// \brief
                 /// Heap flags.
-                Flags32 flags;
+                Flags32 flags{0};
                 AddressType dictionaryOffset{0};
                 AddressType allocatorOffset{0};
                 /// \brief
                 /// Contains the offset of the \see{Registry}.
                 AddressType registryOffset{0};
-                // NOTE: If you add new fields, adjust the SIZE and increment
-                // the version of your derivative and add if statements to operator
-                // << and >> to read and write them. And don't forget to rebuild
-                // all dependent allocators as it's likely they will have based
-                // their header extensions by deriving from this one.
 
                 /// \brief
                 /// The size of the header on disk.
@@ -136,12 +121,6 @@ namespace thekogans {
                     AddressTypeSize + // dictionaryOffset
                     AddressTypeSize + // allocatorOffset
                     AddressTypeSize;  // regisryOffset
-
-                /// \brief
-                /// ctor.
-                /// \param[in] flags_ 0 or FLAGS_SECURE.
-                Header (ui32 flags_ = 0) :
-                    flags (flags_) {}
 
                 /// \brief
                 /// Return true if secure.
@@ -155,19 +134,20 @@ namespace thekogans {
             std::atomic<SizeType> size{0};
             /// \brief
             /// \see{PageMap} used to map file pages.
-            AddressSpaceType::SharedPtr pageMap{nullptr};
+            AddressSpaceType::SharedPtr pageMap;
             /// \brief
             /// \see{Allocator} associated with this file.
-            DynamicCreatable::TypeDictionary::SharedPtr dictionary{nullptr};
+            DynamicCreatable::TypeDictionary::SharedPtr dictionary;
             /// \brief
             /// \see{Allocator} associated with this file.
-            Allocator::SharedPtr allocator{nullptr};
+            Allocator::SharedPtr allocator;
             /// \brief
             /// \see{Registry} associated with this file.
-            Registry::SharedPtr registry{nullptr};
+            Registry::SharedPtr registry;
+            std::atomic<int> phase{Transaction::PHASE_NONE};
             /// \brief
-            /// Synchronization lock.
-            SpinLock spinLock;
+            /// \see{Transaction} mutex.
+            Mutex mutex;
 
             /// \brief
             /// ctor.
@@ -228,18 +208,37 @@ namespace thekogans {
                 return header.IsSecure ();
             }
 
+            inline int GetTransactionPhase () const {
+                return phase;
+            }
+            inline bool CheckCanMutate () const {
+                return phase == Transaction::PHASE_IN_PROGRESS || phase == Transaction::PHASE_ALLOC;
+            }
+            inline bool CheckCanAlloc () const {
+                return phase == Transaction::PHASE_ALLOC;
+            }
+
             /// \brief
             /// Set the header.dictionaryOffset.
             /// \param[in] dictionaryOffset New dictionaryOffset.
-            void SetTypeDictionaryOffset (AddressType dictionaryOffset);
+            void SetTypeDictionaryOffset (AddressType dictionaryOffset) {
+                header.dictionaryOffset = dictionaryOffset;
+                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
+            }
             /// \brief
             /// Set the header.allocatorOffset.
             /// \param[in] allocatorOffset New allocatorOffset.
-            void SetAllocatorOffset (AddressType allocatorOffset);
+            void SetAllocatorOffset (AddressType allocatorOffset) {
+                header.allocatorOffset = allocatorOffset;
+                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
+            }
             /// \brief
             /// Set the header.registryOffset.
             /// \param[in] registryOffset New registryOffset to set.
-            void SetRegistryOffset (AddressType registryOffset);
+            void SetRegistryOffset (AddressType registryOffset) {
+                header.registryOffset = registryOffset;
+                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
+            }
 
             virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
                 return dictionary;

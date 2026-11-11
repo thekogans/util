@@ -175,10 +175,10 @@ namespace thekogans {
                 int phase) noexcept {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::OnTransactedFileTransactionCommit on a destroyed object.");
-            if (phase == TransactedFile::Transaction::COMMIT_PHASE_1) {
+            if (phase == TransactedFile::Transaction::PHASE_ALLOC) {
                 AllocBlock ();
             }
-            else if (phase == TransactedFile::Transaction::COMMIT_PHASE_2) {
+            else if (phase == TransactedFile::Transaction::PHASE_FLUSH) {
                 Flush ();
             }
         }

@@ -84,7 +84,6 @@ namespace thekogans {
                     ++file->stats.ownerReadingRanges;
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                     // and, if it's a read request, buffer the underlying file range.
-                    LockGuard<SpinLock> guard (file->spinLock);
                     file->pageMap->Read (offset, file.Get (), data, length);
                 }
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
@@ -95,7 +94,6 @@ namespace thekogans {
             }
             else {
                 // ...otherwise, read/write directly from/into the page.
-                LockGuard<SpinLock> guard (file->spinLock);
                 page = file->pageMap->GetPage (offset, file.Get ());
                 data = page->data + pageOffset;
             }
@@ -104,7 +102,6 @@ namespace thekogans {
         TransactedFile::Range::~Range () {
             if (owner) {
                 if (!reading && position > 0) {
-                    LockGuard<SpinLock> guard (file->spinLock);
                     file->pageMap->Write (offset, file.Get (), data, position);
                 }
                 allocator->Free (data, length);

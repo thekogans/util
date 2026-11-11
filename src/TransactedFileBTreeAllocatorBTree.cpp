@@ -73,11 +73,6 @@ namespace thekogans {
                 Serializer &serializer,
                 TransactedFileBTreeAllocatorBTree::Node::Entry &entry) {
             serializer >> entry.key >> entry.rightOffset;
-            // Because of the way we allocate the BTree::Node the
-            // Entry ctor is never called. In a way this extraction
-            // operator is our ctor. Make sure all members are
-            // properly initialized.
-            entry.rightNode = nullptr;
             return serializer;
         }
 

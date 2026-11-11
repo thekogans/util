@@ -145,10 +145,7 @@ namespace thekogans {
                     /// \param[in] key_ Entry key.
                     Entry (const Key &key_ = {0, 0}) :
                         key (key_) {}
-                };
-                /// \brief
-                /// Entry array. Allocated when the node is allocated.
-                Entry *entries;
+                } *entries;
 
                 /// \brief
                 /// ctor.

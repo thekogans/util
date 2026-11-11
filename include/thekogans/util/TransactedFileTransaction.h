@@ -33,18 +33,30 @@
 /// A very simple transaction scope guard. Call Commit before the end of the
 /// scope to commit the transaction. If not, the dtor will abort it.
 struct _LIB_THEKOGANS_UTIL_DECL Transaction {
-    /// \brief
-    /// Commit phase 1 (allocation).
-    static constexpr int COMMIT_PHASE_1 = 1;
-    /// \brief
-    /// Commit phase 2 (flush).
-    static constexpr int COMMIT_PHASE_2 = 2;
+    static constexpr int PHASE_NONE = 0;
+    static constexpr int PHASE_IN_PROGRESS = 1;
+    static constexpr int PHASE_ALLOC = 2;
+    static constexpr int PHASE_FLUSH = 3;
+    static constexpr int PHASE_WAL = 4;
+    static constexpr int PHASE_ABORT = 5;
+
+    static constexpr const char * const phaseName[] = {
+        "PHASE_NONE",
+        "PHASE_IN_PROGRESS",
+        "PHASE_ALLOC",
+        "PHASE_FLUSH",
+        "PHASE_WAL",
+        "PHASE_ABORT"
+    };
 
     /// \brief
     /// ctor.
     /// \param[in] file_ \see{TransactedFile} to transact.
     explicit Transaction (TransactedFile::SharedPtr file_) :
-        file (file_) {}
+            file (file_),
+            guard (file->mutex) {
+        file->phase = PHASE_IN_PROGRESS;
+    }
     /// \brief
     /// dtor. Abort an uncommitted transaction.
     ~Transaction ();
@@ -72,8 +84,12 @@ struct _LIB_THEKOGANS_UTIL_DECL Transaction {
     static std::string GetLogPath (const std::string &path);
 
 private:
+    /// \brief
     /// \see{TransactedFile} we're guarding.
     TransactedFile::SharedPtr file;
+    /// \brief
+    ///
+    LockGuard<Mutex> guard;
 
     /// \brief
     /// Transaction is neither copy or move constructable, nor assignable.

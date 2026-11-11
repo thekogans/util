@@ -312,7 +312,6 @@ namespace thekogans {
                 /// \brief
                 /// Count of entries.
                 ui32 count{0};
-                ui32 flags{0};
                 /// \brief
                 /// Left most child node block offset.
                 TransactedFile::AddressType leftOffset{0};
@@ -355,10 +354,7 @@ namespace thekogans {
                         key (key_),
                         valueOffset (valueOffset_),
                         value (value_) {}
-                };
-                /// \brief
-                /// Entry array. Allocated when the node is allocated.
-                Entry *entries;
+                } *entries;
 
                 /// \brief
                 /// ctor.

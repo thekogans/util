@@ -25,6 +25,11 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTreeAllocator, 1, 0)
 
         TransactedFile::AddressType TransactedFileBTreeAllocator::Alloc (TransactedFile::SizeType size) {
+            if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanAlloc ())) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Structural Logic Error: Blocks can only be allocated during the allocation phase (%s).",
+                    TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+            }
             TransactedFile::AddressType offset = 0;
             if (size > 0) {
                 if (size < TransactedFile::MIN_USER_DATA_SIZE) {
@@ -175,6 +180,11 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocator::Free (TransactedFile::AddressType offset) {
+            if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanAlloc ())) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Structural Logic Error: Blocks can only be freed during the allocation phase (%s).",
+                    TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+            }
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
                 if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Block::BLOCK_0_OFFSET)) {
@@ -254,6 +264,11 @@ namespace thekogans {
                 TransactedFile::AddressType offset,
                 TransactedFile::SizeType size,
                 bool moveData) {
+            if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanAlloc ())) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Structural Logic Error: Blocks can only be reallocated during the allocation phase (%s).",
+                    TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+            }
             if (offset == 0) {
                 offset = Alloc (size);
             }

@@ -21,6 +21,7 @@
 #include <cstring>
 #include <functional>
 #include <unordered_map>
+#include <deque>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/Singleton.h"
@@ -539,7 +540,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL DefaultTypeDictionary : public TypeDictionary {
             protected:
                 /// \brief
-                std::vector<std::string> types;
+                std::deque<std::string> types;
                 using HashMapType = std::unordered_map<const char *, IdType, CharPtrHash, CharPtrEqual>;
                 HashMapType hashMap;
 

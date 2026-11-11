@@ -610,7 +610,9 @@ namespace thekogans {
             if (magic == MAGIC32) {
                 serializer >> count;
                 if (count > 0) {
+                    ui32 flags;
                     serializer >> flags >> leftOffset;
+                    assert (flags == btree->header.flags);
                     for (ui32 i = 0; i < count; ++i) {
                         if (btree->header.IsValueIsObject ()) {
                             serializer >> entries[i].valueOffset;
@@ -650,7 +652,7 @@ namespace thekogans {
         void TransactedFileBTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
             if (count > 0) {
-                serializer << flags << leftOffset;
+                serializer << btree->header.flags << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
                     if (btree->header.IsValueIsObject ()) {
                         if (entries[i].value != nullptr) {
