@@ -61,6 +61,9 @@ namespace thekogans {
         }
 
         DynamicCreatable::TypeDictionary::IdType TransactedFileTypeDictionary::GetOrCreateTypeId (const char *type) {
+            if (THEKOGANS_UTIL_UNLIKELY (type == nullptr || *type == '\0')) {
+                return None;
+            }
             IdType id = SystemTypeDictionary::Instance ()->GetOrCreateTypeId (type);
             if (THEKOGANS_UTIL_UNLIKELY (id != None)) {
                 return id;

@@ -272,15 +272,7 @@ namespace thekogans {
 
                 /// \brief
                 /// Return the serialized size of the header.
-                inline std::size_t Size (Serializer &serializer) const {
-                    return
-                        UI32_SIZE + // magic
-                        serializer.Size (keyContext) +
-                        serializer.Size (valueContext) +
-                        Serializer::Size (flags) +
-                        Serializer::Size (entriesPerNode) +
-                        Serializer::Size (rootOffset);
-                }
+                std::size_t Size (Serializer &serializer) const;
             } header;
             /// \brief
             /// Key and Value types are cast in stone (in the ctor).
