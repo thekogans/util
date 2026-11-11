@@ -94,13 +94,6 @@ namespace thekogans {
             Reset ();
         }
 
-        std::size_t TransactedFileBTreeAllocatorBTree::Node::FileSize (std::size_t entriesPerNode) {
-                                            // key         rightOffset
-            constexpr std::size_t ENTRY_SIZE = Key::SIZE + TransactedFile::AddressTypeSize;
-                // magic       count       leftOffset                        entries
-            return UI32_SIZE + UI32_SIZE + TransactedFile::AddressTypeSize + entriesPerNode * ENTRY_SIZE;
-        }
-
         std::size_t TransactedFileBTreeAllocatorBTree::Node::Size (std::size_t entriesPerNode) {
             return sizeof (Node) + entriesPerNode * sizeof (Entry);
         }
@@ -453,10 +446,12 @@ namespace thekogans {
                         nodesPerPage,
                         nodesPerPage / 4)),
                 root (Node::Alloc (file, header.rootOffset, this)) {
+            root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             Reload ();
         }
 
         TransactedFileBTreeAllocatorBTree::~TransactedFileBTreeAllocatorBTree () {
+            root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
             root->Release ();
         }
 
@@ -483,14 +478,13 @@ namespace thekogans {
                 // The path to the leaf node is full.
                 // Create a new root node and make the entry
                 // its first.
+                root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                 Node *node = Node::Alloc (file, 0, this);
                 node->leftOffset = root->GetOffset ();
                 node->leftNode = root;
                 node->InsertEntry (entry, 0);
                 root = node;
-            }
-            if (header.rootOffset == 0 || root->GetOffset () != header.rootOffset) {
-                SetDirty ();
+                root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }
         }
 
@@ -498,13 +492,12 @@ namespace thekogans {
             bool removed = root->Remove (key);
             if (removed) {
                 if (root->IsEmpty () && root->GetChild (0) != nullptr) {
+                    root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                     Node *node = root;
                     root = root->GetChild (0);
+                    root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                     Object::FreeObject (file, node->GetOffset ());
                     node->Release ();
-                }
-                if (header.rootOffset == 0 || root->GetOffset () != header.rootOffset) {
-                    SetDirty ();
                 }
             }
             return removed;
@@ -521,6 +514,7 @@ namespace thekogans {
                     "Corrupt TransactedFileBTreeAllocatorBTree: @" THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
+            root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
             root->Release ();
             nodeAllocator.Reset (
                 new SlabAllocatorImpl (
@@ -528,6 +522,7 @@ namespace thekogans {
                     nodeAllocator->GetSlotsPerPage (),
                     nodeAllocator->GetSlotsPerPage () / 4));
             root = Node::Alloc (file, header.rootOffset, this);
+            root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
         }
 
         void TransactedFileBTreeAllocatorBTree::Write (Serializer &serializer) {

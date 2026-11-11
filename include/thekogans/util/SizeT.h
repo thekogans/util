@@ -41,10 +41,10 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SizeT {
             /// \brief
             /// Min serialized SizeT size.
-            static const std::size_t MIN_SIZE = UI8_SIZE;
+            static constexpr std::size_t MIN_SIZE = UI8_SIZE;
             /// \brief
             /// Max serialized SizeT size.
-            static const std::size_t MAX_SIZE = UI8_SIZE + UI64_SIZE;
+            static constexpr std::size_t MAX_SIZE = UI8_SIZE + UI64_SIZE;
 
             /// \brief
             /// Use ui64 to represent architecture independent size (i386, x86_64...).

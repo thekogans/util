@@ -37,7 +37,9 @@ namespace thekogans {
         /// by entries being returned if they suit the need of an allocation. It's broken
         /// out in to its own file because TransactedFileBTreeAllocator.h was getting too
         /// big to maintain.
-        struct TransactedFileBTreeAllocatorBTree : public virtual TransactedFile::Object {
+        struct TransactedFileBTreeAllocatorBTree :
+                public virtual TransactedFile::Object,
+                public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// Object is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree)
@@ -160,11 +162,6 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Node ();
 
-                /// \brief
-                /// Given the number of entries, return the node file size in bytes.
-                /// \param[in] entriesPerNode Entries per node.
-                /// \return Size of node on disk.
-                static std::size_t FileSize (std::size_t entriesPerNode);
                 /// \brief
                 /// Given the number of entries, return the node size in bytes.
                 /// \param[in] entriesPerNode Entries per node.
@@ -293,7 +290,10 @@ namespace thekogans {
                 /// Return the node size.
                 /// \return btree.allocator.btreeNodeFileSize.
                 virtual std::size_t Size (Serializer &serializer) noexcept override {
-                    return FileSize (btree->header.entriesPerNode);
+                                                    // key         rightOffset
+                    constexpr std::size_t ENTRY_SIZE = Key::SIZE + TransactedFile::AddressTypeSize;
+                        // magic       count       leftOffset                        entries
+                    return UI32_SIZE + UI32_SIZE + TransactedFile::AddressTypeSize + btree->header.entriesPerNode * ENTRY_SIZE;
                 }
                 /// \brief
                 /// Read the node.
@@ -379,6 +379,10 @@ namespace thekogans {
             static void FreeObject (
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset);
+
+            virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
+                SetDirty ();
+            }
 
             /// \brief
             /// Needs access to private members.
