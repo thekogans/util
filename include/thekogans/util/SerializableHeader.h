@@ -44,7 +44,7 @@ namespace thekogans {
             std::string type;
             /// \brief
             /// \see{Serializable} version.
-            ui16 version;
+            SizeT version;
             /// \brief
             /// \see{Serializable} size in bytes (not including the header).
             SizeT size;
@@ -56,7 +56,7 @@ namespace thekogans {
             /// \param[in] size_ \see{Serializable} size in bytes (not including the header).
             explicit SerializableHeader (
                 const std::string &type_ = std::string (),
-                ui16 version_ = 0,
+                std::size_t version_ = 0,
                 std::size_t size_ = 0) :
                 type (type_),
                 version (version_),

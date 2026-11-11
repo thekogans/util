@@ -79,12 +79,6 @@ namespace thekogans {
         #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
             /// \brief
-            /// Given a context, return the header needed to insert this
-            /// serializable in to a \see{Serializer}.
-            /// \param[in] context Partially filled in \see{SerializableHeader}.
-            /// \return \see{SerializableHeader} containing the missing context pieces.
-            SerializableHeader GetHeader (Serializer &serializer) noexcept;
-            /// \brief
             /// Return the binary size of the serializable including the header.
             /// \param[in] context Partially filled in \see{SerializableHeader}.
             /// \return Size of the binary serializable including the header.
@@ -101,7 +95,7 @@ namespace thekogans {
             /// \brief
             /// Return the serializable version.
             /// \return Serializable version.
-            virtual ui16 Version () const noexcept = 0;
+            virtual std::size_t Version () const noexcept = 0;
             /// \brief
             /// Return the serializable class size.
             /// If CLASS_SIZE != 0, this serializable is fixed size.
@@ -133,23 +127,23 @@ namespace thekogans {
         /// Common defines for Serializable.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_VERSION(_T)\
         public:\
-            static const thekogans::util::ui16 VERSION;
+            static const std::size_t VERSION;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)
         /// Serializable overrides.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_VERSION(_T, version)\
-            const thekogans::util::ui16 _T::VERSION = version;
+            const std::size_t _T::VERSION = version;
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)
         /// Common defines for Serializable.
         #define THEKOGANS_UTIL_DECLARE_SERIALIZABLE_Version(_T)\
         public:\
-            virtual thekogans::util::ui16 Version () const noexcept override;
+            virtual std::size_t Version () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)
         /// Serializable overrides.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_Version(_T)\
-            thekogans::util::ui16 _T::Version () const noexcept {\
+            std::size_t _T::Version () const noexcept {\
                 return VERSION;\
             }
 
@@ -339,7 +333,7 @@ namespace thekogans {
             /// \brief
             /// Return the serializable version.
             /// \return Serializable version.
-            virtual ui16 Version () const noexcept override;
+            virtual std::size_t Version () const noexcept override;
             /// \brief
             /// Return the serializable class size.
             /// If CLASS_SIZE != 0, this serializable is fixed size.
@@ -414,7 +408,7 @@ namespace thekogans {
             ValueParser<std::string> typeParser;
             /// \brief
             /// Parses \see{SerializableHeader::version}.
-            ValueParser<ui16> versionParser;
+            ValueParser<SizeT> versionParser;
             /// \brief
             /// Parses \see{SerializableHeader::size}.
             ValueParser<SizeT> sizeParser;

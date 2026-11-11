@@ -44,22 +44,8 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        SerializableHeader Serializable::GetHeader (Serializer &serializer) noexcept {
-            SerializableHeader header;
-            if (serializer.context.NeedType ()) {
-                header.type = Type ();
-            }
-            if (serializer.context.NeedVersion ()) {
-                header.version = Version ();
-            }
-            if (serializer.context.NeedSize ()) {
-                header.size = Size (serializer);
-            }
-            return header;
-        }
-
         std::size_t Serializable::GetSize (Serializer &serializer) noexcept {
-            SerializableHeader header = GetHeader (serializer);
+            SerializableHeader header (Type (), Version (), Size (serializer));
             return serializer.Size (header) + (serializer.context.NeedSize () ? header.size : serializer.context.size);
         }
 
@@ -73,7 +59,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases (Blob)
 
-        ui16 Blob::Version () const noexcept {
+        std::size_t Blob::Version () const noexcept {
             return header.version;
         }
 
@@ -100,7 +86,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 Serializable &serializable) {
-            serializer << serializable.GetHeader (serializer);
+            serializer << SerializableHeader (
+                serializable.Type (), serializable.Version (), serializable.Size (serializer));
             serializable.Write (serializer);
             return serializer;
         }

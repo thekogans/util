@@ -52,10 +52,10 @@ namespace thekogans {
 
                 virtual const char *ResolveTypeId (IdType id) noexcept override {
                     if (id > MaxReservedId) {
-                        return nullptr;
+                        return "";
                     }
                     id -= FirstSystemId;
-                    return id < types.size () ? types[id].c_str () : nullptr;
+                    return id < types.size () ? types[id].c_str () : "";
                 }
             };
         }
@@ -104,7 +104,7 @@ namespace thekogans {
                 SizeT count;
                 serializer >> count;
                 types.resize (count);
-                for (ui32 i = 0; i < count; ++i) {
+                for (std::size_t i = 0; i < count; ++i) {
                     std::string type;
                     serializer  >> type;
                     types[i] = type;

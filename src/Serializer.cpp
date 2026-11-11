@@ -639,8 +639,9 @@ namespace thekogans {
             if (context.NeedType ()) {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary = GetTypeDictionary ();
                 if (dictionary != nullptr) {
-                    dictionary->GetOrCreateTypeId (header.type.c_str ());
-                    size += DynamicCreatable::TypeDictionary::IdTypeSize;
+                    DynamicCreatable::TypeDictionary::IdType id =
+                        dictionary->GetOrCreateTypeId (header.type.c_str ());
+                    size += id.Size ();
                 }
                 else {
                     size += Size (header.type);

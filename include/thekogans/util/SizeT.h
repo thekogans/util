@@ -25,7 +25,6 @@
 #endif // defined (TOOLCHAIN_OS_Windows)
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
-#include "thekogans/util/SpinLock.h"
 
 namespace thekogans {
     namespace util {
@@ -77,7 +76,7 @@ namespace thekogans {
             /// Implicit typecast operator.
             /// WARNING: On some systems (notably i386), std::size_t == ui32. Casting
             /// the ui64 value to std::size_t on those systems runs the risk of truncation.
-            inline operator std::size_t () const {
+            inline constexpr operator std::size_t () const {
                 return (std::size_t)value;
             }
 

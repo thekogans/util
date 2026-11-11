@@ -24,6 +24,7 @@
 #include <deque>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Singleton.h"
 #include "thekogans/util/StringUtils.h"
 
@@ -525,8 +526,7 @@ namespace thekogans {
             struct TypeDictionary : public virtual RefCounted {
                 THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TypeDictionary)
 
-                using IdType = ui32;
-                static constexpr std::size_t IdTypeSize = Width<IdType>::value;
+                using IdType = SizeT;
 
                 static constexpr IdType None = 0;
                 static constexpr IdType FirstSystemId = 1;

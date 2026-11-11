@@ -25,13 +25,18 @@ namespace thekogans {
     namespace util {
 
         std::size_t TransactedFileBTree::Header::Size (Serializer &serializer) const {
-            return
-                UI32_SIZE + // magic
-                serializer.Size (keyContext) +
-                serializer.Size (valueContext) +
+            std::size_t size = UI32_SIZE; // magic
+            {
+                Serializer::ContextGuard guard (serializer);
+                size +=
+                    serializer.Size (keyContext) +
+                    serializer.Size (valueContext);
+            }
+            size +=
                 Serializer::Size (flags) +
                 Serializer::Size (entriesPerNode) +
                 Serializer::Size (rootOffset);
+            return size;
         }
 
         inline Serializer &operator << (
