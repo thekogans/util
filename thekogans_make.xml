@@ -173,6 +173,7 @@
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeAllocatorBTree.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeRegistry.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBTreeKeys.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/TransactedFileHeader.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileObject.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileObjects.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileRange.h</cpp_header>

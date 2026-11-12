@@ -15,8 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
-#include "thekogans/util/TransactedFileTypeDictionary.h"
 #include "thekogans/util/TransactedFile.h"
+#include "thekogans/util/TransactedFileTypeDictionary.h"
 
 namespace thekogans {
     namespace util {
@@ -32,55 +32,40 @@ namespace thekogans {
                 Registry::SharedPtr registry) :
                 TransactedFile::Object (file, offset),
                 flags (flags_) {
-            if (file != nullptr) {
-                if (offset != 0) {
-                    file->dictionary.Reset (new TransactedFileTypeDictionary);
-                    BlockRange headerRange (file, offset);
-                    ui32 magic;
-                    headerRange >> magic;
-                    if (magic == Object::MAGIC) {
-                        SerializableHeader header;
-                        headerRange >> header;
-                        if (header.type == Type () && header.version <= Version ()) {
-                            Read (headerRange);
-                        }
+            if (file != nullptr && offset == 0) {
+                struct DummySerializer : public Serializer {
+                    DynamicCreatable::TypeDictionary::SharedPtr dictionary;
+                    DummySerializer (DynamicCreatable::TypeDictionary::SharedPtr dictionary_) :
+                        dictionary (dictionary_) {}
+                    virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
+                        return dictionary;
+                    }
+                    virtual std::size_t Read (void *buffer, std::size_t count) override {return 0;}
+                    virtual std::size_t Write (const void *buffer, std::size_t count) override {return 0;}
+                } serializer (dictionary);
+                std::size_t size = UI32_SIZE + GetSize (serializer);
+                this->offset = file->Grow (Block::SIZE + size) + Block::BLOCK_0_OFFSET;
+                Block block (file, this->offset, 0, size);
+                block.Write ();
+                {
+                    Object::SharedPtr object = dictionary;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Subscribe (*this);
+                        object->Init (file, 0);
                     }
                 }
-                else {
-                    struct DummySerializer : public Serializer {
-                        DynamicCreatable::TypeDictionary::SharedPtr dictionary;
-                        DummySerializer (DynamicCreatable::TypeDictionary::SharedPtr dictionary_) :
-                            dictionary (dictionary_) {}
-                        virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
-                            return dictionary;
-                        }
-                        virtual std::size_t Read (void *buffer, std::size_t count) override {return 0;}
-                        virtual std::size_t Write (const void *buffer, std::size_t count) override {return 0;}
-                    } serializer (dictionary);
-                    std::size_t size = UI32_SIZE + GetSize (serializer);
-                    this->offset = file->Grow (Block::SIZE + size) + Block::BLOCK_0_OFFSET;
-                    Block block (file, this->offset, 0, size);
-                    block.Write ();
-                    {
-                        Object::SharedPtr object = dictionary;
-                        if (object != nullptr) {
-                            object->Producer<ObjectEvents>::Subscribe (*this);
-                            object->Init (file, 0);
-                        }
+                {
+                    Object::SharedPtr object = allocator;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Subscribe (*this);
+                        object->Init (file, 0);
                     }
-                    {
-                        Object::SharedPtr object = allocator;
-                        if (object != nullptr) {
-                            object->Producer<ObjectEvents>::Subscribe (*this);
-                            object->Init (file, 0);
-                        }
-                    }
-                    {
-                        Object::SharedPtr object = registry;
-                        if (object != nullptr) {
-                            object->Producer<ObjectEvents>::Subscribe (*this);
-                            object->Init (file, 0);
-                        }
+                }
+                {
+                    Object::SharedPtr object = registry;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Subscribe (*this);
+                        object->Init (file, 0);
                     }
                 }
             }
@@ -119,7 +104,7 @@ namespace thekogans {
                     Object::SharedPtr object;
                     dictionaryRange >> object;
                     file->dictionary = object;
-                    assert (dictionary != nullptr);
+                    assert (file->dictionary != nullptr);
                     object->Producer<ObjectEvents>::Subscribe (*this);
                 }
                 {
@@ -127,7 +112,7 @@ namespace thekogans {
                     Object::SharedPtr object;
                     allocatorRange >> object;
                     file->allocator = object;
-                    assert (allocator != nullptr);
+                    assert (file->allocator != nullptr);
                     object->Producer<ObjectEvents>::Subscribe (*this);
                 }
                 {
@@ -135,7 +120,7 @@ namespace thekogans {
                     Object::SharedPtr object;
                     registryRange >> object;
                     file->registry = object;
-                    assert (registry != nullptr);
+                    assert (file->registry != nullptr);
                     object->Producer<ObjectEvents>::Subscribe (*this);
                 }
             }

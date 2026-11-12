@@ -75,7 +75,8 @@ namespace thekogans {
             };
         }
 
-        TransactedFile::TransactedFile (const std::string &path) {
+        TransactedFile::TransactedFile (const std::string &path) :
+                dictionary (new TransactedFileTypeDictionary) {
             AddRef ();
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
@@ -112,7 +113,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt TransactedFile %s", path.c_str ());
             }
-            header.Reset (new Header (this, Header::BLOCK_OFFSET));
+            BlockRange headerRange (this, Header::BLOCK_OFFSET);
+            headerRange >> header;
             guard.dismissed = true;
         }
 
