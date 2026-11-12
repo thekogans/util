@@ -27,112 +27,117 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset,
                 ui32 flags_,
-                DynamicCreatable::TypeDictionary::SharedPtr dictionary_,
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_) :
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry) :
                 TransactedFile::Object (file, offset),
-                flags (flags_),
-                dictionary (dictionary_),
-                allocator (allocator_),
-                registry (registry_) {
-            if (file == nullptr) {
-                dictionary.Reset (new TransactedFileTypeDictionary);
-            }
-            else if (offset == 0) {
-                std::size_t size = UI32_SIZE + GetSize (*file);
-                Block block (file, file->Grow (Block::SIZE + size) + Block::BLOCK_0_OFFSET, 0, size);
-                block.Write ();
-                {
-                    Object::SharedPtr object = dictionary;
-                    if (object != nullptr) {
-                        object->Producer<ObjectEvents>::Subscribe (*this);
-                        object->Init (file, 0);
+                flags (flags_) {
+            if (file != nullptr) {
+                if (offset != 0) {
+                    file->dictionary.Reset (new TransactedFileTypeDictionary);
+                    BlockRange headerRange (file, offset);
+                    ui32 magic;
+                    headerRange >> magic;
+                    if (magic == Object::MAGIC) {
+                        SerializableHeader header;
+                        headerRange >> header;
+                        if (header.type == Type () && header.version <= Version ()) {
+                            Read (headerRange);
+                        }
                     }
                 }
-                {
-                    Object::SharedPtr object = allocator;
-                    if (object != nullptr) {
-                        object->Producer<ObjectEvents>::Subscribe (*this);
-                        object->Init (file, 0);
+                else {
+                    struct DummySerializer : public Serializer {
+                        DynamicCreatable::TypeDictionary::SharedPtr dictionary;
+                        DummySerializer (DynamicCreatable::TypeDictionary::SharedPtr dictionary_) :
+                            dictionary (dictionary_) {}
+                        virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
+                            return dictionary;
+                        }
+                        virtual std::size_t Read (void *buffer, std::size_t count) override {return 0;}
+                        virtual std::size_t Write (const void *buffer, std::size_t count) override {return 0;}
+                    } serializer (dictionary);
+                    std::size_t size = UI32_SIZE + GetSize (serializer);
+                    this->offset = file->Grow (Block::SIZE + size) + Block::BLOCK_0_OFFSET;
+                    Block block (file, this->offset, 0, size);
+                    block.Write ();
+                    {
+                        Object::SharedPtr object = dictionary;
+                        if (object != nullptr) {
+                            object->Producer<ObjectEvents>::Subscribe (*this);
+                            object->Init (file, 0);
+                        }
+                    }
+                    {
+                        Object::SharedPtr object = allocator;
+                        if (object != nullptr) {
+                            object->Producer<ObjectEvents>::Subscribe (*this);
+                            object->Init (file, 0);
+                        }
+                    }
+                    {
+                        Object::SharedPtr object = registry;
+                        if (object != nullptr) {
+                            object->Producer<ObjectEvents>::Subscribe (*this);
+                            object->Init (file, 0);
+                        }
                     }
                 }
-                {
-                    Object::SharedPtr object = registry;
-                    if (object != nullptr) {
-                        object->Producer<ObjectEvents>::Subscribe (*this);
-                        object->Init (file, 0);
-                    }
-                }
             }
-            Reload ();
-        }
-
-        DynamicCreatable::TypeDictionary::SharedPtr TransactedFile::Header::GetDictionary () {
-            LockGuard<SpinLock> guard (spinLock);
-            if (dictionary == nullptr) {
-                BlockRange dictionaryRange (file, dictionaryOffset);
-                Object::SharedPtr object;
-                dictionaryRange >> object;
-                dictionary = object;
-                assert (dictionary != nullptr);
-                object->Producer<ObjectEvents>::Subscribe (*this);
-            }
-            return dictionary;
-        }
-
-        TransactedFile::Allocator::SharedPtr TransactedFile::Header::GetAllocator () {
-            LockGuard<SpinLock> guard (spinLock);
-            if (allocator == nullptr) {
-                BlockRange allocatorRange (file, allocatorOffset);
-                Object::SharedPtr object;
-                allocatorRange >> object;
-                allocator = object;
-                assert (allocator != nullptr);
-                object->Producer<ObjectEvents>::Subscribe (*this);
-            }
-            return allocator;
-        }
-
-        TransactedFile::Registry::SharedPtr TransactedFile::Header::GetRegistry () {
-            LockGuard<SpinLock> guard (spinLock);
-            if (registry == nullptr) {
-                BlockRange registryRange (file, registryOffset);
-                Object::SharedPtr object;
-                registryRange >> object;
-                registry = object;
-                assert (registry != nullptr);
-                object->Producer<ObjectEvents>::Subscribe (*this);
-            }
-            return registry;
         }
 
         void TransactedFile::Header::Read (Serializer &serializer) {
-            LockGuard<SpinLock> guard (spinLock);
-            if (dictionary != nullptr) {
-                Object::SharedPtr object = dictionary;
-                if (object != nullptr) {
-                    object->Producer<ObjectEvents>::Unsubscribe (*this);
-                }
-                dictionary.Reset ();
-            }
-            if (allocator != nullptr) {
-                Object::SharedPtr object = allocator;
-                if (object != nullptr) {
-                    object->Producer<ObjectEvents>::Unsubscribe (*this);
-                }
-                allocator.Reset ();
-            }
-            if (registry != nullptr) {
-                Object::SharedPtr object = registry;
-                if (object != nullptr) {
-                    object->Producer<ObjectEvents>::Unsubscribe (*this);
-                }
-                registry.Reset ();
-            }
             ui32 magic;
             serializer >> magic;
             if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
+                LockGuard<SpinLock> guard (spinLock);
+                if (file->dictionary != nullptr) {
+                    Object::SharedPtr object = file->dictionary;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Unsubscribe (*this);
+                    }
+                    file->dictionary.Reset ();
+                }
+                if (file->allocator != nullptr) {
+                    Object::SharedPtr object = file->allocator;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Unsubscribe (*this);
+                    }
+                    file->allocator.Reset ();
+                }
+                if (file->registry != nullptr) {
+                    Object::SharedPtr object = file->registry;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Unsubscribe (*this);
+                    }
+                    file->registry.Reset ();
+                }
                 serializer >> flags >> dictionaryOffset >> allocatorOffset >> registryOffset;
+                file->dictionary.Reset (new TransactedFileTypeDictionary);
+                {
+                    BlockRange dictionaryRange (file, dictionaryOffset);
+                    Object::SharedPtr object;
+                    dictionaryRange >> object;
+                    file->dictionary = object;
+                    assert (dictionary != nullptr);
+                    object->Producer<ObjectEvents>::Subscribe (*this);
+                }
+                {
+                    BlockRange allocatorRange (file, allocatorOffset);
+                    Object::SharedPtr object;
+                    allocatorRange >> object;
+                    file->allocator = object;
+                    assert (allocator != nullptr);
+                    object->Producer<ObjectEvents>::Subscribe (*this);
+                }
+                {
+                    BlockRange registryRange (file, registryOffset);
+                    Object::SharedPtr object;
+                    registryRange >> object;
+                    file->registry = object;
+                    assert (registry != nullptr);
+                    object->Producer<ObjectEvents>::Subscribe (*this);
+                }
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -143,20 +148,20 @@ namespace thekogans {
 
         void TransactedFile::Header::Write (Serializer &serializer) {
             LockGuard<SpinLock> guard (spinLock);
-            if (dictionary != nullptr) {
-                Object::SharedPtr object = dictionary;
+            if (file->dictionary != nullptr) {
+                Object::SharedPtr object = file->dictionary;
                 if (object != nullptr) {
                     dictionaryOffset = object->GetOffset ();
                 }
             }
-            if (allocator != nullptr) {
-                Object::SharedPtr object = allocator;
+            if (file->allocator != nullptr) {
+                Object::SharedPtr object = file->allocator;
                 if (object != nullptr) {
                     allocatorOffset = object->GetOffset ();
                 }
             }
-            if (registry != nullptr) {
-                Object::SharedPtr object = registry;
+            if (file->registry != nullptr) {
+                Object::SharedPtr object = file->registry;
                 if (object != nullptr) {
                     registryOffset = object->GetOffset ();
                 }

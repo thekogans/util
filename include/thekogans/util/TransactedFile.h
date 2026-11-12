@@ -149,6 +149,8 @@ namespace thekogans {
                 /// Declare \see{RefCounted} pointers.
                 THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (Header)
 
+                static constexpr AddressType BLOCK_OFFSET = Block::BLOCK_0_OFFSET;
+
                 /// \brief
                 /// If set, zero out freed blocks.
                 static constexpr ui32 FLAGS_SECURE = 1;
@@ -162,17 +164,6 @@ namespace thekogans {
                 /// \brief
                 /// Contains the offset of the \see{Registry}.
                 AddressType registryOffset{0};
-                /// \brief
-                /// \see{Allocator} associated with this file.
-                DynamicCreatable::TypeDictionary::SharedPtr dictionary;
-                /// \brief
-                /// \see{Allocator} associated with this file.
-                Allocator::SharedPtr allocator;
-                /// \brief
-                /// \see{Registry} associated with this file.
-                Registry::SharedPtr registry;
-                /// \brief
-                /// Synchronization lock.
                 SpinLock spinLock;
 
             public:
@@ -200,11 +191,7 @@ namespace thekogans {
                     return flags.Test (FLAGS_SECURE);
                 }
 
-                DynamicCreatable::TypeDictionary::SharedPtr GetDictionary ();
-                Allocator::SharedPtr GetAllocator ();
-                Registry::SharedPtr GetRegistry ();
-
-            protected:
+            private:
                 /// \brief
                 /// Read the types dictionary from the serializer.
                 /// \param[in] serializer \see{Serializer} to read the types from.
@@ -217,6 +204,7 @@ namespace thekogans {
                 virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
                     SetDirty ();
                 }
+
                 /// \brief
                 /// TransactedFileTypeDictionary is neither copy constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Header)
@@ -230,6 +218,17 @@ namespace thekogans {
             /// \see{PageMap} used to map file pages.
             AddressSpaceType::SharedPtr pageMap;
             Header::SharedPtr header;
+            /// \brief
+            /// \see{Allocator} associated with this file.
+            DynamicCreatable::TypeDictionary::SharedPtr dictionary;
+            /// \brief
+            /// \see{Allocator} associated with this file.
+            Allocator::SharedPtr allocator;
+            /// \brief
+            /// \see{Registry} associated with this file.
+            Registry::SharedPtr registry;
+            /// \brief
+            /// Synchronization lock.
             std::atomic<int> phase{Transaction::PHASE_NONE};
             /// \brief
             /// \see{Transaction} mutex.
@@ -315,24 +314,24 @@ namespace thekogans {
                 return header->IsSecure ();
             }
 
-            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () override {
-                return header->GetDictionary ();
+            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
+                return dictionary;
             }
             /// \brief
             /// Return the \see{Allocator} attached to thi file.
             /// Since allocator is constant after Init, this API
             /// is thread safe.
             /// \return allocator.
-            inline Allocator::SharedPtr GetAllocator () {
-                return header->GetAllocator ();
+            inline Allocator::SharedPtr GetAllocator () const {
+                return allocator;
             }
             /// \brief
             /// Return the \see{Registry} attached to thi file.
             /// Since registry is constant after Init, this API
             /// is thread safe.
             /// \return registry.
-            inline Registry::SharedPtr GetRegistry () {
-                return header->GetRegistry ();
+            inline Registry::SharedPtr GetRegistry () const {
+                return registry;
             }
 
             inline int GetTransactionPhase () const {
@@ -407,8 +406,6 @@ namespace thekogans {
                 object = base;\
                 return range;\
             }
-
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Header)
 
     } // namespace util
 } // namespace thekogans

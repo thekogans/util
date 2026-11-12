@@ -105,7 +105,7 @@ namespace thekogans {
             /// Default \see{Serializable} factory parameters.
             DynamicCreatable::ParametersType parameters;
 
-            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () {
+            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const {
                 return nullptr;
             }
 

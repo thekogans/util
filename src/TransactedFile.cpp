@@ -112,9 +112,7 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt TransactedFile %s", path.c_str ());
             }
-            BlockRange headerRange (this, Block::BLOCK_0_OFFSET);
-            headerRange >> header;
-            assert (header != nullptr);
+            header.Reset (new Header (this, Header::BLOCK_OFFSET));
             guard.dismissed = true;
         }
 
@@ -122,11 +120,14 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 bool secure,
-                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry,
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary_,
+                Allocator::SharedPtr allocator_,
+                Registry::SharedPtr registry_,
                 bool forceTruncate) :
-                File (endianness) {
+                File (endianness),
+                dictionary (dictionary_),
+                allocator (allocator_),
+                registry (registry_) {
             AddRef ();
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
