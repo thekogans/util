@@ -105,7 +105,7 @@ namespace thekogans {
             /// Default \see{Serializable} factory parameters.
             DynamicCreatable::ParametersType parameters;
 
-            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const {
+            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () {
                 return nullptr;
             }
 
@@ -601,7 +601,7 @@ namespace thekogans {
             Serializer &operator << (const TimeSpec &timeSpec);
             Serializer &operator >> (TimeSpec &timeSpec);
 
-            std::size_t Size (const SerializableHeader &header) const noexcept;
+            std::size_t Size (const SerializableHeader &header) noexcept;
             /// \brief
             /// \see{SerializableHeader} insertion operator. Write the portion of the
             /// structure that dovetails the \see{context}.

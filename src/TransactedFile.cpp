@@ -75,31 +75,7 @@ namespace thekogans {
             };
         }
 
-        Serializer &operator << (
-                Serializer &serializer,
-                const TransactedFile::Header &header) {
-            serializer << MAGIC32 << header.flags << header.dictionaryOffset <<
-                header.allocatorOffset << header.registryOffset;
-            return serializer;
-        }
-
-        Serializer &operator >> (
-                Serializer &serializer,
-                TransactedFile::Header &header) {
-            ui32 magic;
-            serializer >> magic;
-            if (magic == MAGIC32) {
-                serializer >> header.flags >> header.dictionaryOffset >>
-                    header.allocatorOffset >> header.registryOffset;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt TransactedFile file.");
-            }
-            return serializer;
-        }
-
-        TransactedFile::TransactedFile (const std::string &path) :
-                dictionary (new TransactedFileTypeDictionary) {
+        TransactedFile::TransactedFile (const std::string &path) {
             AddRef ();
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
@@ -138,27 +114,7 @@ namespace thekogans {
             }
             BlockRange headerRange (this, Block::BLOCK_0_OFFSET);
             headerRange >> header;
-            {
-                BlockRange dictionaryRange (this, header.dictionaryOffset);
-                Object::SharedPtr object;
-                dictionaryRange >> object;
-                dictionary = object;
-                assert (dictionary != nullptr);
-            }
-            {
-                BlockRange allocatorRange (this, header.allocatorOffset);
-                Object::SharedPtr object;
-                allocatorRange >> object;
-                allocator = object;
-                assert (allocator != nullptr);
-            }
-            {
-                BlockRange registryRange (this, header.registryOffset);
-                Object::SharedPtr object;
-                registryRange >> object;
-                registry = object;
-                assert (registry != nullptr);
-            }
+            assert (header != nullptr);
             guard.dismissed = true;
         }
 
@@ -166,15 +122,11 @@ namespace thekogans {
                 Endianness endianness,
                 const std::string &path,
                 bool secure,
-                DynamicCreatable::TypeDictionary::SharedPtr dictionary_,
-                Allocator::SharedPtr allocator_,
-                Registry::SharedPtr registry_,
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
+                Allocator::SharedPtr allocator,
+                Registry::SharedPtr registry,
                 bool forceTruncate) :
-                File (endianness),
-                header{secure ? Header::FLAGS_SECURE : 0},
-                dictionary (dictionary_),
-                allocator (allocator_),
-                registry (registry_) {
+                File (endianness) {
             AddRef ();
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
@@ -200,28 +152,7 @@ namespace thekogans {
             HandleGuard guard{handle};
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Transaction transaction (this);
-            Grow (Block::SIZE + Header::SIZE);
-            Block block (this, Block::BLOCK_0_OFFSET, 0, Header::SIZE);
-            block.Write ();
-            Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            {
-                Object::SharedPtr object = dictionary;
-                if (object != nullptr) {
-                    object->Init (this, 0);
-                }
-            }
-            {
-                Object::SharedPtr object = allocator;
-                if (object != nullptr) {
-                    object->Init (this, 0);
-                }
-            }
-            {
-                Object::SharedPtr object = registry;
-                if (object != nullptr) {
-                    object->Init (this, 0);
-                }
-            }
+            header.Reset (new Header (this, 0, secure ? Header::FLAGS_SECURE : 0, dictionary, allocator, registry));
             transaction.Commit ();
             guard.dismissed = true;
         }
@@ -263,21 +194,6 @@ namespace thekogans {
             size -= MIN (amount, size.load (std::memory_order_relaxed));
             pageMap->Shrink (size);
             return size;
-        }
-
-        void TransactedFile::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr file,
-                int phase) noexcept {
-            if (phase == Transaction::PHASE_FLUSH) {
-                BlockRange range (this, Block::BLOCK_0_OFFSET, false);
-                range << header;
-            }
-        }
-
-        void TransactedFile::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr file) noexcept {
-            BlockRange range (this, Block::BLOCK_0_OFFSET);
-            range >> header;
         }
 
     } // namespace util

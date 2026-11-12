@@ -76,6 +76,7 @@ namespace thekogans {
             return serializer;
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree::Node)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree::Node, 1, 0)
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTreeAllocatorBTree::Node)
 
@@ -430,6 +431,7 @@ namespace thekogans {
             }
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree, 1, 0)
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTreeAllocatorBTree)
 

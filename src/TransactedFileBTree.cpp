@@ -141,6 +141,7 @@ namespace thekogans {
             finished = false;
         }
 
+        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (TransactedFileBTree::Node)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (TransactedFileBTree::Node, 1, 0)
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTree::Node)
 

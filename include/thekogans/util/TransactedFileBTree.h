@@ -297,6 +297,7 @@ namespace thekogans {
                     public TransactedFile::Object,
                     public Subscriber<SerializableEvents>,
                     public Subscriber<TransactedFile::ObjectEvents> {
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Node)
                 THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (Node)
                 THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (Node)
 

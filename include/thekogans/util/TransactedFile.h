@@ -71,6 +71,50 @@ namespace thekogans {
                 PageMap64::AddressType offset) noexcept {}
         };
 
+    #if defined (THEKOGANS_UTIL_TYPE_Static)
+        /// \def THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Declare the static base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+        public:\
+            static void StaticInitEx ();
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Define the static base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+            void _T::StaticInitEx () {\
+                _T::StaticInit ();\
+                thekogans::util::TransactedFile::Object::DeleterMapType &deleterMap =\
+                    thekogans::util::TransactedFile::Object::GetDeleters ();\
+                deleterMap[_T::TYPE] = _T::FreeObject;\
+            }
+    #else // defined (THEKOGANS_UTIL_TYPE_Static)
+        /// \def THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Declare the shared base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+        public:\
+            static const thekogans::util::TransactedFile::Object::DeleterMapInitializer deleterMapInitializer;
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
+        /// Define the shared base map initializer. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
+            const thekogans::util::TransactedFile::Object::DeleterMapInitializer _T::deleterMapInitializer (\
+                _T::TYPE, _T::FreeObject);
+    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
+
+        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT(_T)\
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (_T)\
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (\
+                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_HAVE_CREATE(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE (\
+                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h
         ///
         /// \brief
@@ -78,7 +122,6 @@ namespace thekogans {
                 private File,
                 public Producer<TransactedFileTransactionEvents>,
                 public Producer<TransactedFileStructureEvents>,
-                public Subscriber<TransactedFileTransactionEvents>,
                 public PageMap64::PageSource {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFile)
 
@@ -95,15 +138,22 @@ namespace thekogans {
             #include "thekogans/util/TransactedFileAllocator.h"
             #include "thekogans/util/TransactedFileRegistry.h"
 
-        private:
             /// \struct TransactedFile::Header TransactedFile.h thekogans/util/TransactedFile.h
             ///
             /// \brief
             /// Header contains the global heap values.
-            struct _LIB_THEKOGANS_UTIL_DECL Header {
+            struct _LIB_THEKOGANS_UTIL_DECL Header :
+                    public Object,
+                    public Subscriber<ObjectEvents> {
+                /// \brief
+                /// Declare \see{RefCounted} pointers.
+                THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (Header)
+
                 /// \brief
                 /// If set, zero out freed blocks.
                 static constexpr ui32 FLAGS_SECURE = 1;
+
+            private:
                 /// \brief
                 /// Heap flags.
                 Flags32 flags{0};
@@ -112,7 +162,20 @@ namespace thekogans {
                 /// \brief
                 /// Contains the offset of the \see{Registry}.
                 AddressType registryOffset{0};
+                /// \brief
+                /// \see{Allocator} associated with this file.
+                DynamicCreatable::TypeDictionary::SharedPtr dictionary;
+                /// \brief
+                /// \see{Allocator} associated with this file.
+                Allocator::SharedPtr allocator;
+                /// \brief
+                /// \see{Registry} associated with this file.
+                Registry::SharedPtr registry;
+                /// \brief
+                /// Synchronization lock.
+                SpinLock spinLock;
 
+            public:
                 /// \brief
                 /// The size of the header on disk.
                 static constexpr std::size_t SIZE =
@@ -122,28 +185,51 @@ namespace thekogans {
                     AddressTypeSize + // allocatorOffset
                     AddressTypeSize;  // regisryOffset
 
+                Header (
+                    TransactedFile::SharedPtr file = nullptr,
+                    TransactedFile::AddressType offset = 0,
+                    ui32 flags_ = 0,
+                    DynamicCreatable::TypeDictionary::SharedPtr dictionary_ = nullptr,
+                    Allocator::SharedPtr allocator_ = nullptr,
+                    Registry::SharedPtr registry_ = nullptr);
+
                 /// \brief
                 /// Return true if secure.
                 /// \return true == secure.
                 inline bool IsSecure () const {
                     return flags.Test (FLAGS_SECURE);
                 }
-            } header;
+
+                DynamicCreatable::TypeDictionary::SharedPtr GetDictionary ();
+                Allocator::SharedPtr GetAllocator ();
+                Registry::SharedPtr GetRegistry ();
+
+            protected:
+                /// \brief
+                /// Read the types dictionary from the serializer.
+                /// \param[in] serializer \see{Serializer} to read the types from.
+                virtual void Read (Serializer &serializer) override;
+                /// \brief
+                /// Write the types dictionary to the serializer.
+                /// \param[in] serializer \see{Serializer} to write the types to.
+                virtual void Write (Serializer &serializer) override;
+
+                virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
+                    SetDirty ();
+                }
+                /// \brief
+                /// TransactedFileTypeDictionary is neither copy constructable, nor assignable.
+                THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Header)
+            };
+
+        private:
             /// \brief
             /// File size.
             std::atomic<SizeType> size{0};
             /// \brief
             /// \see{PageMap} used to map file pages.
             AddressSpaceType::SharedPtr pageMap;
-            /// \brief
-            /// \see{Allocator} associated with this file.
-            DynamicCreatable::TypeDictionary::SharedPtr dictionary;
-            /// \brief
-            /// \see{Allocator} associated with this file.
-            Allocator::SharedPtr allocator;
-            /// \brief
-            /// \see{Registry} associated with this file.
-            Registry::SharedPtr registry;
+            Header::SharedPtr header;
             std::atomic<int> phase{Transaction::PHASE_NONE};
             /// \brief
             /// \see{Transaction} mutex.
@@ -202,69 +288,10 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Return true if secure.
-            /// \return true == secure.
-            inline bool IsSecure () const {
-                return header.IsSecure ();
-            }
-
-            inline int GetTransactionPhase () const {
-                return phase;
-            }
-            inline bool CheckCanMutate () const {
-                return phase == Transaction::PHASE_IN_PROGRESS || phase == Transaction::PHASE_ALLOC;
-            }
-            inline bool CheckCanAlloc () const {
-                return phase == Transaction::PHASE_ALLOC;
-            }
-
-            /// \brief
-            /// Set the header.dictionaryOffset.
-            /// \param[in] dictionaryOffset New dictionaryOffset.
-            void SetTypeDictionaryOffset (AddressType dictionaryOffset) {
-                header.dictionaryOffset = dictionaryOffset;
-                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            }
-            /// \brief
-            /// Set the header.allocatorOffset.
-            /// \param[in] allocatorOffset New allocatorOffset.
-            void SetAllocatorOffset (AddressType allocatorOffset) {
-                header.allocatorOffset = allocatorOffset;
-                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            }
-            /// \brief
-            /// Set the header.registryOffset.
-            /// \param[in] registryOffset New registryOffset to set.
-            void SetRegistryOffset (AddressType registryOffset) {
-                header.registryOffset = registryOffset;
-                Subscriber<TransactedFileTransactionEvents>::Subscribe (*this);
-            }
-
-            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
-                return dictionary;
-            }
-            /// \brief
-            /// Return the \see{Allocator} attached to thi file.
-            /// Since allocator is constant after Init, this API
-            /// is thread safe.
-            /// \return allocator.
-            Allocator::SharedPtr GetAllocator () const {
-                return allocator;
-            }
-            /// \brief
-            /// Return the \see{Registry} attached to thi file.
-            /// Since registry is constant after Init, this API
-            /// is thread safe.
-            /// \return registry.
-            Registry::SharedPtr GetRegistry () const {
-                return registry;
-            }
-
-            /// \brief
             /// Return file size in bytes.
             /// Thread safe.
             /// \return File size in bytes.
-            inline SizeType GetSizeEx () {
+            inline SizeType GetSizeEx () const {
                 return size;
             }
 
@@ -282,6 +309,43 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return true if secure.
+            /// \return true == secure.
+            inline bool IsSecure () const {
+                return header->IsSecure ();
+            }
+
+            virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () override {
+                return header->GetDictionary ();
+            }
+            /// \brief
+            /// Return the \see{Allocator} attached to thi file.
+            /// Since allocator is constant after Init, this API
+            /// is thread safe.
+            /// \return allocator.
+            inline Allocator::SharedPtr GetAllocator () {
+                return header->GetAllocator ();
+            }
+            /// \brief
+            /// Return the \see{Registry} attached to thi file.
+            /// Since registry is constant after Init, this API
+            /// is thread safe.
+            /// \return registry.
+            inline Registry::SharedPtr GetRegistry () {
+                return header->GetRegistry ();
+            }
+
+            inline int GetTransactionPhase () const {
+                return phase;
+            }
+            inline bool CheckCanMutate () const {
+                return phase == Transaction::PHASE_IN_PROGRESS || phase == Transaction::PHASE_ALLOC;
+            }
+            inline bool CheckCanAlloc () const {
+                return phase == Transaction::PHASE_ALLOC;
+            }
+
+            /// \brief
             /// Grow the file by the given amount.
             /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
@@ -295,19 +359,6 @@ namespace thekogans {
             SizeType Shrink (SizeType amount);
 
         protected:
-            // TransactedFileTransactionEvents
-            /// \brief
-            /// Transaction is commiting. Flush the internal cache to file.
-            /// \param[in] file \see{TransactedFile} commiting the transaction.
-            virtual void OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr file,
-                int phase) noexcept override;
-            /// \brief
-            /// Transaction is aborting. Reload the internal cache from file.
-            /// \param[in] file \see{TransactedFile} aborting the transaction.
-            virtual void OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr file) noexcept override;
-
             // PageSource
             /// \brief
             /// Read raw bytes.
@@ -337,64 +388,9 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Header &header);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Header &header);
-
-            /// \brief
             /// TransactedFile is neither copy or move constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
-
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \def THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
-        /// Declare the static base map initializer. This macro is private.
-        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
-        public:\
-            static void StaticInitEx ();
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
-        /// Define the static base map initializer. This macro is private.
-        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
-            void _T::StaticInitEx () {\
-                _T::StaticInit ();\
-                thekogans::util::TransactedFile::Object::DeleterMapType &deleterMap =\
-                    thekogans::util::TransactedFile::Object::GetDeleters ();\
-                deleterMap[_T::TYPE] = _T::FreeObject;\
-            }
-    #else // defined (THEKOGANS_UTIL_TYPE_Static)
-        /// \def THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
-        /// Declare the shared base map initializer. This macro is private.
-        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
-        public:\
-            static const thekogans::util::TransactedFile::Object::DeleterMapInitializer deleterMapInitializer;
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)
-        /// Define the shared base map initializer. This macro is private.
-        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX(_T)\
-            const thekogans::util::TransactedFile::Object::DeleterMapInitializer _T::deleterMapInitializer (\
-                _T::TYPE, _T::FreeObject);
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-
-        #define THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT(_T)\
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (_T)\
-            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
-
-        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT(_T, version, classSize, ...)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (\
-                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
-            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
-
-        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_HAVE_CREATE(_T, version, classSize, ...)\
-            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE (\
-                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
-            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
 
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
             TransactedFile::Range &range,
@@ -411,6 +407,8 @@ namespace thekogans {
                 object = base;\
                 return range;\
             }
+
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR (TransactedFile::Header)
 
     } // namespace util
 } // namespace thekogans

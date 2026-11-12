@@ -19,6 +19,7 @@
 #include "thekogans/util/SizeT.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/Singleton.h"
+#include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/TransactedFileTypeDictionary.h"
 
 namespace thekogans {
@@ -38,6 +39,7 @@ namespace thekogans {
                     public DynamicCreatable::DefaultTypeDictionary,
                     public Singleton<SystemTypeDictionary> {
                 SystemTypeDictionary () {
+                    types.push_back (TransactedFile::Header::TYPE);
                     types.push_back (TransactedFileTypeDictionary::TYPE);
                     // Add system types here.
                     for (std::size_t i = 0, count = types.size (); i < count; ++i) {

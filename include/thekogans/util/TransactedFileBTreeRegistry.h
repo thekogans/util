@@ -96,13 +96,6 @@ namespace thekogans {
                 TransactedFile::Object::SharedPtr value) override;
             virtual void RemoveValue (const std::string &key) override;
 
-        protected:
-            // TransactedFile::Object
-            virtual void AllocBlock () override {
-                TransactedFileBTree::AllocBlock ();
-                file->SetRegistryOffset (offset);
-            }
-
             /// \brief
             /// TransactedFileBTreeRegistry is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFileBTreeRegistry)

@@ -711,6 +711,7 @@
     <cpp_source>TransactedFileBTreeAllocatorBTree.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeKeys.cpp</cpp_source>
     <cpp_source>TransactedFileBTreeRegistry.cpp</cpp_source>
+    <cpp_source>TransactedFileHeader.cpp</cpp_source>
     <cpp_source>TransactedFileObject.cpp</cpp_source>
     <cpp_source>TransactedFileObjects.cpp</cpp_source>
     <cpp_source>TransactedFileRange.cpp</cpp_source>

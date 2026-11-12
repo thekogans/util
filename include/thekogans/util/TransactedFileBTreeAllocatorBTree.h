@@ -42,6 +42,7 @@ namespace thekogans {
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// Object is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Node)
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree)
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTreeAllocatorBTree)
 
@@ -113,6 +114,7 @@ namespace thekogans {
             struct Node : public TransactedFile::Object {
                 /// \brief
                 /// Object is a \see{Serializable}.
+                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Node)
                 THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (Node)
                 THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (Node)
 

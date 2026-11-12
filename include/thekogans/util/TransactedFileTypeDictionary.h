@@ -70,12 +70,6 @@ namespace thekogans {
             /// \param[in] serializer \see{Serializer} to write the types to.
             virtual void Write (Serializer &serializer) override;
 
-            // TransactedFile::Object
-            virtual void AllocBlock () override {
-                Object::AllocBlock ();
-                file->SetTypeDictionaryOffset (offset);
-            }
-
             /// \brief
             /// TransactedFileTypeDictionary is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFileTypeDictionary)

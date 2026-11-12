@@ -634,7 +634,7 @@ namespace thekogans {
             return *this;
         }
 
-        std::size_t Serializer::Size (const SerializableHeader &header) const noexcept {
+        std::size_t Serializer::Size (const SerializableHeader &header) noexcept {
             std::size_t size = 0;
             if (context.NeedType ()) {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary = GetTypeDictionary ();

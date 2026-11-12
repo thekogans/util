@@ -90,12 +90,6 @@ namespace thekogans {
                 TransactedFile::SizeType newSize,
                 bool moveData = true) override;
 
-        private:
-            virtual void AllocBlock () override {
-                TransactedFileBTreeAllocatorBTree::AllocBlock ();
-                file->SetAllocatorOffset (offset);
-            }
-
             /// \brief
             /// TransactedFileBTreeAllocator is neither copy constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (TransactedFileBTreeAllocator)
