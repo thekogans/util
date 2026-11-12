@@ -26,7 +26,7 @@ struct Object;
 /// Subscribe to ObjectEvents to receive notifications about file
 /// store lifetime. This is useful when you have containing objects
 /// (objects that contain other objects). They can register for their
-/// 'children' events and be notified when containing child offset changed.
+/// children's events and be notified when containing child offset changed.
 struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
     /// \brief
     /// dtor.

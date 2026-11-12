@@ -38,6 +38,7 @@ namespace thekogans {
                     std::placeholders::_1,
                     file),
                 true);
+            file->phase = PHASE_NONE;
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {

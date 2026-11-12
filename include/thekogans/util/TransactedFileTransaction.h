@@ -17,15 +17,13 @@
 
 /// \brief
 /// TransactedFile implements a two phase commit. The
-/// first phase (usually called the allocation phase)
-/// will have all \see{Object}s allocate the space they
-/// need to commit themselves to disk. The space is
-/// allocated using an \see{Allocator}. This is also
-/// the time when all offset pointers are updated (Again
-/// see \see{Object} and \see{ObjectEvents}). The second
-/// phase (usually called the commit phase) will have
-/// all objects flush themselves to disk. This logic is
-/// enshrined in \see{Object}.
+/// first phase (PHASE_ALLOC) will have all \see{Object}s
+/// allocate the space they need to commit themselves to
+/// disk. The space is allocated using an \see{Allocator}.
+/// This is also the time when all offset pointers are
+/// updated (Again see \see{Object} and \see{ObjectEvents}).
+/// The second phase (PHASE_FLUSH) will have all objects flush
+/// themselves to disk. This logic is enshrined in \see{Object}.
 
 /// \struct TransactedFile::Transaction TransactedFile.h thekogans/util/TransactedFile.h
 ///

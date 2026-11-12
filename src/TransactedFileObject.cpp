@@ -53,7 +53,13 @@ namespace thekogans {
         void TransactedFile::Object::DestroyObject (
                 TransactedFile::SharedPtr file,
                 AddressType offset) {
-            if (file != nullptr && offset != 0) {
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
+                if (!file->CheckCanMutate ()) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Structural Logic Error: TransactedFile::Object::DestroyObject can only be "
+                        "called durring transaction in progress and allocation phases (%s).",
+                        TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+                }
                 BlockRange range (file, offset);
                 ui32 magic;
                 range >> magic;
@@ -74,20 +80,36 @@ namespace thekogans {
         void TransactedFile::Object::FreeObject (
                 TransactedFile::SharedPtr file,
                 AddressType offset) {
-            file->GetAllocator ()->Free (offset);
-            file->Producer<TransactedFileStructureEvents>::Produce (
-                std::bind (
-                    &TransactedFileStructureEvents::OnTransactedFileOffsetDestroyed,
-                    std::placeholders::_1,
-                    file,
-                    offset));
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
+                if (!file->CheckCanMutate ()) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Structural Logic Error: TransactedFile::Object::FreeObject can only be "
+                        "called durring transaction in progress and allocation phases (%s).",
+                        TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+                }
+                file->GetAllocator ()->Free (offset);
+                file->Producer<TransactedFileStructureEvents>::Produce (
+                    std::bind (
+                        &TransactedFileStructureEvents::OnTransactedFileOffsetDestroyed,
+                        std::placeholders::_1,
+                        file,
+                        offset));
+            }
         }
 
         void TransactedFile::Object::SetDirty () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::SetDirty on a destroyed object.");
-            file->Producer<TransactedFileTransactionEvents>::Subscribe (*this);
-            Serializable::SetDirty ();
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
+                if (!file->CheckCanMutate ()) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Structural Logic Error: TransactedFile::Object::SetDirty can only be "
+                        "called durring transaction in progress and allocation phases (%s).",
+                        TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+                }
+                file->Producer<TransactedFileTransactionEvents>::Subscribe (*this);
+                Serializable::SetDirty ();
+            }
         }
 
         void TransactedFile::Object::Init (
@@ -103,23 +125,25 @@ namespace thekogans {
         void TransactedFile::Object::AllocBlock () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::AllocBlock on a destroyed object.");
-            std::size_t size = UI32_SIZE + GetSize (*file);
-            if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
-                AddressType newOffset = file->GetAllocator ()->Realloc (offset, size, false);
-                if (offset != newOffset) {
-                    if (offset != 0) {
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
+                std::size_t size = UI32_SIZE + GetSize (*file);
+                if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
+                    AddressType newOffset = file->GetAllocator ()->Realloc (offset, size, false);
+                    if (offset != newOffset) {
+                        if (offset != 0) {
+                            Producer<ObjectEvents>::Produce (
+                                std::bind (
+                                    &ObjectEvents::OnTransactedFileObjectFreeBlock,
+                                    std::placeholders::_1,
+                                    this));
+                        }
+                        offset = newOffset;
                         Producer<ObjectEvents>::Produce (
                             std::bind (
-                                &ObjectEvents::OnTransactedFileObjectFreeBlock,
+                                &ObjectEvents::OnTransactedFileObjectAllocBlock,
                                 std::placeholders::_1,
                                 this));
                     }
-                    offset = newOffset;
-                    Producer<ObjectEvents>::Produce (
-                        std::bind (
-                            &ObjectEvents::OnTransactedFileObjectAllocBlock,
-                            std::placeholders::_1,
-                            this));
                 }
             }
         }
@@ -127,7 +151,13 @@ namespace thekogans {
         void TransactedFile::Object::FreeBlock () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::FreeBlock on a destroyed object.");
-            if (offset != 0) {
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
+                if (!file->CheckCanMutate ()) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Structural Logic Error: TransactedFile::Object::FreeBlock can only be "
+                        "called durring transaction in progress and allocation phases (%s).",
+                        TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+                }
                 // Can't call FreeObject here. it's not virtual.
                 DestroyObject (file, offset);
                 Producer<ObjectEvents>::Produce (
@@ -143,7 +173,7 @@ namespace thekogans {
         void TransactedFile::Object::Flush () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::Flush on a destroyed object.");
-            if (offset != 0) {
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 BlockRange range (file, offset, false);
                 range << MAGIC << *this;
                 if (file->IsSecure ()) {
@@ -157,7 +187,7 @@ namespace thekogans {
         void TransactedFile::Object::Reload () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::Reload on a destroyed object.");
-            if (offset != 0) {
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 BlockRange range (file, offset);
                 ui32 magic;
                 range >> magic;
@@ -173,8 +203,6 @@ namespace thekogans {
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
                 TransactedFile::SharedPtr /*file*/,
                 int phase) noexcept {
-            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
-                "Calling TransactedFile::Object::OnTransactedFileTransactionCommit on a destroyed object.");
             if (phase == TransactedFile::Transaction::PHASE_ALLOC) {
                 AllocBlock ();
             }
@@ -185,8 +213,6 @@ namespace thekogans {
 
         void TransactedFile::Object::OnTransactedFileTransactionAbort (
                 TransactedFile::SharedPtr /*file*/) noexcept {
-            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
-                "Calling TransactedFile::Object::OnTransactedFileTransactionAbort on a destroyed object.");
             Reload ();
         }
 

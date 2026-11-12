@@ -144,20 +144,22 @@ namespace thekogans {
             /// File size.
             std::atomic<SizeType> size{0};
             /// \brief
-            /// \see{PageMap} used to map file pages.
+            /// File \see{PageMap} used to map file pages.
             AddressSpaceType::SharedPtr pageMap;
+            /// \brief
+            /// File header.
             Header::SharedPtr header;
             /// \brief
-            /// \see{Allocator} associated with this file.
+            /// File \see{DynamicCreatable::TypeDictionary}.
             DynamicCreatable::TypeDictionary::SharedPtr dictionary;
             /// \brief
-            /// \see{Allocator} associated with this file.
+            /// File \see{Allocator}.
             Allocator::SharedPtr allocator;
             /// \brief
-            /// \see{Registry} associated with this file.
+            /// File \see{Registry}.
             Registry::SharedPtr registry;
             /// \brief
-            /// Synchronization lock.
+            /// Current \see{Transaction} phase.
             std::atomic<int> phase{Transaction::PHASE_NONE};
             /// \brief
             /// \see{Transaction} mutex.
@@ -247,17 +249,13 @@ namespace thekogans {
                 return dictionary;
             }
             /// \brief
-            /// Return the \see{Allocator} attached to thi file.
-            /// Since allocator is constant after Init, this API
-            /// is thread safe.
+            /// Return the \see{Allocator} attached to this file.
             /// \return allocator.
             inline Allocator::SharedPtr GetAllocator () const {
                 return allocator;
             }
             /// \brief
-            /// Return the \see{Registry} attached to thi file.
-            /// Since registry is constant after Init, this API
-            /// is thread safe.
+            /// Return the \see{Registry} attached to this file.
             /// \return registry.
             inline Registry::SharedPtr GetRegistry () const {
                 return registry;
@@ -269,19 +267,14 @@ namespace thekogans {
             inline bool CheckCanMutate () const {
                 return phase == Transaction::PHASE_IN_PROGRESS || phase == Transaction::PHASE_ALLOC;
             }
-            inline bool CheckCanAlloc () const {
-                return phase == Transaction::PHASE_ALLOC;
-            }
 
             /// \brief
             /// Grow the file by the given amount.
-            /// Thread safe.
             /// \param[in] amount Amount to grow the file by.
             /// \return Old file size.
             SizeType Grow (SizeType amount);
             /// \brief
             /// Shrink the file by the given amount.
-            /// Thread safe.
             /// \param[in] amount Amount to shrink the file by.
             /// \return New file size.
             SizeType Shrink (SizeType amount);
