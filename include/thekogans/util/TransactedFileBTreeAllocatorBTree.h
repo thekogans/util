@@ -315,7 +315,7 @@ namespace thekogans {
                 /// \brief
                 /// Node is neither copy or move constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Node)
-            } *root;
+            } *root{nullptr};
 
         public:
             /// \brief
@@ -369,12 +369,6 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) override;
 
             // TransactedFile::Object
-            virtual void Init (
-                    TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset) noexcept override {
-                TransactedFile::Object::Init (file, offset);
-                root->Init (file, header.rootOffset);
-            }
             /// \brief
             /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
             /// Also free the \see{Node} hierarchy @root.

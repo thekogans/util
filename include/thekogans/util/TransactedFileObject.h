@@ -87,11 +87,10 @@ public:
     Object (
             TransactedFile::SharedPtr file_ = nullptr,
             AddressType offset_ = 0) :
-            file (nullptr),
-            offset (0) {
+            file (file_),
+            offset (offset_) {
         THEKOGANS_UTIL_ASSERT (offset_ == 0 || file_ != nullptr,
             "Invalid Object Construction: Non-zero physical offset provided without a valid TransactedFile.");
-        Init (file_, offset_);
     }
 
     /// \brief
@@ -110,10 +109,6 @@ public:
         return deleters;
     }
 
-    static DynamicCreatable::SharedPtr CreateObject (
-        const char *type,
-        TransactedFile::SharedPtr file,
-        AddressType offset);
     static void DestroyObject (
         TransactedFile::SharedPtr file,
         AddressType offset);
@@ -216,4 +211,49 @@ protected:
     /// \brief
     /// Object is neither copy constructable, nor assignable.
     THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
+};
+
+struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
+    /// \brief
+    /// ctor.
+    /// \param[in] file \see{TransactedFile} to buffer.
+    /// \param[in] offset File offset.
+    /// \param[in] type Expecting type when reading.
+    /// \param[in] reading true == Range will be used for reading.
+    /// false == Range will be used for writting.
+    /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+    ObjectRange (
+            TransactedFile::SharedPtr file,
+            TransactedFile::AddressType offset,
+            const SerializableHeader &expecting = SerializableHeader (),
+            util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+            BlockRange (file, offset, true, allocator) {
+        ui32 magic;
+        *this >> magic;
+        if (magic != Object::MAGIC) {
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                "Corrupt TransactedFile::Object: %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                expecting.type.c_str (), offset);
+        }
+        *this >> context;
+        if (!expecting.NeedType () && context.type != expecting.type) {
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                "Invalid TransactedFile::Object header type: %s, expecting: %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                context.type.c_str (), expecting.type.c_str (), offset);
+        }
+        if (!expecting.NeedVersion () && context.version > expecting.version) {
+            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                "Invalid TransactedFile::Object header version " THEKOGANS_UTIL_UI64_FORMAT
+                " for type: %s, expecting: " THEKOGANS_UTIL_UI64_FORMAT " @" THEKOGANS_UTIL_UI64_FORMAT,
+                context.version, context.type.c_str (), expecting.version, offset);
+        }
+    }
+    ObjectRange (
+            TransactedFile::SharedPtr file,
+            TransactedFile::AddressType offset,
+            Object &object,
+            util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
+            BlockRange (file, offset, false, allocator) {
+        *this << Object::MAGIC << SerializableHeader (object.Type (), object.Version (), object.Size (*this));
+    }
 };

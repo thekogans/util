@@ -31,7 +31,7 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        std::size_t HRTimerMgr::TimerInfoBase::Size (Serializer &serializer) noexcept {
+        std::size_t HRTimerMgr::TimerInfoBase::Size (Serializer & /*serializer*/) noexcept {
             return Serializer::Size (name) + Serializer::Size (attributes);
         }
 

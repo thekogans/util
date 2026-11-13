@@ -21,7 +21,8 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFile::Header, 1, TransactedFile::Header::SIZE)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (
+            thekogans::util::TransactedFile::Header, 1, TransactedFile::Header::SIZE)
 
         TransactedFile::Header::Header (
                 TransactedFile::SharedPtr file,
@@ -33,17 +34,7 @@ namespace thekogans {
                 TransactedFile::Object (file, offset),
                 flags (flags_) {
             if (file != nullptr && offset == 0) {
-                struct DummySerializer : public Serializer {
-                    DynamicCreatable::TypeDictionary::SharedPtr dictionary;
-                    DummySerializer (DynamicCreatable::TypeDictionary::SharedPtr dictionary_) :
-                        dictionary (dictionary_) {}
-                    virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
-                        return dictionary;
-                    }
-                    virtual std::size_t Read (void *buffer, std::size_t count) override {return 0;}
-                    virtual std::size_t Write (const void *buffer, std::size_t count) override {return 0;}
-                } serializer (dictionary);
-                std::size_t size = UI32_SIZE + GetSize (serializer);
+                std::size_t size = UI32_SIZE + GetSize (*file);
                 this->offset = file->Grow (Block::SIZE + size) + Block::BLOCK_0_OFFSET;
                 Block block (file, this->offset, 0, size);
                 block.Write ();
@@ -100,7 +91,7 @@ namespace thekogans {
                 serializer >> flags >> dictionaryOffset >> allocatorOffset >> registryOffset;
                 file->dictionary.Reset (new TransactedFileTypeDictionary);
                 {
-                    BlockRange dictionaryRange (file, dictionaryOffset);
+                    ObjectRange dictionaryRange (file, dictionaryOffset);
                     Object::SharedPtr object;
                     dictionaryRange >> object;
                     file->dictionary = object;
@@ -108,7 +99,7 @@ namespace thekogans {
                     object->Producer<ObjectEvents>::Subscribe (*this);
                 }
                 {
-                    BlockRange allocatorRange (file, allocatorOffset);
+                    ObjectRange allocatorRange (file, allocatorOffset);
                     Object::SharedPtr object;
                     allocatorRange >> object;
                     file->allocator = object;
@@ -116,7 +107,7 @@ namespace thekogans {
                     object->Producer<ObjectEvents>::Subscribe (*this);
                 }
                 {
-                    BlockRange registryRange (file, registryOffset);
+                    ObjectRange registryRange (file, registryOffset);
                     Object::SharedPtr object;
                     registryRange >> object;
                     file->registry = object;

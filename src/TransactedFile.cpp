@@ -113,7 +113,7 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt TransactedFile %s", path.c_str ());
             }
-            BlockRange headerRange (this, Header::BLOCK_OFFSET);
+            ObjectRange headerRange (this, Header::BLOCK_OFFSET);
             headerRange >> header;
             guard.dismissed = true;
         }

@@ -313,15 +313,15 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
 
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
-            TransactedFile::Range &range,
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::ObjectRange & _LIB_THEKOGANS_UTIL_API operator >> (
+            TransactedFile::ObjectRange &range,
             TransactedFile::Object::SharedPtr &object);
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR(_T)
         /// Implement extraction operator for _T::SharedPtr.
         #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_EXTRACTION_OPERATOR(_T)\
-            inline thekogans::util::TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (\
-                    thekogans::util::TransactedFile::Range &range,\
+            inline thekogans::util::TransactedFile::ObjectRange & _LIB_THEKOGANS_UTIL_API operator >> (\
+                    thekogans::util::TransactedFile::ObjectRange &range,\
                     _T::SharedPtr &object) {\
                 thekogans::util::TransactedFile::Object::SharedPtr base;\
                 range >> base;\

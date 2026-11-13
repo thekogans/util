@@ -38,15 +38,16 @@ namespace thekogans {
         /// TransactedFileBTreeAllocator is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeAllocator :
                 public TransactedFile::Allocator,
-                // As much as I'd like to hide from the rest of the world that an Allocator is an Object,
-                // TransactedFile assumes it (as it should) when it rebuilds it'self from disk as well
-                // as when it first createst itself. And private inheritance prevents it from cross-typing
-                // (dynamic_cast) the Allocator interface to Object. So here sits an anouncement to the rest
-                // of the world that yes, we are indeed an Object.
+                // As much as I'd like to hide from the rest of the world that an Allocator is
+                // an Object, TransactedFile assumes it (as it should) during initiatiation.
+                // Unfortunately private inheritance prevents it from cross-typing (dynamic_cast)
+                // the Allocator interface to Object through TransactedFileBTreeAllocatorBTree.
+                // So here sits an announcement to the rest of the world that yes, we are indeed
+                // an Object.
                 public virtual TransactedFile::Object,
                 private TransactedFileBTreeAllocatorBTree {
             /// \brief
-            /// TransactedFileBTreeAllocator is a \see{Serializable}.
+            /// TransactedFileBTreeAllocator is an \see{TransactedFile::Object}.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeAllocator)
 
         private:
@@ -57,6 +58,8 @@ namespace thekogans {
         public:
             /// \brief
             /// ctor.
+            /// \param[in] file
+            /// \param[in] offset
             /// \param[in] entriesPerNode Number of entries per \see{BTree::Node}.
             /// \param[in] nodesPerPage Number of \see{TransactedFileBTreeAllocatorBTree::Node}s
             /// that will fit in to a \see{SlabAllocatorImpl} page.

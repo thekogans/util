@@ -153,7 +153,7 @@ namespace thekogans {
                 btree (btree_),
                 entries ((Entry *)(this + 1)) {
             SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
-            Reload ();
+            Init (file, offset);
         }
 
         TransactedFileBTree::Node::~Node () {
@@ -179,7 +179,7 @@ namespace thekogans {
 
         Serializable::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
             if (entries[index].value == nullptr && entries[index].valueOffset != 0) {
-                TransactedFile::BlockRange valueRange (file, entries[index].valueOffset);
+                TransactedFile::ObjectRange valueRange (file, entries[index].valueOffset);
                 TransactedFile::Object::SharedPtr value;
                 valueRange >> value;
                 value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
@@ -707,52 +707,33 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             if (offset != 0) {
-                TransactedFile::BlockRange range (file, offset);
+                TransactedFile::ObjectRange range (file, offset, SerializableHeader (TYPE, VERSION));
                 ui32 magic;
                 range >> magic;
-                if (magic == MAGIC) {
-                    SerializableHeader header;
-                    range >> header;
-                    if (header.type == TYPE) {
-                        range >> magic;
-                        if (magic == MAGIC32) {
-                            ui32 count;
-                            range >> count;
-                            if (count > 0) {
-                                ui32 flags;
-                                TransactedFile::AddressType leftOffset;
-                                range >> flags >> leftOffset;
-                                Node::FreeObject (file, leftOffset);
-                                for (ui32 i = 0; i < count; ++i) {
-                                    if (flags & TransactedFileBTree::Header::FLAGS_VALUE_IS_OBJECT) {
-                                        TransactedFile::AddressType valueOffset;
-                                        range >> valueOffset;
-                                        DestroyObject (file, valueOffset);
-                                    }
-                                    TransactedFile::AddressType rightOffset;
-                                    range >> rightOffset;
-                                    Node::FreeObject (file, rightOffset);
-                                }
+                if (magic == MAGIC32) {
+                    ui32 count;
+                    range >> count;
+                    if (count > 0) {
+                        ui32 flags;
+                        TransactedFile::AddressType leftOffset;
+                        range >> flags >> leftOffset;
+                        Node::FreeObject (file, leftOffset);
+                        for (ui32 i = 0; i < count; ++i) {
+                            if (flags & TransactedFileBTree::Header::FLAGS_VALUE_IS_OBJECT) {
+                                TransactedFile::AddressType valueOffset;
+                                range >> valueOffset;
+                                DestroyObject (file, valueOffset);
                             }
-                            Object::FreeObject (file, offset);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
-                                offset);
+                            TransactedFile::AddressType rightOffset;
+                            range >> rightOffset;
+                            Node::FreeObject (file, rightOffset);
                         }
                     }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Header type: %s != TransactedFileBTree::Node type: %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                            header.type.c_str (),
-                            TYPE,
-                            offset);
-                    }
+                    Object::FreeObject (file, offset);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFile::Object @" THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt TransactedFileBTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }
@@ -780,22 +761,26 @@ namespace thekogans {
                     new SlabAllocatorImpl (
                         Node::Size (entriesPerNode),
                         nodesPerPage,
-                        nodesPerPage / 4)),
-                root (Node::Alloc (file, header.rootOffset, this)) {
-            if (!Key::IsType (keyContext.type.c_str ()) ||
+                        nodesPerPage / 4)) {
+            if (file != nullptr && (!Key::IsType (keyContext.type.c_str ()) ||
                     (!valueContext.NeedType () &&
-                        !TransactedFile::Object::IsType (valueContext.type.c_str ()))) {
+                        !TransactedFile::Object::IsType (valueContext.type.c_str ())))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyContext.type.c_str (), valueContext.type.c_str ());
             }
-            root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-            Reload ();
+            Init (file, offset);
+            if (file != nullptr && offset == 0) {
+                root = Node::Alloc (file, 0, this);
+                root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+            }
         }
 
         TransactedFileBTree::~TransactedFileBTree () {
-            root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-            root->Release ();
+            if (root != nullptr) {
+                root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                root->Release ();
+            }
         }
 
         bool TransactedFileBTree::Find (
@@ -947,8 +932,10 @@ namespace thekogans {
                     "Corrupt TransactedFileBTree @" THEKOGANS_UTIL_UI64_FORMAT,
                     GetOffset ());
             }
-            root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-            root->Release ();
+            if (root != nullptr) {
+                root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                root->Release ();
+            }
             nodeAllocator.Reset (
                 new SlabAllocatorImpl (
                     Node::Size (header.entriesPerNode),
@@ -967,35 +954,18 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             if (file != nullptr && offset != 0) {
-                TransactedFile::BlockRange range (file, offset);
+                TransactedFile::ObjectRange range (file, offset, SerializableHeader (TYPE, VERSION));
                 ui32 magic;
                 range >> magic;
-                if (magic == MAGIC) {
-                    SerializableHeader header;
+                if (magic == MAGIC32) {
+                    Header header;
                     range >> header;
-                    if (header.type == TYPE) {
-                        ui32 magic;
-                        range >> magic;
-                        if (magic == MAGIC32) {
-                            Header header;
-                            range >> header;
-                            Node::FreeObject (file, header.rootOffset);
-                            Object::FreeObject (file, offset);
-                        }
-                        else {
-                            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Corrupt BTree header @" THEKOGANS_UTIL_UI64_FORMAT,
-                                offset);
-                        }
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Invalid BTree header type: %s", header.type.c_str ());
-                    }
+                    Node::FreeObject (file, header.rootOffset);
+                    Object::FreeObject (file, offset);
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt TransactedFile::Object @" THEKOGANS_UTIL_UI64_FORMAT,
+                        "Corrupt BTree header @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
             }

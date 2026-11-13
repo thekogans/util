@@ -605,7 +605,7 @@ namespace thekogans {
                         TransactedFile::Object::SharedPtr /*object*/) noexcept override {
                     SetDirty ();
                 }
-            } *root;
+            } *root{nullptr};
 
         public:
             /// \brief
@@ -718,12 +718,6 @@ namespace thekogans {
 
         public:
             // TransactedFile::Object
-            virtual void Init (
-                    TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset) noexcept override {
-                TransactedFile::Object::Init (file, offset);
-                root->Init (file, header.rootOffset);
-            }
             /// \brief
             /// Delete the btree.
             /// \param[in] file \see{TransactedFile} to which the btree belongs.

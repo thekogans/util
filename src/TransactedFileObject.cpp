@@ -37,42 +37,20 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        DynamicCreatable::SharedPtr TransactedFile::Object::CreateObject (
-                const char *type,
-                TransactedFile::SharedPtr file,
-                AddressType offset) {
-            return CreateType (type,
-                [file, offset] (DynamicCreatable::SharedPtr dynamicCreatable) {
-                    Object::SharedPtr object = dynamicCreatable;
-                    if (object != nullptr) {
-                        object->Init (file, offset);
-                    }
-                });
-        }
-
         void TransactedFile::Object::DestroyObject (
                 TransactedFile::SharedPtr file,
                 AddressType offset) {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
-                if (!file->CheckCanMutate ()) {
+                if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Structural Logic Error: TransactedFile::Object::DestroyObject can only be "
                         "called durring transaction in progress and allocation phases (%s).",
                         TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
                 }
-                BlockRange range (file, offset);
-                ui32 magic;
-                range >> magic;
-                if (magic == TransactedFile::Object::MAGIC) {
-                    SerializableHeader header;
-                    range >> header;
-                    DeleterMapType::const_iterator it = GetDeleters ().find (header.type.c_str ());
-                    if (it != GetDeleters ().end ()) {
-                        it->second (file, offset);
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
+                ObjectRange range (file, offset);
+                DeleterMapType::const_iterator it = GetDeleters ().find (range.context.type.c_str ());
+                if (it != GetDeleters ().end ()) {
+                    it->second (file, offset);
                 }
             }
         }
@@ -81,7 +59,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 AddressType offset) {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
-                if (!file->CheckCanMutate ()) {
+                if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Structural Logic Error: TransactedFile::Object::FreeObject can only be "
                         "called durring transaction in progress and allocation phases (%s).",
@@ -101,7 +79,7 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::SetDirty on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
-                if (!file->CheckCanMutate ()) {
+                if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Structural Logic Error: TransactedFile::Object::SetDirty can only be "
                         "called durring transaction in progress and allocation phases (%s).",
@@ -115,10 +93,17 @@ namespace thekogans {
         void TransactedFile::Object::Init (
                 TransactedFile::SharedPtr file_,
                 AddressType offset_) noexcept {
+            THEKOGANS_UTIL_ASSERT (offset_ == 0 || file_ != nullptr,
+                "Invalid Object Construction: Non-zero physical offset provided without a valid TransactedFile.");
             file = file_;
             offset = offset_;
-            if (file != nullptr && offset == 0) {
-                SetDirty ();
+            if (file != nullptr) {
+                if (offset != 0) {
+                    Reload ();
+                }
+                else {
+                    SetDirty ();
+                }
             }
         }
 
@@ -152,7 +137,7 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::FreeBlock on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
-                if (!file->CheckCanMutate ()) {
+                if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Structural Logic Error: TransactedFile::Object::FreeBlock can only be "
                         "called durring transaction in progress and allocation phases (%s).",
@@ -174,8 +159,8 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::Flush on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
-                BlockRange range (file, offset, false);
-                range << MAGIC << *this;
+                ObjectRange range (file, offset, *this);
+                Write (range);
                 if (file->IsSecure ()) {
                     range.Seek (
                         SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()),
@@ -188,15 +173,8 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::Reload on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
-                BlockRange range (file, offset);
-                ui32 magic;
-                range >> magic;
-                if (magic == TransactedFile::Object::MAGIC) {
-                    range >> *this;
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
-                }
+                ObjectRange range (file, offset, SerializableHeader (Type (), Version ()));
+                Read (range);
             }
         }
 
@@ -216,41 +194,17 @@ namespace thekogans {
             Reload ();
         }
 
-        _LIB_THEKOGANS_UTIL_DECL TransactedFile::Range & _LIB_THEKOGANS_UTIL_API operator >> (
-                TransactedFile::Range &range,
+        _LIB_THEKOGANS_UTIL_DECL TransactedFile::ObjectRange & _LIB_THEKOGANS_UTIL_API operator >> (
+                TransactedFile::ObjectRange &range,
                 TransactedFile::Object::SharedPtr &object) {
-            ui32 magic;
-            range >> magic;
-            if (magic == TransactedFile::Object::MAGIC) {
-                SerializableHeader header;
-                range >> header;
-                if (range.factory != nullptr) {
-                    object = range.factory (range.parameters);
-                }
-                else {
-                    object = TransactedFile::Object::CreateObject (
-                        header.type.c_str (), range.GetFile (), range.GetOffset ());
-                }
-                if (object != nullptr) {
-                    if (header.version <= object->Version ()) {
-                        Serializer::ContextGuard guard (range, header);
-                        object->Read (range);
-                    }
-                    else {
-                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Header version (%u) is greater then the TransactedFile::Object version (%u).",
-                            header.version,
-                            object->Version ());
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Unable to create a TransactedFile::Object of type %s.",
-                        header.type.c_str ());
-                }
+            if (range.factory != nullptr) {
+                object = range.factory (range.parameters);
             }
             else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt Object header (%x).", magic);
+                object = TransactedFile::Object::CreateType (range.context.type.c_str (), range.parameters);
+            }
+            if (object != nullptr) {
+                object->Init (range.GetFile (), range.GetOffset ());
             }
             return range;
         }

@@ -63,7 +63,7 @@ namespace thekogans {
             // by bitsPerPage ctor value. You therefore have a lot of power to tune
             // the underlying TransactedFile::AddressSpaceType to minimize boudary
             // crossings. At the same time range is designed to work with
-            // TransactedFile::Allocator::Block (BlockRange). That means that most
+            // TransactedFile::Block (BlockRange and friends). That means that most
             // of range parameters will come from block offset and size. And to
             // that end...
             // 3. ...TransactedFileBTreeAllocator. TransactedFileBTreeAllocator

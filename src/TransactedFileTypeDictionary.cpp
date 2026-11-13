@@ -31,7 +31,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) :
                 TransactedFile::Object (file, offset) {
-            Reload ();
+            Init (file, offset);
         }
 
         namespace {
@@ -87,7 +87,7 @@ namespace thekogans {
             return DynamicCreatable::DefaultTypeDictionary::ResolveTypeId (id);
         }
 
-        std::size_t TransactedFileTypeDictionary::Size (Serializer &serializer) noexcept {
+        std::size_t TransactedFileTypeDictionary::Size (Serializer & /*serializer*/) noexcept {
             LockGuard<SpinLock> guard (spinLock);
             std::size_t size = UI32_SIZE + SizeT (types.size ()).Size ();
             for (const auto &type : types) {

@@ -40,11 +40,11 @@ namespace thekogans {
         /// The key type is std::string. TransactedFileBTreeRegistry is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
                 public TransactedFile::Registry,
-                // As much as I'd like to hide from the rest of the world that a Registry is an Object,
-                // TransactedFile assumes it (as it should) when it rebuilds it'self from disk as well
-                // as when it first createst itself. And private inheritance prevents it from cross-typing
-                // (dynamic_cast) the Registry interface to Object. So here sits an anouncement to the rest
-                // of the world that yes, we are indeed an object.
+                // As much as I'd like to hide from the rest of the world that an Registry is
+                // an Object, TransactedFile assumes it (as it should) during initiatiation.
+                // Unfortunately private inheritance prevents it from cross-typing (dynamic_cast)
+                // the Allocator interface to Object through TransactedFileBTree. So here sits an
+                // announcement to the rest of the world that yes, we are indeed an Object.
                 public virtual TransactedFile::Object,
                 private TransactedFileBTree {
             /// \brief
