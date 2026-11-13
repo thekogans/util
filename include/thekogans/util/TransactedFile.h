@@ -178,11 +178,11 @@ namespace thekogans {
             Mutex mutex;
 
             /// \brief
-            /// ctor.
+            /// ctor. Used by Open.x
             /// \param[in] path File path.
             TransactedFile (const std::string &path);
             /// \brief
-            /// ctor.
+            /// ctor. Used by Create.
             /// \param[in] endianness File endianness.
             /// \param[in] path File path.
             /// \param[in] secure

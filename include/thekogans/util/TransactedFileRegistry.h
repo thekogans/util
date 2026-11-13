@@ -29,9 +29,9 @@ struct _LIB_THEKOGANS_UTIL_DECL Registry : public virtual RefCounted {
     /// return nullptr.
     /// \param[in] key Key whose value to retrieve.
     /// \return Value @ key, nullptr if key is not found.
-    virtual Object::SharedPtr GetValue (const std::string & /*key*/) = 0;
+    virtual Serializable::SharedPtr GetValue (const std::string & /*key*/) = 0;
     virtual bool InsertValue (
         const std::string & /*key*/,
-        TransactedFile::Object::SharedPtr /*value*/) = 0;
+        Serializable::SharedPtr /*value*/) = 0;
     virtual void RemoveValue (const std::string & /*key*/) = 0;
 };

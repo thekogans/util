@@ -24,7 +24,7 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTreeRegistry, 1, 0)
 
-        TransactedFile::Object::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
+        Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             LockGuard<SpinLock> guard (spinLock);
             Iterator it;
             return Find (StringKey (key), it) ? it.GetValue () : nullptr;
@@ -32,7 +32,7 @@ namespace thekogans {
 
         bool TransactedFileBTreeRegistry::InsertValue (
                 const std::string &key,
-                TransactedFile::Object::SharedPtr value) {
+                Serializable::SharedPtr value) {
             LockGuard<SpinLock> guard (spinLock);
             Iterator it;
             return Insert (new StringKey (key), value, it);

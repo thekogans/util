@@ -40,7 +40,7 @@ namespace thekogans {
         /// The key type is std::string. TransactedFileBTreeRegistry is thread safe.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTreeRegistry :
                 public TransactedFile::Registry,
-                // As much as I'd like to hide from the rest of the world that an Registry is
+                // As much as I'd like to hide from the rest of the world that a Registry is
                 // an Object, TransactedFile assumes it (as it should) during initiatiation.
                 // Unfortunately private inheritance prevents it from cross-typing (dynamic_cast)
                 // the Allocator interface to Object through TransactedFileBTree. So here sits an
@@ -86,14 +86,18 @@ namespace thekogans {
                     nodesPerPage) {}
 
             /// \brief
-            /// Given a key, retrieve the associated value. If key is not found,
-            /// return nullptr.
+            /// Given a key, retrieve the associated value. If key is not found, return nullptr.
             /// \param[in] key Key whose value to retrieve.
             /// \return Value @ key, nullptr if key is not found.
-            virtual TransactedFile::Object::SharedPtr GetValue (const std::string &key) override;
+            virtual Serializable::SharedPtr GetValue (const std::string &key) override;
+            /// \brief
+            /// Insert the given key/value pair in to the rgistry.
+            /// \param[in] key Key to insert.
+            /// \param[in] value Value to insert.
+            /// \return true == key/value was inserted. false == duplicate key.
             virtual bool InsertValue (
                 const std::string &key,
-                TransactedFile::Object::SharedPtr value) override;
+                Serializable::SharedPtr value) override;
             virtual void RemoveValue (const std::string &key) override;
 
             /// \brief
