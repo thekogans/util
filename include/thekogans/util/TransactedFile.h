@@ -51,7 +51,7 @@ namespace thekogans {
             /// all this is done under the hood for you. All you will need
             /// to do is implement Size, Read and Write.
             /// \param[in] file TransactedFile comming the transaction.
-            /// \param[in] phase Either COMMIT_PHASE_1 or COMMIT_PHASE_2.
+            /// \param[in] phase Transaction phase.
             virtual void OnTransactedFileTransactionCommit (
                 RefCounted::SharedPtr<TransactedFile> /*file*/,
                 int phase) noexcept {}
@@ -110,9 +110,21 @@ namespace thekogans {
                 _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
             THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
 
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_T(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (\
+                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
         #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_HAVE_CREATE(_T, version, classSize, ...)\
             THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE (\
                 _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
+            THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
+
+        #define THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_HAVE_CREATE_T(_T, version, classSize, ...)\
+            THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_HAVE_CREATE_T (\
+                _T, version, classSize, thekogans::util::TransactedFile::Object::TYPE, ##__VA_ARGS__)\
+            template<>\
             THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (_T)
 
         /// \struct TransactedFile TransactedFile.h thekogans/util/TransactedFile.h

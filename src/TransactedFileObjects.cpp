@@ -20,26 +20,10 @@
 namespace thekogans {
     namespace util {
 
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
-            thekogans::util::StringObject,
-            1,
-            0,
-            TransactedFile::Object::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
-            thekogans::util::StringArrayObject,
-            1,
-            0,
-            TransactedFile::Object::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
-            thekogans::util::AddressArrayObject,
-            1,
-            0,
-            TransactedFile::Object::TYPE)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
-            thekogans::util::GUIDArrayObject,
-            1,
-            0,
-            TransactedFile::Object::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::StringObject, 1, 0)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_T (thekogans::util::StringArrayObject, 1, 0)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_T (thekogans::util::AddressArrayObject, 1, 0)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_T (thekogans::util::GUIDArrayObject, 1, 0)
 
     } // namespace util
 } // namespace thekogans

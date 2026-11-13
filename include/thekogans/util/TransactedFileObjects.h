@@ -37,7 +37,7 @@ namespace thekogans {
                 public StringValue {
             /// \brief
             /// StringObject is a \see{TransactedFile::Object}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringObject)
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (StringObject)
 
             /// \brief
             /// ctor.
@@ -65,7 +65,7 @@ namespace thekogans {
                 public ArrayValue<T> {
             /// \brief
             /// StringArrayObject is a \see{TransactedFile::Object}.
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ArrayObject<T>)
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (ArrayObject<T>)
 
             /// \brief
             /// ctor.
