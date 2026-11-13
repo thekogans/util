@@ -66,14 +66,16 @@ namespace thekogans {
 
             /// \brief
             /// ctor.
-            /// \param[in] valueAsObject_ true == \see{TransactedFileBTree::Node} stores values
+            /// \param[in] file
+            /// \param[in] offset
+            /// \param[in] valueIsObject true == \see{TransactedFileBTree::Node} stores values
             /// as \see{TransactedFile::Object}.
-            /// \param[in] entriesPerNode_ Number of entries per \see{TransactedFileBTree::Node}.
+            /// \param[in] entriesPerNode Number of entries per \see{TransactedFileBTree::Node}.
             /// \param[in] nodesPerPage Number of \see{TransactedFileBTree::Node}s per allocator page.
             TransactedFileBTreeRegistry (
                 TransactedFile::SharedPtr file = nullptr,
                 TransactedFile::AddressType offset = 0,
-                bool valueAsObject = true,
+                bool valueIsObject = true,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE) :
                 TransactedFileBTree (
@@ -81,7 +83,7 @@ namespace thekogans {
                     offset,
                     StringKey::GetContext (),
                     SerializableHeader (),
-                    valueAsObject,
+                    valueIsObject,
                     entriesPerNode,
                     nodesPerPage) {}
 

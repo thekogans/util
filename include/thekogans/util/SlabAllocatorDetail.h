@@ -724,7 +724,7 @@ namespace thekogans {
                     }
 
                     /// \brief
-                    /// dtor. Return our locally cached slots back tothe global page pool.
+                    /// dtor. Return our locally cached slots back to the global page pool.
                     inline void Release () noexcept {
                         if (slotList != nullptr) {
                             Page *page = slotList->GetPage (pageMask);
@@ -734,11 +734,11 @@ namespace thekogans {
                             // something is very seriously wrong with the data and perhaps
                             // it's better to crash the program than to continue corrupting.
                             LockGuard<Lock> guard (page->header.allocator.storage.lock);
-                            while (slotList != nullptr) {
+                            do {
                                 typename Page::Slot *next = slotList->next;
                                 slotList->Free (pageMask);
                                 slotList = next;
-                            }
+                            } while (slotList != nullptr);
                         }
                     }
                 };

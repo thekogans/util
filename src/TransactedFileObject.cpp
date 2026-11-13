@@ -97,6 +97,8 @@ namespace thekogans {
                 "Invalid Object Construction: Non-zero physical offset provided without a valid TransactedFile.");
             file = file_;
             offset = offset_;
+            header.type = Type ();
+            header.version = Version ();
             if (file != nullptr) {
                 if (offset != 0) {
                     Reload ();
@@ -111,8 +113,13 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::AllocBlock on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
-                std::size_t size = UI32_SIZE + GetSize (*file);
-                if (offset == 0 || size > TransactedFile::Block::GetSize (file, offset)) {
+                header.size = Size (*file);
+                std::size_t size = 0;
+                {
+                    Serializer::ContextGuard guard (*file);
+                    size = UI32_SIZE + file->Size (header) + header.size;
+                }
+                if (offset == 0 || size > Block::GetSize (file, offset)) {
                     AddressType newOffset = file->GetAllocator ()->Realloc (offset, size, false);
                     if (offset != newOffset) {
                         if (offset != 0) {
@@ -151,6 +158,7 @@ namespace thekogans {
                         std::placeholders::_1,
                         this));
                 offset = 0;
+                header.size = 0;
                 destroyed = true;
             }
         }
@@ -173,7 +181,8 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::Reload on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
-                ObjectRange range (file, offset, SerializableHeader (Type (), Version ()));
+                ObjectRange range (file, offset, header);
+                header.size = range.context.size;
                 Read (range);
             }
         }

@@ -47,6 +47,8 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectEvents {
         RefCounted::SharedPtr<Object> /*object*/) noexcept {}
 };
 
+struct ObjectRange;
+
 /// \struct TransactedFile::Object TransactedFileObject.h thekogans/util/TransactedFileObject.h
 ///
 /// \brief
@@ -71,7 +73,10 @@ protected:
     /// \brief
     /// Our address inside the \see{TransactedFile}.
     AddressType offset;
+    SerializableHeader header;
     bool destroyed{false};
+
+    friend struct ObjectRange;
 
 public:
     //          file
@@ -254,6 +259,6 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
             Object &object,
             util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
             BlockRange (file, offset, false, allocator) {
-        *this << Object::MAGIC << SerializableHeader (object.Type (), object.Version (), object.Size (*this));
+        *this << Object::MAGIC << object.header;
     }
 };
