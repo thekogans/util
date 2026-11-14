@@ -45,43 +45,42 @@ namespace thekogans {
         }
     #else // defined (THEKOGANS_UTIL_TYPE_Static)
         DynamicCreatable::BaseMapInitializer::BaseMapInitializer (
-                const char * const bases[],
-                const char *type,
+                const HashedString bases[],
+                const HashedString &type,
                 FactoryType factory) {
-            if (bases != nullptr && type != nullptr) {
-                BaseMapType &baseMap = GetBases ();
-                while (*bases != nullptr) {
-                    baseMap[*bases++][type] = factory;
-                }
+            BaseMapType &baseMap = GetBases ();
+            while (*bases != HashedString ()) {
+                baseMap[*bases++][type] = factory;
             }
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         DynamicCreatable::TypeDictionary::IdType DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (const HashedString &type) {
-            const char *canonicalType = DynamicCreatable::TypeForType (type);
-            if (THEKOGANS_UTIL_UNLIKELY (*canonicalType == '\0')) {
+            if (THEKOGANS_UTIL_UNLIKELY (type.empty ())) {
                 return None;
             }
-            HashedString key (canonicalType, type.hash);
-            auto it = hashMap.find (key);
+            THEKOGANS_UTIL_ASSERT (type.str == DynamicCreatable::TypeForType (type).str,
+                "DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId called on noncanonical type %s.",
+                type.str);
+            auto it = hashMap.find (type);
             if (THEKOGANS_UTIL_LIKELY (it != hashMap.end ())) {
                 return it->second;
             }
             IdType id = static_cast<IdType> (types.size ());
-            types.push_back (canonicalType);
-            hashMap.emplace (key, FirstUserId + id);
+            types.push_back (type);
+            hashMap.emplace (type, FirstUserId + id);
             return FirstUserId + id;
         }
 
-        const char *DynamicCreatable::DefaultTypeDictionary::ResolveTypeId (IdType id) {
+        const HashedString &DynamicCreatable::DefaultTypeDictionary::ResolveTypeId (IdType id) {
             if (id < FirstUserId) {
-                return "";
+                return HashedString::Empty;
             }
             id -= FirstUserId;
-            return id < types.size () ? types[id] : "";
+            return id < types.size () ? types[id] : HashedString::Empty;
         }
 
-        bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {
+        bool DynamicCreatable::IsDerivedFrom (const HashedString &base) const noexcept {
             if (base != nullptr) {
                 BaseMapType::const_iterator it = GetBases ().find (base);
                 return it != GetBases ().end () &&
@@ -90,9 +89,8 @@ namespace thekogans {
             return false;
         }
 
-        bool DynamicCreatable::IsKindOf (const char *type) const noexcept {
-            return (THEKOGANS_UTIL_LIKELY (type == Type ()) || std::strcmp (type, Type ()) == 0) ||
-                IsDerivedFrom (type);
+        bool DynamicCreatable::IsKindOf (const HashedString &type) const noexcept {
+            return Type () == type || IsDerivedFrom (type);
         }
 
         DynamicCreatable::BaseMapType &DynamicCreatable::GetBases () {
@@ -100,7 +98,7 @@ namespace thekogans {
             return bases;
         }
 
-        void DynamicCreatable::DumpBase (const char *base) {
+        void DynamicCreatable::DumpBase (const HashedString &base) {
             BaseMapType::const_iterator it;
             BaseMapType::const_iterator end;
             if (base != nullptr) {

@@ -644,7 +644,7 @@ namespace thekogans {
                     size += id.Size ();
                 }
                 else {
-                    size += Size (header.type);
+                    size += header.type.Size ();
                 }
             }
             if (context.NeedVersion ()) {
@@ -663,7 +663,7 @@ namespace thekogans {
                     *this << dictionary->GetOrCreateTypeId (header.type);
                 }
                 else {
-                    *this << std::string (header.type);
+                    *this << header.type;
                 }
             }
             if (context.NeedVersion ()) {
@@ -684,9 +684,9 @@ namespace thekogans {
                     header.type = dictionary->ResolveTypeId (id);
                 }
                 else {
-                    std::string type;
+                    HashedString type;
                     *this >> type;
-                    header.type = Serializable::TypeForType (type.c_str ());
+                    header.type = Serializable::TypeForType (type);
                 }
             }
             else {

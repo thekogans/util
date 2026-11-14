@@ -45,18 +45,18 @@ namespace thekogans {
                     return it != hashMap.end () ? it->second : None;
                 }
 
-                virtual const char *ResolveTypeId (IdType id) noexcept override {
+                virtual const HashedString &ResolveTypeId (IdType id) noexcept override {
                     if (id > MaxReservedId) {
-                        return "";
+                        return HashedString::Empty;
                     }
                     id -= FirstSystemId;
-                    return id < types.size () ? types[id] : "";
+                    return id < types.size () ? types[id] : HashedString::Empty;
                 }
             };
         }
 
         DynamicCreatable::TypeDictionary::IdType TransactedFileTypeDictionary::GetOrCreateTypeId (const HashedString &type) {
-            if (THEKOGANS_UTIL_UNLIKELY (*type.str == '\0')) {
+            if (THEKOGANS_UTIL_UNLIKELY (type.empty ())) {
                 return None;
             }
             IdType id = SystemTypeDictionary::Instance ()->GetOrCreateTypeId (type);
@@ -72,7 +72,7 @@ namespace thekogans {
             return id;
         }
 
-        const char *TransactedFileTypeDictionary::ResolveTypeId (IdType id) {
+        const HashedString &TransactedFileTypeDictionary::ResolveTypeId (IdType id) {
             if (THEKOGANS_UTIL_UNLIKELY (id < FirstUserId)) {
                 return SystemTypeDictionary::Instance ()->ResolveTypeId (id);
             }
@@ -84,7 +84,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             std::size_t size = UI32_SIZE + SizeT (types.size ()).Size ();
             for (const auto &type : types) {
-                size += Serializer::Size (std::string (type));
+                size += type.Size ();
             }
             return size;
         }
@@ -100,9 +100,9 @@ namespace thekogans {
                 serializer >> count;
                 types.resize (count);
                 for (std::size_t i = 0; i < count; ++i) {
-                    std::string type;
+                    HashedString type;
                     serializer  >> type;
-                    types[i] = DynamicCreatable::TypeForType (type.c_str ());
+                    types[i] = Serializable::TypeForType (type);
                     hashMap[types[i]] = FirstUserId + i;
                 }
             }
@@ -117,7 +117,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             serializer << MAGIC32 << SizeT (types.size ());
             for (const auto &type : types) {
-                serializer << std::string (type);
+                serializer << type;
             }
         }
 

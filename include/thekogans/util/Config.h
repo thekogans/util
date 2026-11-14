@@ -77,14 +77,34 @@
     #define THEKOGANS_UTIL_PACKED(x) x __attribute__ ((packed))
 #endif // defined (TOOLCHAIN_OS_Windows)
 
+#if defined (__clang__) || defined (__GNUC__)
+    #define THEKOGANS_UTIL_LIKELY(x)   (__builtin_expect (!!(x), 1))
+    #define THEKOGANS_UTIL_UNLIKELY(x) (__builtin_expect (!!(x), 0))
+#elif defined (_MSC_VER) && (_MSVC_LANG >= 202002L) // C++20 attribute fallback for newer MSVC
+    #define THEKOGANS_UTIL_LIKELY(x)   (x) [[likely]]
+    #define THEKOGANS_UTIL_UNLIKELY(x) (x) [[unlikely]]
+#else
+    #define THEKOGANS_UTIL_LIKELY(x)   (x)
+    #define THEKOGANS_UTIL_UNLIKELY(x) (x)
+#endif
+
 #if defined (THEKOGANS_UTIL_CONFIG_Debug)
+    namespace thekogans {
+        namespace util {
+            _LIB_THEKOGANS_UTIL_DECL std::string FormatString (
+                const char *format,
+                ...);
+        } // namespace util
+    } // namespace thekogans
+
     /// \def THEKOGANS_UTIL_ASSERT(condition, message)
     /// A more capable replacement for assert.
-    #define THEKOGANS_UTIL_ASSERT(condition, message)\
+    #define THEKOGANS_UTIL_ASSERT(condition, format, ...)\
         do {\
-            if (!(condition)) {\
+            if (THEKOGANS_UTIL_UNLIKELY (!(condition))) {\
                 std::cerr << "Assertion `" #condition "` failed in " << __FILE__ <<\
-                    " line " << __LINE__ << ": " << message << std::endl;\
+                    " line " << __LINE__ << ": " <<\
+                    thekogans::util::FormatString (format, ##__VA_ARGS__) << std::endl;\
                 std::exit (EXIT_FAILURE);\
             }\
         } while (false)
@@ -104,7 +124,7 @@
         #define THEKOGANS_UTIL_DEBUG_BREAK
     #endif // defined (THEKOGANS_UTIL_BREAK_ON_THROW)
 #else // defined (THEKOGANS_UTIL_CONFIG_Debug)
-    #define THEKOGANS_UTIL_ASSERT(condition, message) do {} while (false)
+    #define THEKOGANS_UTIL_ASSERT(condition, format, ...) do {} while (false)
     #define THEKOGANS_UTIL_DEBUG_BREAK
 #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
 
@@ -146,17 +166,6 @@ public:\
 #define THEKOGANS_UTIL_DEFAULT_MOVE_AND_ASSIGN(_T)\
     _T (_T &&) = default;\
     _T &operator = (_T &&) = default;
-
-#if defined (__clang__) || defined (__GNUC__)
-    #define THEKOGANS_UTIL_LIKELY(x)   (__builtin_expect (!!(x), 1))
-    #define THEKOGANS_UTIL_UNLIKELY(x) (__builtin_expect (!!(x), 0))
-#elif defined (_MSC_VER) && (_MSVC_LANG >= 202002L) // C++20 attribute fallback for newer MSVC
-    #define THEKOGANS_UTIL_LIKELY(x)   (x) [[likely]]
-    #define THEKOGANS_UTIL_UNLIKELY(x) (x) [[unlikely]]
-#else
-    #define THEKOGANS_UTIL_LIKELY(x)   (x)
-    #define THEKOGANS_UTIL_UNLIKELY(x) (x)
-#endif
 
 namespace thekogans {
     namespace util {

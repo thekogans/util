@@ -93,8 +93,10 @@ namespace thekogans {
         void TransactedFile::Object::Init (
                 TransactedFile::SharedPtr file_,
                 AddressType offset_) {
-            THEKOGANS_UTIL_ASSERT (file == nullptr, "TransactedFile::Object::Init called on an already initialized object.");
-            THEKOGANS_UTIL_ASSERT (file_ != nullptr, "TransactedFile::Object::Init called with nullptr TransactedFile.");
+            THEKOGANS_UTIL_ASSERT (file == nullptr,
+                "TransactedFile::Object::Init called on an already initialized object.");
+            THEKOGANS_UTIL_ASSERT (file_ != nullptr,
+                "TransactedFile::Object::Init called with nullptr TransactedFile.");
             file = file_;
             offset = offset_;
             header.type = Type ();

@@ -215,15 +215,13 @@ namespace thekogans {
                 const TimeSpec &timeSpec2) {
         #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec1.seconds,
-                    timeSpec1.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec1.seconds,
+                timeSpec1.nanoseconds);
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec2),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec2.seconds,
-                    timeSpec2.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec2.seconds,
+                timeSpec2.nanoseconds);
         #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             return
                 timeSpec1 == TimeSpec::Infinite ? false :
@@ -238,15 +236,13 @@ namespace thekogans {
                 const TimeSpec &timeSpec2) {
         #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec1.seconds,
-                    timeSpec1.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec1.seconds,
+                timeSpec1.nanoseconds);
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec2),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec2.seconds,
-                    timeSpec2.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec2.seconds,
+                timeSpec2.nanoseconds);
         #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             return
                 timeSpec2 == TimeSpec::Infinite ? false :
@@ -298,15 +294,13 @@ namespace thekogans {
                 const TimeSpec &timeSpec2) {
         #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec1.seconds,
-                    timeSpec1.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec1.seconds,
+                timeSpec1.nanoseconds);
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec2),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec2.seconds,
-                    timeSpec2.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec2.seconds,
+                timeSpec2.nanoseconds);
         #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             return
                 timeSpec1 == TimeSpec::Infinite || timeSpec2 == TimeSpec::Infinite ?
@@ -338,15 +332,13 @@ namespace thekogans {
                 const TimeSpec &timeSpec2) {
         #if defined (THEKOGANS_UTIL_CONFIG_Debug)
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec1),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec1.seconds,
-                    timeSpec1.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec1.seconds,
+                timeSpec1.nanoseconds);
             THEKOGANS_UTIL_ASSERT (IsNormalized (timeSpec2),
-                FormatString (
-                    THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
-                    timeSpec2.seconds,
-                    timeSpec2.nanoseconds));
+                THEKOGANS_UTIL_I64_FORMAT ":" THEKOGANS_UTIL_I32_FORMAT,
+                timeSpec2.seconds,
+                timeSpec2.nanoseconds);
         #endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
             if (timeSpec1.seconds < timeSpec2.seconds) {
                 return TimeSpec::Zero;

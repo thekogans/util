@@ -170,80 +170,56 @@ namespace thekogans {
         /// Declare DynamicCreatable::TYPE. This macro is usually private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE(_T)\
         public:\
-            static const char * const TYPE;
+        static const thekogans::util::HashedString TYPE;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE(_T)
         /// Implement DynamicCreatable::TYPE. This macro is usually private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE(_T)\
-            const char * const _T::TYPE = #_T;
+            const thekogans::util::HashedString _T::TYPE{#_T};
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type(_T)
         /// Declare DynamicCreatable::Type. This macro is usually private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type(_T)\
         public:\
-            virtual const char *Type () const noexcept override;
+            virtual const thekogans::util::HashedString &Type () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type(_T)
         /// Implement DynamicCreatable::Type. This macro is usually private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type(_T)\
-            const char *_T::Type () const noexcept {\
+            const thekogans::util::HashedString &_T::Type () const noexcept {\
                 return TYPE;\
-            }
-
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE_KEY(_T)
-        /// Declare DynamicCreatable::TYPE_KEY. This macro is usually private.
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE_KEY(_T)\
-        public:\
-            static const thekogans::util::HashedString TYPE_KEY;
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE_KEY(_T)
-        /// Implement DynamicCreatable::TYPE_KEY. This macro is usually private.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE_KEY(_T)\
-            const thekogans::util::HashedString _T::TYPE_KEY (_T::TYPE);
-
-        /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TypeKey(_T)
-        /// Declare DynamicCreatable::TypeKey. This macro is usually private.
-        #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TypeKey(_T)\
-        public:\
-            virtual const thekogans::util::HashedString &TypeKey () const noexcept override;
-
-        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TypeKey(_T)
-        /// Implement DynamicCreatable::TypeKey. This macro is usually private.
-        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TypeKey(_T)\
-            const thekogans::util::HashedString &_T::TypeKey () const noexcept {\
-                return TYPE_KEY;\
             }
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES(_T)
         /// Declare the DynamicCreatable::BASES array. This macro is private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES(_T)\
         public:\
-            static const char * const BASES[];
+            static const thekogans::util::HashedString BASES[];
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN(_T)
         /// Used to start the creation of DynamicCreatable::BASES array. This
         /// macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN(_T)\
-            const char * const _T::BASES[] = {
+            const thekogans::util::HashedString _T::BASES[] = {
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END(_T)
         /// Used to end the creation of DynamicCreatable bases array. A list
         /// of bases would go between the above and this macro. This
         /// macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END(_T)\
-                nullptr\
+                thekogans::util::HashedString ()\
             };
 
         /// \def THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases(_T)
         /// Declare DynamicCreatable::Bases. This macro is usually private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases(_T)\
         public:\
-            virtual const char * const *Bases () const noexcept override;
+            virtual const thekogans::util::HashedString *Bases () const noexcept override;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases(_T)
         /// Implement DynamicCreatable::Bases. This macro is usually private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Bases(_T)\
-            const char * const *_T::Bases () const noexcept {\
+            const thekogans::util::HashedString *_T::Bases () const noexcept {\
                 return BASES;\
             }
 
@@ -253,8 +229,6 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE(_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE_KEY (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TypeKey (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Bases (_T)
 
@@ -264,8 +238,6 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE(_T, ...)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE_KEY (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TypeKey (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
                 ##__VA_ARGS__,\
@@ -282,10 +254,6 @@ namespace thekogans {
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
             template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE_KEY (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TypeKey (_T)\
-            template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (_T)\
                 thekogans::util::DynamicCreatable::TYPE,\
                 ##__VA_ARGS__,\
@@ -298,12 +266,14 @@ namespace thekogans {
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
         public:\
             static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes () noexcept;\
-            static bool IsType (const char *type) noexcept;\
-            static const char *TypeForType (const thekogans::util::HashedString &type) noexcept;\
-            static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (const char *type) noexcept;\
+            static bool IsType (const thekogans::util::HashedString &type) noexcept;\
+            static const thekogans::util::HashedString &TypeForType (\
+                const thekogans::util::HashedString &type) noexcept;\
+            static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (\
+                const thekogans::util::HashedString &type) noexcept;\
             static _T::SharedPtr CreateType (\
-                const char *type,\
-                thekogans::util::DynamicCreatable::ParametersType parameters = nullptr) noexcept;
+                const thekogans::util::HashedString &type,\
+                thekogans::util::DynamicCreatable::ParametersType parameters = nullptr);
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)
         /// Implement base type GetTypes.
@@ -321,21 +291,21 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE(_T)
         /// Implement base type IsType. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE(_T)\
-            bool _T::IsType (const char *type) noexcept {\
-                return type != nullptr && GetTypes ().find (type) != GetTypes ().end ();\
+            bool _T::IsType (const thekogans::util::HashedString &type) noexcept {\
+                return GetTypes ().find (type) != GetTypes ().end ();\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_TYPE_FOR_TYPE(_T)
         /// Implement base type TypeForType. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_TYPE_FOR_TYPE(_T)\
-            const char *_T::TypeForType (const thekogans::util::HashedString &type) noexcept {\
-                if (THEKOGANS_UTIL_LIKELY (*type.str != '\0')) {\
+            const thekogans::util::HashedString &_T::TypeForType (const thekogans::util::HashedString &type) noexcept {\
+                if (THEKOGANS_UTIL_LIKELY (!type.empty ())) {\
                     auto it = GetTypes ().find (type);\
                     if (THEKOGANS_UTIL_LIKELY (it != GetTypes ().end ())) {\
-                        return it->first.str;\
+                        return it->first;\
                     }\
                 }\
-                return "";\
+                return HashedString::Empty;\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY(_T)
@@ -344,13 +314,11 @@ namespace thekogans {
         /// an unordered_map lookup. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY(_T)\
             thekogans::util::DynamicCreatable::FactoryType _T::GetTypeFactory (\
-                    const char *type) noexcept {\
-                if (type != nullptr) {\
-                    thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
-                        GetTypes ().find (type);\
-                    if (it != GetTypes ().end ()) {\
-                        return it->second;\
-                    }\
+                    const thekogans::util::HashedString &type) noexcept {\
+                thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
+                    GetTypes ().find (type);\
+                if (it != GetTypes ().end ()) {\
+                    return it->second;\
                 }\
                 return thekogans::util::DynamicCreatable::FactoryType ();\
             }
@@ -359,14 +327,12 @@ namespace thekogans {
         /// Implement base type CreateType. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE(_T)\
             _T::SharedPtr _T::CreateType (\
-                    const char *type,\
-                    thekogans::util::DynamicCreatable::ParametersType parameters) noexcept {\
-                if (type != nullptr) {\
-                    thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
-                        GetTypes ().find (type);\
-                    if (it != GetTypes ().end ()) {\
-                        return it->second (parameters);\
-                    }\
+                    const thekogans::util::HashedString &type,\
+                    thekogans::util::DynamicCreatable::ParametersType parameters) {\
+                thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
+                    GetTypes ().find (type);\
+                if (it != GetTypes ().end ()) {\
+                    return it->second (parameters);\
                 }\
                 return nullptr;\
             }
@@ -438,8 +404,6 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TYPE_KEY (_T)\
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TypeKey (_T)\
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS (_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE(_T)
@@ -463,8 +427,6 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE_KEY (_T)\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TypeKey (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_ABSTRACT_BASE_T(_T)
@@ -474,10 +436,6 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_Type (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TYPE_KEY (_T)\
-            template<>\
-            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_TypeKey (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS_T (_T)
 
         /// \struct DynamicCreatableBase DynamicCreatable.h thekogans/util/DynamicCreatable.h
@@ -490,15 +448,14 @@ namespace thekogans {
             /// dynamically identify themselves. Its what makes them
             /// dinamically creatable.
             /// \return TYPE.
-            virtual const char *Type () const noexcept = 0;
-            virtual const HashedString &TypeKey () const noexcept = 0;
+            virtual const HashedString &Type () const noexcept = 0;
 
             /// \brief
             /// Return the list of base types (ancestors).
             /// DynamicCreatable derived types will have at least one
             /// base (see \see{DynamicCreatable}).
             /// \return BASES.
-            virtual const char * const *Bases () const noexcept = 0;
+            virtual const HashedString *Bases () const noexcept = 0;
         };
 
         /// \struct DynamicCreatable DynamicCreatable.h thekogans/util/DynamicCreatable.h
@@ -558,19 +515,19 @@ namespace thekogans {
                 static constexpr IdType FirstUserId = MaxReservedId + 1;
 
                 virtual IdType GetOrCreateTypeId (const HashedString &type) = 0;
-                virtual const char *ResolveTypeId (IdType id) = 0;
+                virtual const HashedString &ResolveTypeId (IdType id) = 0;
             };
 
             struct _LIB_THEKOGANS_UTIL_DECL DefaultTypeDictionary : public TypeDictionary {
             protected:
                 /// \brief
-                std::vector<const char *> types;
+                std::vector<HashedString> types;
                 using HashMapType = std::unordered_map<HashedString, IdType, HashedString::Hash, HashedString::EqualTo>;
                 HashMapType hashMap;
 
             public:
                 virtual IdType GetOrCreateTypeId (const HashedString &type) override;
-                virtual const char *ResolveTypeId (IdType id) override;
+                virtual const HashedString &ResolveTypeId (IdType id) override;
             };
 
             /// \brief
@@ -605,8 +562,8 @@ namespace thekogans {
                 /// \param[in] type DynamicCreatable type (it's class name).
                 /// \param[in] factory DynamicCreatable creation factory.
                 BaseMapInitializer (
-                    const char * const bases[],
-                    const char *type,
+                    const HashedString bases[],
+                    const HashedString &type,
                     FactoryType factory);
             };
         #endif // defined (THEKOGANS_UTIL_TYPE_Shared)
@@ -620,13 +577,13 @@ namespace thekogans {
             /// has nothing to do with it.
             /// \param[in] base Type to check for base.
             /// \return true == this type is derived from the given base.
-            bool IsDerivedFrom (const char *base) const noexcept;
+            bool IsDerivedFrom (const HashedString &base) const noexcept;
             /// \brief
             /// Return true if this is type of type or is derived from type.
             /// See the comment for IsDerivedFrom.
             /// \param[in] type Type to check for kind.
             /// \return TYPE == type or IsDerivedFrom (type).
-            bool IsKindOf (const char *type) const noexcept;
+            bool IsKindOf (const HashedString &type) const noexcept;
 
             /// \brief
             /// Return the reference to the base map.
@@ -638,7 +595,7 @@ namespace thekogans {
             /// Use this to take a look inside your map when debugging.
             /// \param[in] base Optional base whos type map to prity print.
             /// If nullptr, print all bases.
-            static void DumpBase (const char *base = nullptr);
+            static void DumpBase (const HashedString &base = HashedString ());
         };
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -654,8 +611,8 @@ namespace thekogans {
             void _T::StaticInit () {\
                 thekogans::util::DynamicCreatable::BaseMapType &baseMap =\
                     thekogans::util::DynamicCreatable::GetBases ();\
-                const char * const *bases = _T::BASES;\
-                while (*bases != nullptr) {\
+                const HashedString const *bases = _T::BASES;\
+                while (*bases != HashedString ()) {\
                     baseMap[*bases++][_T::TYPE] = _T::Create;\
                 }\
             }

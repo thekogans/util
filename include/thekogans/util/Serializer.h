@@ -219,7 +219,6 @@ namespace thekogans {
             static constexpr std::size_t Size (Endianness /*value*/) {
                 return ENDIANNESS_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{Endianness}. It will be written as a single \see{ui8}.
             /// \param[in] value \see{Endianness} to serialize.
@@ -238,7 +237,6 @@ namespace thekogans {
             static constexpr std::size_t Size (bool /*value*/) {
                 return BOOL_SIZE;
             }
-
             /// \brief
             /// Serialize a bool. It will be written as a single \see{ui8}.
             /// 1 = true, 0 = false.
@@ -259,6 +257,7 @@ namespace thekogans {
             static constexpr std::size_t Size (char /*value*/) {
                 return CHAR_SIZE;
             }
+
             /// \brief
             /// Return serialized size of wchar_t.
             /// \param[in] value wchar_t whose size to return.
@@ -266,7 +265,6 @@ namespace thekogans {
             static constexpr std::size_t Size (wchar_t /*value*/) {
                 return WCHAR_T_SIZE;
             }
-
             /// \brief
             /// Serialize a wchar_t.
             /// \param[in] value wchar_t to serialize.
@@ -283,7 +281,6 @@ namespace thekogans {
             /// \param[in] value c-string whose size to return.
             /// \return Serialized size of c-string.
             static std::size_t Size (const char *value);
-
             /// \brief
             /// Serialize a c-string.
             /// \param[in] value c-string to serialize.
@@ -302,7 +299,6 @@ namespace thekogans {
             static std::size_t Size (const std::string &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
-
             /// \brief
             /// Serialize a std::string.
             /// \param[in] value Value to serialize.
@@ -319,7 +315,6 @@ namespace thekogans {
             /// \param[in] value Wide c-string whose size to return.
             /// \return Serialized size of wide c-string.
             static std::size_t Size (const wchar_t *value);
-
             /// \brief
             /// Serialize a wide c-string.
             /// \param[in] value Wide c-string to serialize.
@@ -338,7 +333,6 @@ namespace thekogans {
             static std::size_t Size (const std::wstring &value) {
                 return SizeT (value.size ()).Size () + value.size () * WCHAR_T_SIZE;
             }
-
             /// \brief
             /// Serialize a std::wstring.
             /// \param[in] value Value to serialize.
@@ -358,7 +352,6 @@ namespace thekogans {
             static std::size_t Size (const SecureString &value) {
                 return SizeT (value.size ()).Size () + value.size ();
             }
-
             /// \brief
             /// Serialize a \see{SecureString}.
             /// \param[in] value \see{SecureString} to serialize.
@@ -378,7 +371,6 @@ namespace thekogans {
             static constexpr std::size_t Size (i8 /*value*/) {
                 return I8_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{i8}.
             /// \param[in] value \see{i8} to serialize.
@@ -397,7 +389,6 @@ namespace thekogans {
             static constexpr std::size_t Size (ui8 /*value*/) {
                 return UI8_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{ui8}.
             /// \param[in] value \see{ui8} to serialize.
@@ -416,7 +407,6 @@ namespace thekogans {
             static constexpr std::size_t Size (i16 /*value*/) {
                 return I16_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{i16}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -437,7 +427,6 @@ namespace thekogans {
             static constexpr std::size_t Size (ui16 /*value*/) {
                 return UI16_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{ui16}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -458,7 +447,6 @@ namespace thekogans {
             static constexpr std::size_t Size (i32 /*value*/) {
                 return I32_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{i32}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -479,7 +467,6 @@ namespace thekogans {
             static constexpr std::size_t Size (ui32 /*value*/) {
                 return UI32_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{ui32}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -500,7 +487,6 @@ namespace thekogans {
             static constexpr std::size_t Size (i64 /*value*/) {
                 return I64_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{i64}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -521,7 +507,6 @@ namespace thekogans {
             static constexpr std::size_t Size (ui64 /*value*/) {
                 return UI64_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{ui64}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -542,7 +527,6 @@ namespace thekogans {
             static std::size_t Size (ui128 /*value*/) {
                 return UI128_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{ui128}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -563,7 +547,6 @@ namespace thekogans {
             static constexpr std::size_t Size (f32 /*value*/) {
                 return F32_SIZE;
             }
-
             /// \brief
             /// Serialize an \see{f32}. endianness is used to properly
             /// convert between serializer and host byte order.
@@ -596,6 +579,22 @@ namespace thekogans {
             /// \param[out] value Where to place the extracted \see{f64}.
             /// \return *this.
             Serializer &operator >> (f64 &value);
+
+            inline std::size_t Size (const HashedString &value) noexcept {
+                return value.Size ();
+            }
+            inline Serializer &operator << (const HashedString &value) {
+                *this << std::string (value.str) << ui64 (value.hash);
+                return *this;
+            }
+            inline Serializer &operator >> (HashedString &value) {
+                std::string str;
+                ui64 hash = 0;
+                *this >> str >> hash;
+                value = DynamicCreatable::TypeForType (
+                    HashedString (str.c_str (), static_cast<std::size_t> (hash)));
+                return *this;
+            }
 
             std::size_t Size (const TimeSpec &timeSpec) const noexcept;
             Serializer &operator << (const TimeSpec &timeSpec);

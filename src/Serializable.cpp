@@ -49,13 +49,8 @@ namespace thekogans {
             return serializer.Size (header) + (serializer.context.NeedSize () ? header.size : serializer.context.size);
         }
 
-        const char *Blob::Type () const noexcept {
+        const HashedString &Blob::Type () const noexcept {
             return header.type;
-        }
-
-        const HashedString &Blob::TypeKey () const noexcept {
-            static const HashedString hashedString (header.type);
-            return hashedString;
         }
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (Blob)
@@ -102,7 +97,7 @@ namespace thekogans {
                 Serializable &serializable) {
             SerializableHeader header;
             serializer >> header;
-            if (THEKOGANS_UTIL_UNLIKELY (!header.IsSameType (serializable.Type ()))) {
+            if (THEKOGANS_UTIL_UNLIKELY (header.type != serializable.Type ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Header type (%s) does not match Serializable type (%s).",
                     header.type,
@@ -157,7 +152,7 @@ namespace thekogans {
         bool ValueParser<Serializable>::ParseValue (Serializer &serializer) {
             if (state == STATE_HEADER) {
                 if (headerParser.ParseValue (serializer)) {
-                    if (header.IsSameType (value.Type ())) {
+                    if (header.type == value.Type ()) {
                         if (header.size > 0 && header.size <= maxSerializableSize) {
                             THEKOGANS_UTIL_TRY {
                                 payload.Resize (header.size);

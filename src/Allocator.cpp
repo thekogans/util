@@ -55,11 +55,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         std::string Allocator::GetSerializedType () const {
-            const char *type = Type ();
-            if (CreateType (type) == nullptr) {
-                type = DefaultAllocator::TYPE;
-            }
-            return type;
+            return CreateType (Type ()) != nullptr ? Type ().str : DefaultAllocator::TYPE.str;
         }
 
     } // namespace util

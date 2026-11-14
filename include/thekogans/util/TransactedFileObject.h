@@ -135,7 +135,7 @@ public:
         /// \param[in] type DynamicCreatable type (it's class name).
         /// \param[in] deleter DynamicCreatable creation factory.
         DeleterMapInitializer (
-                const char *type,
+                const HashedString &type,
                 DeleterType deleter) {
             DeleterMapType &deleterMap = GetDeleters ();
             deleterMap[type] = deleter;
@@ -237,7 +237,7 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
                 expecting.type, offset);
         }
         *this >> context;
-        if (!expecting.NeedType () && !context.IsSameType (expecting.type)) {
+        if (!expecting.NeedType () && context.type != expecting.type) {
             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                 "Invalid TransactedFile::Object header type: %s, expecting: %s @" THEKOGANS_UTIL_UI64_FORMAT,
                 context.type, expecting.type, offset);

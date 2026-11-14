@@ -26,6 +26,7 @@
 #include "thekogans/util/Environment.h"
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/SizeT.h"
 #include "thekogans/util/Constants.h"
 
 namespace thekogans {
@@ -347,8 +348,9 @@ namespace thekogans {
         /// Return a hash of the string.
         /// \param[in] str String to hash.
         /// \return String hash.
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
-            const std::string &str);
+        constexpr std::size_t HashString (const std::string &str) {
+            return HashString (str.data (), str.size ());
+        }
 
         struct HashedString {
             const char *str;
@@ -363,6 +365,8 @@ namespace thekogans {
                 std::size_t hash_) noexcept :
                 str (str_ != nullptr ? str_ : ""),
                 hash (hash_) {}
+
+            static const HashedString Empty;
 
             struct Hash {
                 std::size_t operator () (const HashedString &key) const noexcept {
@@ -379,6 +383,24 @@ namespace thekogans {
                             std::strcmp (lhs.str, rhs.str) == 0);
                 }
             };
+
+            inline std::size_t Size () const noexcept {
+                std::size_t size = std::strlen (str);
+                return SizeT (size).Size () + size + UI64_SIZE;
+            }
+
+            constexpr bool empty () const noexcept {
+                return *str == '\0';
+            }
+            constexpr const char *c_str () const noexcept {
+                return str;
+            }
+            inline bool operator == (const HashedString &other) const noexcept {
+                return EqualTo () (*this, other);
+            }
+            inline bool operator != (const HashedString &other) const noexcept {
+                return !(*this == other);
+            }
         };
 
         /// \brief

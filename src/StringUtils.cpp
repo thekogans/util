@@ -38,6 +38,8 @@
 namespace thekogans {
     namespace util {
 
+        const HashedString HashedString::Empty;
+
         _LIB_THEKOGANS_UTIL_DECL void _LIB_THEKOGANS_UTIL_API CopyString (
                 char *destination,
                 std::size_t destinationLength,
@@ -486,11 +488,6 @@ namespace thekogans {
                 const std::string &str,
                 bool upperCase) {
             return HexFormatBuffer (str.data (), str.size (), upperCase);
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
-                const std::string &str) {
-            return HashString (str.data (), str.size ());
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::string _LIB_THEKOGANS_UTIL_API GetLongestCommonPrefix (

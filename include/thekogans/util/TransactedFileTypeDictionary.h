@@ -50,7 +50,7 @@ namespace thekogans {
 
         public:
             virtual IdType GetOrCreateTypeId (const HashedString &type) override;
-            virtual const char *ResolveTypeId (IdType id) override;
+            virtual const HashedString &ResolveTypeId (IdType id) override;
 
         protected:
             // Serializable

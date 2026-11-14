@@ -41,7 +41,7 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SerializableHeader {
             /// \brief
             /// Serializable type (see \see{DynamicCreatable::Type}).
-            const char *type{""};
+            HashedString type;
             /// \brief
             /// \see{Serializable} version.
             SizeT version{0};
@@ -53,7 +53,7 @@ namespace thekogans {
             /// Return true if type is empty.
             /// \return type.empty ().
             inline bool NeedType () const noexcept {
-                return *type == '\0';
+                return type.empty ();
             }
             /// \brief
             /// Return true if version is 0.
@@ -80,10 +80,6 @@ namespace thekogans {
             inline bool IsFull () const {
                 return !NeedType () && !NeedVersion () && !NeedSize ();
             }
-
-            inline bool IsSameType (const char *type_) const noexcept {
-                return THEKOGANS_UTIL_LIKELY (type == type_) || std::strcmp (type, type_) == 0;
-            }
         };
 
         /// \brief
@@ -94,11 +90,8 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const SerializableHeader &header1,
                 const SerializableHeader &header2) noexcept {
-            if (THEKOGANS_UTIL_LIKELY (header1.type == header2.type)) {
-                return header1.version == header2.version && header1.size == header2.size;
-            }
             return
-                std::strcmp (header1.type, header2.type) == 0 &&
+                header1.type == header2.type &&
                 header1.version == header2.version &&
                 header1.size == header2.size;
         }
