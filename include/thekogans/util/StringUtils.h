@@ -332,15 +332,54 @@ namespace thekogans {
         /// \param[in] str String to hash.
         /// \param[in] length String length.
         /// \return String hash.
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
-            const char *str,
-            std::size_t length = SIZE_T_MAX);
+        constexpr std::size_t HashString (
+                const char *str,
+                std::size_t length = SIZE_T_MAX) {
+            std::size_t hash = 5381;
+            if (str != nullptr) {
+                while (*str != '\0' && length-- > 0) {
+                    hash = ((hash << 5) + hash) ^ *str++; // hash * 33 ^ *str
+                }
+            }
+            return hash;
+        }
         /// \brief
         /// Return a hash of the string.
         /// \param[in] str String to hash.
         /// \return String hash.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
             const std::string &str);
+
+        struct HashedString {
+            const char *str;
+            std::size_t hash;
+
+            constexpr HashedString (const char *str_ = "") noexcept :
+                str (str_ != nullptr ? str_ : ""),
+                hash (HashString (str)) {}
+
+            constexpr HashedString (
+                const char *str_,
+                std::size_t hash_) noexcept :
+                str (str_ != nullptr ? str_ : ""),
+                hash (hash_) {}
+
+            struct Hash {
+                std::size_t operator () (const HashedString &key) const noexcept {
+                    return key.hash;
+                }
+            };
+
+            struct EqualTo {
+                bool operator () (
+                        const HashedString &lhs,
+                        const HashedString &rhs) const noexcept {
+                    return lhs.hash == rhs.hash &&
+                        (THEKOGANS_UTIL_LIKELY (lhs.str == rhs.str) ||
+                            std::strcmp (lhs.str, rhs.str) == 0);
+                }
+            };
+        };
 
         /// \brief
         /// Given a list of strings, return the longest common prefix.

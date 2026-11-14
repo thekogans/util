@@ -489,22 +489,6 @@ namespace thekogans {
         }
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
-                const char *str,
-                std::size_t length) {
-            if (str != nullptr && length > 0) {
-                std::size_t hash = 5381;
-                while (*str != '\0' && length-- > 0) {
-                    hash = ((hash << 5) + hash) ^ *str++; // hash * 33 ^ *str
-                }
-                return hash;
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
-            }
-        }
-
-        _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API HashString (
                 const std::string &str) {
             return HashString (str.data (), str.size ());
         }

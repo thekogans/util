@@ -57,17 +57,19 @@ namespace thekogans {
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
-        DynamicCreatable::TypeDictionary::IdType DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (const char *type) {
-            if (THEKOGANS_UTIL_UNLIKELY (*type == '\0')) {
+        DynamicCreatable::TypeDictionary::IdType DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (const HashedString &type) {
+            const char *canonicalType = DynamicCreatable::TypeForType (type);
+            if (THEKOGANS_UTIL_UNLIKELY (*canonicalType == '\0')) {
                 return None;
             }
-            auto it = hashMap.find (type);
-            if (it != hashMap.end ()) {
+            HashedString key (canonicalType, type.hash);
+            auto it = hashMap.find (key);
+            if (THEKOGANS_UTIL_LIKELY (it != hashMap.end ())) {
                 return it->second;
             }
-            IdType id = types.size ();
-            types.push_back (type);
-            hashMap[type] = FirstUserId + id;
+            IdType id = static_cast<IdType> (types.size ());
+            types.push_back (canonicalType);
+            hashMap.emplace (key, FirstUserId + id);
             return FirstUserId + id;
         }
 
@@ -89,8 +91,8 @@ namespace thekogans {
         }
 
         bool DynamicCreatable::IsKindOf (const char *type) const noexcept {
-            CharPtrEqual compare;
-            return type != nullptr && (compare (type, Type ()) || IsDerivedFrom (type));
+            return (THEKOGANS_UTIL_LIKELY (type == Type ()) || std::strcmp (type, Type ()) == 0) ||
+                IsDerivedFrom (type);
         }
 
         DynamicCreatable::BaseMapType &DynamicCreatable::GetBases () {
@@ -112,11 +114,11 @@ namespace thekogans {
                 end = GetBases ().end ();
             }
             for (; it != end; ++it) {
-                std::cout << it->first << ":" << std::endl;
+                std::cout << it->first.str << ":" << std::endl;
                 for (TypeMapType::const_iterator
                         jt = it->second.begin (),
                         end = it->second.end (); jt != end; ++jt) {
-                    std::cout << "  " << jt->first << std::endl;
+                    std::cout << "  " << jt->first.str << std::endl;
                 }
             }
         }

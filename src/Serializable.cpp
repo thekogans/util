@@ -53,6 +53,11 @@ namespace thekogans {
             return header.type;
         }
 
+        const HashedString &Blob::TypeKey () const noexcept {
+            static const HashedString hashedString (header.type);
+            return hashedString;
+        }
+
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (Blob)
             DynamicCreatable::TYPE,
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_END (Blob)

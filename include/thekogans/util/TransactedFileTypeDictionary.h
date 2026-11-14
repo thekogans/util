@@ -49,7 +49,7 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
-            virtual IdType GetOrCreateTypeId (const char *type) override;
+            virtual IdType GetOrCreateTypeId (const HashedString &type) override;
             virtual const char *ResolveTypeId (IdType id) override;
 
         protected:

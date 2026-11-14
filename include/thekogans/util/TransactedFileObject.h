@@ -107,7 +107,7 @@ public:
     /// \brief
     /// Maps type name to it's deleter method.
     using DeleterMapType = std::unordered_map<
-        const char *, DeleterType, CharPtrHash, CharPtrEqual>;
+        HashedString, DeleterType, HashedString::Hash, HashedString::EqualTo>;
 
     static DeleterMapType &GetDeleters () {
         static DeleterMapType deleters;

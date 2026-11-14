@@ -40,7 +40,7 @@ namespace thekogans {
                     }
                 }
 
-                virtual IdType GetOrCreateTypeId (const char *type) noexcept override {
+                virtual IdType GetOrCreateTypeId (const HashedString &type) noexcept override {
                     auto it = hashMap.find (type);
                     return it != hashMap.end () ? it->second : None;
                 }
@@ -55,18 +55,17 @@ namespace thekogans {
             };
         }
 
-        DynamicCreatable::TypeDictionary::IdType TransactedFileTypeDictionary::GetOrCreateTypeId (const char *type) {
-            const char *canonicalType = DynamicCreatable::TypeForType (type);
-            if (THEKOGANS_UTIL_UNLIKELY (*canonicalType == '\0')) {
+        DynamicCreatable::TypeDictionary::IdType TransactedFileTypeDictionary::GetOrCreateTypeId (const HashedString &type) {
+            if (THEKOGANS_UTIL_UNLIKELY (*type.str == '\0')) {
                 return None;
             }
-            IdType id = SystemTypeDictionary::Instance ()->GetOrCreateTypeId (canonicalType);
+            IdType id = SystemTypeDictionary::Instance ()->GetOrCreateTypeId (type);
             if (THEKOGANS_UTIL_UNLIKELY (id != None)) {
                 return id;
             }
             LockGuard<SpinLock> guard (spinLock);
             std::size_t size = types.size ();
-            id = DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (canonicalType);
+            id = DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (type);
             if (size != types.size ()) {
                 SetDirty ();
             }

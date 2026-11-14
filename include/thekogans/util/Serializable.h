@@ -316,6 +316,9 @@ namespace thekogans {
             /// Declare \see{DynamicCreatable} Type method.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_Type (Blob)
             /// \brief
+            /// Declare \see{DynamicCreatable} Type method.
+            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_TypeKey (Blob)
+            /// \brief
             /// Declare \see{DynamicCreatable} BASES list.
             THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASES (Blob)
             /// \brief
