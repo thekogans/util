@@ -72,30 +72,30 @@ protected:
     TransactedFile::SharedPtr file;
     /// \brief
     /// Our address inside the \see{TransactedFile}.
-    AddressType offset;
+    AddressType offset{0};
     SerializableHeader header;
     bool destroyed{false};
 
     friend struct ObjectRange;
 
 public:
-    //          file
     // -------+----------------+------------------+
-    // offset |   == nullptr   |   != nullptr     |
+    //  file  |   == nullptr   |   != nullptr     |
     // -------+----------------+------------------+
-    //  == 0  | an empty shell | brand new object |
-    //        | needs Init     | dirty on create  |
+    // offset | zombie state   | brand new object |
+    //  == 0  | ctor only.     | set dirty.       |
     // -------+----------------+------------------+
-    //  != 0  | harmless but   | a file backed    |
-    //        | stupid         | object           |
+    //        | error state    | a file backed    |
+    //  != 0  |                | object, reload.  |
     // -------+----------------+------------------+
-    Object (
-            TransactedFile::SharedPtr file_ = nullptr,
-            AddressType offset_ = 0) :
-            file (file_),
-            offset (offset_) {
-        THEKOGANS_UTIL_ASSERT (offset_ == 0 || file_ != nullptr,
-            "Invalid Object Construction: Non-zero physical offset provided without a valid TransactedFile.");
+    template<typename T, typename... Args>
+    static typename T::SharedPtr Create (
+            TransactedFile::SharedPtr file,
+            TransactedFile::AddressType offset,
+            Args&&... args) {
+        typename T::SharedPtr obj (new T (std::forward<Args> (args)...));
+        obj->Init (file, offset);
+        return obj;
     }
 
     /// \brief
@@ -172,7 +172,7 @@ public:
 
     virtual void Init (
         TransactedFile::SharedPtr file_,
-        AddressType offset_) noexcept;
+        AddressType offset_);
 
     /// \brief
     /// If needed allocate space from \see{TransactedFile::Allocator}.
@@ -212,10 +212,6 @@ protected:
             destroyed = true;
         }
     }
-
-    /// \brief
-    /// Object is neither copy constructable, nor assignable.
-    THEKOGANS_UTIL_DISALLOW_COPY_AND_ASSIGN (Object)
 };
 
 struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
@@ -238,19 +234,19 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
         if (magic != Object::MAGIC) {
             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                 "Corrupt TransactedFile::Object: %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                expecting.type.c_str (), offset);
+                expecting.type, offset);
         }
         *this >> context;
-        if (!expecting.NeedType () && context.type != expecting.type) {
+        if (!expecting.NeedType () && !context.IsSameType (expecting.type)) {
             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                 "Invalid TransactedFile::Object header type: %s, expecting: %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                context.type.c_str (), expecting.type.c_str (), offset);
+                context.type, expecting.type, offset);
         }
         if (!expecting.NeedVersion () && context.version > expecting.version) {
             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                 "Invalid TransactedFile::Object header version " THEKOGANS_UTIL_UI64_FORMAT
                 " for type: %s, expecting: " THEKOGANS_UTIL_UI64_FORMAT " @" THEKOGANS_UTIL_UI64_FORMAT,
-                context.version, context.type.c_str (), expecting.version, offset);
+                context.version, context.type, expecting.version, offset);
         }
     }
     ObjectRange (

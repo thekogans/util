@@ -37,11 +37,6 @@ namespace thekogans {
             /// IgnoreList is a \see{util::Serializable}
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (IgnoreList)
 
-            IgnoreList (
-                util::TransactedFile::SharedPtr file = nullptr,
-                util::TransactedFile::AddressType offset = 0) :
-                util::TransactedFile::Object (file, offset) {}
-
             /// \brief
             /// Add a new pattern to the list.
             /// \param[in] ignore Regular expression pattern to add.

@@ -51,27 +51,18 @@ namespace thekogans {
             Database (
                     const std::string &path = Options::Instance ()->dbPath,
                     bool secure = false,
-                    std::size_t allocatorEntriesPerNode =
-                        util::TransactedFileBTreeAllocatorBTree::DEFAULT_ENTRIES_PER_NODE,
+                    std::size_t allocatorEntriesPerNode = util::TransactedFileBTreeAllocatorBTree::DEFAULT_ENTRIES_PER_NODE,
                     bool registryValueIsObject = true,
-                    std::size_t registryEntriesPerNode =
-                        util::TransactedFileBTree::DEFAULT_ENTRIES_PER_NODE) :
+                    std::size_t registryEntriesPerNode = util::TransactedFileBTree::DEFAULT_ENTRIES_PER_NODE) :
                     file (util::TransactedFile::Open (path)) {
                 if (file == nullptr) {
                     file = util::TransactedFile::Create (
                         util::HostEndian,
                         path,
                         secure,
-                        new util::TransactedFileTypeDictionary (nullptr, 0),
-                        new util::TransactedFileBTreeAllocator (
-                            nullptr,
-                            0,
-                            allocatorEntriesPerNode),
-                        new util::TransactedFileBTreeRegistry (
-                            nullptr,
-                            0,
-                            registryValueIsObject,
-                            registryEntriesPerNode));
+                        new util::TransactedFileTypeDictionary,
+                        new util::TransactedFileBTreeAllocator (allocatorEntriesPerNode),
+                        new util::TransactedFileBTreeRegistry (registryValueIsObject, registryEntriesPerNode));
                 }
             }
 

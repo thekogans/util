@@ -276,6 +276,7 @@ namespace thekogans {
                 /// Return the serialized size of the header.
                 std::size_t Size (Serializer &serializer) const;
             } header;
+            std::size_t nodesPerPage;
             /// \brief
             /// Key and Value types are cast in stone (in the ctor).
             /// Since we're going to be creating a lot of keys and values
@@ -297,9 +298,7 @@ namespace thekogans {
                     public TransactedFile::Object,
                     public Subscriber<SerializableEvents>,
                     public Subscriber<TransactedFile::ObjectEvents> {
-                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Node)
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (Node)
-                THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (Node)
+                THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (Node)
 
                 /// \brief
                 /// TransactedFileBTree to which this node belongs.
@@ -355,10 +354,7 @@ namespace thekogans {
                 /// ctor.
                 /// \param[in] btree_ TransactedFileBTree to which this node belongs.
                 /// \param[in] offset Node offset on disk.
-                Node (
-                    TransactedFile::SharedPtr file = nullptr,
-                    TransactedFile::AddressType offset = 0,
-                    TransactedFileBTree *btree_ = nullptr);
+                Node (TransactedFileBTree *btree_ = nullptr);
                 /// \brief
                 /// dtor.
                 virtual ~Node ();
@@ -373,9 +369,9 @@ namespace thekogans {
                 /// \param[in] btree TransactedFileBTree to which this node belongs.
                 /// \param[in] offset Node offset on disk.
                 static Node *Alloc (
+                    TransactedFileBTree *btree,
                     TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset,
-                    TransactedFileBTree *btree);
+                    TransactedFile::AddressType offset);
 
                 /// \brief
                 /// Return key at entry index.
@@ -647,13 +643,11 @@ namespace thekogans {
             /// might be just the ticket. You will probably need to call;
             /// \see{thekogans::util::SecureAllocator::ReservePages}.
             TransactedFileBTree (
-                TransactedFile::SharedPtr file = nullptr,
-                TransactedFile::AddressType offset = 0,
                 const SerializableHeader &keyContext = SerializableHeader (),
                 const SerializableHeader &valueContext = SerializableHeader (),
                 bool valueIsObject = false,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE);
+                std::size_t nodesPerPage_ = DEFAULT_NODES_PER_PAGE);
             /// \brief
             /// dtor.
             virtual ~TransactedFileBTree ();
@@ -718,6 +712,21 @@ namespace thekogans {
 
         public:
             // TransactedFile::Object
+            virtual void Init (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::AddressType offset) override {
+                Object::Init (file, offset);
+                if (offset == 0) {
+                    nodeAllocator.Reset (
+                        new SlabAllocatorImpl (
+                            Node::Size (header.entriesPerNode),
+                            nodesPerPage,
+                            nodesPerPage / 4));
+                    root = Node::Alloc (this, file, 0);
+                    root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                }
+            }
+
             /// \brief
             /// Delete the btree.
             /// \param[in] file \see{TransactedFile} to which the btree belongs.

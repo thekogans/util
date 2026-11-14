@@ -185,8 +185,7 @@ namespace thekogans {
         /// Implement the \see{Serializable} GetContext method.
         #define THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_GetContext(_T)\
             thekogans::util::SerializableHeader _T::GetContext () {\
-                return thekogans::util::SerializableHeader (\
-                    _T::TYPE, _T::VERSION, _T::CLASS_SIZE);\
+                return thekogans::util::SerializableHeader{_T::TYPE, _T::VERSION, _T::CLASS_SIZE};\
             }
 
         /// \def THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE(_T)
@@ -403,6 +402,7 @@ namespace thekogans {
             SerializableHeader &value;
             DynamicCreatable::TypeDictionary::IdType id;
             ValueParser<DynamicCreatable::TypeDictionary::IdType> idParser;
+            std::string type;
             /// \brief
             /// Parses \see{SerializableHeader::type}.
             ValueParser<std::string> typeParser;
@@ -443,7 +443,7 @@ namespace thekogans {
                     value (value_),
                     id (DynamicCreatable::TypeDictionary::None),
                     idParser (id),
-                    typeParser (value.type),
+                    typeParser (type),
                     versionParser (value.version),
                     sizeParser (value.size),
                     state (STATE_NOTHING) {

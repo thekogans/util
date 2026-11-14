@@ -110,12 +110,12 @@ int main (
                 util::TransactedFile::Transaction transaction (Database::Instance ()->GetFile ());
                 roots = Database::Instance ()->GetRegistry ()->GetValue ("roots");
                 if (roots == nullptr) {
-                    roots.Reset (new Roots (Database::Instance ()->GetFile ()));
+                    roots = util::TransactedFile::Object::Create<Roots> (Database::Instance ()->GetFile (), 0);
                     Database::Instance ()->GetRegistry ()->InsertValue ("roots", roots);
                 }
                 ignoreList = Database::Instance ()->GetRegistry ()->GetValue ("ignore_list");
                 if (ignoreList == nullptr) {
-                    ignoreList.Reset (new IgnoreList (Database::Instance ()->GetFile ()));
+                    ignoreList = util::TransactedFile::Object::Create<IgnoreList> (Database::Instance ()->GetFile (), 0);
                     Database::Instance ()->GetRegistry ()->InsertValue ("ignore_list", ignoreList);
                 }
                 transaction.Commit ();

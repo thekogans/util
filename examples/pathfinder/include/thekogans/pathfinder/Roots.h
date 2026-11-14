@@ -88,11 +88,6 @@ namespace thekogans {
             /// Roots is a \see{util::Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (Roots)
 
-            Roots (
-                util::TransactedFile::SharedPtr file = nullptr,
-                util::TransactedFile::AddressType offset = 0) :
-                util::TransactedFile::Object (file, offset) {}
-
             /// \brief
             /// Given a path, scan the directory tree rooted at it.
             /// \param[in] path The root of the directory tree to scan.

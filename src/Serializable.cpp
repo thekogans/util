@@ -45,12 +45,12 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         std::size_t Serializable::GetSize (Serializer &serializer) noexcept {
-            SerializableHeader header (Type (), Version (), Size (serializer));
+            SerializableHeader header{Type (), Version (), Size (serializer)};
             return serializer.Size (header) + (serializer.context.NeedSize () ? header.size : serializer.context.size);
         }
 
         const char *Blob::Type () const noexcept {
-            return header.type.c_str ();
+            return header.type;
         }
 
         THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASES_BEGIN (Blob)
@@ -86,8 +86,8 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL Serializer & _LIB_THEKOGANS_UTIL_API operator << (
                 Serializer &serializer,
                 Serializable &serializable) {
-            serializer << SerializableHeader (
-                serializable.Type (), serializable.Version (), serializable.Size (serializer));
+            serializer << SerializableHeader{
+                serializable.Type (), serializable.Version (), serializable.Size (serializer)};
             serializable.Write (serializer);
             return serializer;
         }
@@ -97,16 +97,16 @@ namespace thekogans {
                 Serializable &serializable) {
             SerializableHeader header;
             serializer >> header;
-            if (THEKOGANS_UTIL_UNLIKELY (header.type != serializable.Type ())) {
+            if (THEKOGANS_UTIL_UNLIKELY (!header.IsSameType (serializable.Type ()))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Header type (%s) does not match Serializable type (%s).",
-                    header.type.c_str (),
+                    header.type,
                     serializable.Type ());
             }
             if (THEKOGANS_UTIL_UNLIKELY (header.version > serializable.Version ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Header type (%s) version (%u) is greater then Serializable version (%u).",
-                    header.type.c_str (),
+                    header.type,
                     header.version,
                     serializable.Version ());
             }
@@ -124,17 +124,17 @@ namespace thekogans {
                 serializable = serializer.factory (serializer.parameters);
             }
             else {
-                serializable = Serializable::CreateType (header.type.c_str (), serializer.parameters);
+                serializable = Serializable::CreateType (header.type, serializer.parameters);
             }
             if (serializable == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Unable to create a Serializable of type: %s.",
-                    header.type.c_str ());
+                    header.type);
             }
             if (header.version > serializable->Version ()) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Header type (%s) version (%u) is greater then the Serializable version (%u).",
-                    header.type.c_str (),
+                    header.type,
                     header.version,
                     serializable->Version ());
             }
@@ -152,7 +152,7 @@ namespace thekogans {
         bool ValueParser<Serializable>::ParseValue (Serializer &serializer) {
             if (state == STATE_HEADER) {
                 if (headerParser.ParseValue (serializer)) {
-                    if (header.type == value.Type ()) {
+                    if (header.IsSameType (value.Type ())) {
                         if (header.size > 0 && header.size <= maxSerializableSize) {
                             THEKOGANS_UTIL_TRY {
                                 payload.Resize (header.size);
@@ -174,7 +174,7 @@ namespace thekogans {
                         Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Header type (%s) is not the same as Serializable type (%s).",
-                            header.type.c_str (),
+                            header.type,
                             value.Type ());
                     }
                 }
@@ -231,7 +231,7 @@ namespace thekogans {
                         value = serializer.factory (serializer.parameters);
                     }
                     else {
-                        value = Serializable::CreateType (header.type.c_str (), serializer.parameters);
+                        value = Serializable::CreateType (header.type, serializer.parameters);
                     }
                     if (value != nullptr) {
                         Serializer::ContextGuard guard (payload, header);
@@ -243,7 +243,7 @@ namespace thekogans {
                         Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Unable to create a Serializable of type: %s.",
-                            header.type.c_str ());
+                            header.type);
                     }
                 }
             }

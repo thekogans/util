@@ -49,12 +49,6 @@ namespace thekogans {
             SpinLock spinLock;
 
         public:
-            /// \brief
-            /// ctor.
-            TransactedFileTypeDictionary (
-                TransactedFile::SharedPtr file = nullptr,
-                TransactedFile::AddressType offset = 0);
-
             virtual IdType GetOrCreateTypeId (const char *type) override;
             virtual const char *ResolveTypeId (IdType id) override;
 
@@ -69,10 +63,6 @@ namespace thekogans {
             /// Write the types dictionary to the serializer.
             /// \param[in] serializer \see{Serializer} to write the types to.
             virtual void Write (Serializer &serializer) override;
-
-            /// \brief
-            /// TransactedFileTypeDictionary is neither copy constructable, nor assignable.
-            THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFileTypeDictionary)
         };
 
     } // namespace util

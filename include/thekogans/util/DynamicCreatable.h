@@ -21,7 +21,7 @@
 #include <cstring>
 #include <functional>
 #include <unordered_map>
-#include <deque>
+#include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/RefCounted.h"
 #include "thekogans/util/SizeT.h"
@@ -265,13 +265,13 @@ namespace thekogans {
         /// Define the base type functions. This macro is private.
         #define THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
         public:\
-            static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes ();\
-            static bool IsType (const char *type);\
-            static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (\
-                const char *type);\
+            static const thekogans::util::DynamicCreatable::TypeMapType &GetTypes () noexcept;\
+            static bool IsType (const char *type) noexcept;\
+            static const char *TypeForType (const char *type) noexcept;\
+            static thekogans::util::DynamicCreatable::FactoryType GetTypeFactory (const char *type) noexcept;\
             static _T::SharedPtr CreateType (\
                 const char *type,\
-                thekogans::util::DynamicCreatable::ParametersType parameters = nullptr);
+                thekogans::util::DynamicCreatable::ParametersType parameters = nullptr) noexcept;
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)
         /// Implement base type GetTypes.
@@ -280,7 +280,7 @@ namespace thekogans {
         /// own type map reference and use it to look up types descendant
         /// from them. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES(_T)\
-            const thekogans::util::DynamicCreatable::TypeMapType &_T::GetTypes () {\
+            const thekogans::util::DynamicCreatable::TypeMapType &_T::GetTypes () noexcept {\
                 static const thekogans::util::DynamicCreatable::TypeMapType &types =\
                     thekogans::util::DynamicCreatable::GetBases ()[_T::TYPE];\
                 return types;\
@@ -289,8 +289,21 @@ namespace thekogans {
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE(_T)
         /// Implement base type IsType. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE(_T)\
-            bool _T::IsType (const char *type) {\
+            bool _T::IsType (const char *type) noexcept {\
                 return type != nullptr && GetTypes ().find (type) != GetTypes ().end ();\
+            }
+
+        /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_TYPE_FOR_TYPE(_T)
+        /// Implement base type TypeForType. This macro is private.
+        #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_TYPE_FOR_TYPE(_T)\
+            const char *_T::TypeForType (const char *type) noexcept {\
+                if (THEKOGANS_UTIL_LIKELY (type != nullptr && *type != '\0')) {\
+                    auto it = GetTypes ().find (type);\
+                    if (THEKOGANS_UTIL_LIKELY (it != GetTypes ().end ())) {\
+                        return it->first;\
+                    }\
+                }\
+                return "";\
             }
 
         /// \def THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY(_T)
@@ -299,7 +312,7 @@ namespace thekogans {
         /// an unordered_map lookup. This macro is private.
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY(_T)\
             thekogans::util::DynamicCreatable::FactoryType _T::GetTypeFactory (\
-                    const char *type) {\
+                    const char *type) noexcept {\
                 if (type != nullptr) {\
                     thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
                         GetTypes ().find (type);\
@@ -315,7 +328,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE(_T)\
             _T::SharedPtr _T::CreateType (\
                     const char *type,\
-                    thekogans::util::DynamicCreatable::ParametersType parameters) {\
+                    thekogans::util::DynamicCreatable::ParametersType parameters) noexcept {\
                 if (type != nullptr) {\
                     thekogans::util::DynamicCreatable::TypeMapType::const_iterator it =\
                         GetTypes ().find (type);\
@@ -331,6 +344,7 @@ namespace thekogans {
         #define THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_FUNCTIONS(_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_TYPE_FOR_TYPE (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY (_T)\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_CREATE_TYPE (_T)
 
@@ -341,6 +355,8 @@ namespace thekogans {
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPES (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_IS_TYPE (_T)\
+            template<>\
+            THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_TYPE_FOR_TYPE (_T)\
             template<>\
             THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_BASE_GET_TYPE_FACTORY (_T)\
             template<>\
@@ -540,7 +556,7 @@ namespace thekogans {
             struct _LIB_THEKOGANS_UTIL_DECL DefaultTypeDictionary : public TypeDictionary {
             protected:
                 /// \brief
-                std::deque<std::string> types;
+                std::vector<const char *> types;
                 using HashMapType = std::unordered_map<const char *, IdType, CharPtrHash, CharPtrEqual>;
                 HashMapType hashMap;
 

@@ -41,50 +41,37 @@ namespace thekogans {
         struct _LIB_THEKOGANS_UTIL_DECL SerializableHeader {
             /// \brief
             /// Serializable type (see \see{DynamicCreatable::Type}).
-            std::string type;
+            const char *type{""};
             /// \brief
             /// \see{Serializable} version.
-            SizeT version;
+            SizeT version{0};
             /// \brief
             /// \see{Serializable} size in bytes (not including the header).
-            SizeT size;
-
-            /// \brief
-            /// ctor.
-            /// \param[in] type_ \see{Serializable} type (see \see{DynamicCreatable::Type}).
-            /// \param[in] version_ \see{Serializable} version.
-            /// \param[in] size_ \see{Serializable} size in bytes (not including the header).
-            explicit SerializableHeader (
-                const std::string &type_ = std::string (),
-                std::size_t version_ = 0,
-                std::size_t size_ = 0) :
-                type (type_),
-                version (version_),
-                size (size_) {}
+            SizeT size{0};
 
             /// \brief
             /// Return true if type is empty.
             /// \return type.empty ().
-            inline bool NeedType () const {
-                return type.empty ();
+            inline bool NeedType () const noexcept {
+                return *type == '\0';
             }
             /// \brief
             /// Return true if version is 0.
             /// \return version == 0.
-            inline bool NeedVersion () const {
+            inline bool NeedVersion () const noexcept {
                 return version == 0;
             }
             /// \brief
             /// Return true if size is 0.
             /// \return size == 0.
-            inline bool NeedSize () const {
+            inline bool NeedSize () const noexcept {
                 return size == 0;
             }
 
             /// \brief
             /// Return true if all members are empty or 0.
             /// \return NeedType () && NeedVersion () && NeedSize ().
-            inline bool IsEmpty () const {
+            inline bool IsEmpty () const noexcept {
                 return NeedType () && NeedVersion () && NeedSize ();
             }
             /// \brief
@@ -92,6 +79,10 @@ namespace thekogans {
             /// \return !NeedType () && !NeedVersion () && !NeedSize ().
             inline bool IsFull () const {
                 return !NeedType () && !NeedVersion () && !NeedSize ();
+            }
+
+            inline bool IsSameType (const char *type_) const noexcept {
+                return THEKOGANS_UTIL_LIKELY (type == type_) || std::strcmp (type, type_) == 0;
             }
         };
 
@@ -102,9 +93,12 @@ namespace thekogans {
         /// \return true if header1 == header2.
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const SerializableHeader &header1,
-                const SerializableHeader &header2) {
+                const SerializableHeader &header2) noexcept {
+            if (THEKOGANS_UTIL_LIKELY (header1.type == header2.type)) {
+                return header1.version == header2.version && header1.size == header2.size;
+            }
             return
-                header1.type == header2.type &&
+                std::strcmp (header1.type, header2.type) == 0 &&
                 header1.version == header2.version &&
                 header1.size == header2.size;
         }
@@ -116,10 +110,7 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const SerializableHeader &header1,
                 const SerializableHeader &header2) {
-            return
-                header1.type != header2.type ||
-                header1.version != header2.version ||
-                header1.size != header2.size;
+            return !(header1 == header2);
         }
 
     } // namespace util

@@ -42,9 +42,7 @@ namespace thekogans {
                 public Subscriber<TransactedFile::ObjectEvents> {
             /// \brief
             /// Object is a \see{Serializable}.
-            THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Node)
-            THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (TransactedFileBTreeAllocatorBTree)
-            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTreeAllocatorBTree)
+            THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeAllocatorBTree)
 
             /// \struct TransactedFileBTreeAllocatorBTree::Key TransactedFileBTreeAllocatorBTree.h
             /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
@@ -85,7 +83,7 @@ namespace thekogans {
             struct Header {
                 /// \brief
                 /// Entries per node.
-                ui32 entriesPerNode;
+                ui32 entriesPerNode{DEFAULT_ENTRIES_PER_NODE};
                 /// \brief
                 /// Root node offset.
                 TransactedFile::AddressType rootOffset{0};
@@ -96,13 +94,8 @@ namespace thekogans {
                     UI32_SIZE +     // magic
                     UI32_SIZE +     // entriesPerNode
                     TransactedFile::AddressTypeSize;  // rootOffset
-
-                /// \brief
-                /// ctor.
-                /// \param[in] entriesPerNode_ Entries per node.
-                Header (ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
-                    entriesPerNode (entriesPerNode_) {}
             } header;
+            std::size_t nodesPerPage;
             /// \brief
             /// An instance of \see{SlabAllocatorImpl} to allocate \see{Node}s.
             SlabAllocatorImpl::SharedPtr nodeAllocator;
@@ -114,9 +107,7 @@ namespace thekogans {
             struct Node : public TransactedFile::Object {
                 /// \brief
                 /// Object is a \see{Serializable}.
-                THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_OVERRIDE (Node)
-                THEKOGANS_UTIL_DECLARE_SERIALIZABLE_OVERRIDE (Node)
-                THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (Node)
+                THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (Node)
 
                 /// \brief
                 TransactedFileBTreeAllocatorBTree *btree;
@@ -156,10 +147,7 @@ namespace thekogans {
                 /// \param[in] file \see{TransactedFile} where the Node resides.
                 /// \param[in] offset Node offset.
                 /// \param[in] btree_.
-                Node (
-                    TransactedFile::SharedPtr file = nullptr,
-                    TransactedFile::AddressType offset = 0,
-                    TransactedFileBTreeAllocatorBTree *btree_ = nullptr);
+                Node (TransactedFileBTreeAllocatorBTree *btree_ = nullptr);
                 /// \brief
                 /// dtor.
                 virtual ~Node ();
@@ -176,9 +164,9 @@ namespace thekogans {
                 /// \param[in] btree
                 /// \return New node.
                 static Node *Alloc (
+                    TransactedFileBTreeAllocatorBTree *btree,
                     TransactedFile::SharedPtr file,
-                    TransactedFile::AddressType offset,
-                    TransactedFileBTreeAllocatorBTree *btree);
+                    TransactedFile::AddressType offset);
 
                 /// \brief
                 /// Return the child at the given index.
@@ -326,10 +314,10 @@ namespace thekogans {
             /// \see{Node}. If we're reading an existing heap, this value will come from the
             /// \see{Header}.
             TransactedFileBTreeAllocatorBTree (
-                TransactedFile::SharedPtr file = nullptr,
-                TransactedFile::AddressType offset = 0,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE);
+                std::size_t nodesPerPage_ = DEFAULT_NODES_PER_PAGE) :
+                header{(ui32)entriesPerNode},
+                nodesPerPage (nodesPerPage_) {}
             /// \brief
             /// dtor.
             virtual ~TransactedFileBTreeAllocatorBTree ();
@@ -369,6 +357,21 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) override;
 
             // TransactedFile::Object
+            virtual void Init (
+                    TransactedFile::SharedPtr file,
+                    TransactedFile::AddressType offset) override {
+                Object::Init (file, offset);
+                if (offset == 0) {
+                    nodeAllocator.Reset (
+                        new SlabAllocatorImpl (
+                            Node::Size (header.entriesPerNode),
+                            nodesPerPage,
+                            nodesPerPage / 4));
+                    root = Node::Alloc (this, file, 0);
+                    root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                }
+            }
+
             /// \brief
             /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
             /// Also free the \see{Node} hierarchy @root.

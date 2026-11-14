@@ -43,10 +43,7 @@ namespace thekogans {
             /// ctor.
             /// \param[in] value std::string to initialize this value with.
             StringObject (
-                TransactedFile::SharedPtr file = nullptr,
-                TransactedFile::AddressType offset = 0,
                 const std::string &value = std::string ()) :
-                TransactedFile::Object (file, offset),
                 StringValue (value) {}
 
             void SetValue (const std::string &value_) {
@@ -71,10 +68,7 @@ namespace thekogans {
             /// ctor.
             /// \param[in] value_ Value to initialize with.
             ArrayObject (
-                TransactedFile::SharedPtr file = nullptr,
-                TransactedFile::AddressType offset = 0,
                 const std::vector<T> &value = std::vector<T> {}) :
-                TransactedFile::Object (file, offset),
                 ArrayValue<T> (value) {}
 
             void AddValue (const T &value_) {

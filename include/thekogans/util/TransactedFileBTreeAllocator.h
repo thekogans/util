@@ -64,11 +64,9 @@ namespace thekogans {
             /// \param[in] nodesPerPage Number of \see{TransactedFileBTreeAllocatorBTree::Node}s
             /// that will fit in to a \see{SlabAllocatorImpl} page.
             TransactedFileBTreeAllocator (
-                TransactedFile::SharedPtr file = nullptr,
-                TransactedFile::AddressType offset = 0,
                 std::size_t entriesPerNode = TransactedFileBTreeAllocatorBTree::DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = TransactedFileBTreeAllocatorBTree::DEFAULT_NODES_PER_PAGE) :
-                TransactedFileBTreeAllocatorBTree (file, offset, entriesPerNode, nodesPerPage) {}
+                TransactedFileBTreeAllocatorBTree (entriesPerNode, nodesPerPage) {}
 
             // Allocator
             /// \brief

@@ -70,6 +70,7 @@ namespace thekogans {
             }
             if (state == STATE_TYPE) {
                 if (typeParser.ParseValue (serializer)) {
+                    value.type = Serializable::TypeForType (type.c_str ());
                     if (value.NeedVersion ()) {
                         state = STATE_VERSION;
                     }

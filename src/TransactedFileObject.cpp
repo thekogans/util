@@ -48,7 +48,7 @@ namespace thekogans {
                         TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
                 }
                 ObjectRange range (file, offset);
-                DeleterMapType::const_iterator it = GetDeleters ().find (range.context.type.c_str ());
+                DeleterMapType::const_iterator it = GetDeleters ().find (range.context.type);
                 if (it != GetDeleters ().end ()) {
                     it->second (file, offset);
                 }
@@ -92,20 +92,18 @@ namespace thekogans {
 
         void TransactedFile::Object::Init (
                 TransactedFile::SharedPtr file_,
-                AddressType offset_) noexcept {
-            THEKOGANS_UTIL_ASSERT (offset_ == 0 || file_ != nullptr,
-                "Invalid Object Construction: Non-zero physical offset provided without a valid TransactedFile.");
+                AddressType offset_) {
+            THEKOGANS_UTIL_ASSERT (file == nullptr, "TransactedFile::Object::Init called on an already initialized object.");
+            THEKOGANS_UTIL_ASSERT (file_ != nullptr, "TransactedFile::Object::Init called with nullptr TransactedFile.");
             file = file_;
             offset = offset_;
             header.type = Type ();
             header.version = Version ();
-            if (file != nullptr) {
-                if (offset != 0) {
-                    Reload ();
-                }
-                else {
-                    SetDirty ();
-                }
+            if (offset != 0) {
+                Reload ();
+            }
+            else {
+                SetDirty ();
             }
         }
 
@@ -210,7 +208,7 @@ namespace thekogans {
                 object = range.factory (range.parameters);
             }
             else {
-                object = TransactedFile::Object::CreateType (range.context.type.c_str (), range.parameters);
+                object = TransactedFile::Object::CreateType (range.context.type, range.parameters);
             }
             if (object != nullptr) {
                 object->Init (range.GetFile (), range.GetOffset ());

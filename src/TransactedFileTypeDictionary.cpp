@@ -27,13 +27,6 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileTypeDictionary, 1, 0)
 
-        TransactedFileTypeDictionary::TransactedFileTypeDictionary (
-                TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset) :
-                TransactedFile::Object (file, offset) {
-            Init (file, offset);
-        }
-
         namespace {
             struct SystemTypeDictionary :
                     public DynamicCreatable::DefaultTypeDictionary,
@@ -43,7 +36,7 @@ namespace thekogans {
                     types.push_back (TransactedFileTypeDictionary::TYPE);
                     // Add system types here.
                     for (std::size_t i = 0, count = types.size (); i < count; ++i) {
-                        hashMap[types[i].c_str ()] = FirstSystemId + i;
+                        hashMap[types[i]] = FirstSystemId + i;
                     }
                 }
 
@@ -57,22 +50,23 @@ namespace thekogans {
                         return "";
                     }
                     id -= FirstSystemId;
-                    return id < types.size () ? types[id].c_str () : "";
+                    return id < types.size () ? types[id] : "";
                 }
             };
         }
 
         DynamicCreatable::TypeDictionary::IdType TransactedFileTypeDictionary::GetOrCreateTypeId (const char *type) {
-            if (THEKOGANS_UTIL_UNLIKELY (type == nullptr || *type == '\0')) {
+            const char *canonicalType = DynamicCreatable::TypeForType (type);
+            if (THEKOGANS_UTIL_UNLIKELY (*canonicalType == '\0')) {
                 return None;
             }
-            IdType id = SystemTypeDictionary::Instance ()->GetOrCreateTypeId (type);
+            IdType id = SystemTypeDictionary::Instance ()->GetOrCreateTypeId (canonicalType);
             if (THEKOGANS_UTIL_UNLIKELY (id != None)) {
                 return id;
             }
             LockGuard<SpinLock> guard (spinLock);
             std::size_t size = types.size ();
-            id = DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (type);
+            id = DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (canonicalType);
             if (size != types.size ()) {
                 SetDirty ();
             }
@@ -91,7 +85,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             std::size_t size = UI32_SIZE + SizeT (types.size ()).Size ();
             for (const auto &type : types) {
-                size += Serializer::Size (type);
+                size += Serializer::Size (std::string (type));
             }
             return size;
         }
@@ -109,8 +103,8 @@ namespace thekogans {
                 for (std::size_t i = 0; i < count; ++i) {
                     std::string type;
                     serializer  >> type;
-                    types[i] = type;
-                    hashMap[types[i].c_str ()] = FirstUserId + i;
+                    types[i] = DynamicCreatable::TypeForType (type.c_str ());
+                    hashMap[types[i]] = FirstUserId + i;
                 }
             }
             else {
@@ -124,7 +118,7 @@ namespace thekogans {
             LockGuard<SpinLock> guard (spinLock);
             serializer << MAGIC32 << SizeT (types.size ());
             for (const auto &type : types) {
-                serializer << type;
+                serializer << std::string (type);
             }
         }
 

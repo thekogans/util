@@ -80,13 +80,13 @@ namespace thekogans {
                 bool active_ = true) :
                 path (path_),
                 pathBTree (
-                    new util::TransactedFileBTree (
+                    util::TransactedFile::Object::Create<util::TransactedFileBTree> (
                         Database::Instance ()->GetFile (),
                         pathBTreeOffset,
                         util::GUIDKey::GetContext (),
                         util::StringObject::GetContext ())),
                 componentBTree (
-                    new util::TransactedFileBTree (
+                    util::TransactedFile::Object::Create<util::TransactedFileBTree> (
                         Database::Instance ()->GetFile (),
                         componentBTreeOffset,
                         util::StringKey::GetContext (),

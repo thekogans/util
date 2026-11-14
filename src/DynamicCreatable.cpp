@@ -58,7 +58,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         DynamicCreatable::TypeDictionary::IdType DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId (const char *type) {
-            if (THEKOGANS_UTIL_UNLIKELY (type == nullptr || *type == '\0')) {
+            if (THEKOGANS_UTIL_UNLIKELY (*type == '\0')) {
                 return None;
             }
             auto it = hashMap.find (type);
@@ -67,7 +67,7 @@ namespace thekogans {
             }
             IdType id = types.size ();
             types.push_back (type);
-            hashMap[types[id].c_str ()] = FirstUserId + id;
+            hashMap[type] = FirstUserId + id;
             return FirstUserId + id;
         }
 
@@ -76,7 +76,7 @@ namespace thekogans {
                 return "";
             }
             id -= FirstUserId;
-            return id < types.size () ? types[id].c_str () : "";
+            return id < types.size () ? types[id] : "";
         }
 
         bool DynamicCreatable::IsDerivedFrom (const char *base) const noexcept {

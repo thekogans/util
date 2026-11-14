@@ -155,7 +155,7 @@ namespace thekogans {
             HandleGuard guard{handle};
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Transaction transaction (this);
-            header.Reset (new Header (this, 0, secure ? Header::FLAGS_SECURE : 0, dictionary, allocator, registry));
+            header = Object::Create<Header> (this, 0, secure ? Header::FLAGS_SECURE : 0);
             transaction.Commit ();
             guard.dismissed = true;
         }

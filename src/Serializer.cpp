@@ -640,7 +640,7 @@ namespace thekogans {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary = GetTypeDictionary ();
                 if (dictionary != nullptr) {
                     DynamicCreatable::TypeDictionary::IdType id =
-                        dictionary->GetOrCreateTypeId (header.type.c_str ());
+                        dictionary->GetOrCreateTypeId (header.type);
                     size += id.Size ();
                 }
                 else {
@@ -660,10 +660,10 @@ namespace thekogans {
             if (context.NeedType ()) {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary = GetTypeDictionary ();
                 if (dictionary != nullptr) {
-                    *this << dictionary->GetOrCreateTypeId (header.type.c_str ());
+                    *this << dictionary->GetOrCreateTypeId (header.type);
                 }
                 else {
-                    *this << header.type;
+                    *this << std::string (header.type);
                 }
             }
             if (context.NeedVersion ()) {
@@ -684,7 +684,9 @@ namespace thekogans {
                     header.type = dictionary->ResolveTypeId (id);
                 }
                 else {
-                    *this >> header.type;
+                    std::string type;
+                    *this >> type;
+                    header.type = Serializable::TypeForType (type.c_str ());
                 }
             }
             else {

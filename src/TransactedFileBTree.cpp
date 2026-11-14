@@ -141,19 +141,12 @@ namespace thekogans {
             finished = false;
         }
 
-        THEKOGANS_UTIL_IMPLEMENT_DYNAMIC_CREATABLE_OVERRIDE (TransactedFileBTree::Node)
-        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_OVERRIDE (TransactedFileBTree::Node, 1, 0)
-        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT_STATIC_INIT_EX (TransactedFileBTree::Node)
+        THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTree::Node, 1, 0)
 
-        TransactedFileBTree::Node::Node (
-                TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset,
-                TransactedFileBTree *btree_) :
-                TransactedFile::Object (file, offset),
+        TransactedFileBTree::Node::Node (TransactedFileBTree *btree_) :
                 btree (btree_),
                 entries ((Entry *)(this + 1)) {
             SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
-            Init (file, offset);
         }
 
         TransactedFileBTree::Node::~Node () {
@@ -165,10 +158,11 @@ namespace thekogans {
         }
 
         TransactedFileBTree::Node *TransactedFileBTree::Node::Alloc (
+                TransactedFileBTree *btree,
                 TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset,
-                TransactedFileBTree *btree) {
-            Node *node = new (btree->nodeAllocator->Alloc ()) Node (file, offset, btree);
+                TransactedFile::AddressType offset) {
+            Node *node = new (btree->nodeAllocator->Alloc ()) Node (btree);
+            node->Init (file, offset);
             node->AddRef ();
             return node;
         }
@@ -191,14 +185,14 @@ namespace thekogans {
         TransactedFileBTree::Node *TransactedFileBTree::Node::GetChild (ui32 index) {
             if (index == 0) {
                 if (left == nullptr && leftOffset != 0) {
-                    left = Alloc (file, leftOffset, btree);
+                    left = Alloc (btree, file, leftOffset);
                 }
                 return left;
             }
             else {
                 --index;
                 if (entries[index].right == nullptr && entries[index].rightOffset != 0) {
-                    entries[index].right = Alloc (file, entries[index].rightOffset, btree);
+                    entries[index].right = Alloc (btree, file, entries[index].rightOffset);
                 }
                 return entries[index].right;
             }
@@ -292,7 +286,7 @@ namespace thekogans {
                 // in to the proper daughter node. Return the
                 // entry at the split point to be added up the
                 // parent chain.
-                Node *right = Alloc (file, 0, btree);
+                Node *right = Alloc (btree, file, 0);
                 Split (right);
                 ui32 splitIndex = btree->header.entriesPerNode / 2;
                 if (index != splitIndex) {
@@ -707,7 +701,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             if (offset != 0) {
-                TransactedFile::ObjectRange range (file, offset, SerializableHeader (TYPE, VERSION));
+                TransactedFile::ObjectRange range (file, offset, SerializableHeader{TYPE, VERSION});
                 ui32 magic;
                 range >> magic;
                 if (magic == MAGIC32) {
@@ -742,37 +736,24 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTree, 1, 0)
 
         TransactedFileBTree::TransactedFileBTree (
-                TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset,
                 const SerializableHeader &keyContext,
                 const SerializableHeader &valueContext,
                 bool valueIsObject,
                 std::size_t entriesPerNode,
-                std::size_t nodesPerPage) :
-                TransactedFile::Object (file, offset),
+                std::size_t nodesPerPage_) :
                 header (
                     keyContext,
                     valueContext,
                     valueIsObject ? Header::FLAGS_VALUE_IS_OBJECT : 0,
                     (ui32)entriesPerNode),
-                keyFactory (Key::GetTypeFactory (keyContext.type.c_str ())),
-                valueFactory (TransactedFile::Object::GetTypeFactory (valueContext.type.c_str ())),
-                nodeAllocator (
-                    new SlabAllocatorImpl (
-                        Node::Size (entriesPerNode),
-                        nodesPerPage,
-                        nodesPerPage / 4)) {
-            if (file != nullptr && (!Key::IsType (keyContext.type.c_str ()) ||
-                    (!valueContext.NeedType () &&
-                        !TransactedFile::Object::IsType (valueContext.type.c_str ())))) {
+                nodesPerPage (nodesPerPage_),
+                keyFactory (Key::GetTypeFactory (keyContext.type)),
+                valueFactory (TransactedFile::Object::GetTypeFactory (valueContext.type)) {
+            if ((!keyContext.NeedType () && !Key::IsType (keyContext.type)) ||
+                    (!valueContext.NeedType () && !Serializable::IsType (valueContext.type))) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
-                    keyContext.type.c_str (), valueContext.type.c_str ());
-            }
-            Init (file, offset);
-            if (file != nullptr && offset == 0) {
-                root = Node::Alloc (file, 0, this);
-                root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                    keyContext.type, valueContext.type);
             }
         }
 
@@ -786,7 +767,7 @@ namespace thekogans {
         bool TransactedFileBTree::Find (
                 const Key &key,
                 Iterator &it) {
-            if (key.IsKindOf (header.keyContext.type.c_str ())) {
+            if (key.IsKindOf (header.keyContext.type)) {
                 it.Clear ();
                 ui32 index = 0;
                 for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
@@ -808,10 +789,10 @@ namespace thekogans {
                 Serializable::SharedPtr value,
                 Iterator &it) {
             if (key != nullptr && value != nullptr &&
-                    key->IsKindOf (header.keyContext.type.c_str ()) &&
+                    key->IsKindOf (header.keyContext.type) &&
                     ((header.IsValueIsObject () &&
                         dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value) != nullptr) ||
-                        header.valueContext.NeedType () || value->IsKindOf (header.valueContext.type.c_str ()))) {
+                        header.valueContext.NeedType () || value->IsKindOf (header.valueContext.type))) {
                 it.Clear ();
                 Node::Entry entry (
                     key.Get (),
@@ -823,7 +804,7 @@ namespace thekogans {
                     // Create a new root node and make the entry
                     // its first.
                     root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                    Node *node = Node::Alloc (file, 0, this);
+                    Node *node = Node::Alloc (this, file, 0);
                     node->leftOffset = root->GetOffset ();
                     node->left = root;
                     node->InsertEntry (entry, 0);
@@ -848,7 +829,7 @@ namespace thekogans {
         }
 
         bool TransactedFileBTree::Remove (const Key &key) {
-            if (key.IsKindOf (header.keyContext.type.c_str ())) {
+            if (key.IsKindOf (header.keyContext.type)) {
                 bool removed = root->Remove (key);
                 if (removed) {
                     if (root->IsEmpty () && root->GetChild (0) != nullptr) {
@@ -869,7 +850,7 @@ namespace thekogans {
         }
 
         bool TransactedFileBTree::FindFirst (Iterator &it) {
-            if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyContext.type.c_str ())) {
+            if (it.prefix == nullptr || it.prefix->IsKindOf (header.keyContext.type)) {
                 it.Clear ();
                 Node *node = root;
                 if (node != nullptr && node->count > 0) {
@@ -922,8 +903,8 @@ namespace thekogans {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Requested key (%s)/value (%s) types do not "
                         "match existing key (%s)/value (%s) types @" THEKOGANS_UTIL_UI64_FORMAT,
-                        header.keyContext.type.c_str (), header.valueContext.type.c_str (),
-                        header_.keyContext.type.c_str (), header_.valueContext.type.c_str (),
+                        header.keyContext.type, header.valueContext.type,
+                        header_.keyContext.type, header_.valueContext.type,
                         GetOffset ());
                 }
             }
@@ -939,9 +920,9 @@ namespace thekogans {
             nodeAllocator.Reset (
                 new SlabAllocatorImpl (
                     Node::Size (header.entriesPerNode),
-                    nodeAllocator->GetSlotsPerPage (),
-                    nodeAllocator->GetSlotsPerPage () / 4));
-            root = Node::Alloc (file, header.rootOffset, this);
+                    nodesPerPage,
+                    nodesPerPage / 4));
+            root = Node::Alloc (this, file, header.rootOffset);
             root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
         }
 
@@ -954,7 +935,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             if (file != nullptr && offset != 0) {
-                TransactedFile::ObjectRange range (file, offset, SerializableHeader (TYPE, VERSION));
+                TransactedFile::ObjectRange range (file, offset, SerializableHeader{TYPE, VERSION});
                 ui32 magic;
                 range >> magic;
                 if (magic == MAGIC32) {

@@ -53,13 +53,8 @@ public:
         AddressTypeSize + // allocatorOffset
         AddressTypeSize;  // regisryOffset
 
-    Header (
-        TransactedFile::SharedPtr file = nullptr,
-        TransactedFile::AddressType offset = 0,
-        ui32 flags_ = 0,
-        DynamicCreatable::TypeDictionary::SharedPtr dictionary_ = nullptr,
-        Allocator::SharedPtr allocator_ = nullptr,
-        Registry::SharedPtr registry_ = nullptr);
+    Header (ui32 flags_ = 0) :
+        flags (flags_) {}
 
     /// \brief
     /// Return true if secure.
@@ -68,7 +63,6 @@ public:
         return flags.Test (FLAGS_SECURE);
     }
 
-private:
     /// \brief
     /// Read the types dictionary from the serializer.
     /// \param[in] serializer \see{Serializer} to read the types from.
@@ -77,6 +71,10 @@ private:
     /// Write the types dictionary to the serializer.
     /// \param[in] serializer \see{Serializer} to write the types to.
     virtual void Write (Serializer &serializer) override;
+
+    virtual void Init (
+        TransactedFile::SharedPtr file,
+        TransactedFile::AddressType offset) noexcept override;
 
     virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
         SetDirty ();

@@ -24,44 +24,6 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (
             thekogans::util::TransactedFile::Header, 1, TransactedFile::Header::SIZE)
 
-        TransactedFile::Header::Header (
-                TransactedFile::SharedPtr file,
-                TransactedFile::AddressType offset,
-                ui32 flags_,
-                DynamicCreatable::TypeDictionary::SharedPtr dictionary,
-                Allocator::SharedPtr allocator,
-                Registry::SharedPtr registry) :
-                TransactedFile::Object (file, offset),
-                flags (flags_) {
-            if (file != nullptr && offset == 0) {
-                std::size_t size = UI32_SIZE + GetSize (*file);
-                this->offset = file->Grow (Block::SIZE + size) + Block::BLOCK_0_OFFSET;
-                Block block (file, this->offset, 0, size);
-                block.Write ();
-                {
-                    Object::SharedPtr object = dictionary;
-                    if (object != nullptr) {
-                        object->Producer<ObjectEvents>::Subscribe (*this);
-                        object->Init (file, 0);
-                    }
-                }
-                {
-                    Object::SharedPtr object = allocator;
-                    if (object != nullptr) {
-                        object->Producer<ObjectEvents>::Subscribe (*this);
-                        object->Init (file, 0);
-                    }
-                }
-                {
-                    Object::SharedPtr object = registry;
-                    if (object != nullptr) {
-                        object->Producer<ObjectEvents>::Subscribe (*this);
-                        object->Init (file, 0);
-                    }
-                }
-            }
-        }
-
         void TransactedFile::Header::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
@@ -143,6 +105,39 @@ namespace thekogans {
                 }
             }
             serializer << MAGIC32 << flags << dictionaryOffset << allocatorOffset << registryOffset;
+        }
+
+        void TransactedFile::Header::Init (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset) noexcept {
+            Object::Init (file, offset);
+            if (offset == 0) {
+                std::size_t size = UI32_SIZE + GetSize (*file);
+                this->offset = file->Grow (Block::SIZE + size) + Block::BLOCK_0_OFFSET;
+                Block block (file, this->offset, 0, size);
+                block.Write ();
+                {
+                    Object::SharedPtr object = file->dictionary;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Subscribe (*this);
+                        object->Init (file, 0);
+                    }
+                }
+                {
+                    Object::SharedPtr object = file->allocator;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Subscribe (*this);
+                        object->Init (file, 0);
+                    }
+                }
+                {
+                    Object::SharedPtr object = file->registry;
+                    if (object != nullptr) {
+                        object->Producer<ObjectEvents>::Subscribe (*this);
+                        object->Init (file, 0);
+                    }
+                }
+            }
         }
 
     } // namespace util
