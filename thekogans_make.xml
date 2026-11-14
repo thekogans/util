@@ -75,6 +75,7 @@
     <cpp_header>$(organization)/$(project_directory)/Buffer.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ByteSwap.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/ChildProcess.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/Clonable.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/CommandLineOptions.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Condition.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Config.h</cpp_header>

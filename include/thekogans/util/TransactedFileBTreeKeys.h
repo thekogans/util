@@ -100,6 +100,11 @@ namespace thekogans {
             virtual void Write (Serializer &serializer) override {
                 serializer << key;
             }
+
+            // Clonable
+            virtual Clonable::SharedPtr Clone () const override {
+                return new StringKey (key, ignoreCase);
+            }
         };
 
         /// \struct GUIDKey TransactedFileBTreeKeys.h thekogans/util/TransactedFileBTreeKeys.h
@@ -168,6 +173,11 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the key to.
             virtual void Write (Serializer &serializer) override {
                 serializer << key;
+            }
+
+            // Clonable
+            virtual Clonable::SharedPtr Clone () const override {
+                return new GUIDKey (key, length);
             }
         };
 

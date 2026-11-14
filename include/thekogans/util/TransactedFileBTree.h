@@ -23,6 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/Serializable.h"
+#include "thekogans/util/Clonable.h"
 #include "thekogans/util/Serializer.h"
 #include "thekogans/util/SlabAllocatorImpl.h"
 #include "thekogans/util/TransactedFile.h"
@@ -55,7 +56,9 @@ namespace thekogans {
             ///
             /// \brief
             /// Key adds order to the \see{Serializable}.
-            struct _LIB_THEKOGANS_UTIL_DECL Key : public Serializable {
+            struct _LIB_THEKOGANS_UTIL_DECL Key :
+                    public virtual Serializable,
+                    public virtual Clonable {
                 /// \brief
                 /// Key is a \see{util::DynamicCreatable} abstract base.
                 THEKOGANS_UTIL_DECLARE_DYNAMIC_CREATABLE_ABSTRACT_BASE (Key)

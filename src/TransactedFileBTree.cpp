@@ -794,6 +794,13 @@ namespace thekogans {
                         dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value) != nullptr) ||
                         header.valueContext.NeedType () || value->IsKindOf (header.valueContext.type))) {
                 it.Clear ();
+                key = key->Clone ();
+                if (!header.IsValueIsObject ()) {
+                    Clonable::SharedPtr clonable = value;
+                    if (clonable != nullptr) {
+                        value = clonable->Clone ();
+                    }
+                }
                 Node::Entry entry (
                     key.Get (),
                     header.IsValueIsObject () ? dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value)->GetOffset () : 0,

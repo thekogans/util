@@ -23,6 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Serializable.h"
+#include "thekogans/util/Clonable.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -65,6 +66,25 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the value to.
             virtual void Write (Serializer &serializer) override {
                 serializer << value;
+            }
+        };
+
+        struct _LIB_THEKOGANS_UTIL_DECL ClonableStringValue :
+                public StringValue,
+                public virtual Clonable {
+            /// \brief
+            /// StringValue is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ClonableStringValue)
+
+            /// \brief
+            /// ctor.
+            /// \param[in] value_ std::string to initialize this value with.
+            ClonableStringValue (const std::string &value = std::string ()) :
+                StringValue (value) {}
+
+            // Clonable
+            virtual Clonable::SharedPtr Clone () const override {
+                return new ClonableStringValue (value);
             }
         };
 
@@ -143,9 +163,32 @@ namespace thekogans {
             }
         };
 
+        /// \struct ClonableArrayValue SerializableValues.h thekogans/util/SerializableValues.h
+        ///
+        /// \brief
+        template<typename T>
+        struct ClonableArrayValue :
+                public ArrayValue<T>,
+                public virtual Clonable {
+            /// \brief
+            /// StringArrayValue is a \see{Serializable}.
+            THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ClonableArrayValue<T>)
+
+            ClonableArrayValue (const std::vector<T> &value = std::vector<T> {}) :
+                ArrayValue<T> (value) {}
+
+            // Clonable
+            virtual Clonable::SharedPtr Clone () const override {
+                return new ClonableArrayValue<T> (this->value);
+            }
+        };
+
         using StringArrayValue = ArrayValue<std::string>;
+        using ClonableStringArrayValue = ClonableArrayValue<std::string>;
         using AddressArrayValue = ArrayValue<TransactedFile::AddressType>;
+        using ClonableAddressArrayValue = ClonableArrayValue<TransactedFile::AddressType>;
         using GUIDArrayValue = ArrayValue<GUID>;
+        using ClonableGUIDArrayValue = ClonableArrayValue<GUID>;
 
     } // namespace util
 } // namespace thekogans

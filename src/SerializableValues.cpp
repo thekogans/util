@@ -25,8 +25,18 @@ namespace thekogans {
             1,
             0,
             Serializable::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
+            thekogans::util::ClonableStringValue,
+            1,
+            0,
+            Serializable::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::StringArrayValue,
+            1,
+            0,
+            Serializable::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
+            thekogans::util::ClonableStringArrayValue,
             1,
             0,
             Serializable::TYPE)
@@ -36,7 +46,17 @@ namespace thekogans {
             0,
             Serializable::TYPE)
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
+            thekogans::util::ClonableAddressArrayValue,
+            1,
+            0,
+            Serializable::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
             thekogans::util::GUIDArrayValue,
+            1,
+            0,
+            Serializable::TYPE)
+        THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE_T (
+            thekogans::util::ClonableGUIDArrayValue,
             1,
             0,
             Serializable::TYPE)
