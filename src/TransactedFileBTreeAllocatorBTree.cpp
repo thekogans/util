@@ -81,7 +81,9 @@ namespace thekogans {
         TransactedFileBTreeAllocatorBTree::Node::Node (TransactedFileBTreeAllocatorBTree *btree_) :
                 btree (btree_),
                 entries ((Entry *)(this + 1)) {
-            SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
+            if (btree != nullptr) {
+                SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
+            }
         }
 
         TransactedFileBTreeAllocatorBTree::Node::~Node () {
@@ -97,8 +99,8 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             Node *node = new (btree->nodeAllocator->Alloc ()) Node (btree);
-            node->Init (file, offset);
             node->AddRef ();
+            node->Init (file, offset);
             return node;
         }
 
@@ -482,8 +484,8 @@ namespace thekogans {
             nodeAllocator.Reset (
                 new SlabAllocatorImpl (
                     Node::Size (header.entriesPerNode),
-                    nodesPerPage,
-                    nodesPerPage / 4));
+                    header.nodesPerPage,
+                    header.nodesPerPage / 4));
             root = Node::Alloc (this, file, header.rootOffset);
             root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
         }

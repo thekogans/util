@@ -611,8 +611,8 @@ namespace thekogans {
             void _T::StaticInit () {\
                 thekogans::util::DynamicCreatable::BaseMapType &baseMap =\
                     thekogans::util::DynamicCreatable::GetBases ();\
-                const HashedString const *bases = _T::BASES;\
-                while (*bases != HashedString ()) {\
+                const thekogans::util::HashedString *bases = _T::BASES;\
+                while (*bases != thekogans::util::HashedString ()) {\
                     baseMap[*bases++][_T::TYPE] = _T::Create;\
                 }\
             }

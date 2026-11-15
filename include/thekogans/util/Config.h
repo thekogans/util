@@ -80,18 +80,21 @@
 #if defined (__clang__) || defined (__GNUC__)
     #define THEKOGANS_UTIL_LIKELY(x)   (__builtin_expect (!!(x), 1))
     #define THEKOGANS_UTIL_UNLIKELY(x) (__builtin_expect (!!(x), 0))
+    #define THEKOGANS_UTIL_PRINTF_FORMAT(fmtIdx, argIdx) __attribute__ ((format (printf, fmtIdx, argIdx)))
 #elif defined (_MSC_VER) && (_MSVC_LANG >= 202002L) // C++20 attribute fallback for newer MSVC
     #define THEKOGANS_UTIL_LIKELY(x)   (x) [[likely]]
     #define THEKOGANS_UTIL_UNLIKELY(x) (x) [[unlikely]]
+    #define THEKOGANS_UTIL_PRINTF_FORMAT(fmtIdx, argIdx)
 #else
     #define THEKOGANS_UTIL_LIKELY(x)   (x)
     #define THEKOGANS_UTIL_UNLIKELY(x) (x)
+    #define THEKOGANS_UTIL_PRINTF_FORMAT(fmtIdx, argIdx)
 #endif
 
 #if defined (THEKOGANS_UTIL_CONFIG_Debug)
     namespace thekogans {
         namespace util {
-            _LIB_THEKOGANS_UTIL_DECL __attribute__((format(printf, 1, 2))) std::string FormatString (
+            _LIB_THEKOGANS_UTIL_DECL THEKOGANS_UTIL_PRINTF_FORMAT (1, 2) std::string FormatString (
                 const char *format,
                 ...);
         } // namespace util

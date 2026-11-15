@@ -98,12 +98,10 @@ namespace thekogans {
                 virtual const std::string &ToString () const = 0;
             };
 
-        protected:
             /// \brief
             /// Forward declaration of \see{Node} needed by \see{Iterator}.
             struct Node;
 
-        public:
             /// \struct TransactedFileBTree::Iterator TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
             ///
             /// \brief
@@ -226,7 +224,6 @@ namespace thekogans {
                 friend struct TransactedFileBTree;
             };
 
-        protected:
             /// \struct TransactedFileBTree::Header TransactedFileBTree.h thekogans/util/TransactedFileBTree.h
             ///
             /// \brief
@@ -608,7 +605,6 @@ namespace thekogans {
                 }
             } *root{nullptr};
 
-        public:
             /// \brief
             /// Default number of entries per node.
             /// NOTE: This is a tunable parameter that should be used

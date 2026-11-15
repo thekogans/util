@@ -34,8 +34,8 @@ namespace thekogans {
             TransactedFileTypeDictionary::StaticInitEx ();
             TransactedFileBTreeAllocator::StaticInitEx ();
             TransactedFileBTreeRegistry::StaticInitEx ();
-            TransactedFileBTreeAllocatorBtree::Node::StaticInitEx ();
-            TransactedFileBTreeAllocatorBtree::StaticInitEx ();
+            TransactedFileBTreeAllocatorBTree::Node::StaticInitEx ();
+            TransactedFileBTreeAllocatorBTree::StaticInitEx ();
             TransactedFileBTree::Node::StaticInitEx ();
             TransactedFileBTree::StaticInitEx ();
         }
@@ -53,8 +53,10 @@ namespace thekogans {
                 }
                 ObjectRange range (file, offset);
                 DeleterMapType::const_iterator it = GetDeleters ().find (range.context.type);
-                if (it != GetDeleters ().end ()) {
+                if (THEKOGANS_UTIL_LIKELY (it != GetDeleters ().end ())) {
                     it->second (file, offset);
+                }
+                else {
                 }
             }
         }
@@ -185,8 +187,16 @@ namespace thekogans {
                 "Calling TransactedFile::Object::Reload on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 ObjectRange range (file, offset);
-                if (range.context.WeakCompare (SerializableHeader{Type (), Version ()})) {
+                if (THEKOGANS_UTIL_LIKELY (range.context.WeakCompare (SerializableHeader{Type (), Version ()}))) {
                     Read (range);
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Error reloading TransactedFile::Object, header mesmatch. "
+                        "On disk: type %s, version " THEKOGANS_UTIL_UI64_FORMAT ". "
+                        "Expecting: type %s, version " THEKOGANS_UTIL_SIZE_T_FORMAT ". ",
+                        range.context.type.c_str (), range.context.version.value,
+                        Type ().c_str (), Version ());
                 }
             }
         }
@@ -216,7 +226,7 @@ namespace thekogans {
             else {
                 object = TransactedFile::Object::CreateType (range.context.type, range.parameters);
             }
-            if (object != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
                 object->Init (range.GetFile (), range.GetOffset ());
             }
             return range;
@@ -229,18 +239,18 @@ namespace thekogans {
                 BlockRange (file, offset, true, allocator) {
             ui32 magic;
             *this >> magic;
-            if (magic != Object::MAGIC) {
+            if (THEKOGANS_UTIL_UNLIKELY (magic != Object::MAGIC)) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt TransactedFile::Object: @" THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
             *this >> context;
-            if (context.NeedType ()) {
+            if (THEKOGANS_UTIL_UNLIKELY (context.NeedType ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Invalid TransactedFile::Object type @" THEKOGANS_UTIL_UI64_FORMAT,
                      offset);
             }
-            if (context.NeedVersion ()) {
+            if (THEKOGANS_UTIL_UNLIKELY (context.NeedVersion ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Invalid TransactedFile::Object version for type %s @" THEKOGANS_UTIL_UI64_FORMAT,
                     context.type.c_str (), offset);

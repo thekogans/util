@@ -18,6 +18,7 @@
 #if !defined (__thekogans_util_StringUtils_h)
 #define __thekogans_util_StringUtils_h
 
+#include <cinttypes>
 #include <cstddef>
 #include <cstdarg>
 #include <string>
@@ -59,13 +60,13 @@ namespace thekogans {
         #define THEKOGANS_UTIL_UI32_FORMAT "%u"
         /// \brief
         /// i64 format string.
-        #define THEKOGANS_UTIL_I64_FORMAT "%lld"
+        #define THEKOGANS_UTIL_I64_FORMAT "%" PRId64
         /// \brief
         /// ui64 format string.
-        #define THEKOGANS_UTIL_UI64_FORMAT "%llu"
+        #define THEKOGANS_UTIL_UI64_FORMAT "%" PRIu64
     #endif // defined (TOOLCHAIN_OS_Windows)
         /// \brief
-        /// f64 format string.
+        /// f32 format string.
         #define THEKOGANS_UTIL_F32_FORMAT "%f"
         /// \brief
         /// f64 format string.
@@ -650,7 +651,7 @@ namespace thekogans {
         /// \param[in] format printf style format to use.
         /// \param[in] ... Variable number of argumets coinsiding with format.
         /// \return Formatted string.
-        _LIB_THEKOGANS_UTIL_DECL __attribute__((format(printf, 1, 2))) std::string FormatString (
+        _LIB_THEKOGANS_UTIL_DECL THEKOGANS_UTIL_PRINTF_FORMAT (1, 2) std::string FormatString (
             const char *format,
             ...);
         /// \brief

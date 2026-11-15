@@ -74,7 +74,6 @@ namespace thekogans {
             /// Number of \see{TransactedFileBTree::Node}s that will fit in to a \see{BlockAllocator} page.
             static const std::size_t DEFAULT_NODES_PER_PAGE = 5;
 
-        private:
             /// \struct TransactedFileBTreeAllocatorBTree::Header TransactedFileBTreeAllocatorBTree.h
             /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
             ///
@@ -84,6 +83,7 @@ namespace thekogans {
                 /// \brief
                 /// Entries per node.
                 ui32 entriesPerNode{DEFAULT_ENTRIES_PER_NODE};
+                ui32 nodesPerPage{DEFAULT_NODES_PER_PAGE};
                 /// \brief
                 /// Root node offset.
                 TransactedFile::AddressType rootOffset{0};
@@ -93,9 +93,9 @@ namespace thekogans {
                 static constexpr std::size_t SIZE =
                     UI32_SIZE +     // magic
                     UI32_SIZE +     // entriesPerNode
+                    UI32_SIZE +     // nodesPerPage
                     TransactedFile::AddressTypeSize;  // rootOffset
             } header;
-            std::size_t nodesPerPage;
             /// \brief
             /// An instance of \see{SlabAllocatorImpl} to allocate \see{Node}s.
             SlabAllocatorImpl::SharedPtr nodeAllocator;
@@ -305,7 +305,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Node)
             } *root{nullptr};
 
-        public:
             /// \brief
             /// ctor.
             /// \param[in] file \see{TransactedFile} to which this btree belongs.
@@ -315,9 +314,8 @@ namespace thekogans {
             /// \see{Header}.
             TransactedFileBTreeAllocatorBTree (
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage_ = DEFAULT_NODES_PER_PAGE) :
-                header{(ui32)entriesPerNode},
-                nodesPerPage (nodesPerPage_) {}
+                std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE) :
+                header{(ui32)entriesPerNode, (ui32)nodesPerPage} {}
             /// \brief
             /// dtor.
             virtual ~TransactedFileBTreeAllocatorBTree ();
@@ -365,8 +363,8 @@ namespace thekogans {
                     nodeAllocator.Reset (
                         new SlabAllocatorImpl (
                             Node::Size (header.entriesPerNode),
-                            nodesPerPage,
-                            nodesPerPage / 4));
+                            header.nodesPerPage,
+                            header.nodesPerPage / 4));
                     root = Node::Alloc (this, file, 0);
                     root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }

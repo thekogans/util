@@ -113,25 +113,13 @@ namespace thekogans {
         }
 
         TransactedFileBTree::Key::SharedPtr TransactedFileBTree::Iterator::GetKey () const {
-            if (!finished) {
-                assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->GetKey (node.second);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Iterator is not pointing to a valid entry.");
-            }
+            assert (finished || (node.first != nullptr && node.second < node.first->count));
+            return finished ? nullptr : node.first->GetKey (node.second);
         }
 
         Serializable::SharedPtr TransactedFileBTree::Iterator::GetValue () const {
-            if (!finished) {
-                assert (node.first != nullptr && node.second < node.first->count);
-                return node.first->GetValue (node.second);
-            }
-            else {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Iterator is not pointing to a valid entry.");
-            }
+            assert (finished || (node.first != nullptr && node.second < node.first->count));
+            return finished ? nullptr : node.first->GetValue (node.second);
         }
 
         void TransactedFileBTree::Iterator::Reset (
@@ -147,7 +135,9 @@ namespace thekogans {
         TransactedFileBTree::Node::Node (TransactedFileBTree *btree_) :
                 btree (btree_),
                 entries ((Entry *)(this + 1)) {
-            SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
+            if (THEKOGANS_UTIL_LIKELY (btree != nullptr)) {
+                SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
+            }
         }
 
         TransactedFileBTree::Node::~Node () {
@@ -163,8 +153,8 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             Node *node = new (btree->nodeAllocator->Alloc ()) Node (btree);
-            node->Init (file, offset);
             node->AddRef ();
+            node->Init (file, offset);
             return node;
         }
 
@@ -557,7 +547,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::Reset () {
-            if (count > 0) {
+            if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                 if (left != nullptr) {
                     left->Release ();
                     left = nullptr;
@@ -591,7 +581,7 @@ namespace thekogans {
         std::size_t TransactedFileBTree::Node::Size (Serializer &serializer) noexcept {
                             // magic       count
             std::size_t size = UI32_SIZE + UI32_SIZE;
-            if (count > 0) {
+            if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                      // flags       leftOffset
                 size += UI32_SIZE + TransactedFile::AddressTypeSize;
                 for (ui32 i = 0; i < count; ++i) {
@@ -624,9 +614,9 @@ namespace thekogans {
             Reset ();
             ui32 magic;
             serializer >> magic;
-            if (magic == MAGIC32) {
+            if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                 serializer >> count;
-                if (count > 0) {
+                if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                     ui32 flags;
                     serializer >> flags >> leftOffset;
                     assert (flags == btree->header.flags);
@@ -668,7 +658,7 @@ namespace thekogans {
 
         void TransactedFileBTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
-            if (count > 0) {
+            if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                 serializer << btree->header.flags << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
                     if (btree->header.IsValueIsObject ()) {
@@ -701,15 +691,15 @@ namespace thekogans {
         void TransactedFileBTree::Node::FreeObject (
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
-            if (offset != 0) {
+            if (file != nullptr && offset != 0) {
                 TransactedFile::ObjectRange range (file, offset);
-                if (range.context.WeakCompare ({TYPE, VERSION})) {
+                if (THEKOGANS_UTIL_LIKELY (range.context.WeakCompare ({TYPE, VERSION}))) {
                     ui32 magic;
                     range >> magic;
-                    if (magic == MAGIC32) {
+                    if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                         ui32 count;
                         range >> count;
-                        if (count > 0) {
+                        if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                             ui32 flags;
                             TransactedFile::AddressType leftOffset;
                             range >> flags >> leftOffset;
@@ -733,6 +723,12 @@ namespace thekogans {
                             offset);
                     }
                 }
+                else {
+                }
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
