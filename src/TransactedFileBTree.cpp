@@ -35,6 +35,7 @@ namespace thekogans {
             size +=
                 Serializer::Size (flags) +
                 Serializer::Size (entriesPerNode) +
+                Serializer::Size (nodesPerPage) +
                 Serializer::Size (rootOffset);
             return size;
         }
@@ -46,7 +47,7 @@ namespace thekogans {
                 Serializer::ContextGuard guard (serializer);
                 serializer << header.keyContext << header.valueContext;
             }
-            serializer << header.flags << header.entriesPerNode << header.rootOffset;
+            serializer << header.flags << header.entriesPerNode << header.nodesPerPage << header.rootOffset;
             return serializer;
         }
 
@@ -57,7 +58,7 @@ namespace thekogans {
                 Serializer::ContextGuard guard (serializer);
                 serializer >> header.keyContext >> header.valueContext;
             }
-            serializer >> header.flags >> header.entriesPerNode >> header.rootOffset;
+            serializer >> header.flags >> header.entriesPerNode >> header.nodesPerPage >> header.rootOffset;
             return serializer;
         }
 
@@ -742,17 +743,18 @@ namespace thekogans {
                 const SerializableHeader &valueContext,
                 bool valueIsObject,
                 std::size_t entriesPerNode,
-                std::size_t nodesPerPage_) :
+                std::size_t nodesPerPage) :
                 header (
                     keyContext,
                     valueContext,
                     valueIsObject ? Header::FLAGS_VALUE_IS_OBJECT : 0,
-                    (ui32)entriesPerNode),
-                nodesPerPage (nodesPerPage_),
+                    (ui32)entriesPerNode,
+                    (ui32)nodesPerPage),
                 keyFactory (Key::GetTypeFactory (keyContext.type)),
                 valueFactory (TransactedFile::Object::GetTypeFactory (valueContext.type)) {
             if ((!keyContext.NeedType () && !Key::IsType (keyContext.type)) ||
-                    (!valueContext.NeedType () && !Serializable::IsType (valueContext.type))) {
+                    (!valueContext.NeedType () && !Serializable::IsType (valueContext.type)) ||
+                    entriesPerNode < 3 || nodesPerPage < 4) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyContext.type.c_str (), valueContext.type.c_str ());
@@ -797,16 +799,24 @@ namespace thekogans {
                         header.valueContext.NeedType () || value->IsKindOf (header.valueContext.type))) {
                 it.Clear ();
                 key = key->Clone ();
+                TransactedFile::AddressType valueOffset = 0;
                 if (!header.IsValueIsObject ()) {
                     Clonable::SharedPtr clonable = value;
                     if (clonable != nullptr) {
                         value = clonable->Clone ();
                     }
                 }
-                Node::Entry entry (
-                    key.Get (),
-                    header.IsValueIsObject () ? dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value)->GetOffset () : 0,
-                    value.Get ());
+                else {
+                    TransactedFile::Object::SharedPtr object = value;
+                    if (object != nullptr) {
+                        valueOffset = object->GetOffset ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                            THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+                    }
+                }
+                Node::Entry entry (key.Get (), valueOffset, value.Get ());
                 Node::InsertResult result = root->Insert (entry, it);
                 if (result == Node::Overflow) {
                     // The path to the leaf node is full.
@@ -929,8 +939,8 @@ namespace thekogans {
             nodeAllocator.Reset (
                 new SlabAllocatorImpl (
                     Node::Size (header.entriesPerNode),
-                    nodesPerPage,
-                    nodesPerPage / 4));
+                    header.nodesPerPage,
+                    header.nodesPerPage / 4));
             root = Node::Alloc (this, file, header.rootOffset);
             root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
         }
@@ -952,7 +962,7 @@ namespace thekogans {
                         Header header;
                         range >> header;
                         Node::FreeObject (file, header.rootOffset);
-                            Object::FreeObject (file, offset);
+                        Object::FreeObject (file, offset);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

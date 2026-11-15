@@ -93,6 +93,8 @@ public:
             TransactedFile::SharedPtr file,
             TransactedFile::AddressType offset,
             Args&&... args) {
+        THEKOGANS_UTIL_ASSERT (file != nullptr,
+            "TransactedFile::Object::Create called with nullptr for TransactedFile.");
         typename T::SharedPtr obj (new T (std::forward<Args> (args)...));
         obj->Init (file, offset);
         return obj;

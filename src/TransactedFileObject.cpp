@@ -100,7 +100,7 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (file == nullptr,
                 "TransactedFile::Object::Init called on an already initialized object.");
             THEKOGANS_UTIL_ASSERT (file_ != nullptr,
-                "TransactedFile::Object::Init called with nullptr TransactedFile.");
+                "TransactedFile::Object::Init called with nullptr for TransactedFile.");
             file = file_;
             offset = offset_;
             if (offset != 0) {
@@ -251,7 +251,7 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset,
                 Object &object,
-                util::Allocator::SharedPtr) :
+                util::Allocator::SharedPtr allocator) :
                 BlockRange (file, offset, false, allocator) {
             SerializableHeader header{object.Type (), object.Version (), object.size};
             *this << Object::MAGIC << header;

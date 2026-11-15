@@ -169,8 +169,7 @@ namespace thekogans {
                     // but we can't take a chance and do it ourselves.
                     if (file->IsSecure ()) {
                         TransactedFile::Range range (file, offset, size, false);
-                        range.Seek (
-                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                        range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                     }
                 }
                 // By now we got our block by either reusing a free one or growing the file.
@@ -189,7 +188,7 @@ namespace thekogans {
             }
             // To honor the Allocator policy, we ignore NULL pointers.
             if (offset != 0) {
-                if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Block::BLOCK_0_OFFSET)) {
+                if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Header::BLOCK_OFFSET)) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Catastrophic Heap Invariance Violation: Attempted to deallocate "
                         "the master metadata bootstrap anchor page at offset " THEKOGANS_UTIL_UI64_FORMAT,
@@ -276,7 +275,7 @@ namespace thekogans {
                 offset = Alloc (size);
             }
             else if (size > 0) {
-                if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Block::BLOCK_0_OFFSET)) {
+                if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Header::BLOCK_OFFSET)) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Catastrophic Heap Invariance Violation: Attempted to reallocate "
                         "the master metadata bootstrap anchor page at offset " THEKOGANS_UTIL_UI64_FORMAT,

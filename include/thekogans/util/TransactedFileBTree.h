@@ -248,6 +248,7 @@ namespace thekogans {
                 /// \brief
                 /// Entries per node.
                 ui32 entriesPerNode;
+                ui32 nodesPerPage;
                 /// \brief
                 /// Root node offset.
                 TransactedFile::AddressType rootOffset;
@@ -261,11 +262,13 @@ namespace thekogans {
                     const SerializableHeader &keyContext_ = SerializableHeader (),
                     const SerializableHeader &valueContext_ = SerializableHeader (),
                     ui32 flags_ = 0,
-                    ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
+                    ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE,
+                    ui32 nodesPerPage_ = DEFAULT_NODES_PER_PAGE) :
                     keyContext (keyContext_),
                     valueContext (valueContext_),
                     flags (flags_),
                     entriesPerNode (entriesPerNode_),
+                    nodesPerPage (nodesPerPage_),
                     rootOffset (0) {}
 
                 /// \brief
@@ -279,7 +282,6 @@ namespace thekogans {
                 /// Return the serialized size of the header.
                 std::size_t Size (Serializer &serializer) const;
             } header;
-            std::size_t nodesPerPage;
             /// \brief
             /// Key and Value types are cast in stone (in the ctor).
             /// Since we're going to be creating a lot of keys and values
@@ -650,7 +652,7 @@ namespace thekogans {
                 const SerializableHeader &valueContext = SerializableHeader (),
                 bool valueIsObject = false,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage_ = DEFAULT_NODES_PER_PAGE);
+                std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE);
             /// \brief
             /// dtor.
             virtual ~TransactedFileBTree ();
@@ -723,8 +725,8 @@ namespace thekogans {
                     nodeAllocator.Reset (
                         new SlabAllocatorImpl (
                             Node::Size (header.entriesPerNode),
-                            nodesPerPage,
-                            nodesPerPage / 4));
+                            header.nodesPerPage,
+                            header.nodesPerPage / 4));
                     root = Node::Alloc (this, file, 0);
                     root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
