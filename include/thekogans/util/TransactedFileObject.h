@@ -73,7 +73,7 @@ protected:
     /// \brief
     /// Our address inside the \see{TransactedFile}.
     AddressType offset{0};
-    SerializableHeader header;
+    std::size_t size{0};
     bool destroyed{false};
 
     friend struct ObjectRange;
@@ -226,11 +226,6 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
     ObjectRange (
         TransactedFile::SharedPtr file,
         TransactedFile::AddressType offset,
-        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
-    ObjectRange (
-        TransactedFile::SharedPtr file,
-        TransactedFile::AddressType offset,
-        SerializableHeader &expecting,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
     ObjectRange (
         TransactedFile::SharedPtr file,
