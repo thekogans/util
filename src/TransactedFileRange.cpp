@@ -75,7 +75,7 @@ namespace thekogans {
             ////////////////////////////////////////////////////////////////////
             // Check to see if the range straddles a page boundary...
             ui64 pageOffset = offset & file->GetPageMask ();
-            if (length > file->GetPageSize () - pageOffset) {
+            if (THEKOGANS_UTIL_UNLIKELY (length > file->GetPageSize () - pageOffset)) {
                 // ...it does. Allocate a backing buffer.
                 data = (ui8 *)allocator->Alloc (length);
                 owner = true;
@@ -100,7 +100,7 @@ namespace thekogans {
         }
 
         TransactedFile::Range::~Range () {
-            if (owner) {
+            if (THEKOGANS_UTIL_UNLIKELY (owner)) {
                 if (!reading && position > 0) {
                     file->pageMap->Write (offset, file.Get (), data, position);
                 }
@@ -147,7 +147,7 @@ namespace thekogans {
         std::size_t TransactedFile::SafeRange::Read (
                 void *buffer,
                 std::size_t count) {
-            if (buffer != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (buffer != nullptr && count > 0)) {
                 std::size_t available = GetDataAvailable ();
                 if (count > available) {
                     count = available;
@@ -163,7 +163,7 @@ namespace thekogans {
         std::size_t TransactedFile::SafeRange::Write (
                 const void *buffer,
                 std::size_t count) {
-            if (buffer != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (buffer != nullptr && count > 0)) {
                 std::size_t available = GetDataAvailable ();
                 if (count > available) {
                     count = available;

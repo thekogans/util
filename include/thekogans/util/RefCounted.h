@@ -40,7 +40,7 @@ namespace thekogans {
         /// heap will be allocated with new, and destroyed with delete. I
         /// provide a virtual void Harakiri () to give class designers finer
         /// control over the lifetime management of their classes. If you
-        /// need more control over heap placement, that's what \see{Heap}
+        /// need more control over heap placement, that's what \see{SlabAllocator}
         /// is for.
         ///
         /// NOTE: When inheriting from RefCounted, consider making it 'public virtual'.

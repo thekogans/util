@@ -29,7 +29,7 @@ namespace thekogans {
             Range range (file, offset, SIZE);
             ui32 magic;
             range >> magic;
-            if (magic == MAGIC32) {
+            if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                 range >> flags >> size;
             }
             else {
@@ -66,12 +66,12 @@ namespace thekogans {
         }
 
         bool TransactedFile::Block::Prev (Block &prev) const {
-            if (!IsFirst ()) {
+            if (THEKOGANS_UTIL_LIKELY (!IsFirst ())) {
                 Header footer;
                 footer.Read (file, offset - SIZE, false);
                 prev.offset = offset - SIZE - footer.size;
                 prev.header.Read (file, prev.offset - HEADER_SIZE, true);
-                if (prev.header != footer) {
+                if (THEKOGANS_UTIL_UNLIKELY (prev.header != footer)) {
                     throw Exception (
                         Exception::HEADER_FOOTER_MISMATCH,
                         FormatString (
@@ -89,7 +89,7 @@ namespace thekogans {
         }
 
         bool TransactedFile::Block::Next (Block &next) const {
-            if (!IsLast ()) {
+            if (THEKOGANS_UTIL_LIKELY (!IsLast ())) {
                 next.offset = offset + header.size + SIZE;
                 next.Read ();
                 return true;
@@ -101,7 +101,7 @@ namespace thekogans {
             header.Read (file, offset - HEADER_SIZE, true);
             Header footer;
             footer.Read (file, offset + header.size, false);
-            if (header != footer) {
+            if (THEKOGANS_UTIL_UNLIKELY (header != footer)) {
                 throw Exception (
                     Exception::HEADER_FOOTER_MISMATCH,
                     FormatString (

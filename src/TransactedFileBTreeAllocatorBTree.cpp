@@ -81,7 +81,7 @@ namespace thekogans {
         TransactedFileBTreeAllocatorBTree::Node::Node (TransactedFileBTreeAllocatorBTree *btree_) :
                 btree (btree_),
                 entries ((Entry *)(this + 1)) {
-            if (btree != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (btree != nullptr)) {
                 SecureZeroMemory (entries, btree->header.entriesPerNode * sizeof (Entry));
             }
         }
@@ -105,15 +105,15 @@ namespace thekogans {
         }
 
         TransactedFileBTreeAllocatorBTree::Node *TransactedFileBTreeAllocatorBTree::Node::GetChild (ui32 index) {
-            if (index == 0) {
-                if (leftNode == nullptr && leftOffset != 0) {
+            if (THEKOGANS_UTIL_UNLIKELY (index == 0)) {
+                if (THEKOGANS_UTIL_UNLIKELY (leftNode == nullptr && leftOffset != 0)) {
                     leftNode = Alloc (btree, file, leftOffset);
                 }
                 return leftNode;
             }
             else {
                 --index;
-                if (entries[index].rightNode == nullptr && entries[index].rightOffset != 0) {
+                if (THEKOGANS_UTIL_UNLIKELY (entries[index].rightNode == nullptr && entries[index].rightOffset != 0)) {
                     entries[index].rightNode = Alloc (btree, file, entries[index].rightOffset);
                 }
                 return entries[index].rightNode;
@@ -126,8 +126,8 @@ namespace thekogans {
             index = 0;
             ui32 last = count;
             while (index < last) {
-                ui32 middle = (index + last) / 2;
-                if (key == entries[middle].key) {
+                ui32 middle = index + ((last - index) >> 1);
+                if (THEKOGANS_UTIL_UNLIKELY (key == entries[middle].key)) {
                     index = middle;
                     return true;
                 }
@@ -147,10 +147,10 @@ namespace thekogans {
             // That means that you can insert the same node all you
             // want, but it will only be inserted the first time with
             // all subsequent ones being a noop.
-            if (!Find (entry.key, index)) {
+            if (THEKOGANS_UTIL_LIKELY (!Find (entry.key, index))) {
                 Node *child = GetChild (index);
                 if (child == nullptr || !child->Insert (entry)) {
-                    if (!IsFull ()) {
+                    if (THEKOGANS_UTIL_LIKELY (!IsFull ())) {
                         InsertEntry (entry, index);
                     }
                     else {
@@ -161,7 +161,7 @@ namespace thekogans {
                         Node *right = Alloc (btree, file, 0);
                         Split (right);
                         ui32 splitIndex = btree->header.entriesPerNode / 2;
-                        if (index != splitIndex) {
+                        if (THEKOGANS_UTIL_LIKELY (index != splitIndex)) {
                             if (index < splitIndex) {
                                 InsertEntry (entry, index);
                             }
@@ -321,13 +321,13 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::Reset () {
-            if (count > 0) {
-                if (leftNode != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (count > 0)) {
+                if (THEKOGANS_UTIL_LIKELY (leftNode != nullptr)) {
                     leftNode->Release ();
                     leftNode = nullptr;
                 }
                 for (ui32 i = 0; i < count; ++i) {
-                    if (entries[i].rightNode != nullptr) {
+                    if (THEKOGANS_UTIL_LIKELY (entries[i].rightNode != nullptr)) {
                         entries[i].rightNode->Release ();
                         entries[i].rightNode = nullptr;
                     }
@@ -345,9 +345,9 @@ namespace thekogans {
             Reset ();
             ui32 magic;
             serializer >> magic;
-            if (magic == MAGIC32) {
+            if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                 serializer >> count;
-                if (count > 0) {
+                if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                     serializer >> leftOffset;
                     for (ui32 i = 0; i < count; ++i) {
                         serializer >> entries[i];
@@ -363,13 +363,13 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocatorBTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
-            if (count > 0) {
-                if (leftNode != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (count > 0)) {
+                if (THEKOGANS_UTIL_LIKELY (leftNode != nullptr)) {
                     leftOffset = leftNode->offset;
                 }
                 serializer << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    if (entries[i].rightNode != nullptr) {
+                    if (THEKOGANS_UTIL_LIKELY (entries[i].rightNode != nullptr)) {
                         entries[i].rightOffset = entries[i].rightNode->offset;
                     }
                     serializer << entries[i];
@@ -380,15 +380,15 @@ namespace thekogans {
         void TransactedFileBTreeAllocatorBTree::Node::FreeObject (
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
-            if (file != nullptr && offset != 0) {
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 TransactedFile::ObjectRange range (file, offset);
-                if (range.context.WeakCompare ({TYPE, VERSION})) {
+                if (THEKOGANS_UTIL_LIKELY (range.context.WeakCompare ({TYPE, VERSION}))) {
                     ui32 magic;
                     range >> magic;
-                    if (magic == MAGIC32) {
+                    if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                         ui32 count;
                         range >> count;
-                        if (count > 0) {
+                        if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                             TransactedFile::AddressType leftOffset;
                             range >> leftOffset;
                             Node::FreeObject (file, leftOffset);
@@ -412,7 +412,7 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTreeAllocatorBTree, 1, 0)
 
         TransactedFileBTreeAllocatorBTree::~TransactedFileBTreeAllocatorBTree () {
-            if (root != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (root != nullptr)) {
                 root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                 root->Release ();
             }
@@ -427,7 +427,7 @@ namespace thekogans {
                     return key;
                 }
                 if (index < node->count &&
-                    node->entries[index].key > key && node->entries[index].key < result) {
+                        node->entries[index].key > key && node->entries[index].key < result) {
                     result = node->entries[index].key;
                 }
                 node = node->GetChild (index);
@@ -437,7 +437,7 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocatorBTree::Insert (const Key &key) {
             Node::Entry entry (key);
-            if (!root->Insert (entry)) {
+            if (THEKOGANS_UTIL_UNLIKELY (!root->Insert (entry))) {
                 // The path to the leaf node is full.
                 // Create a new root node and make the entry
                 // its first.
@@ -453,8 +453,8 @@ namespace thekogans {
 
         bool TransactedFileBTreeAllocatorBTree::Remove (const Key &key) {
             bool removed = root->Remove (key);
-            if (removed) {
-                if (root->IsEmpty () && root->GetChild (0) != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (removed)) {
+                if (THEKOGANS_UTIL_UNLIKELY (root->IsEmpty () && root->GetChild (0) != nullptr)) {
                     root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                     Node *node = root;
                     root = root->GetChild (0);
@@ -469,7 +469,7 @@ namespace thekogans {
         void TransactedFileBTreeAllocatorBTree::Read (Serializer &serializer) {
             ui32 magic;
             serializer >> magic;
-            if (magic == MAGIC32) {
+            if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                 serializer >> header;
             }
             else {
@@ -500,10 +500,10 @@ namespace thekogans {
                 TransactedFile::AddressType offset) {
             if (file != nullptr && offset != 0) {
                 TransactedFile::ObjectRange range (file, offset);
-                if (range.context.WeakCompare ({TYPE, VERSION})) {
+                if (THEKOGANS_UTIL_LIKELY (range.context.WeakCompare ({TYPE, VERSION}))) {
                     ui32 magic;
                     range >> magic;
-                    if (magic == MAGIC32) {
+                    if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                         Header header;
                         range >> header;
                         Node::FreeObject (file, header.rootOffset);

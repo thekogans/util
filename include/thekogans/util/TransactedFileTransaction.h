@@ -31,6 +31,18 @@
 /// A very simple transaction scope guard. Call Commit before the end of the
 /// scope to commit the transaction. If not, the dtor will abort it.
 struct _LIB_THEKOGANS_UTIL_DECL Transaction {
+    struct PhaseGuard {
+        TransactedFile::SharedPtr file;
+        PhaseGuard (TransactedFile::SharedPtr file_) :
+        file (file_) {}
+        ~PhaseGuard () {
+            SetPhase (PHASE_NONE);
+        }
+        void SetPhase (int phase) {
+            file->phase = phase;
+        }
+    };
+
     static constexpr int PHASE_NONE = 0;
     static constexpr int PHASE_IN_PROGRESS = 1;
     static constexpr int PHASE_ALLOC = 2;

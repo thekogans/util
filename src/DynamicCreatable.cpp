@@ -59,9 +59,9 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (type.empty ())) {
                 return None;
             }
-            THEKOGANS_UTIL_ASSERT (type.str == DynamicCreatable::TypeForType (type).str,
+            THEKOGANS_UTIL_ASSERT (type.c_str () == DynamicCreatable::TypeForType (type).c_str (),
                 "DynamicCreatable::DefaultTypeDictionary::GetOrCreateTypeId called on noncanonical type %s.",
-                type.str);
+                type.c_str ());
             auto it = hashMap.find (type);
             if (THEKOGANS_UTIL_LIKELY (it != hashMap.end ())) {
                 return it->second;
@@ -81,7 +81,7 @@ namespace thekogans {
         }
 
         bool DynamicCreatable::IsDerivedFrom (const HashedString &base) const noexcept {
-            if (base != nullptr) {
+            if (THEKOGANS_UTIL_LIKELY (!base.empty ())) {
                 BaseMapType::const_iterator it = GetBases ().find (base);
                 return it != GetBases ().end () &&
                     it->second.find (Type ()) != it->second.end ();
@@ -101,7 +101,7 @@ namespace thekogans {
         void DynamicCreatable::DumpBase (const HashedString &base) {
             BaseMapType::const_iterator it;
             BaseMapType::const_iterator end;
-            if (base != nullptr) {
+            if (!base.empty ()) {
                 it = end = GetBases ().find (base);
                 if (end != GetBases ().end ()) {
                     ++end;
@@ -112,11 +112,11 @@ namespace thekogans {
                 end = GetBases ().end ();
             }
             for (; it != end; ++it) {
-                std::cout << it->first.str << ":" << std::endl;
+                std::cout << it->first.c_str () << ":" << std::endl;
                 for (TypeMapType::const_iterator
                         jt = it->second.begin (),
                         end = it->second.end (); jt != end; ++jt) {
-                    std::cout << "  " << jt->first.str << std::endl;
+                    std::cout << "  " << jt->first.c_str () << std::endl;
                 }
             }
         }
