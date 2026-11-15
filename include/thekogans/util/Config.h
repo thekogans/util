@@ -91,7 +91,7 @@
 #if defined (THEKOGANS_UTIL_CONFIG_Debug)
     namespace thekogans {
         namespace util {
-            _LIB_THEKOGANS_UTIL_DECL std::string FormatString (
+            _LIB_THEKOGANS_UTIL_DECL __attribute__((format(printf, 1, 2))) std::string FormatString (
                 const char *format,
                 ...);
         } // namespace util

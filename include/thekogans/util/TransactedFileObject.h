@@ -224,37 +224,17 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
     /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     ObjectRange (
-            TransactedFile::SharedPtr file,
-            TransactedFile::AddressType offset,
-            const SerializableHeader &expecting = SerializableHeader (),
-            util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-            BlockRange (file, offset, true, allocator) {
-        ui32 magic;
-        *this >> magic;
-        if (magic != Object::MAGIC) {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                "Corrupt TransactedFile::Object: %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                expecting.type, offset);
-        }
-        *this >> context;
-        if (!expecting.NeedType () && context.type != expecting.type) {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                "Invalid TransactedFile::Object header type: %s, expecting: %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                context.type, expecting.type, offset);
-        }
-        if (!expecting.NeedVersion () && context.version > expecting.version) {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                "Invalid TransactedFile::Object header version " THEKOGANS_UTIL_UI64_FORMAT
-                " for type: %s, expecting: " THEKOGANS_UTIL_UI64_FORMAT " @" THEKOGANS_UTIL_UI64_FORMAT,
-                context.version, context.type, expecting.version, offset);
-        }
-    }
+        TransactedFile::SharedPtr file,
+        TransactedFile::AddressType offset,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
     ObjectRange (
-            TransactedFile::SharedPtr file,
-            TransactedFile::AddressType offset,
-            Object &object,
-            util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
-            BlockRange (file, offset, false, allocator) {
-        *this << Object::MAGIC << object.header;
-    }
+        TransactedFile::SharedPtr file,
+        TransactedFile::AddressType offset,
+        SerializableHeader &expecting,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+    ObjectRange (
+        TransactedFile::SharedPtr file,
+        TransactedFile::AddressType offset,
+        Object &object,
+        util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
 };

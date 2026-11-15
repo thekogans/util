@@ -687,7 +687,7 @@ namespace thekogans {
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Unknown value type %s.",
-                        value.Type ());
+                        value.Type ().c_str ());
                 }
             }
         }

@@ -18,6 +18,7 @@
 #include "thekogans/util/TransactedFile.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/TransactedFileTypeDictionary.h"
+    #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
     #include "thekogans/util/TransactedFileBTreeAllocator.h"
     #include "thekogans/util/TransactedFileBTreeRegistry.h"
     #include "thekogans/util/TransactedFileBTree.h"
@@ -33,6 +34,9 @@ namespace thekogans {
             TransactedFileTypeDictionary::StaticInitEx ();
             TransactedFileBTreeAllocator::StaticInitEx ();
             TransactedFileBTreeRegistry::StaticInitEx ();
+            TransactedFileBTreeAllocatorBtree::Node::StaticInitEx ();
+            TransactedFileBTreeAllocatorBtree::StaticInitEx ();
+            TransactedFileBTree::Node::StaticInitEx ();
             TransactedFileBTree::StaticInitEx ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
@@ -113,10 +117,10 @@ namespace thekogans {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::AllocBlock on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
-                header.size = Size (*file);
-                std::size_t size = 0;
+                std::size_t size;
                 {
                     Serializer::ContextGuard guard (*file);
+                    header.size = Size (*file);
                     size = UI32_SIZE + file->Size (header) + header.size;
                 }
                 if (offset == 0 || size > Block::GetSize (file, offset)) {
@@ -182,7 +186,6 @@ namespace thekogans {
                 "Calling TransactedFile::Object::Reload on a destroyed object.");
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 ObjectRange range (file, offset, header);
-                header.size = range.context.size;
                 Read (range);
             }
         }
@@ -216,6 +219,75 @@ namespace thekogans {
                 object->Init (range.GetFile (), range.GetOffset ());
             }
             return range;
+        }
+
+        TransactedFile::ObjectRange::ObjectRange (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset,
+                util::Allocator::SharedPtr allocator) :
+                BlockRange (file, offset, true, allocator) {
+            ui32 magic;
+            *this >> magic;
+            if (magic != Object::MAGIC) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt TransactedFile::Object: @" THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
+            }
+            *this >> context;
+            if (context.NeedType ()) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Invalid TransactedFile::Object type @" THEKOGANS_UTIL_UI64_FORMAT,
+                     offset);
+            }
+            if (context.NeedVersion ()) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Invalid TransactedFile::Object version for type %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                    context.type.c_str (), offset);
+            }
+        }
+
+        TransactedFile::ObjectRange::ObjectRange (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset,
+                SerializableHeader &expecting,
+                util::Allocator::SharedPtr allocator) :
+                BlockRange (file, offset, true, allocator) {
+            ui32 magic;
+            *this >> magic;
+            if (magic != Object::MAGIC) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Corrupt TransactedFile::Object: %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                    expecting.type.c_str (), offset);
+            }
+            *this >> context;
+            if (!expecting.NeedType () && context.type != expecting.type) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Invalid TransactedFile::Object header type: %s, expecting: %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                    context.type.c_str (), expecting.type.c_str (), offset);
+            }
+            else {
+                expecting.type = context.type;
+            }
+            if (!expecting.NeedVersion () && context.version > expecting.version) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Invalid TransactedFile::Object header version " THEKOGANS_UTIL_UI64_FORMAT
+                    " for type: %s, expecting: " THEKOGANS_UTIL_UI64_FORMAT " @" THEKOGANS_UTIL_UI64_FORMAT,
+                    context.version.value, context.type.c_str (), expecting.version.value, offset);
+            }
+            else {
+                expecting.version = context.version;
+            }
+            expecting.size = context.size;
+        }
+
+        TransactedFile::ObjectRange::ObjectRange (
+                TransactedFile::SharedPtr file,
+                TransactedFile::AddressType offset,
+                Object &object,
+                util::Allocator::SharedPtr) :
+                BlockRange (file, offset, false, allocator) {
+            *this << Object::MAGIC << object.header;
+            context = object.header;
         }
 
     } // namespace util

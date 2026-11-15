@@ -156,9 +156,9 @@ namespace thekogans {
                 // length calculations (GetEncodedLength) above are wrong.
                 if (encoded->writeOffset > encoded->length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Buffer overflow! (" THEKOGANS_UTIL_SIZE_T_FORMAT ", " THEKOGANS_UTIL_SIZE_T_FORMAT ")",
-                        encoded->length,
-                        encoded->writeOffset);
+                        "Buffer overflow! (" THEKOGANS_UTIL_UI64_FORMAT ", " THEKOGANS_UTIL_UI64_FORMAT ")",
+                        encoded->length.value,
+                        encoded->writeOffset.value);
                 }
                 return encoded;
             }
@@ -360,10 +360,10 @@ namespace thekogans {
                 // length calculations (DecodedLength) above are wrong.
                 if (output->writeOffset > output->length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Buffer overflow! (" THEKOGANS_UTIL_SIZE_T_FORMAT
-                        ", " THEKOGANS_UTIL_SIZE_T_FORMAT ")",
-                        output->length,
-                        output->writeOffset);
+                        "Buffer overflow! (" THEKOGANS_UTIL_UI64_FORMAT
+                        ", " THEKOGANS_UTIL_UI64_FORMAT ")",
+                        output->length.value,
+                        output->writeOffset.value);
                 }
                 return output;
             }

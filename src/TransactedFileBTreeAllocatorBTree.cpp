@@ -379,28 +379,30 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             if (file != nullptr && offset != 0) {
-                TransactedFile::ObjectRange range (file, offset, SerializableHeader{TYPE, VERSION});
-                ui32 magic;
-                range >> magic;
-                if (magic == MAGIC32) {
-                    ui32 count;
-                    range >> count;
-                    if (count > 0) {
-                        TransactedFile::AddressType leftOffset;
-                        range >> leftOffset;
-                        Node::FreeObject (file, leftOffset);
-                        for (ui32 i = 0; i < count; ++i) {
-                            Entry entry;
-                            range >> entry;
-                            Node::FreeObject (file, entry.rightOffset);
+                TransactedFile::ObjectRange range (file, offset);
+                if (range.context.WeakCompare ({TYPE, VERSION})) {
+                    ui32 magic;
+                    range >> magic;
+                    if (magic == MAGIC32) {
+                        ui32 count;
+                        range >> count;
+                        if (count > 0) {
+                            TransactedFile::AddressType leftOffset;
+                            range >> leftOffset;
+                            Node::FreeObject (file, leftOffset);
+                            for (ui32 i = 0; i < count; ++i) {
+                                Entry entry;
+                                range >> entry;
+                                Node::FreeObject (file, entry.rightOffset);
+                            }
                         }
+                        Object::FreeObject (file, offset);
                     }
-                    Object::FreeObject (file, offset);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt BTree::Node @" THEKOGANS_UTIL_UI64_FORMAT,
+                            offset);
+                    }
                 }
             }
         }
@@ -495,19 +497,21 @@ namespace thekogans {
                 TransactedFile::SharedPtr file,
                 TransactedFile::AddressType offset) {
             if (file != nullptr && offset != 0) {
-                TransactedFile::ObjectRange range (file, offset, SerializableHeader{TYPE, VERSION});
-                ui32 magic;
-                range >> magic;
-                if (magic == MAGIC32) {
-                    Header header;
-                    range >> header;
-                    Node::FreeObject (file, header.rootOffset);
-                    Object::FreeObject (file, offset);
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Corrupt BTree header @" THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
+                TransactedFile::ObjectRange range (file, offset);
+                if (range.context.WeakCompare ({TYPE, VERSION})) {
+                    ui32 magic;
+                    range >> magic;
+                    if (magic == MAGIC32) {
+                        Header header;
+                        range >> header;
+                        Node::FreeObject (file, header.rootOffset);
+                        Object::FreeObject (file, offset);
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Corrupt BTree header @" THEKOGANS_UTIL_UI64_FORMAT,
+                            offset);
+                    }
                 }
             }
         }

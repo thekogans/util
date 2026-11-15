@@ -100,14 +100,15 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (header.type != serializable.Type ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Header type (%s) does not match Serializable type (%s).",
-                    header.type,
-                    serializable.Type ());
+                    header.type.c_str (),
+                    serializable.Type ().c_str ());
             }
             if (THEKOGANS_UTIL_UNLIKELY (header.version > serializable.Version ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Header type (%s) version (%u) is greater then Serializable version (%u).",
-                    header.type,
-                    header.version,
+                    "Header type (%s) version (" THEKOGANS_UTIL_UI64_FORMAT
+                    ") is greater then Serializable version (" THEKOGANS_UTIL_SIZE_T_FORMAT ").",
+                    header.type.c_str (),
+                    header.version.value,
                     serializable.Version ());
             }
             Serializer::ContextGuard guard (serializer, header);
@@ -129,13 +130,14 @@ namespace thekogans {
             if (serializable == nullptr) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Unable to create a Serializable of type: %s.",
-                    header.type);
+                    header.type.c_str ());
             }
             if (header.version > serializable->Version ()) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Header type (%s) version (%u) is greater then the Serializable version (%u).",
-                    header.type,
-                    header.version,
+                    "Header type (%s) version (" THEKOGANS_UTIL_UI64_FORMAT
+                    ") is greater then the Serializable version (" THEKOGANS_UTIL_SIZE_T_FORMAT ").",
+                    header.type.c_str (),
+                    header.version.value,
                     serializable->Version ());
             }
             Serializer::ContextGuard guard (serializer, header);
@@ -166,16 +168,16 @@ namespace thekogans {
                         else {
                             Reset (serializer);
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                "Invalid serializable length: %u.",
-                                header.size);
+                                "Invalid serializable length: " THEKOGANS_UTIL_UI64_FORMAT ".",
+                                header.size.value);
                         }
                     }
                     else {
                         Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Header type (%s) is not the same as Serializable type (%s).",
-                            header.type,
-                            value.Type ());
+                            header.type.c_str (),
+                            value.Type ().c_str ());
                     }
                 }
             }
@@ -216,8 +218,8 @@ namespace thekogans {
                     else {
                         Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            "Invalid serializable length: " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                            header.size);
+                            "Invalid serializable length: " THEKOGANS_UTIL_UI64_FORMAT,
+                            header.size.value);
                     }
                 }
             }
@@ -243,7 +245,7 @@ namespace thekogans {
                         Reset (serializer);
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Unable to create a Serializable of type: %s.",
-                            header.type);
+                            header.type.c_str ());
                     }
                 }
             }

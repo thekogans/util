@@ -57,7 +57,7 @@ namespace thekogans {
                     std::string pipelineName;
                     if (!name.empty ()) {
                         pipelineName = FormatString (
-                            "%s-%u",
+                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT,
                             name.c_str (),
                             ++idPool);
                     }
@@ -174,7 +174,7 @@ namespace thekogans {
                     std::string pipelineName;
                     if (!name.empty ()) {
                         pipelineName = FormatString (
-                            "%s-%u",
+                            "%s-" THEKOGANS_UTIL_SIZE_T_FORMAT,
                             name.c_str (),
                             ++idPool);
                     }

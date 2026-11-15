@@ -407,21 +407,37 @@ namespace thekogans {
                         i64 seconds = upTime.seconds % 60;
                         i64 milliseconds = upTime.nanoseconds / 1000000;
                         if (days > 0) {
-                            header += FormatString ("[%dd %dh %dm %ds %dms] ",
+                            header += FormatString (
+                                "[" THEKOGANS_UTIL_I64_FORMAT "d "
+                                THEKOGANS_UTIL_I64_FORMAT "h "
+                                THEKOGANS_UTIL_I64_FORMAT "m "
+                                THEKOGANS_UTIL_I64_FORMAT "s "
+                                THEKOGANS_UTIL_I64_FORMAT "ms] ",
                                 days, hours, minutes, seconds, milliseconds);
                         }
                         else if (hours > 0) {
-                            header += FormatString ("[%dh %dm %ds %dms] ",
+                            header += FormatString (
+                                "[" THEKOGANS_UTIL_I64_FORMAT "h "
+                                THEKOGANS_UTIL_I64_FORMAT "m "
+                                THEKOGANS_UTIL_I64_FORMAT "s "
+                                THEKOGANS_UTIL_I64_FORMAT "ms] ",
                                 hours, minutes, seconds, milliseconds);
                         }
                         else if (minutes > 0) {
-                            header += FormatString ("[%dm %ds %dms] ", minutes, seconds, milliseconds);
+                            header += FormatString (
+                                "[" THEKOGANS_UTIL_I64_FORMAT "m "
+                                THEKOGANS_UTIL_I64_FORMAT "s "
+                                THEKOGANS_UTIL_I64_FORMAT "ms] ",
+                                minutes, seconds, milliseconds);
                         }
                         else if (seconds > 0) {
-                            header += FormatString ("[%ds %dms] ", seconds, milliseconds);
+                            header += FormatString (
+                                "[" THEKOGANS_UTIL_I64_FORMAT "s "
+                                THEKOGANS_UTIL_I64_FORMAT "ms] ",
+                                seconds, milliseconds);
                         }
                         else if (milliseconds > 0) {
-                            header += FormatString ("[%dms] ", milliseconds);
+                            header += FormatString ("[" THEKOGANS_UTIL_I64_FORMAT "ms] ", milliseconds);
                         }
                     }
                     if (!header.empty () && flags.Test (Multiline)) {

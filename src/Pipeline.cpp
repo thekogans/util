@@ -41,7 +41,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Pipeline (%s) max jobs (%u) reached.",
+                    "Pipeline (%s) max jobs (" THEKOGANS_UTIL_SIZE_T_FORMAT ") reached.",
                     !state.name.empty () ? state.name.c_str () : "no name",
                     maxJobs);
             }
@@ -55,7 +55,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Pipeline (%s) max jobs (%u) reached.",
+                    "Pipeline (%s) max jobs (" THEKOGANS_UTIL_SIZE_T_FORMAT ") reached.",
                     !state.name.empty () ? state.name.c_str () : "no name",
                     maxJobs);
             }
@@ -73,7 +73,7 @@ namespace thekogans {
             }
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Pipeline (%s) max jobs (%u) reached.",
+                    "Pipeline (%s) max jobs (" THEKOGANS_UTIL_SIZE_T_FORMAT ") reached.",
                     !state.name.empty () ? state.name.c_str () : "no name",
                     maxJobs);
             }

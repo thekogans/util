@@ -304,7 +304,7 @@ namespace thekogans {
                     if (result != Z_OK) {
                         if (zStream.msg != 0) {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                                zStream.msg);
+                                "%s", zStream.msg);
                         }
                         else {
                             THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -346,7 +346,7 @@ namespace thekogans {
                 if (result != Z_OK) {
                     if (zStream.msg != 0) {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                            zStream.msg);
+                            "%s", zStream.msg);
                     }
                     else {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
@@ -552,8 +552,8 @@ namespace thekogans {
                 if (buffer.length != bytesWritten) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "serializer.Write (buffer.data, "
-                        THEKOGANS_UTIL_SIZE_T_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        buffer.length,
+                        THEKOGANS_UTIL_UI64_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        buffer.length.value,
                         bytesWritten);
                 }
             }
@@ -579,8 +579,8 @@ namespace thekogans {
                 if (length != bytesRead) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "serializer.Read (buffer.data, "
-                        THEKOGANS_UTIL_SIZE_T_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        length,
+                        THEKOGANS_UTIL_UI64_FORMAT ") == " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                        length.value,
                         bytesRead);
                 }
             }
@@ -654,16 +654,16 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Base64::Decode (node.text ().get (), " THEKOGANS_UTIL_SIZE_T_FORMAT
                             ", buffer.data) == " THEKOGANS_UTIL_SIZE_T_FORMAT
-                            ", expecting " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            ", expecting " THEKOGANS_UTIL_UI64_FORMAT,
                             encodedBufferLength,
                             bytesDecoded,
-                            length);
+                            length.value);
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Empty encoded buffer, expecting length " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        length);
+                        "Empty encoded buffer, expecting length " THEKOGANS_UTIL_UI64_FORMAT,
+                        length.value);
                 }
             }
             buffer.endianness = endianness;
@@ -729,16 +729,16 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                             "Base64::Decode (node.text ().get (), " THEKOGANS_UTIL_SIZE_T_FORMAT
                             ", buffer.data) == " THEKOGANS_UTIL_SIZE_T_FORMAT
-                            ", expecting " THEKOGANS_UTIL_SIZE_T_FORMAT,
+                            ", expecting " THEKOGANS_UTIL_UI64_FORMAT,
                             contents.size (),
                             bytesDecoded,
-                            length);
+                            length.value);
                     }
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Empty encoded buffer, expecting length " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        length);
+                        "Empty encoded buffer, expecting length " THEKOGANS_UTIL_UI64_FORMAT,
+                        length.value);
                 }
             }
             buffer.endianness = endianness;

@@ -49,7 +49,7 @@ namespace thekogans {
             // FIXME: encapsulate RTLD_LAZY
             library = dlopen (path.c_str (), RTLD_LAZY);
             if (library == nullptr) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (dlerror ());
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
         }
@@ -64,7 +64,7 @@ namespace thekogans {
             }
         #else // defined (TOOLCHAIN_OS_Windows)
             if (dlclose (library) != 0) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (dlerror ());
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
             library = 0;
@@ -83,7 +83,7 @@ namespace thekogans {
         #else // defined (TOOLCHAIN_OS_Windows)
             proc = dlsym (library, name.c_str ());
             if (proc == nullptr) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (dlerror ());
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
             }
         #endif // defined (TOOLCHAIN_OS_Windows)
             return proc;
@@ -105,7 +105,7 @@ namespace thekogans {
             #else // defined (TOOLCHAIN_OS_Windows)
                 Dl_info info;
                 if (dladdr (&dladdrDummySymbol, &info) == 0) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (dlerror ());
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s", dlerror ());
                 }
                 return info.dli_fname;
             #endif // defined (TOOLCHAIN_OS_Windows)

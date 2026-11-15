@@ -191,9 +191,9 @@ namespace thekogans {
                 if (Read (&temp[0], length) != length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (&value[0], "
-                        THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        length,
-                        length);
+                        THEKOGANS_UTIL_UI64_FORMAT ") != " THEKOGANS_UTIL_UI64_FORMAT,
+                        length.value,
+                        length.value);
                 }
                 value.swap (temp);
             }
@@ -311,9 +311,9 @@ namespace thekogans {
                 if (Read (&temp[0], length) != length) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Read (&value[0], "
-                        THEKOGANS_UTIL_SIZE_T_FORMAT ") != " THEKOGANS_UTIL_SIZE_T_FORMAT,
-                        length,
-                        length);
+                        THEKOGANS_UTIL_UI64_FORMAT ") != " THEKOGANS_UTIL_UI64_FORMAT,
+                        length.value,
+                        length.value);
                 }
                 value.swap (temp);
             }

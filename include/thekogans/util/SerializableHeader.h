@@ -44,10 +44,10 @@ namespace thekogans {
             HashedString type;
             /// \brief
             /// \see{Serializable} version.
-            SizeT version{0};
+            SizeT version;
             /// \brief
             /// \see{Serializable} size in bytes (not including the header).
-            SizeT size{0};
+            SizeT size;
 
             /// \brief
             /// Return true if type is empty.
@@ -79,6 +79,10 @@ namespace thekogans {
             /// \return !NeedType () && !NeedVersion () && !NeedSize ().
             inline bool IsFull () const {
                 return !NeedType () && !NeedVersion () && !NeedSize ();
+            }
+
+            inline bool WeakCompare (const SerializableHeader &other) const noexcept {
+                return type == other.type && version <= other.version;
             }
         };
 

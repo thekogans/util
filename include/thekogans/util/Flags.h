@@ -32,15 +32,10 @@ namespace thekogans {
         /// types (ui8, ui16, ui32, ui64).
         template<typename T>
         struct Flags {
-        private:
             /// \brief
             /// The flags.
             T flags;
 
-        public:
-            /// \brief
-            /// ctor.
-            /// \param[in] flags_ Initial flags value.
             Flags (T flags_ = 0) :
                 flags (flags_) {}
 

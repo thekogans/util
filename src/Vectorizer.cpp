@@ -78,7 +78,7 @@ namespace thekogans {
                                 barrier.Wait ();
                             }
                         }, i);
-                    workers.back ().SetName (FormatString ("Vectorizer-%u", i));
+                    workers.back ().SetName (FormatString ("Vectorizer-" THEKOGANS_UTIL_SIZE_T_FORMAT, i));
                     workers.back ().SetPriority (workerPriority);
                 }
             }

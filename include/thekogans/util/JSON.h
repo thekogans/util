@@ -430,8 +430,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Bool::TYPE);
+                    Type ().c_str (),
+                    Bool::TYPE.c_str ());
             }
         }
 
@@ -446,8 +446,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -462,8 +462,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -478,8 +478,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -494,8 +494,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -510,8 +510,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -526,8 +526,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -542,8 +542,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -558,8 +558,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -574,8 +574,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -590,8 +590,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -606,8 +606,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    Number::TYPE);
+                    Type ().c_str (),
+                    Number::TYPE.c_str ());
             }
         }
 
@@ -622,8 +622,8 @@ namespace thekogans {
             else {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Value type %s is not %s.",
-                    Type (),
-                    String::TYPE);
+                    Type ().c_str (),
+                    String::TYPE.c_str ());
             }
         }
 
