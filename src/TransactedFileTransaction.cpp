@@ -27,11 +27,8 @@ namespace thekogans {
     namespace util {
 
         TransactedFile::Transaction::~Transaction () {
-            if (file->GetTransactionPhase () == PHASE_IN_PROGRESS) {
-                PhaseGuard guard (file);
-                // If the transaction has been committed, fte following statements are noop.
-                // There will be no dirty pages to clear, and no subscribers to notify.
-                guard.SetPhase (PHASE_ABORT);
+            if (file->phase != PHASE_NONE) {
+                file->phase = PHASE_ABORT;
                 file->size = file->GetSize ();
                 file->pageMap->Clear (true);
                 file->Producer<TransactedFileTransactionEvents>::Produce (
@@ -40,16 +37,16 @@ namespace thekogans {
                         std::placeholders::_1,
                         file),
                     true);
+                file->phase = PHASE_NONE;
             }
         }
 
         void TransactedFile::Transaction::Commit (bool clearCache) {
             if (file->GetTransactionPhase () == PHASE_IN_PROGRESS) {
-                PhaseGuard guard (file);
                 // =========================================================================
                 // STEP 1: DETERMINISTIC CONVERGENT SETTLEMENT LOOP (PHASE 1 ONLY)
                 // =========================================================================
-                guard.SetPhase (PHASE_ALLOC);
+                file->phase = PHASE_ALLOC;
                 std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> totalCommittedObjects;
                 totalCommittedObjects.reserve (file->Producer<TransactedFileTransactionEvents>::GetSubscriberCount () * 2);
                 std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> currentDirtyBatch;
@@ -102,7 +99,7 @@ namespace thekogans {
                 // =========================================================================
                 // STEP 2: UNIFIED FLUSH PASS (PHASE 2 ONLY)
                 // =========================================================================
-                guard.SetPhase (PHASE_FLUSH);
+                file->phase = PHASE_FLUSH;
                 for (const auto &subscriber : totalCommittedObjects) {
                     subscriber.second->DeliverEvent (
                         std::bind (
@@ -115,7 +112,7 @@ namespace thekogans {
                 // =========================================================================
                 // STEP 3: WRITE AHEAD LOG (WAL)
                 // =========================================================================
-                guard.SetPhase (PHASE_WAL);
+                file->phase = PHASE_WAL;
                 std::string logPath = GetLogPath (file->path);
                 // Dump dirty pages to log.
                 {
@@ -138,6 +135,7 @@ namespace thekogans {
                 file->SetSize (file->size);
                 file->Flush ();
                 File::Delete (logPath);
+                file->phase = PHASE_NONE;
             }
         }
 
