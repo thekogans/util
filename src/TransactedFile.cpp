@@ -76,6 +76,8 @@ namespace thekogans {
         }
 
         TransactedFile::TransactedFile (const std::string &path) :
+                // TransactedFileTypeDictionary implements an internal system
+                // dictionary to allow us to bootstrap the header.
                 dictionary (new TransactedFileTypeDictionary) {
             AddRef ();
             // Turn off OS page buffering. With PageMap's page alignment,
@@ -103,7 +105,7 @@ namespace thekogans {
             Range magicRange (this, 0, UI32_SIZE);
             ui32 magic;
             magicRange >> magic;
-            if (magic == MAGIC32) {
+            if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
                 // Log is host endian.
             }
             else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
@@ -114,7 +116,14 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("Corrupt TransactedFile %s", path.c_str ());
             }
             ObjectRange headerRange (this, Header::BLOCK_OFFSET);
-            headerRange >> header;
+            if (THEKOGANS_UTIL_LIKELY (
+                    headerRange.context.WeakCompare (SerializableHeader{Header::TYPE, Header::VERSION}))) {
+                headerRange >> header;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Expecting Header as the first block in %s", path.c_str ());
+            }
             guard.dismissed = true;
         }
 
@@ -134,12 +143,11 @@ namespace thekogans {
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
         #if defined (TOOLCHAIN_OS_Windows)
-            DWORD disposition = forceTruncate ? TRUNCATE_EXISTING : CREATE_NEW;
             File::Open (
                 path,
                 GENERIC_READ | GENERIC_WRITE,
                 FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                disposition,
+                forceTruncate ? TRUNCATE_EXISTING : CREATE_NEW,
                 FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
         #else // defined (TOOLCHAIN_OS_Windows)
             i32 flags = O_RDWR | O_CREAT;
@@ -155,7 +163,7 @@ namespace thekogans {
             HandleGuard guard{handle};
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Transaction transaction (this);
-            header = Object::Create<Header> (this, 0, secure ? Header::FLAGS_SECURE : 0);
+            header = Object::Create<Header> (this, 0, secure);
             transaction.Commit ();
             guard.dismissed = true;
         }

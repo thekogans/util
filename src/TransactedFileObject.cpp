@@ -17,11 +17,13 @@
 
 #include "thekogans/util/TransactedFile.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
+    #include "thekogans/util/TransactedFile.h"
     #include "thekogans/util/TransactedFileTypeDictionary.h"
     #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
     #include "thekogans/util/TransactedFileBTreeAllocator.h"
     #include "thekogans/util/TransactedFileBTreeRegistry.h"
     #include "thekogans/util/TransactedFileBTree.h"
+    #include "thekogans/util/TransactedFileObjects.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
 namespace thekogans {
@@ -31,6 +33,7 @@ namespace thekogans {
 
     #if defined (THEKOGANS_UTIL_TYPE_Static)
         void TransactedFile::Object::StaticInit () {
+            TransactedFile::Header::StaticInitEx ();
             TransactedFileTypeDictionary::StaticInitEx ();
             TransactedFileBTreeAllocator::StaticInitEx ();
             TransactedFileBTreeRegistry::StaticInitEx ();
@@ -38,6 +41,10 @@ namespace thekogans {
             TransactedFileBTreeAllocatorBTree::StaticInitEx ();
             TransactedFileBTree::Node::StaticInitEx ();
             TransactedFileBTree::StaticInitEx ();
+            StringObject::StaticInitEx ();
+            StringArrayObject::StaticInitEx ();
+            AddressArrayObject::StaticInitEx ();
+            GUIDArrayObject::StaticInitEx ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

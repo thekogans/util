@@ -53,8 +53,8 @@ public:
         AddressTypeSize + // allocatorOffset
         AddressTypeSize;  // regisryOffset
 
-    Header (ui32 flags_ = 0) :
-        flags (flags_) {}
+    Header (bool secure = false) :
+        flags (secure ? FLAGS_SECURE : 0) {}
 
     /// \brief
     /// Return true if secure.

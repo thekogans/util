@@ -357,7 +357,7 @@ namespace thekogans {
                 /// \brief
                 /// Delete pages.
                 /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
-                /// \return true == the node is empty, false == the node has pages remaining.
+                /// \return true == the node is empty, false == the node has pages/nodes remaining.
                 virtual bool Clear (bool dirty_) = 0;
 
                 /// \brief
@@ -379,7 +379,7 @@ namespace thekogans {
                 /// Write dirty pages to their source.
                 /// \param[in] pageSink \see{PageSource} where \see{Page} bits go.
                 /// \param[in] clearCache true == Delete cache after flush.
-                /// \return true == the node is empty, false == the node has pages remaining.
+                /// \return true == the node is empty, false == the node has pages/nodes remaining.
                 virtual bool Flush (
                     PageSource &pageSink,
                     bool clearCache = false) = 0;
@@ -388,7 +388,7 @@ namespace thekogans {
                 /// Delete all pages whose offset >= size.
                 /// \param[in] size New size to clip the address space to.
                 /// \return true == node was completely clipped (it is empty).
-                /// false == node was partialy clipped (it has pages).
+                /// false == node was partialy clipped (it has pages/nodes).
                 virtual bool Shrink (SizeType size) = 0;
 
                 /// \brief
@@ -448,7 +448,7 @@ namespace thekogans {
                         data (static_cast<ui8 *> (pageMap.pageAllocator.Alloc (pageMap.pageSize))),
                         dirty (false) {
                     SizeType countRead = 0;
-                    if (pageSource != nullptr) {
+                    if (THEKOGANS_UTIL_LIKELY (pageSource != nullptr)) {
                         countRead = pageSource->ReadPage (offset, data, pageMap.pageSize);
                     }
                     SecureZeroMemory (data + countRead, pageMap.pageSize - countRead);
@@ -957,14 +957,14 @@ namespace thekogans {
                     pageAllocator (pageAlignment, allocator),
                     root (nullptr) {
                 // Validate input.
-                if (bitsPerAddress == 0 || bitsPerAddress > BitWidth<AddressType>::value ||
+                if (THEKOGANS_UTIL_UNLIKELY (bitsPerAddress == 0 || bitsPerAddress > BitWidth<AddressType>::value ||
                         bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||
                         // bitsPerLevel is allowed to be 0.
                         /*bitsPerLevel == 0 ||*/ bitsPerLevel > (bitsPerAddress - bitsPerSegment) ||
                         bitsPerPage == 0 || bitsPerPage > bitsPerSegment ||
                         !IsPowerOf2 (pageAlignment) ||
                         internalNodesPerPage == 0 || segmentNodesPerPage == 0 ||
-                        allocator == nullptr) {
+                        allocator == nullptr)) {
                     THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                         THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                 }
@@ -972,7 +972,7 @@ namespace thekogans {
             /// \brief
             /// dtor.
             ~PageMap () {
-                if (root != nullptr) {
+                if (THEKOGANS_UTIL_LIKELY (root != nullptr)) {
                     root->Release ();
                     root = nullptr;
                 }
@@ -1035,7 +1035,7 @@ namespace thekogans {
                     void *buffer,
                     SizeType count) {
                 SizeType countRead = 0;
-                if (offset < maxOffset && buffer != nullptr && count > 0) {
+                if (THEKOGANS_UTIL_LIKELY (offset < maxOffset && buffer != nullptr && count > 0)) {
                     ui8 *ptr = static_cast<ui8 *> (buffer);
                     while (count > 0) {
                         typename Page::SharedPtr page = GetPage (offset, pageSource);
@@ -1045,7 +1045,7 @@ namespace thekogans {
                         SizeType countToRead = MIN (pageSize - pageOffset, count);
                         std::memcpy (ptr, page->data + pageOffset, countToRead);
                         countRead += countToRead;
-                        if (maxOffset - offset < countToRead) {
+                        if (THEKOGANS_UTIL_UNLIKELY (maxOffset - offset < countToRead)) {
                             break;
                         }
                         offset += countToRead;
@@ -1072,7 +1072,7 @@ namespace thekogans {
                     SizeType count) {
                 SizeType countWritten = 0;
                 // Quick bounds check.
-                if (offset < maxOffset && buffer != nullptr && count > 0) {
+                if (THEKOGANS_UTIL_LIKELY (offset < maxOffset && buffer != nullptr && count > 0)) {
                     const ui8 *ptr = static_cast<const ui8 *> (buffer);
                     while (count > 0) {
                         typename Page::SharedPtr page = GetPage (offset, pageSource);
@@ -1084,7 +1084,7 @@ namespace thekogans {
                         page->dirty = true;
                         countWritten += countToWrite;
                         // Check for overflow.
-                        if (maxOffset - offset < countToWrite) {
+                        if (THEKOGANS_UTIL_UNLIKELY (maxOffset - offset < countToWrite)) {
                             break;
                         }
                         offset += countToWrite;
@@ -1100,7 +1100,7 @@ namespace thekogans {
             /// \param[in] dirty_ true == delete dirty page. false == delete clean pages.
             void Clear (bool dirty_) {
                 LockGuard<Lock> guard (lock);
-                if (root != nullptr) {
+                if (THEKOGANS_UTIL_LIKELY (root != nullptr)) {
                     root->Clear (dirty_);
                     DeleteRoot ();
                 }
@@ -1113,7 +1113,7 @@ namespace thekogans {
             std::size_t Log (Serializer &log) {
                 LockGuard<Lock> guard (lock);
                 std::size_t count = 0;
-                if (root != nullptr) {
+                if (THEKOGANS_UTIL_LIKELY (root != nullptr)) {
                     root->Log (log, count);
                 }
                 return count;
@@ -1127,7 +1127,7 @@ namespace thekogans {
                     PageSource &pageSink,
                     bool clearCache = false) {
                 LockGuard<Lock> guard (lock);
-                if (root != nullptr) {
+                if (THEKOGANS_UTIL_LIKELY (root != nullptr)) {
                     root->Flush (pageSink, clearCache);
                     DeleteRoot ();
                 }
@@ -1138,7 +1138,7 @@ namespace thekogans {
             /// \param[in] size Size to clip the pages to.
             void Shrink (SizeType size) {
                 LockGuard<Lock> guard (lock);
-                if (root != nullptr) {
+                if (THEKOGANS_UTIL_LIKELY (root != nullptr)) {
                     root->Shrink (size);
                     DeleteRoot ();
                 }
@@ -1169,7 +1169,7 @@ namespace thekogans {
                     AddressType offset,
                     PageSource *pageSource) {
                 // Quick bounds check.
-                if (offset > maxOffset) {
+                if (THEKOGANS_UTIL_UNLIKELY (offset > maxOffset)) {
                     return nullptr;
                 }
                 offset &= ~pageMask;
@@ -1223,7 +1223,7 @@ namespace thekogans {
             /// This method is used by GetPage above to rebuild it.
             /// \return root.
             Node *GetRoot () {
-                if (root == nullptr) {
+                if (THEKOGANS_UTIL_UNLIKELY (root == nullptr)) {
                     // levelMask == 0 is a corner case where one segment covers the
                     // entire address space...
                     root = THEKOGANS_UTIL_UNLIKELY (levelMask == 0) ?
@@ -1239,7 +1239,7 @@ namespace thekogans {
             /// Dump the root if it's empty. Used by various methods above after a tree
             /// prunning.
             void DeleteRoot () {
-                if (root->IsEmpty ()) {
+                if (THEKOGANS_UTIL_UNLIKELY (root->IsEmpty ())) {
                     root->Release ();
                     root = nullptr;
                 }
@@ -1252,7 +1252,7 @@ namespace thekogans {
 
         // 2. Out-of-line class definition or C++17 inline declaration:
         template <typename T, std::size_t bitsPerAddress, typename Lock>
-        inline thread_local typename PageMap<T, bitsPerAddress, Lock>::Page *PageMap<T, bitsPerAddress, Lock>::lastGetPagePage = nullptr;
+        inline thread_local typename PageMap<T, bitsPerAddress, Lock>::Page *PageMap<T, bitsPerAddress, Lock>::lastGetPagePage{nullptr};
 
         /// \brief
         /// Alias for PageMap<ui32>.

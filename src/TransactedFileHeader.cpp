@@ -118,21 +118,21 @@ namespace thekogans {
                 block.Write ();
                 {
                     Object::SharedPtr object = file->dictionary;
-                    if (object != nullptr) {
+                    if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
                         object->Producer<ObjectEvents>::Subscribe (*this);
                         object->Init (file, 0);
                     }
                 }
                 {
                     Object::SharedPtr object = file->allocator;
-                    if (object != nullptr) {
+                    if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
                         object->Producer<ObjectEvents>::Subscribe (*this);
                         object->Init (file, 0);
                     }
                 }
                 {
                     Object::SharedPtr object = file->registry;
-                    if (object != nullptr) {
+                    if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
                         object->Producer<ObjectEvents>::Subscribe (*this);
                         object->Init (file, 0);
                     }
