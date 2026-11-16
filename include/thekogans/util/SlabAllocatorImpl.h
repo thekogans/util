@@ -260,6 +260,7 @@ namespace thekogans {
                         }
                         slotCount = 0;
                     }
+                    assert (slotList == nullptr && slotCount == 0);
                 }
             };
 

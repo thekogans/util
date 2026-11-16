@@ -559,13 +559,13 @@ namespace thekogans {
                         /// Pointer to the next free slot in the list.
                         Slot *next;
 
-                        inline Page *GetPage (std::size_t pageMask) noexcept {
+                        inline Page *GetPage () noexcept {
                             Page *page = reinterpret_cast<Page *> (reinterpret_cast<uintptr_t> (this) & ~pageMask);
                             return THEKOGANS_UTIL_LIKELY (page->header.magic == MAGIC64) ? page : nullptr;
                         }
 
-                        inline void Free (std::size_t pageMask) noexcept {
-                            Page *page = GetPage (pageMask);
+                        inline void Free () noexcept {
+                            Page *page = GetPage ();
                             if (THEKOGANS_UTIL_LIKELY (page != nullptr)) {
                                 page->Free (this);
                             }
@@ -690,7 +690,6 @@ namespace thekogans {
                 /// acquisition. In real load testing (see test_SlabAllocator) this
                 /// results in ~65% speedup!
                 struct TLC {
-                    std::size_t pageMask{0};
                     /// \brief
                     /// Our own local slot cache.
                     typename Page::Slot *slotList{nullptr};
@@ -718,7 +717,6 @@ namespace thekogans {
                     }
 
                     inline void Reset () noexcept {
-                        pageMask = 0;
                         slotList = nullptr;
                         slotCount = 0;
                     }
@@ -727,7 +725,7 @@ namespace thekogans {
                     /// dtor. Return our locally cached slots back to the global page pool.
                     inline void Release () noexcept {
                         if (slotList != nullptr) {
-                            Page *page = slotList->GetPage (pageMask);
+                            Page *page = slotList->GetPage ();
                             // Even though, technically, GetPage can return nullptr,
                             // these are our internal slots not some random void *
                             // passed to Free. If they are not pointing to valid pages
@@ -736,10 +734,12 @@ namespace thekogans {
                             LockGuard<Lock> guard (page->header.allocator.storage.lock);
                             do {
                                 typename Page::Slot *next = slotList->next;
-                                slotList->Free (pageMask);
+                                slotList->Free ();
                                 slotList = next;
                             } while (slotList != nullptr);
+                            slotCount = 0;
                         }
+                        assert (slotList == nullptr && slotCount == 0);
                     }
                 };
 
@@ -803,10 +803,6 @@ namespace thekogans {
                     /// Protect access to storage.
                     /// Align the lock to it's own cache line to prevent false sharing with pageList.
                     alignas (CacheLineSize) Lock lock;
-
-                    Storage () {
-                        GetTLC (StorageBaseImpl::tlcIndex).pageMask = pageMask;
-                    }
                 } storage;
 
             public:
@@ -854,7 +850,7 @@ namespace thekogans {
                 void Free (void *ptr) noexcept {
                     if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                         typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
-                        if (slot->GetPage (pageMask) != nullptr) {
+                        if (slot->GetPage () != nullptr) {
                             if constexpr (TLCSize > 0) {
                                 TLC &tlc = GetTLC (storage.tlcIndex);
                                 tlc.Push (slot);
@@ -864,13 +860,13 @@ namespace thekogans {
                                     LockGuard<Lock> guard (storage.lock);
                                     static constexpr std::size_t flushCount = TLCSize / 2;
                                     for (std::size_t i = 0; i < flushCount; ++i) {
-                                        tlc.Pop ()->Free (pageMask);
+                                        tlc.Pop ()->Free ();
                                     }
                                 }
                             }
                             else {
                                 LockGuard<Lock> guard (storage.lock);
-                                slot->Free (pageMask);
+                                slot->Free ();
                             }
                         }
                     }

@@ -247,29 +247,21 @@ namespace thekogans {
             return false;
         }
 
-        TransactedFileBTree::Node::InsertResult TransactedFileBTree::Node::Insert (
-                Entry &entry,
-                Iterator &it) {
+        TransactedFileBTree::Node::InsertResult TransactedFileBTree::Node::Insert (Entry &entry) {
             ui32 index = 0;
             if (Find (*entry.key, index)) {
                 assert (index < count);
-                if (it.IsFinished ()) {
-                    it.Reset (this, index);
-                }
                 return Duplicate;
             }
             Node *child = GetChild (index);
             if (child != nullptr) {
-                InsertResult result = child->Insert (entry, it);
+                InsertResult result = child->Insert (entry);
                 if (result == Inserted || result == Duplicate) {
                     return result;
                 }
             }
             if (THEKOGANS_UTIL_LIKELY (!IsFull ())) {
                 InsertEntry (entry, index);
-                if (it.IsFinished ()) {
-                    it.Reset (this, index);
-                }
                 return Inserted;
             }
             else {
@@ -283,16 +275,18 @@ namespace thekogans {
                 if (THEKOGANS_UTIL_UNLIKELY (index != splitIndex)) {
                     if (index < splitIndex) {
                         InsertEntry (entry, index);
-                        if (it.IsFinished ()) {
-                            it.Reset (this, index);
-                        }
                     }
                     else {
                         right->InsertEntry (entry, index - splitIndex);
-                        if (it.IsFinished ()) {
-                            it.Reset (right, index - splitIndex);
-                            // -1 because we will be removing the 0'th entry below.
-                            --it.node.second;
+                    }
+                    if (right->entries[0].value != nullptr) {
+                        if (!btree->header.IsValueIsObject ()) {
+                            right->entries[0].value->Producer<SerializableEvents>::Unsubscribe (*right);
+                        }
+                        else {
+                            TransactedFile::Object::SharedPtr object =
+                                Serializable::SharedPtr (right->entries[0].value);
+                            object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
                         }
                     }
                     entry = right->entries[0];
@@ -311,21 +305,6 @@ namespace thekogans {
             bool found = Find (key, index);
             Node *child = GetChild (found ? index + 1 : index);
             if (found) {
-                // Release the key and value. They will
-                // either be overwritten or removed below.
-                entries[index].key->Release ();
-                if (entries[index].value != nullptr) {
-                    if (!btree->header.IsValueIsObject ()) {
-                        entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
-                    }
-                    else {
-                        TransactedFile::Object::SharedPtr object =
-                            Serializable::SharedPtr (entries[index].value);
-                        object->FreeBlock ();
-                        object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                    }
-                    entries[index].value->Release ();
-                }
                 if (child != nullptr) {
                     Node *leaf = child;
                     while (leaf->leftOffset != 0) {
@@ -351,6 +330,24 @@ namespace thekogans {
                     }
                 }
                 else {
+                    entries[index].key->Release ();
+                    entries[index].key = nullptr;
+                    if (entries[index].value != nullptr) {
+                        if (!btree->header.IsValueIsObject ()) {
+                            entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                        }
+                        else {
+                            TransactedFile::Object::SharedPtr object =
+                                Serializable::SharedPtr (entries[index].value);
+                            object->FreeBlock ();
+                            object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                        }
+                        entries[index].value->Release ();
+                        entries[index].value = nullptr;
+                    }
+                    else if (entries[index].valueOffset != 0) {
+                        Object::FreeObject (file, entries[index].valueOffset);
+                    }
                     RemoveEntry (index);
                 }
                 return true;
@@ -409,11 +406,13 @@ namespace thekogans {
             entries[index] = left->entries[lastIndex];
             if (entries[index].value != nullptr) {
                 if (!btree->header.IsValueIsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Unsubscribe (*left);
                     entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                 }
                 else {
                     TransactedFile::Object::SharedPtr object =
                         Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*left);
                     object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
             }
@@ -435,11 +434,13 @@ namespace thekogans {
             entries[index] = right->entries[0];
             if (entries[index].value != nullptr) {
                 if (!btree->header.IsValueIsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Unsubscribe (*right);
                     entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                 }
                 else {
                     TransactedFile::Object::SharedPtr object =
                         Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
                     object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
             }
@@ -527,16 +528,6 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
-            if (entries[index].value != nullptr) {
-                if (!btree->header.IsValueIsObject ()) {
-                    entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
-                }
-                else {
-                    TransactedFile::Object::SharedPtr object =
-                        Serializable::SharedPtr (entries[index].value);
-                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                }
-            }
             std::memcpy (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
             SetDirty ();
         }
@@ -764,19 +755,15 @@ namespace thekogans {
             }
         }
 
-        bool TransactedFileBTree::Find (
-                const Key &key,
-                Iterator &it) {
+        Serializable::SharedPtr TransactedFileBTree::Find (const Key &key) {
             if (THEKOGANS_UTIL_LIKELY (key.IsKindOf (header.keyContext.type))) {
-                it.Clear ();
                 ui32 index = 0;
                 for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
-                        it.Reset (node, index);
-                        break;
+                        return node->GetValue (index);
                     }
                 }
-                return !it.finished;
+                return nullptr;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -786,14 +773,12 @@ namespace thekogans {
 
         bool TransactedFileBTree::Insert (
                 Key::SharedPtr key,
-                Serializable::SharedPtr value,
-                Iterator &it) {
+                Serializable::SharedPtr value) {
             if (THEKOGANS_UTIL_LIKELY (key != nullptr && value != nullptr &&
                     key->IsKindOf (header.keyContext.type) &&
                     ((header.IsValueIsObject () &&
                         dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value) != nullptr) ||
                         header.valueContext.NeedType () || value->IsKindOf (header.valueContext.type)))) {
-                it.Clear ();
                 key = key->Clone ();
                 TransactedFile::AddressType valueOffset = 0;
                 if (!header.IsValueIsObject ()) {
@@ -813,7 +798,7 @@ namespace thekogans {
                     }
                 }
                 Node::Entry entry (key.Get (), valueOffset, value.Get ());
-                Node::InsertResult result = root->Insert (entry, it);
+                Node::InsertResult result = root->Insert (entry);
                 if (THEKOGANS_UTIL_UNLIKELY (result == Node::Overflow)) {
                     // The path to the leaf node is full.
                     // Create a new root node and make the entry
@@ -825,9 +810,6 @@ namespace thekogans {
                     node->InsertEntry (entry, 0);
                     root = node;
                     root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                    if (it.IsFinished ()) {
-                        it.Reset (node, 0);
-                    }
                     result = Node::Inserted;
                 }
                 // If we inserted the key/value pair, take ownership.

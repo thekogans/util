@@ -448,9 +448,7 @@ namespace thekogans {
                 /// \param[out] it Iterator to update with the inserted entry.
                 /// \return true == entry inserted. false == the entire sub-tree
                 /// rooted at this node is full. Time to split the node.
-                InsertResult Insert (
-                    Entry &entry,
-                    Iterator &it);
+                InsertResult Insert (Entry &entry);
                 /// \brief
                 /// Try to recursively delete the given key.
                 /// \param[in] key \see{Key} whose entry we want to delete.
@@ -658,9 +656,7 @@ namespace thekogans {
             /// \param[in] key \see{Key} to search for.
             /// \param[out] it If found the iterator will point to the entry.
             /// \return true == found.
-            bool Find (
-                const Key &key,
-                Iterator &it);
+            Serializable::SharedPtr Find (const Key &key);
             /// \brief
             /// Insert the given key in to the btree.
             /// \param[in] key Key to insert.
@@ -670,8 +666,7 @@ namespace thekogans {
             /// the current entry in it.
             bool Insert (
                 Key::SharedPtr key,
-                Serializable::SharedPtr value,
-                Iterator &it);
+                Serializable::SharedPtr value);
             /// \brief
             /// Delete the given key from the btree.
             /// \param[in] key Key to delete.

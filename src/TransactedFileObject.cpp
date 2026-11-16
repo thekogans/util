@@ -64,6 +64,8 @@ namespace thekogans {
                     it->second (file, offset);
                 }
                 else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Unable to locate a deleter for %s", range.context.type.c_str ());
                 }
             }
         }
@@ -129,7 +131,7 @@ namespace thekogans {
                     Serializer::ContextGuard guard (*file);
                     size = Size (*file);
                     SerializableHeader header{Type (), Version (), size};
-                    objectSize = UI32_SIZE + file->Size (header) + header.size;
+                    objectSize = UI32_SIZE + file->Size (header) + size;
                 }
                 if (offset == 0 || objectSize > Block::GetSize (file, offset)) {
                     AddressType newOffset = file->GetAllocator ()->Realloc (offset, objectSize, false);
@@ -199,7 +201,7 @@ namespace thekogans {
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Error reloading TransactedFile::Object, header mesmatch. "
+                        "Error reloading TransactedFile::Object, header mismatch. "
                         "On disk: type %s, version " THEKOGANS_UTIL_UI64_FORMAT ". "
                         "Expecting: type %s, version " THEKOGANS_UTIL_SIZE_T_FORMAT ". ",
                         range.context.type.c_str (), range.context.version.value,
@@ -236,6 +238,10 @@ namespace thekogans {
             if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
                 object->Init (range.GetFile (), range.GetOffset ());
             }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Unable to create %s.", range.context.type.c_str ());
+            }
             return range;
         }
 
@@ -255,7 +261,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (context.NeedType ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Invalid TransactedFile::Object type @" THEKOGANS_UTIL_UI64_FORMAT,
-                     offset);
+                    offset);
             }
             if (THEKOGANS_UTIL_UNLIKELY (context.NeedVersion ())) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (

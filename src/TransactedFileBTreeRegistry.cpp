@@ -26,16 +26,14 @@ namespace thekogans {
 
         Serializable::SharedPtr TransactedFileBTreeRegistry::GetValue (const std::string &key) {
             LockGuard<SpinLock> guard (spinLock);
-            Iterator it;
-            return Find (StringKey (key), it) ? it.GetValue () : nullptr;
+            return Find (StringKey (key));
         }
 
         bool TransactedFileBTreeRegistry::InsertValue (
                 const std::string &key,
                 Serializable::SharedPtr value) {
             LockGuard<SpinLock> guard (spinLock);
-            Iterator it;
-            return Insert (new StringKey (key), value, it);
+            return Insert (new StringKey (key), value);
         }
 
         void TransactedFileBTreeRegistry::RemoveValue (const std::string &key) {
