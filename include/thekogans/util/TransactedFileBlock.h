@@ -62,7 +62,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Block {
 protected:
     /// \brief
     /// Block \see{TransactedFile}.
-    TransactedFile::SharedPtr file;
+    TransactedFile *file;
     /// \brief
     /// Block offset.
     AddressType offset;
@@ -122,7 +122,7 @@ protected:
         /// \param[in] header true == true, we're parsing the header,
         /// flase == we're parsing the footer.
         void Read (
-            TransactedFile::SharedPtr file,
+            TransactedFile *file,
             AddressType offset,
             bool header);
         /// \brief
@@ -130,7 +130,7 @@ protected:
         /// \param[in] file TransactedFile to write to.
         /// \param[in] offset Offset where the header begins.
         void Write (
-            TransactedFile::SharedPtr file,
+            TransactedFile *file,
             AddressType offset) const;
     } header;
 
@@ -212,7 +212,7 @@ public:
     /// \param[in] flags Combination of FLAGS_FREE and allocator specific flags.
     /// \param[in] size Block size (not including the size of the Block itself).
     Block (
-        TransactedFile::SharedPtr file_,
+        TransactedFile *file_,
         AddressType offset_ = 0,
         Flags32 flags = 0,
         SizeType size = 0) :
@@ -226,7 +226,7 @@ public:
     /// \param[in] offset Block offset.
     /// \return Block size.
     static ui64 GetSize (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         AddressType offset);
 
     /// \brief
@@ -340,7 +340,7 @@ struct _LIB_THEKOGANS_UTIL_DECL BlockRange : public Range {
     /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     BlockRange (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         TransactedFile::AddressType offset,
         bool reading = true,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :
@@ -362,7 +362,7 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeBlockRange : public SafeRange {
     /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     SafeBlockRange (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         TransactedFile::AddressType offset,
         bool reading = true,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ()) :

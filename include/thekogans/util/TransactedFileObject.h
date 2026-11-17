@@ -69,7 +69,7 @@ protected:
     /// \brief
     /// \see{TransactedFile} whose \see{TransactedFileTransactionEvents}
     /// we're participants of.
-    TransactedFile::SharedPtr file;
+    TransactedFile *file{nullptr};
     /// \brief
     /// Our address inside the \see{TransactedFile}.
     AddressType offset{0};
@@ -90,7 +90,7 @@ public:
     // -------+----------------+------------------+
     template<typename T, typename... Args>
     static typename T::SharedPtr Create (
-            TransactedFile::SharedPtr file,
+            TransactedFile *file,
             TransactedFile::AddressType offset,
             Args&&... args) {
         THEKOGANS_UTIL_ASSERT (file != nullptr,
@@ -104,7 +104,7 @@ public:
     /// Type deleter method.
     using DeleterType =
         std::function<void (
-            TransactedFile::SharedPtr /*file*/,
+            TransactedFile */*file*/,
             AddressType /*offset*/)>;
     /// \brief
     /// Maps type name to it's deleter method.
@@ -117,10 +117,10 @@ public:
     }
 
     static void DestroyObject (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         AddressType offset);
     static void FreeObject (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         AddressType offset);
 
 #if defined (THEKOGANS_UTIL_TYPE_Static)
@@ -148,7 +148,7 @@ public:
     /// \brief
     /// Return the file.
     /// \return file.
-    inline TransactedFile::SharedPtr GetFile () const {
+    inline TransactedFile *GetFile () const {
         return file;
     }
 
@@ -173,7 +173,7 @@ public:
     virtual void SetDirty () override;
 
     virtual void Init (
-        TransactedFile::SharedPtr file_,
+        TransactedFile *file_,
         AddressType offset_);
 
     /// \brief
@@ -198,16 +198,16 @@ protected:
     /// Transaction is commiting. Flush the internal cache to file.
     /// \param[in] file \see{TransactedFile} commiting the transaction.
     virtual void OnTransactedFileTransactionCommit (
-        TransactedFile::SharedPtr /*file*/,
+        TransactedFile */*file*/,
         int phase) noexcept override;
     /// \brief
     /// Transaction is aborting. Reload the internal cache from file.
     /// \param[in] file \see{TransactedFile} aborting the transaction.
     virtual void OnTransactedFileTransactionAbort (
-        TransactedFile::SharedPtr /*file*/) noexcept override;
+        TransactedFile */*file*/) noexcept override;
 
     virtual void OnTransactedFileOffsetDestroyed (
-            TransactedFile::SharedPtr /*file*/,
+            TransactedFile */*file*/,
             AddressSpaceType::AddressType offset_) noexcept override {
         if (offset == offset_) {
             offset = 0;
@@ -226,11 +226,11 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
     /// false == Range will be used for writting.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     ObjectRange (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         TransactedFile::AddressType offset,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
     ObjectRange (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         TransactedFile::AddressType offset,
         Object &object,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());

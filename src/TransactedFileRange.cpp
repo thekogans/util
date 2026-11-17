@@ -22,7 +22,7 @@ namespace thekogans {
     namespace util {
 
         TransactedFile::Range::Range (
-                TransactedFile::SharedPtr file_,
+                TransactedFile *file_,
                 ui64 offset_,
                 std::size_t length_,
                 bool reading_,
@@ -84,7 +84,7 @@ namespace thekogans {
                     ++file->stats.ownerReadingRanges;
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                     // and, if it's a read request, buffer the underlying file range.
-                    file->pageMap->Read (offset, file.Get (), data, length);
+                    file->pageMap->Read (offset, file, data, length);
                 }
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 else {
@@ -94,7 +94,7 @@ namespace thekogans {
             }
             else {
                 // ...otherwise, read/write directly from/into the page.
-                page = file->pageMap->GetPage (offset, file.Get ());
+                page = file->pageMap->GetPage (offset, file);
                 data = page->data + pageOffset;
             }
         }
@@ -102,7 +102,7 @@ namespace thekogans {
         TransactedFile::Range::~Range () {
             if (THEKOGANS_UTIL_UNLIKELY (owner)) {
                 if (!reading && position > 0) {
-                    file->pageMap->Write (offset, file.Get (), data, position);
+                    file->pageMap->Write (offset, file, data, position);
                 }
                 allocator->Free (data, length);
             }

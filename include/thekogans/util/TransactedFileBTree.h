@@ -372,7 +372,7 @@ namespace thekogans {
                 /// \param[in] offset Node offset on disk.
                 static Node *Alloc (
                     TransactedFileBTree *btree,
-                    TransactedFile::SharedPtr file,
+                    TransactedFile *file,
                     TransactedFile::AddressType offset);
 
                 /// \brief
@@ -576,7 +576,7 @@ namespace thekogans {
                 /// \param[in] file \see{TransactedFile} to which the node belongs.
                 /// \param[in] offset Node offset.
                 static void FreeObject (
-                    TransactedFile::SharedPtr file,
+                    TransactedFile *file,
                     TransactedFile::AddressType offset);
 
                 // SerializableEvents
@@ -702,7 +702,7 @@ namespace thekogans {
         public:
             // TransactedFile::Object
             virtual void Init (
-                    TransactedFile::SharedPtr file,
+                    TransactedFile *file,
                     TransactedFile::AddressType offset) override {
                 Object::Init (file, offset);
                 if (offset == 0) {
@@ -721,7 +721,7 @@ namespace thekogans {
             /// \param[in] file \see{TransactedFile} to which the btree belongs.
             /// \param[in] offset Btree offset.
             static void FreeObject (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset);
 
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {

@@ -53,13 +53,13 @@ namespace thekogans {
             /// \param[in] file TransactedFile comming the transaction.
             /// \param[in] phase Transaction phase.
             virtual void OnTransactedFileTransactionCommit (
-                RefCounted::SharedPtr<TransactedFile> /*file*/,
+                TransactedFile */*file*/,
                 int phase) noexcept {}
             /// \brief
             /// Transaction is aborting.
             /// \param[in] file TransactedFile abortig the transaction.
             virtual void OnTransactedFileTransactionAbort (
-                RefCounted::SharedPtr<TransactedFile> /*file*/) noexcept {}
+                TransactedFile */*file*/) noexcept {}
         };
 
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileStructureEvents {
@@ -67,7 +67,7 @@ namespace thekogans {
 
             // Broadcast for terminal file destructions
             virtual void OnTransactedFileOffsetDestroyed (
-                RefCounted::SharedPtr<TransactedFile> /*file*/,
+                TransactedFile */*file*/,
                 PageMap64::AddressType offset) noexcept {}
         };
 

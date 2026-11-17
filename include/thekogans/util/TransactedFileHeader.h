@@ -73,7 +73,7 @@ public:
     virtual void Write (Serializer &serializer) override;
 
     virtual void Init (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         TransactedFile::AddressType offset) noexcept override;
 
     virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {

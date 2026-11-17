@@ -108,7 +108,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Header::Init (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset) noexcept {
             Object::Init (file, offset);
             if (offset == 0) {

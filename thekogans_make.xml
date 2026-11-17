@@ -166,6 +166,7 @@
     <cpp_header>$(organization)/$(project_directory)/ThreadRunLoop.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TimeSpec.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/Timer.h</cpp_header>
+    <cpp_header>$(organization)/$(project_directory)/ToStringConvertible.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFile.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileAllocator.h</cpp_header>
     <cpp_header>$(organization)/$(project_directory)/TransactedFileBlock.h</cpp_header>

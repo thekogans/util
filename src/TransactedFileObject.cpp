@@ -49,7 +49,7 @@ namespace thekogans {
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 
         void TransactedFile::Object::DestroyObject (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 AddressType offset) {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
@@ -71,7 +71,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::FreeObject (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 AddressType offset) {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
@@ -106,7 +106,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::Init (
-                TransactedFile::SharedPtr file_,
+                TransactedFile *file_,
                 AddressType offset_) {
             THEKOGANS_UTIL_ASSERT (file == nullptr,
                 "TransactedFile::Object::Init called on an already initialized object.");
@@ -211,7 +211,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
-                TransactedFile::SharedPtr /*file*/,
+                TransactedFile */*file*/,
                 int phase) noexcept {
             if (phase == TransactedFile::Transaction::PHASE_ALLOC) {
                 AllocBlock ();
@@ -222,7 +222,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Object::OnTransactedFileTransactionAbort (
-                TransactedFile::SharedPtr /*file*/) noexcept {
+                TransactedFile */*file*/) noexcept {
             Reload ();
         }
 
@@ -246,7 +246,7 @@ namespace thekogans {
         }
 
         TransactedFile::ObjectRange::ObjectRange (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset,
                 util::Allocator::SharedPtr allocator) :
                 BlockRange (file, offset, true, allocator) {
@@ -271,7 +271,7 @@ namespace thekogans {
         }
 
         TransactedFile::ObjectRange::ObjectRange (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset,
                 Object &object,
                 util::Allocator::SharedPtr allocator) :

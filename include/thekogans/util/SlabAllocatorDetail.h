@@ -759,19 +759,37 @@ namespace thekogans {
 
                 /// \brief
                 /// Return the TLC associated with this allocator.
-                static TLC &GetTLC (std::size_t tlcIndex) noexcept {
+                inline TLC &GetTLC () noexcept {
                     static thread_local ThreadLifetimeManager manager;
-                    return caches[tlcIndex];
+                    TLC &tlc = caches[storage->tlcIndex];
+                    if (THEKOGANS_UTIL_UNLIKELY (tlc.ownerId != storage->id)) {
+                        tlc.Release ();
+                        storage->AddRef ();
+                        tlc.storage = storage;
+                        tlc.ownerId = storage->id;
+                    }
+                    return tlc;
                 }
 
-                struct StorageBaseImpl : public RefCounted {
+                struct StorageBaseImpl {
                     static inline std::atomic<std::size_t> nextId{1};
                     const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
+                    std::atomic<ui32> refCount{1};
                     static TLCIndexBroker broker;
                     std::size_t tlcIndex{broker.LeaseIndex ()};
 
                     ~StorageBaseImpl () noexcept {
                         broker.ReleaseIndex (tlcIndex);
+                    }
+
+                    void AddRef () noexcept {
+                        refCount.fetch_add (1, std::memory_order_relaxed);
+                    }
+
+                    void Release () noexcept {
+                        if (refCount.fetch_sub (1, std::memory_order_acq_rel) == 1) {
+                            delete this;
+                        }
                     }
                 };
 
@@ -812,24 +830,25 @@ namespace thekogans {
                     /// Align the lock to it's own cache line to prevent false sharing with pageList.
                     alignas (CacheLineSize) Lock lock;
                 };
-                typename Storage::SharedPtr storage{new Storage};
+                Storage *storage{new Storage};
 
             public:
                 ~SlabAllocator () noexcept {
                     if constexpr (TLCSize > 0) {
                         // 1. Drain the destroying thread's own TLC immediately.
-                        TLC &tlc = GetTLC (storage->tlcIndex);
+                        TLC &tlc = GetTLC ();
                         if (tlc.ownerId == storage->id) {
                             tlc.Release ();
                         }
                     }
+                    storage->Release ();
                 }
                 /// \brief
                 /// Allocate a new slot.
                 void *Alloc () {
                     void *ptr = nullptr;
                     if constexpr (TLCSize > 0) {
-                        TLC &tlc = GetTLC (storage->tlcIndex);
+                        TLC &tlc = GetTLC ();
                         // See if we have a free slot in our local cache.
                         if (THEKOGANS_UTIL_UNLIKELY (tlc.slotList == nullptr)) {
                             // No banana. Let's seed the TLC.
@@ -870,7 +889,7 @@ namespace thekogans {
                         typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
                         if (slot->GetPage () != nullptr) {
                             if constexpr (TLCSize > 0) {
-                                TLC &tlc = GetTLC (storage->tlcIndex);
+                                TLC &tlc = GetTLC ();
                                 tlc.Push (slot);
                                 // If we have no more room in our local cache batch release a bunch
                                 // of slots back to their pages so that we have room for more.
@@ -919,7 +938,7 @@ namespace thekogans {
                         // give back this page is 1. It takes time to check and 2.
                         // even if a page or two are back with one or two empty slots
                         // having a completely empty page is better for cache harvesting.
-                        Page *page = new (ptr) Page (storage.Get ());
+                        Page *page = new (ptr) Page (storage);
                         // Wire the newly minted page in to the master page list.
                         if constexpr (!IsSingleton) {
                             page->header.masterNext = storage->masterPageList;

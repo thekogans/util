@@ -910,10 +910,10 @@ namespace thekogans {
             };
             /// \brief
             /// The root of the tree.
-            Node *root;
+            Node *root{nullptr};
             /// \brief
             /// Last accessed page cache promoting locality of reference.
-            Page *lastGetPagePage;
+            Page *lastGetPagePage{nullptr};
             /// \brief
             /// Synchronization lock.
             Lock lock;
@@ -962,8 +962,7 @@ namespace thekogans {
                     levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
                     internalAllocator (Internal::Size (nodesPerInternal), internalNodesPerPage, internalNodesPerPage / 4),
                     segmentAllocator (Segment::Size (pagesPerSegment), segmentNodesPerPage, segmentNodesPerPage / 4),
-                    pageAllocator (pageAlignment, allocator),
-                    root (nullptr) {
+                    pageAllocator (pageAlignment, allocator) {
                 // Validate input.
                 if (THEKOGANS_UTIL_UNLIKELY (bitsPerAddress == 0 || bitsPerAddress > BitWidth<AddressType>::value ||
                         bitsPerSegment == 0 || bitsPerSegment > bitsPerAddress ||

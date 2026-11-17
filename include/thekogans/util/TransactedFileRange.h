@@ -68,7 +68,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Range : public RandomSeekSerializer {
 protected:
     /// \brief
     /// \see{TransactedFile} the range is referring too.
-    TransactedFile::SharedPtr file;
+    TransactedFile *file;
     /// \brief
     /// Begining of range.
     AddressType offset;
@@ -106,7 +106,7 @@ public:
     /// \param[in] reading_ true == range is for reading, false == range is for writing.
     /// \param[in] allocator_ \see{util::Allocator} if we need to allocate.
     Range (
-        TransactedFile::SharedPtr file_,
+        TransactedFile *file_,
         AddressType offset_,
         std::size_t length_,
         bool reading_ = true,
@@ -115,7 +115,7 @@ public:
     /// dtor.
     virtual ~Range ();
 
-    inline TransactedFile::SharedPtr GetFile () const {
+    inline TransactedFile *GetFile () const {
         return file;
     }
     inline AddressType GetOffset () const {
@@ -193,7 +193,7 @@ struct _LIB_THEKOGANS_UTIL_DECL SafeRange : public Range {
     /// \param[in] reading true == range is for reading, false == range is for writing.
     /// \param[in] allocator \see{util::Allocator} if we need to allocate.
     SafeRange (
-        TransactedFile::SharedPtr file,
+        TransactedFile *file,
         AddressType offset,
         std::size_t length,
         bool reading = true,
@@ -243,7 +243,7 @@ private:
     /// \param[in] length Range length.
     /// \return Clamped length.
     inline static std::size_t ClampLength (
-            TransactedFile::SharedPtr file,
+            TransactedFile *file,
             AddressType offset,
             std::size_t length) {
         SizeType size = file->GetSizeEx ();

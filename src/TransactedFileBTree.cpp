@@ -150,7 +150,7 @@ namespace thekogans {
 
         TransactedFileBTree::Node *TransactedFileBTree::Node::Alloc (
                 TransactedFileBTree *btree,
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset) {
             Node *node = new (btree->nodeAllocator->Alloc ()) Node (btree);
             node->AddRef ();
@@ -844,7 +844,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::FreeObject (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset) {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 TransactedFile::ObjectRange range (file, offset);
@@ -1094,7 +1094,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::FreeObject (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset) {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 TransactedFile::ObjectRange range (file, offset);

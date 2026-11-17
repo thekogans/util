@@ -50,7 +50,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Transaction {
     /// \brief
     /// ctor.
     /// \param[in] file_ \see{TransactedFile} to transact.
-    explicit Transaction (TransactedFile::SharedPtr file_) :
+    explicit Transaction (TransactedFile *file_) :
             file (file_),
             guard (file->mutex) {
         if (THEKOGANS_UTIL_LIKELY (file->phase == PHASE_NONE)) {
@@ -90,7 +90,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Transaction {
 private:
     /// \brief
     /// \see{TransactedFile} we're guarding.
-    TransactedFile::SharedPtr file;
+    TransactedFile *file;
     /// \brief
     ///
     LockGuard<Mutex> guard;

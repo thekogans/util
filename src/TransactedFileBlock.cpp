@@ -23,7 +23,7 @@ namespace thekogans {
     namespace util {
 
         void TransactedFile::Block::Header::Read (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 AddressSpaceType::AddressType offset,
                 bool header) {
             Range range (file, offset, SIZE);
@@ -45,7 +45,7 @@ namespace thekogans {
         }
 
         void TransactedFile::Block::Header::Write (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 AddressSpaceType::AddressType offset) const {
             Range range (file, offset, SIZE, false);
             range << MAGIC32 << flags << size;
@@ -58,7 +58,7 @@ namespace thekogans {
         }
 
         ui64 TransactedFile::Block::GetSize (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 AddressSpaceType::AddressType offset) {
             Block block (file, offset);
             block.Read ();

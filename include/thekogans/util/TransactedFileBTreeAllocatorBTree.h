@@ -165,7 +165,7 @@ namespace thekogans {
                 /// \return New node.
                 static Node *Alloc (
                     TransactedFileBTreeAllocatorBTree *btree,
-                    TransactedFile::SharedPtr file,
+                    TransactedFile *file,
                     TransactedFile::AddressType offset);
 
                 /// \brief
@@ -297,7 +297,7 @@ namespace thekogans {
                 // Object
                 /// \brief
                 static void FreeObject (
-                    TransactedFile::SharedPtr file,
+                    TransactedFile *file,
                     TransactedFile::AddressType offset);
 
                 /// \brief
@@ -356,7 +356,7 @@ namespace thekogans {
 
             // TransactedFile::Object
             virtual void Init (
-                    TransactedFile::SharedPtr file,
+                    TransactedFile *file,
                     TransactedFile::AddressType offset) override {
                 Object::Init (file, offset);
                 if (offset == 0) {
@@ -374,7 +374,7 @@ namespace thekogans {
             /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
             /// Also free the \see{Node} hierarchy @root.
             static void FreeObject (
-                TransactedFile::SharedPtr file,
+                TransactedFile *file,
                 TransactedFile::AddressType offset);
 
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
