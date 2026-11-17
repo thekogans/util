@@ -23,6 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/GUID.h"
 #include "thekogans/util/Serializable.h"
+#include "thekogans/util/ToStringConvertible.h"
 #include "thekogans/util/Clonable.h"
 #include "thekogans/util/TransactedFile.h"
 
@@ -33,7 +34,9 @@ namespace thekogans {
         ///
         /// \brief
         /// Variable size string value.
-        struct _LIB_THEKOGANS_UTIL_DECL StringValue : public virtual Serializable {
+        struct _LIB_THEKOGANS_UTIL_DECL StringValue :
+                public virtual Serializable,
+                public virtual ToStringConvertible {
             /// \brief
             /// StringValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringValue)
@@ -66,6 +69,10 @@ namespace thekogans {
             /// \param[out] serializer \see{Serializer} to write the value to.
             virtual void Write (Serializer &serializer) override {
                 serializer << value;
+            }
+
+            virtual std::string ToString () const override {
+                return value;
             }
         };
 

@@ -72,12 +72,6 @@ namespace thekogans {
             /// \param[in] key_ Key to compare against.
             /// \return -1 == this is < key_, 0 == this == key_, 1 == this is greater than key_.
             virtual i32 Compare (const Key &key_) const override;
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the key.
-            virtual const std::string &ToString () const override {
-                return key;
-            }
 
             // Serializable
             /// \brief
@@ -104,6 +98,11 @@ namespace thekogans {
             // Clonable
             virtual Clonable::SharedPtr Clone () const override {
                 return new StringKey (key, ignoreCase);
+            }
+
+            // ToStringConvertible
+            virtual std::string ToString () const override {
+                return key;
             }
         };
 
@@ -152,12 +151,6 @@ namespace thekogans {
             /// \param[in] key_ Key to compare against.
             /// \return -1 == this is < key_, 0 == this == key_, 1 == this is greater than key_.
             virtual i32 Compare (const Key &key_) const override;
-            /// \brief
-            /// This method is only used in Dump for debugging purposes.
-            /// \return String representation of the key.
-            virtual const std::string &ToString () const override {
-                return hexString;
-            }
 
             // Serializable
             /// \brief
@@ -178,6 +171,11 @@ namespace thekogans {
             // Clonable
             virtual Clonable::SharedPtr Clone () const override {
                 return new GUIDKey (key, length);
+            }
+
+            // ToStringConvertible
+            virtual std::string ToString () const override {
+                return hexString;
             }
         };
 
