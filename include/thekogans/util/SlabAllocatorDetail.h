@@ -541,6 +541,8 @@ namespace thekogans {
                 /// Maximum slots per page.
                 static constexpr std::size_t maxSlots = (pageSize - CacheLineSize) / slotSize;
 
+                struct Storage;
+
                 /// \struct SlabAllocator::Page SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
                 ///
                 /// \brief
@@ -581,7 +583,7 @@ namespace thekogans {
                     /// guarantee to prevent sharing it with slots.
                     struct Header {
                         ui64 magic = MAGIC64;
-                        SlabAllocator &allocator;
+                        Storage *storage;
                         struct EmptyMasterNext {};
                         using MasterNext = std::conditional_t<!IsSingleton, Page *, EmptyMasterNext>;
                         [[no_unique_address]] MasterNext masterNext = {};
@@ -593,9 +595,9 @@ namespace thekogans {
                         std::size_t slotCount{0};
                         Slot *freeList{nullptr};
 
-                        Header (SlabAllocator &allocator_) noexcept :
-                            allocator (allocator_),
-                            partialNext (allocator.storage.partialPageList) {}
+                        Header (Storage *storage_) noexcept :
+                            storage (storage_),
+                            partialNext (storage->partialPageList) {}
                     } header;
 
                     /// \brief
@@ -625,9 +627,9 @@ namespace thekogans {
                     /// \brief
                     /// ctor.
                     /// \param[in, out] head Head of the partial list.
-                    Page (SlabAllocator &allocator) noexcept :
-                            header (allocator) {
-                        allocator.storage.partialPageList = this;
+                    Page (Storage *storage) noexcept :
+                            header (storage) {
+                        storage->partialPageList = this;
                     }
 
                     /// \brief
@@ -650,7 +652,7 @@ namespace thekogans {
                             // free one of it's slots or if the allocator is scoped and it's
                             // dtor fires. Either way full pages get evicted from the partial
                             // list so as not to waste time traversing over them when allocating.
-                            header.allocator.storage.partialPageList = header.partialNext;
+                            header.storage->partialPageList = header.partialNext;
                             header.partialNext = nullptr;
                         }
                         return slot;
@@ -663,8 +665,8 @@ namespace thekogans {
                         // The page is transitioning from full to partial.
                         // Wire it back in to the partial list.
                         if (THEKOGANS_UTIL_UNLIKELY (header.slotCount == maxSlots)) {
-                            header.partialNext = header.allocator.storage.partialPageList;
-                            header.allocator.storage.partialPageList = this;
+                            header.partialNext = header.storage->partialPageList;
+                            header.storage->partialPageList = this;
                         }
                         slot->next = header.freeList;
                         header.freeList = slot;
@@ -690,6 +692,8 @@ namespace thekogans {
                 /// acquisition. In real load testing (see test_SlabAllocator) this
                 /// results in ~65% speedup!
                 struct TLC {
+                    Storage *storage{nullptr};
+                    std::size_t ownerId{0};
                     /// \brief
                     /// Our own local slot cache.
                     typename Page::Slot *slotList{nullptr};
@@ -716,28 +720,28 @@ namespace thekogans {
                         return slot;
                     }
 
-                    inline void Reset () noexcept {
-                        slotList = nullptr;
-                        slotCount = 0;
-                    }
-
                     /// \brief
                     /// dtor. Return our locally cached slots back to the global page pool.
                     inline void Release () noexcept {
-                        if (slotList != nullptr) {
-                            Page *page = slotList->GetPage ();
-                            // Even though, technically, GetPage can return nullptr,
-                            // these are our internal slots not some random void *
-                            // passed to Free. If they are not pointing to valid pages
-                            // something is very seriously wrong with the data and perhaps
-                            // it's better to crash the program than to continue corrupting.
-                            LockGuard<Lock> guard (page->header.allocator.storage.lock);
-                            do {
-                                typename Page::Slot *next = slotList->next;
-                                slotList->Free ();
-                                slotList = next;
-                            } while (slotList != nullptr);
-                            slotCount = 0;
+                        if (storage != nullptr) {
+                            if (slotList != nullptr) {
+                                Page *page = slotList->GetPage ();
+                                // Even though, technically, GetPage can return nullptr,
+                                // these are our internal slots not some random void *
+                                // passed to Free. If they are not pointing to valid pages
+                                // something is very seriously wrong with the data and perhaps
+                                // it's better to crash the program than to continue corrupting.
+                                LockGuard<Lock> guard (page->header.storage->lock);
+                                do {
+                                    typename Page::Slot *next = slotList->next;
+                                    slotList->Free ();
+                                    slotList = next;
+                                } while (slotList != nullptr);
+                                slotCount = 0;
+                            }
+                            storage->Release ();
+                            storage = nullptr;
+                            ownerId = 0;
                         }
                         assert (slotList == nullptr && slotCount == 0);
                     }
@@ -760,11 +764,15 @@ namespace thekogans {
                     return caches[tlcIndex];
                 }
 
-                struct StorageBaseImpl {
-                    std::size_t tlcIndex;
+                struct StorageBaseImpl : public RefCounted {
+                    static inline std::atomic<std::size_t> nextId{1};
+                    const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
                     static TLCIndexBroker broker;
+                    std::size_t tlcIndex{broker.LeaseIndex ()};
 
-                    StorageBaseImpl () : tlcIndex (broker.LeaseIndex ()) {}
+                    ~StorageBaseImpl () noexcept {
+                        broker.ReleaseIndex (tlcIndex);
+                    }
                 };
 
                 /// \struct SlabAllocator::ScopedSlabAllocatorStorageBase SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
@@ -781,8 +789,6 @@ namespace thekogans {
                             PageAllocator::Free (page, pageSize);
                             page = next;
                         }
-                        GetTLC (StorageBaseImpl::tlcIndex).Reset ();
-                        StorageBaseImpl::broker.ReleaseIndex (StorageBaseImpl::tlcIndex);
                     }
                 };
                 struct SingletonStorageBaseImpl : public StorageBaseImpl {};
@@ -793,6 +799,8 @@ namespace thekogans {
                 /// \brief
                 /// SlabAllocator state.
                 struct Storage : public StorageBase {
+                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Storage)
+
                     /// \brief
                     /// Partially allocated page list.
                     Page *partialPageList{nullptr};
@@ -803,30 +811,40 @@ namespace thekogans {
                     /// Protect access to storage.
                     /// Align the lock to it's own cache line to prevent false sharing with pageList.
                     alignas (CacheLineSize) Lock lock;
-                } storage;
+                };
+                typename Storage::SharedPtr storage{new Storage};
 
             public:
+                ~SlabAllocator () noexcept {
+                    if constexpr (TLCSize > 0) {
+                        // 1. Drain the destroying thread's own TLC immediately.
+                        TLC &tlc = GetTLC (storage->tlcIndex);
+                        if (tlc.ownerId == storage->id) {
+                            tlc.Release ();
+                        }
+                    }
+                }
                 /// \brief
                 /// Allocate a new slot.
                 void *Alloc () {
                     void *ptr = nullptr;
                     if constexpr (TLCSize > 0) {
-                        TLC &tlc = GetTLC (storage.tlcIndex);
+                        TLC &tlc = GetTLC (storage->tlcIndex);
                         // See if we have a free slot in our local cache.
                         if (THEKOGANS_UTIL_UNLIKELY (tlc.slotList == nullptr)) {
                             // No banana. Let's seed the TLC.
                             static constexpr std::size_t batchTarget = TLCSize / 2;
                             // Persistent outer loop forces lock retention until TLC target is met.
-                            LockGuard<Lock> guard (storage.lock);
+                            LockGuard<Lock> guard (storage->lock);
                             while (tlc.slotCount < batchTarget) {
                                 // Inner loop aggressively drains whatever pages are currently available.
-                                while (tlc.slotCount < batchTarget && storage.partialPageList != nullptr) {
-                                    tlc.Push (storage.partialPageList->Alloc ());
+                                while (tlc.slotCount < batchTarget && storage->partialPageList != nullptr) {
+                                    tlc.Push (storage->partialPageList->Alloc ());
                                 }
                                 // If inner loop broke but target isn't met, the pool is dry.
                                 // Seed a fresh page from the OS and let the outer loop repeat the harvest.
                                 if (tlc.slotCount < batchTarget) {
-                                    assert (storage.partialPageList == nullptr);
+                                    assert (storage->partialPageList == nullptr);
                                     AllocPage ();
                                 }
                             }
@@ -835,11 +853,11 @@ namespace thekogans {
                     }
                     else {
                         // TLC compiled out: Single clean allocation tracking.
-                        LockGuard<Lock> guard (storage.lock);
-                        if (THEKOGANS_UTIL_UNLIKELY (storage.partialPageList == nullptr)) {
+                        LockGuard<Lock> guard (storage->lock);
+                        if (THEKOGANS_UTIL_UNLIKELY (storage->partialPageList == nullptr)) {
                             AllocPage ();
                         }
-                        ptr = storage.partialPageList->Alloc ();
+                        ptr = storage->partialPageList->Alloc ();
                     }
                     return ptr;
                 }
@@ -852,12 +870,12 @@ namespace thekogans {
                         typename Page::Slot *slot = reinterpret_cast<typename Page::Slot *> (ptr);
                         if (slot->GetPage () != nullptr) {
                             if constexpr (TLCSize > 0) {
-                                TLC &tlc = GetTLC (storage.tlcIndex);
+                                TLC &tlc = GetTLC (storage->tlcIndex);
                                 tlc.Push (slot);
                                 // If we have no more room in our local cache batch release a bunch
                                 // of slots back to their pages so that we have room for more.
                                 if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount == TLCSize)) {
-                                    LockGuard<Lock> guard (storage.lock);
+                                    LockGuard<Lock> guard (storage->lock);
                                     static constexpr std::size_t flushCount = TLCSize / 2;
                                     for (std::size_t i = 0; i < flushCount; ++i) {
                                         tlc.Pop ()->Free ();
@@ -865,7 +883,7 @@ namespace thekogans {
                                 }
                             }
                             else {
-                                LockGuard<Lock> guard (storage.lock);
+                                LockGuard<Lock> guard (storage->lock);
                                 slot->Free ();
                             }
                         }
@@ -875,37 +893,37 @@ namespace thekogans {
             private:
                 inline void AllocPage () noexcept {
                     // Wait until a page is guaranteed to be available or...
-                    while (THEKOGANS_UTIL_UNLIKELY (storage.partialPageList == nullptr &&
-                            storage.pageAllocationInFlight.load (std::memory_order_acquire))) {
-                        storage.lock.Release ();
+                    while (THEKOGANS_UTIL_UNLIKELY (storage->partialPageList == nullptr &&
+                            storage->pageAllocationInFlight.load (std::memory_order_acquire))) {
+                        storage->lock.Release ();
                         CPU::YieldSlice ();
-                        storage.lock.Acquire ();
+                        storage->lock.Acquire ();
                     }
                     // ...we need to allocate it.
-                    if (storage.partialPageList == nullptr) {
+                    if (storage->partialPageList == nullptr) {
                         // Set the in flight flag before releasing the lock so that no other thread
                         // tries to allocate a page too.
-                        storage.pageAllocationInFlight.store (true, std::memory_order_relaxed);
+                        storage->pageAllocationInFlight.store (true, std::memory_order_relaxed);
                         // Release the lock before dropping down to the OS.
                         // This wont help waiting allocators but if there are
                         // waiting freeers it will alow them to let go of their
                         // slots while we're waiting on the OS.
-                        storage.lock.Release ();
+                        storage->lock.Release ();
                         void *ptr = PageAllocator::Alloc (pageSize);
                         // We're back from the OS land. Reaquire the lock so that we
                         // can wire the freshly minted page in to the list.
-                        storage.lock.Acquire ();
+                        storage->lock.Acquire ();
                         // NOTE: Between the Release and Acquire above other threads
                         // could have released slots and rewired partial pages back
                         // in to the pool. The reason we don't check and potentially
                         // give back this page is 1. It takes time to check and 2.
                         // even if a page or two are back with one or two empty slots
                         // having a completely empty page is better for cache harvesting.
-                        Page *page = new (ptr) Page (*this);
+                        Page *page = new (ptr) Page (storage.Get ());
                         // Wire the newly minted page in to the master page list.
                         if constexpr (!IsSingleton) {
-                            page->header.masterNext = storage.masterPageList;
-                            storage.masterPageList = page;
+                            page->header.masterNext = storage->masterPageList;
+                            storage->masterPageList = page;
                         }
                         // Now that a fresh page is available the upstream Alloc will be able
                         // to satisfy harvesting or allocating. Since we hold the lock there's
@@ -913,7 +931,7 @@ namespace thekogans {
                         // We can now safely clear the in flight flag so that the spinning waiters
                         // drop out and either have a fresh page to harvest/allocate from or permission
                         // to allocate.
-                        storage.pageAllocationInFlight.store (false, std::memory_order_release);
+                        storage->pageAllocationInFlight.store (false, std::memory_order_release);
                     }
                 }
             };

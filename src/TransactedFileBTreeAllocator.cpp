@@ -90,20 +90,19 @@ namespace thekogans {
                         if (pageOffset + size + TransactedFile::Block::HEADER_SIZE > file->GetPageSize ()) {
                             // ...it would. Now check to see if the block would fit aligned...
                             remainder = file->GetPageSize () - pageOffset;
-                            if (remainder >= TransactedFile::MIN_USER_DATA_SIZE + TransactedFile::Block::HEADER_SIZE &&
-                                    result.size >= remainder + size + TransactedFile::Block::HEADER_SIZE) {
+                            if (remainder >= TransactedFile::MIN_BLOCK_SIZE && result.size >= remainder + size) {
                                 // ...it would. Add a filler block.
                                 TransactedFile::Block prev (
                                     file,
                                     result.offset,
                                     TransactedFile::Block::FLAGS_FREE,
-                                    remainder - TransactedFile::Block::HEADER_SIZE);
+                                    remainder - TransactedFile::Block::SIZE);
                                 prev.Write ();
                                 Insert ({prev.GetSize (), prev.GetOffset ()});
                                 // Adjust result to account for the filler block so that downstream
                                 // calculations have the right values.
-                                result.size -= remainder + TransactedFile::Block::HEADER_SIZE;
-                                result.offset += remainder + TransactedFile::Block::HEADER_SIZE;
+                                result.size -= remainder;
+                                result.offset += remainder;
                             }
                         }
                         // We get our offset here, potentially adjusted by the filler block above.
@@ -145,7 +144,8 @@ namespace thekogans {
                     // and align us with a page boundary. Otherwise, because
                     // there can be no gaps between blocks, we will straddle
                     // a page boundary.
-                    if (remainder < size + TransactedFile::Block::SIZE && remainder >= TransactedFile::MIN_BLOCK_SIZE &&
+                    if (remainder < size + TransactedFile::Block::SIZE &&
+                            remainder >= TransactedFile::MIN_BLOCK_SIZE &&
                             size <= (file->GetPageSize () - TransactedFile::Block::SIZE)) {
                         TransactedFile::Block prev (
                             file,
@@ -158,7 +158,8 @@ namespace thekogans {
                     // Otherwise, we fit in the ramainder. Check if what will remain
                     // after our allocation would be too small for a block and cause
                     // the next allocation to straddle the page boundry...
-                    else if (remainder - size - TransactedFile::Block::SIZE < TransactedFile::MIN_BLOCK_SIZE) {
+                    else if (remainder >= size + TransactedFile::Block::SIZE &&
+                            (remainder - size - TransactedFile::Block::SIZE) < TransactedFile::MIN_BLOCK_SIZE) {
                         // ...it is. Round up the size request to align the next
                         // allocation to a page boundary.
                         size = remainder - TransactedFile::Block::SIZE;
@@ -206,8 +207,8 @@ namespace thekogans {
                         Remove ({prev.GetSize (), prev.GetOffset ()});
                         if (file->IsSecure ()) {
                             // Assume prev body is clear.
-                            clearOffset -= TransactedFile::Block::HEADER_SIZE;
-                            clearLength += TransactedFile::Block::HEADER_SIZE;
+                            clearOffset -= TransactedFile::Block::SIZE;
+                            clearLength += TransactedFile::Block::SIZE;
                         }
                         else {
                             // Since block will grow to occupy prev,
@@ -224,7 +225,7 @@ namespace thekogans {
                         Remove ({next.GetSize (), next.GetOffset ()});
                         if (file->IsSecure ()) {
                             // Assume next body is clear.
-                            clearLength += TransactedFile::Block::HEADER_SIZE;
+                            clearLength += TransactedFile::Block::SIZE;
                         }
                         else {
                             // Since block will grow to occupy next,

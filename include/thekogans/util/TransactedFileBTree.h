@@ -498,8 +498,8 @@ namespace thekogans {
                 /// \brief
                 /// Split the full node in the middle
                 /// (splitIndex = btree->header.entriesPerNode / 2).
-                /// \param[out] node Node that will receive entries >= splitIndex.
-                void Split (Node *node);
+                /// \param[out] right Node that will receive entries >= splitIndex.
+                void Split (Node *right);
                 /// \brief
                 /// Add the given node's entries to this one. The empty node
                 /// is deleted after.
@@ -591,13 +591,6 @@ namespace thekogans {
                 /// Value allocated it's block.
                 /// \param[in] value \see{TransactedFile::Object} that allocoated it's head block.
                 virtual void OnTransactedFileObjectAllocBlock (
-                        TransactedFile::Object::SharedPtr /*object*/) noexcept override {
-                    SetDirty ();
-                }
-                /// \brief
-                /// Value freed it's block.
-                /// \param[in] value \see{TransactedFile::Object} that freed it's head block.
-                virtual void OnTransactedFileObjectFreeBlock (
                         TransactedFile::Object::SharedPtr /*object*/) noexcept override {
                     SetDirty ();
                 }

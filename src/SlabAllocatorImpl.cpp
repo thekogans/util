@@ -25,6 +25,45 @@
 namespace thekogans {
     namespace util {
 
+#if 0
+        struct TLCIndexBroker {
+        private:
+            static constexpr std::size_t WORD_BITS = BitWidth<ui64>::value;
+            static constexpr std::size_t NUM_WORDS = 8; // 512 concurrent allocators
+            std::atomic<ui64> leasedBits[NUM_WORDS]{};
+
+        public:
+            static constexpr std::size_t MAX_INDEX = WORD_BITS * NUM_WORDS;
+
+            std::size_t LeaseIndex () {
+                for (std::size_t w = 0; w < NUM_WORDS; ++w) {
+                    ui64 current = leasedBits[w].load (std::memory_order_relaxed);
+                    while (true) {
+                        std::size_t freeBit = countr_one (current);
+                        if (freeBit >= WORD_BITS) {
+                            break; // This 64-bit word is full; move to next word.
+                        }
+                        ui64 next = current | (1ULL << freeBit);
+                        if (leasedBits[w].compare_exchange_weak (
+                                current, next,
+                                std::memory_order_acquire,
+                                std::memory_order_relaxed)) {
+                            return w * WORD_BITS + freeBit;
+                        }
+                    }
+                }
+                throw std::runtime_error ("Exceeded maximum concurrent allocators.");
+            }
+
+            void ReleaseIndex (std::size_t id) noexcept {
+                assert (id < MAX_INDEX);
+                std::size_t w = id / WORD_BITS;
+                std::size_t bit = id % WORD_BITS;
+                leasedBits[w].fetch_and (~(1ULL << bit), std::memory_order_release);
+            }
+        };
+#endif
+
         SlabAllocatorImpl::Page::Slot *SlabAllocatorImpl::Page::Alloc () noexcept {
             Slot *slot = nullptr;
             if (header.freeList != nullptr) {

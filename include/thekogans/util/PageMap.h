@@ -182,6 +182,14 @@ namespace thekogans {
         /// This will cover the entire 128 bit address space with 8 levels of 4GB segments,
         /// each containing 1K of 4MB pages.
         ///
+        /// ============== WARNING: DO NOT ADD THREAD-LOCAL CACHING (TLC) TO PAGEMAP. ==============
+        /// Unlike SlabAllocator (whose pages remain durable until storage teardown),
+        /// PageMap routinely evicts and destroys pages mid-flight to bound its working set.
+        /// Because an evicting thread cannot safely invalidate raw pointers stored in
+        /// other threads' private TLS slots, caching Page * in thread_local storage creates
+        /// an unsolvable use-after-free hazard. Keep fast-path caching inside PageMap itself.
+        /// =========================================================================================
+        ///
         /// \tparam T The type that will represent addresses.
         /// \tparam bitsPerAddress Narrow the address space to this many bits (default as wide as T).
         /// \tparam Lock Any of the standard locks to use for synchronization.
@@ -905,7 +913,7 @@ namespace thekogans {
             Node *root;
             /// \brief
             /// Last accessed page cache promoting locality of reference.
-            static thread_local Page *lastGetPagePage;
+            Page *lastGetPagePage;
             /// \brief
             /// Synchronization lock.
             Lock lock;
@@ -1008,14 +1016,6 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (
                     AddressType offset,
                     PageSource *pageSource) {
-                // Clean out layout page masking exactly as GetPageHelper would.
-                AddressType maskedOffset = offset & ~pageMask;
-                // THE ULTRA-FAST ROUTE: Zero locks, zero synchronization!
-                // If this thread is hitting the same memory spatial locality, return instantly.
-                if (lastGetPagePage != nullptr && lastGetPagePage->offset == maskedOffset) {
-                    return lastGetPagePage;
-                }
-                // THE FALLBACK SLOW ROUTE: Only lock if we must execute the tree walk.
                 LockGuard<Lock> guard (lock);
                 return GetPageHelper (offset, pageSource);
             }
@@ -1249,10 +1249,6 @@ namespace thekogans {
             /// PageMap is neither copy or move constructable, nor assignable.
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (PageMap)
         };
-
-        // 2. Out-of-line class definition or C++17 inline declaration:
-        template <typename T, std::size_t bitsPerAddress, typename Lock>
-        inline thread_local typename PageMap<T, bitsPerAddress, Lock>::Page *PageMap<T, bitsPerAddress, Lock>::lastGetPagePage{nullptr};
 
         /// \brief
         /// Alias for PageMap<ui32>.

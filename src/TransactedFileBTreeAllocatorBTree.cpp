@@ -316,7 +316,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::RemoveEntry (ui32 index) {
-            std::memcpy (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
+            std::memmove (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
             SetDirty ();
         }
 

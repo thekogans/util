@@ -177,6 +177,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (index == 0)) {
                 if (THEKOGANS_UTIL_UNLIKELY (left == nullptr && leftOffset != 0)) {
                     left = Alloc (btree, file, leftOffset);
+                    left->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
                 return left;
             }
@@ -184,6 +185,7 @@ namespace thekogans {
                 --index;
                 if (THEKOGANS_UTIL_UNLIKELY (entries[index].right == nullptr && entries[index].rightOffset != 0)) {
                     entries[index].right = Alloc (btree, file, entries[index].rightOffset);
+                    entries[index].right->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
                 return entries[index].right;
             }
@@ -289,11 +291,17 @@ namespace thekogans {
                             object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
                         }
                     }
+                    if (right->entries[0].right != nullptr) {
+                        right->entries[0].right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
+                    }
                     entry = right->entries[0];
                     right->RemoveEntry (0);
                 }
                 right->leftOffset = entry.rightOffset;
                 right->left = entry.right;
+                if (right->left != nullptr) {
+                    right->left->Producer<TransactedFile::ObjectEvents>::Subscribe (*right);
+                }
                 entry.rightOffset = right->offset;
                 entry.right = right;
                 return Overflow;
@@ -310,9 +318,104 @@ namespace thekogans {
                     while (leaf->leftOffset != 0) {
                         leaf = leaf->GetChild (0);
                     }
+                    // 1. Clean up and free the deleted entries[index] first.
+                    entries[index].key->Release ();
+                    if (entries[index].value != nullptr) {
+                        if (!btree->header.IsValueIsObject ()) {
+                            entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                        }
+                        else {
+                            TransactedFile::Object::SharedPtr object =
+                                Serializable::SharedPtr (entries[index].value);
+                            object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                            object->FreeBlock ();
+                        }
+                        entries[index].value->Release ();
+                    }
+                    else if (btree->header.IsValueIsObject () && entries[index].valueOffset != 0) {
+                        Object::FreeObject (file, entries[index].valueOffset);
+                    }
+                    // 2. Promote leaf->entries[0] into entries[index] (transferring value ownership).
                     entries[index].key = leaf->entries[0].key;
+                    entries[index].key->AddRef ();
                     entries[index].valueOffset = leaf->entries[0].valueOffset;
                     entries[index].value = leaf->entries[0].value;
+                    if (entries[index].value != nullptr) {
+                        entries[index].value->AddRef ();
+                        if (!btree->header.IsValueIsObject ()) {
+                            entries[index].value->Producer<SerializableEvents>::Unsubscribe (*leaf);
+                            entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
+                        }
+                        else {
+                            TransactedFile::Object::SharedPtr object =
+                                Serializable::SharedPtr (entries[index].value);
+                            object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*leaf);
+                            object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                        }
+                    }
+                    // 3. Clear leaf->entries[0]'s value ownership so leaf->Remove won't free its block.
+                    leaf->entries[0].valueOffset = 0;
+                    if (leaf->entries[0].value != nullptr) {
+                        leaf->entries[0].value->Release ();
+                        leaf->entries[0].value = nullptr;
+                    }
+                    SetDirty ();
+
+                    // 4. Delete the promoted successor key from the right subtree and rebalance.
+                    Key::SharedPtr successorKey (entries[index].key);
+                    child->Remove (*successorKey);
+                    if (child->IsPoor ()) {
+                        RestoreBalance (index);
+                    }
+                }
+                else {
+                    entries[index].key->Release ();
+                    entries[index].key = nullptr;
+                    if (entries[index].value != nullptr) {
+                        if (!btree->header.IsValueIsObject ()) {
+                            entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                        }
+                        else {
+                            TransactedFile::Object::SharedPtr object =
+                                Serializable::SharedPtr (entries[index].value);
+                            object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                            object->FreeBlock ();
+                        }
+                        entries[index].value->Release ();
+                        entries[index].value = nullptr;
+                    }
+                    else if (btree->header.IsValueIsObject () && entries[index].valueOffset != 0) {
+                        Object::FreeObject (file, entries[index].valueOffset);
+                    }
+                    RemoveEntry (index);
+                }
+                return true;
+            }
+            else if (child != nullptr && child->Remove (key)) {
+                if (child->IsPoor ()) {
+                    RestoreBalance (index);
+                }
+                return true;
+            }
+            return false;
+        }
+
+#if 0
+        bool TransactedFileBTree::Node::Remove (const Key &key) {
+            ui32 index = 0;
+            bool found = Find (key, index);
+            Node *child = GetChild (found ? index + 1 : index);
+            if (found) {
+                if (child != nullptr) {
+                    Node *leaf = child;
+                    while (leaf->leftOffset != 0) {
+                        leaf = leaf->GetChild (0);
+                    }
+                    entries[index].key = leaf->entries[0].key;
+                    entries[index].key->AddRef ();
+                    entries[index].valueOffset = leaf->entries[0].valueOffset;
+                    entries[index].value = leaf->entries[0].value;
+                    entries[index].value->AddRef ();
                     if (entries[index].value != nullptr) {
                         if (!btree->header.IsValueIsObject ()) {
                             entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
@@ -339,8 +442,8 @@ namespace thekogans {
                         else {
                             TransactedFile::Object::SharedPtr object =
                                 Serializable::SharedPtr (entries[index].value);
-                            object->FreeBlock ();
                             object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                            object->FreeBlock ();
                         }
                         entries[index].value->Release ();
                         entries[index].value = nullptr;
@@ -360,6 +463,7 @@ namespace thekogans {
             }
             return false;
         }
+#endif
 
         void TransactedFileBTree::Node::RestoreBalance (ui32 index) {
             if (index == count) {
@@ -395,23 +499,42 @@ namespace thekogans {
                 ui32 index,
                 Node *left,
                 Node *right) {
-            entries[index].rightOffset = right->leftOffset;
-            entries[index].right = right->left;
-            right->InsertEntry (entries[index], 0);
+            // 1. Demote separator entries[index] into right[0], taking right->left as its right child.
+            Entry demoted = entries[index];
+            demoted.rightOffset = right->leftOffset;
+            demoted.right = right->left;
+            if (demoted.value != nullptr) {
+                if (!btree->header.IsValueIsObject ()) {
+                    demoted.value->Producer<SerializableEvents>::Unsubscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (demoted.value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                }
+            }
+            if (demoted.right != nullptr) {
+                demoted.right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
+            }
+            right->InsertEntry (demoted, 0);
+            // 2. Move left's rightmost child subtree to become right->left.
             ui32 lastIndex = left->count - 1;
             right->leftOffset = left->entries[lastIndex].rightOffset;
             right->left = left->entries[lastIndex].right;
-            left->entries[lastIndex].rightOffset = right->offset;
-            left->entries[lastIndex].right = right;
+            if (right->left != nullptr) {
+                right->left->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*left);
+                right->left->Producer<TransactedFile::ObjectEvents>::Subscribe (*right);
+            }
+            // 3. Promote left[lastIndex] into entries[index] (keeping right as entries[index].right).
             entries[index] = left->entries[lastIndex];
+            entries[index].rightOffset = right->offset;
+            entries[index].right = right;
             if (entries[index].value != nullptr) {
                 if (!btree->header.IsValueIsObject ()) {
                     entries[index].value->Producer<SerializableEvents>::Unsubscribe (*left);
                     entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                 }
                 else {
-                    TransactedFile::Object::SharedPtr object =
-                        Serializable::SharedPtr (entries[index].value);
+                    TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (entries[index].value);
                     object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*left);
                     object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
@@ -424,22 +547,37 @@ namespace thekogans {
                 ui32 index,
                 Node *left,
                 Node *right) {
-            entries[index].rightOffset = right->leftOffset;
-            entries[index].right = right->left;
+            // 1. Demote separator entries[index] to the end of left, taking right->left as its right child.
+            Entry demoted = entries[index];
+            demoted.rightOffset = right->leftOffset;
+            demoted.right = right->left;
+            if (demoted.value != nullptr) {
+                if (!btree->header.IsValueIsObject ()) {
+                    demoted.value->Producer<SerializableEvents>::Unsubscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (demoted.value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                }
+            }
+            if (demoted.right != nullptr) {
+                demoted.right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
+            }
+            left->Concatenate (demoted);
+            // 2. Move right[0]'s right child subtree to become right->left (still owned by right).
             right->leftOffset = right->entries[0].rightOffset;
             right->left = right->entries[0].right;
-            right->entries[0].rightOffset = right->offset;
-            right->entries[0].right = right;
-            left->Concatenate (entries[index]);
+            // 3. Promote right[0] into entries[index] (keeping right as entries[index].right).
             entries[index] = right->entries[0];
+            entries[index].rightOffset = right->offset;
+            entries[index].right = right;
             if (entries[index].value != nullptr) {
                 if (!btree->header.IsValueIsObject ()) {
                     entries[index].value->Producer<SerializableEvents>::Unsubscribe (*right);
                     entries[index].value->Producer<SerializableEvents>::Subscribe (*this);
                 }
                 else {
-                    TransactedFile::Object::SharedPtr object =
-                        Serializable::SharedPtr (entries[index].value);
+                    TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (entries[index].value);
                     object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
                     object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
@@ -453,59 +591,79 @@ namespace thekogans {
                 Node *left,
                 Node *right) {
             assert (left->count + right->count < btree->header.entriesPerNode);
+            if (entries[index].value != nullptr) {
+                if (!btree->header.IsValueIsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object =
+                        Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                }
+            }
             entries[index].rightOffset = right->leftOffset;
             entries[index].right = right->left;
+            if (entries[index].right != nullptr) {
+                entries[index].right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
+            }
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            Object::FreeObject (file, right->GetOffset ());
-            right->Release ();
         }
 
-        void TransactedFileBTree::Node::Split (Node *node) {
+        void TransactedFileBTree::Node::Split (Node *right) {
             assert (IsFull ());
             ui32 splitIndex = count / 2;
-            node->count = count - splitIndex;
-            std::memcpy (node->entries, entries + splitIndex, node->count * sizeof (Entry));
-            for (ui32 i = 0; i < node->count; ++i) {
-                if (node->entries[i].value != nullptr) {
+            right->count = count - splitIndex;
+            std::memcpy (right->entries, entries + splitIndex, right->count * sizeof (Entry));
+            for (ui32 i = 0; i < right->count; ++i) {
+                if (right->entries[i].value != nullptr) {
                     if (!btree->header.IsValueIsObject ()) {
-                        node->entries[i].value->Producer<SerializableEvents>::Unsubscribe (*this);
-                        node->entries[i].value->Producer<SerializableEvents>::Subscribe (*node);
+                        right->entries[i].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                        right->entries[i].value->Producer<SerializableEvents>::Subscribe (*right);
                     }
                     else {
                         TransactedFile::Object::SharedPtr object =
-                            Serializable::SharedPtr (entries[i].value);
+                            Serializable::SharedPtr (right->entries[i].value);
                         object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                        object->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+                        object->Producer<TransactedFile::ObjectEvents>::Subscribe (*right);
                     }
+                }
+                if (right->entries[i].right != nullptr) {
+                    right->entries[i].right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                    right->entries[i].right->Producer<TransactedFile::ObjectEvents>::Subscribe (*right);
                 }
             }
             count = splitIndex;
-            node->SetDirty ();
+            right->SetDirty ();
             SetDirty ();
         }
 
-        void TransactedFileBTree::Node::Concatenate (Node *node) {
-            std::memcpy (entries + count, node->entries, node->count * sizeof (Entry));
+        void TransactedFileBTree::Node::Concatenate (Node *right) {
+            std::memcpy (entries + count, right->entries, right->count * sizeof (Entry));
             ui32 oldCount = count;
-            count += node->count;
+            count += right->count;
             for (ui32 i = oldCount; i < count; ++i) {
                 if (entries[i].value != nullptr) {
                     if (!btree->header.IsValueIsObject ()) {
-                        entries[i].value->Producer<SerializableEvents>::Unsubscribe (*node);
+                        entries[i].value->Producer<SerializableEvents>::Unsubscribe (*right);
                         entries[i].value->Producer<SerializableEvents>::Subscribe (*this);
                     }
                     else {
                         TransactedFile::Object::SharedPtr object =
                             Serializable::SharedPtr (entries[i].value);
-                        object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
+                        object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
                         object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                     }
                 }
+                if (entries[i].right != nullptr) {
+                    entries[i].right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*right);
+                    entries[i].right->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                }
             }
-            node->count = 0;
-            node->SetDirty ();
+            right->count = 0;
+            right->FreeBlock ();
+            right->Release ();
             SetDirty ();
         }
 
@@ -524,11 +682,14 @@ namespace thekogans {
                     object->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
             }
+            if (entries[index].right != nullptr) {
+                entries[index].right->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+            }
             SetDirty ();
         }
 
         void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
-            std::memcpy (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
+            std::memmove (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
             SetDirty ();
         }
 
@@ -650,6 +811,9 @@ namespace thekogans {
         void TransactedFileBTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
             if (THEKOGANS_UTIL_LIKELY (count > 0)) {
+                if (left != nullptr) {
+                    leftOffset = left->GetOffset ();
+                }
                 serializer << btree->header.flags << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
                     if (btree->header.IsValueIsObject ()) {
@@ -807,6 +971,7 @@ namespace thekogans {
                     Node *node = Node::Alloc (this, file, 0);
                     node->leftOffset = root->GetOffset ();
                     node->left = root;
+                    node->left->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
                     node->InsertEntry (entry, 0);
                     root = node;
                     root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
