@@ -309,10 +309,6 @@ public:
     friend bool operator != (
         const Header &header,
         const Header &footer);
-
-    /// \brief
-    /// Block is neither copy or move constructable, nor assignable.
-    THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Block)
 };
 
 /// \brief

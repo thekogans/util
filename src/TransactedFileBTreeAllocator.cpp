@@ -187,79 +187,14 @@ namespace thekogans {
                     "in progress and allocation phases (%s).",
                     TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
             }
-            // To honor the Allocator policy, we ignore NULL pointers.
-            if (offset != 0) {
-                if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Header::BLOCK_OFFSET)) {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Catastrophic Heap Invariance Violation: Attempted to deallocate "
-                        "the master metadata bootstrap anchor page at offset " THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
-                }
-                LockGuard<SpinLock> guard (spinLock);
-                TransactedFile::Block block (file, offset);
-                block.Read ();
-                if (!block.IsFree ()) {
-                    TransactedFile::AddressType clearOffset = block.GetOffset ();
-                    TransactedFile::SizeType clearLength = block.GetSize ();
-                    // Consolidate adjacent free blocks.
-                    TransactedFile::Block prev (file);
-                    if (block.Prev (prev) && prev.IsFree ()) {
-                        Remove ({prev.GetSize (), prev.GetOffset ()});
-                        if (file->IsSecure ()) {
-                            // Assume prev body is clear.
-                            clearOffset -= TransactedFile::Block::SIZE;
-                            clearLength += TransactedFile::Block::SIZE;
-                        }
-                        else {
-                            // Since block will grow to occupy prev,
-                            // it's offset is no longer valid.
-                            TransactedFile::Block oldBlock (file, block.GetOffset ());
-                            oldBlock.Clear ();
-                        }
-                        // Back up to cover the prev.
-                        block.SetOffset (block.GetOffset () - TransactedFile::Block::SIZE - prev.GetSize ());
-                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + prev.GetSize ());
-                    }
-                    TransactedFile::Block next (file);
-                    if (block.Next (next) && next.IsFree ()) {
-                        Remove ({next.GetSize (), next.GetOffset ()});
-                        if (file->IsSecure ()) {
-                            // Assume next body is clear.
-                            clearLength += TransactedFile::Block::SIZE;
-                        }
-                        else {
-                            // Since block will grow to occupy next,
-                            // next offset is no longer valid.
-                            TransactedFile::Block oldNext (file, next.GetOffset ());
-                            oldNext.Clear ();
-                        }
-                        // Expand to swallow the next.
-                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + next.GetSize ());
-                    }
-                    // If we're not the last block...
-                    if (THEKOGANS_UTIL_LIKELY (!block.IsLast ())) {
-                        // ...add it to the free list.
-                        Insert ({block.GetSize (), block.GetOffset ()});
-                        block.SetFree (true);
-                        block.Write ();
-                        if (file->IsSecure ()) {
-                            TransactedFile::Range range (file, clearOffset, clearLength, false);
-                            range.Seek (
-                                SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
-                        }
-                    }
-                    else {
-                        // If we are, truncate the heap.
-                        file->Shrink (TransactedFile::Block::SIZE + block.GetSize ());
-                    }
-                }
-                else {
-                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Attempting to free an unallocated block @"
-                        THEKOGANS_UTIL_UI64_FORMAT,
-                        offset);
-                }
+            if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Header::BLOCK_OFFSET)) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Catastrophic Heap Invariance Violation: Attempted to deallocate "
+                    "the master metadata bootstrap anchor page at offset " THEKOGANS_UTIL_UI64_FORMAT,
+                    offset);
             }
+            LockGuard<SpinLock> guard (spinLock);
+            FreeHelper (offset);
         }
 
         TransactedFile::AddressType TransactedFileBTreeAllocator::Realloc (
@@ -338,6 +273,87 @@ namespace thekogans {
                 offset = 0;
             }
             return offset;
+        }
+
+        void TransactedFileBTreeAllocator::GetFreeList (
+                std::vector<std::pair<TransactedFile::AddressType, TransactedFile::SizeType>> &freeList) const {
+            LockGuard<SpinLock> guard (const_cast<SpinLock &> (spinLock));
+            freeList.clear ();
+            TransactedFileBTreeAllocatorBTree::Iterator it;
+            for (FindFirst (it); !it.IsFinished (); it.Next ()) {
+                const TransactedFileBTreeAllocatorBTree::Key &key = it.GetKey ();
+                freeList.emplace_back (key.offset, key.size);
+            }
+            std::sort (freeList.begin (), freeList.end ());
+        }
+
+        void TransactedFileBTreeAllocator::FreeHelper (TransactedFile::AddressType offset) {
+            // To honor the Allocator policy, we ignore NULL pointers.
+            if (offset != 0) {
+                TransactedFile::Block block (file, offset);
+                block.Read ();
+                if (!block.IsFree ()) {
+                    TransactedFile::AddressType clearOffset = block.GetOffset ();
+                    TransactedFile::SizeType clearLength = block.GetSize ();
+                    // Consolidate adjacent free blocks.
+                    TransactedFile::Block prev (file);
+                    if (block.Prev (prev) && prev.IsFree ()) {
+                        Remove ({prev.GetSize (), prev.GetOffset ()});
+                        if (file->IsSecure ()) {
+                            // Assume prev body is clear.
+                            clearOffset -= TransactedFile::Block::SIZE;
+                            clearLength += TransactedFile::Block::SIZE;
+                        }
+                        else {
+                            // Since block will grow to occupy prev,
+                            // it's offset is no longer valid.
+                            TransactedFile::Block oldBlock (file, block.GetOffset ());
+                            oldBlock.Clear ();
+                        }
+                        // Back up to cover the prev.
+                        block.SetOffset (block.GetOffset () - TransactedFile::Block::SIZE - prev.GetSize ());
+                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + prev.GetSize ());
+                    }
+                    TransactedFile::Block next (file);
+                    if (block.Next (next) && next.IsFree ()) {
+                        Remove ({next.GetSize (), next.GetOffset ()});
+                        if (file->IsSecure ()) {
+                            // Assume next body is clear.
+                            clearLength += TransactedFile::Block::SIZE;
+                        }
+                        else {
+                            // Since block will grow to occupy next,
+                            // next offset is no longer valid.
+                            TransactedFile::Block oldNext (file, next.GetOffset ());
+                            oldNext.Clear ();
+                        }
+                        // Expand to swallow the next.
+                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + next.GetSize ());
+                    }
+                    // If we're not the last block...
+                    if (THEKOGANS_UTIL_LIKELY (!block.IsLast ())) {
+                        // ...add it to the free list.
+                        Insert ({block.GetSize (), block.GetOffset ()});
+                        block.SetFree (true);
+                        block.Write ();
+                        if (file->IsSecure ()) {
+                            TransactedFile::Range range (file, clearOffset, clearLength, false);
+                            range.Seek (
+                                SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                        }
+                    }
+                    else {
+                        // If we are, truncate the heap.
+                        file->Shrink (TransactedFile::Block::SIZE + block.GetSize ());
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Attempting to free an unallocated block @"
+                        THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+            }
         }
 
     } // namespace util

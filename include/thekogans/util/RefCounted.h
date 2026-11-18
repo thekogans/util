@@ -322,7 +322,7 @@ namespace thekogans {
                 /// \param[in] ptr Object to move.
                 /// \return *this.
                 inline SharedPtr<T> &operator = (SharedPtr<T> &&ptr) noexcept {
-                    if (ptr.object != object) {
+                    if (this != &ptr) {
                         // Reset our current reference, then steal ownership from the rvalue
                         Reset ();
                         Swap (ptr);
@@ -340,15 +340,15 @@ namespace thekogans {
                 inline SharedPtr<T> &operator = (SharedPtr<_U> &&ptr) {
                     T *casted = dynamic_cast<T *> (ptr.Get ());
                     if (casted != object) {
+                        Reset ();
                         if (casted != nullptr) {
-                            Reset ();
                             object = casted;
                             ptr.Release ();
                         }
-                        else {
-                            Reset ();
-                            // NOTE: As per the standard, we don't reset ptr here.
-                        }
+                    }
+                    else if (casted != nullptr) {
+                        // Aliasing the exact same object: drop the rvalue's extra refcount.
+                        ptr.Reset ();
                     }
                     return *this;
                 }
@@ -529,9 +529,7 @@ namespace thekogans {
                 /// \param[in] object_ Raw pointer to reference counted object.
                 /// \return *this.
                 WeakPtr<T> &operator = (T *object_) {
-                    if (object != object_) {
-                        Reset (object_);
-                    }
+                    Reset (object_);
                     return *this;
                 }
                 /// \brief
@@ -539,9 +537,7 @@ namespace thekogans {
                 /// \param[in] ptr SharedPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr<T> &operator = (const SharedPtr<T> &ptr) {
-                    if (ptr.object != object) {
-                        Reset (ptr.object);
-                    }
+                    Reset (ptr.Get ());
                     return *this;
                 }
                 /// \brief
@@ -550,10 +546,7 @@ namespace thekogans {
                 /// \return *this.
                 template<typename _U>
                 WeakPtr<T> &operator = (const SharedPtr<_U> &ptr) {
-                    T *casted = dynamic_cast<T *> (ptr.object);
-                    if (casted != object) {
-                        Reset (casted);
-                    }
+                    Reset (dynamic_cast<T *> (ptr.Get ()));
                     return *this;
                 }
                 /// \brief
@@ -561,7 +554,7 @@ namespace thekogans {
                 /// \param[in] ptr WeakPtr<T> to reference counted object.
                 /// \return *this.
                 WeakPtr<T> &operator = (const WeakPtr<T> &ptr) {
-                    if (ptr.object != object) {
+                    if (references != ptr.references) {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
@@ -579,15 +572,21 @@ namespace thekogans {
                 /// \return *this.
                 template<typename _U>
                 WeakPtr<T> &operator = (const WeakPtr<_U> &ptr) {
-                    T *casted = dynamic_cast<T *> (ptr.object);
-                    if (casted != object) {
+                    if (references != ptr.references) {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
-                        object = casted;
-                        references = ptr.references;
-                        if (references != nullptr) {
-                            references->AddWeakRef ();
+                        T *casted = dynamic_cast<T *> (ptr.object);
+                        if (casted != nullptr) {
+                            object = casted;
+                            references = ptr.references;
+                            if (references != nullptr) {
+                                references->AddWeakRef ();
+                            }
+                        }
+                        else {
+                            object = nullptr;
+                            references = nullptr;
                         }
                     }
                     return *this;
@@ -597,7 +596,7 @@ namespace thekogans {
                 /// \param[in] ptr Object to move.
                 /// \return *this.
                 WeakPtr<T> &operator = (WeakPtr<T> &&ptr) {
-                    if (ptr.object != object) {
+                    if (this != &ptr) {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
@@ -613,17 +612,24 @@ namespace thekogans {
                 /// \return *this.
                 template<typename _U>
                 WeakPtr<T> &operator = (WeakPtr<_U> &&ptr) {
-                    T *casted = dynamic_cast<T *> (ptr.object);
-                    if (casted != object) {
+                    if (references != ptr.references) {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
-                        object = casted;
-                        references = ptr.references;
-                        ptr.Release ();
+                        T *casted = dynamic_cast<T *> (ptr.object);
+                        if (casted != nullptr) {
+                            object = casted;
+                            references = ptr.references;
+                            ptr.Release ();
+                        }
+                        else {
+                            object = nullptr;
+                            references = nullptr;
+                            ptr.Reset ();
+                        }
                     }
                     else {
-                        Reset ();
+                        ptr.Reset ();
                     }
                     return *this;
                 }
@@ -636,17 +642,15 @@ namespace thekogans {
                 /// are any more shared references left on the object and that
                 /// it's not dangling.
                 void Reset (T *object_ = nullptr) {
-                    if (object != object_) {
+                    References *references_ = object_ != nullptr ? object_->references : nullptr;
+                    if (references != references_) {
                         if (references != nullptr) {
                             references->ReleaseWeakRef ();
                         }
                         object = object_;
-                        if (object != nullptr) {
-                            references = object->references;
+                        references = references_;
+                        if (references != nullptr) {
                             references->AddWeakRef ();
-                        }
-                        else {
-                            references = nullptr;
                         }
                     }
                 }

@@ -80,30 +80,31 @@ namespace thekogans {
 
         bool TransactedFileBTree::Iterator::Next () {
             if (!finished) {
-                finished = true;
-                while (node.second < node.first->count || !parents.empty ()) {
-                    ++node.second;
-                    Node *child = node.first->GetChild (node.second);
-                    if (child != nullptr) {
-                        parents.push_back (NodeIndex (node.first, node.second));
-                        ui32 index = 0;
-                        while (child != nullptr &&
-                                (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
-                            parents.push_back (NodeIndex (child, index));
-                            child = child->GetChild (index);
-                        }
+                ++node.second;
+                Node *child = node.first->GetChild (node.second);
+                if (child != nullptr) {
+                    parents.push_back (NodeIndex (node.first, node.second));
+                    ui32 index = 0;
+                    while (child != nullptr &&
+                        (prefix == nullptr || child->FindFirstPrefix (*prefix, index))) {
+                        parents.push_back (NodeIndex (child, index));
+                        child = child->GetChild (index);
+                    }
+                    node = parents.back ();
+                    parents.pop_back ();
+                }
+                else {
+                    while (node.second >= node.first->count && !parents.empty ()) {
                         node = parents.back ();
                         parents.pop_back ();
                     }
-                    if (node.second < node.first->count) {
-                        finished = prefix != nullptr &&
-                            prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
-                        break;
-                    }
-                    else if (!parents.empty ()) {
-                        node = parents.back ();
-                        parents.pop_back ();
-                    }
+                }
+                if (node.second < node.first->count) {
+                    finished = prefix != nullptr &&
+                        prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
+                }
+                else {
+                    finished = true;
                 }
             }
             if (finished) {
@@ -315,8 +316,8 @@ namespace thekogans {
             if (found) {
                 if (child != nullptr) {
                     Node *leaf = child;
-                    while (leaf->leftOffset != 0) {
-                        leaf = leaf->GetChild (0);
+                    while (Node *leftChild = leaf->GetChild (0)) {
+                        leaf = leftChild;
                     }
                     // 1. Clean up and free the deleted entries[index] first.
                     entries[index].key->Release ();
@@ -331,6 +332,7 @@ namespace thekogans {
                             object->FreeBlock ();
                         }
                         entries[index].value->Release ();
+                        entries[index].value = nullptr;
                     }
                     else if (btree->header.IsValueIsObject () && entries[index].valueOffset != 0) {
                         Object::FreeObject (file, entries[index].valueOffset);
@@ -384,9 +386,9 @@ namespace thekogans {
                         entries[index].value->Release ();
                         entries[index].value = nullptr;
                     }
-                    else if (btree->header.IsValueIsObject () && entries[index].valueOffset != 0) {
-                        Object::FreeObject (file, entries[index].valueOffset);
-                    }
+                    // else if (btree->header.IsValueIsObject () && entries[index].valueOffset != 0) {
+                    //     Object::FreeObject (file, entries[index].valueOffset);
+                    // }
                     RemoveEntry (index);
                 }
                 return true;
@@ -541,6 +543,8 @@ namespace thekogans {
             }
             left->RemoveEntry (lastIndex);
             SetDirty ();
+            const Key *prevKey = 0;
+            btree->AssertSorted (this, prevKey);
         }
 
         void TransactedFileBTree::Node::RotateLeft (
@@ -584,6 +588,8 @@ namespace thekogans {
             }
             right->RemoveEntry (0);
             SetDirty ();
+            const Key *prevKey = 0;
+            btree->AssertSorted (this, prevKey);
         }
 
         void TransactedFileBTree::Node::Merge (
@@ -609,6 +615,8 @@ namespace thekogans {
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
+            const Key *prevKey = 0;
+            btree->AssertSorted (this, prevKey);
         }
 
         void TransactedFileBTree::Node::Split (Node *right) {
@@ -662,7 +670,7 @@ namespace thekogans {
                 }
             }
             right->count = 0;
-            right->FreeBlock ();
+            Object::FreeObject (file, right->GetOffset ());
             right->Release ();
             SetDirty ();
         }
@@ -689,6 +697,19 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::RemoveEntry (ui32 index) {
+            if (entries[index].value != nullptr) {
+                if (!btree->header.IsValueIsObject ()) {
+                    entries[index].value->Producer<SerializableEvents>::Unsubscribe (*this);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object =
+                        Serializable::SharedPtr (entries[index].value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+                }
+            }
+            if (entries[index].right != nullptr) {
+                entries[index].right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
+            }
             std::memmove (entries + index, entries + index + 1, (--count - index) * sizeof (Entry));
             SetDirty ();
         }
@@ -699,6 +720,7 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::Reset () {
+            return;
             if (THEKOGANS_UTIL_LIKELY (count > 0)) {
                 if (left != nullptr) {
                     left->Release ();
@@ -880,10 +902,6 @@ namespace thekogans {
                 }
                 else {
                 }
-            }
-            else {
-                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
-                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
         }
 
@@ -1112,6 +1130,21 @@ namespace thekogans {
                             "Corrupt BTree header @" THEKOGANS_UTIL_UI64_FORMAT,
                             offset);
                     }
+                }
+            }
+        }
+
+        void TransactedFileBTree::AssertSorted (
+                Node *node,
+                const Key *&prevKey) {
+            if (node != nullptr) {
+                AssertSorted (node->GetChild (0), prevKey);
+                for (ui32 i = 0; i < node->count; ++i) {
+                    if (prevKey != nullptr && prevKey->Compare (*node->entries[i].key) >= 0) {
+                        __builtin_debugtrap ();
+                    }
+                    prevKey = node->entries[i].key;
+                    AssertSorted (node->GetChild (i + 1), prevKey);
                 }
             }
         }

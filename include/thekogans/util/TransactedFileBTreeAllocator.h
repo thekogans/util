@@ -66,7 +66,7 @@ namespace thekogans {
             TransactedFileBTreeAllocator (
                 std::size_t entriesPerNode = TransactedFileBTreeAllocatorBTree::DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = TransactedFileBTreeAllocatorBTree::DEFAULT_NODES_PER_PAGE) :
-                TransactedFileBTreeAllocatorBTree (entriesPerNode, nodesPerPage) {}
+                TransactedFileBTreeAllocatorBTree (this, entriesPerNode, nodesPerPage) {}
 
             // Allocator
             /// \brief
@@ -90,6 +90,15 @@ namespace thekogans {
                 TransactedFile::AddressType offset,
                 TransactedFile::SizeType newSize,
                 bool moveData = true) override;
+
+            virtual void GetFreeList (
+                std::vector<std::pair<TransactedFile::AddressType, TransactedFile::SizeType>> &freeList) const override;
+
+        private:
+            void FreeHelper (TransactedFile::AddressType offset);
+
+            friend struct TransactedFileBTreeAllocatorBTree;
+            friend struct TransactedFileBTreeAllocatorBTree::Node;
 
             /// \brief
             /// TransactedFileBTreeAllocator is neither copy constructable, nor assignable.

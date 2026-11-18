@@ -113,16 +113,16 @@
         } while (false)
     /// \def THEKOGANS_UTIL_DEBUG_BREAK
     /// Trigger a debug break.
+    #define THEKOGANS_UTIL_DEBUG_BREAK_ON_THROW
     #if defined (THEKOGANS_UTIL_DEBUG_BREAK_ON_THROW)
-        #if defined (TOOLCHAIN_OS_Windows)
+        #if defined (_MSC_VER)
             #define THEKOGANS_UTIL_DEBUG_BREAK __debugbreak ();
-        #else // defined (TOOLCHAIN_OS_Windows)
-            #if defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-                #define THEKOGANS_UTIL_DEBUG_BREAK __asm__ ("int $3");
-            #else // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-                #define THEKOGANS_UTIL_DEBUG_BREAK
-            #endif // defined (TOOLCHAIN_ARCH_i386) || defined (TOOLCHAIN_ARCH_x86_64)
-        #endif // defined (TOOLCHAIN_OS_Windows)
+        #elif defined (__clang__) || defined (__GNUC__)
+            #define THEKOGANS_UTIL_DEBUG_BREAK __builtin_debugtrap ();
+        #else
+            #include <signal.h>
+            #define THEKOGANS_UTIL_DEBUG_BREAK raise (SIGTRAP);
+        #endif
     #else // defined (THEKOGANS_UTIL_BREAK_ON_THROW)
         #define THEKOGANS_UTIL_DEBUG_BREAK
     #endif // defined (THEKOGANS_UTIL_BREAK_ON_THROW)

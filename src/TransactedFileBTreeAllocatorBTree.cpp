@@ -17,6 +17,7 @@
 
 #include <cstring>
 #include "thekogans/util/Exception.h"
+#include "thekogans/util/TransactedFileBTreeAllocator.h"
 #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
 
 namespace thekogans {
@@ -73,7 +74,52 @@ namespace thekogans {
                 Serializer &serializer,
                 TransactedFileBTreeAllocatorBTree::Node::Entry &entry) {
             serializer >> entry.key >> entry.rightOffset;
+            entry.right = nullptr;
             return serializer;
+        }
+        void TransactedFileBTreeAllocatorBTree::Iterator::Clear () {
+            // Leave the prefix in case they want to reuse the iterator.
+            parents.clear ();
+            node = NodeIndex (nullptr, 0);
+            finished = true;
+        }
+
+        bool TransactedFileBTreeAllocatorBTree::Iterator::Next () {
+            if (!finished) {
+                ++node.second;
+                Node *child = node.first->GetChild (node.second);
+                if (child != nullptr) {
+                    parents.push_back (NodeIndex (node.first, node.second));
+                    do {
+                        parents.push_back (NodeIndex (child, 0));
+                        child = child->GetChild (0);
+                    } while (child != nullptr);
+                    node = parents.back ();
+                    parents.pop_back ();
+                }
+                else {
+                    while (node.second >= node.first->count && !parents.empty ()) {
+                        node = parents.back ();
+                        parents.pop_back ();
+                    }
+                    if (node.second >= node.first->count) {
+                        Clear ();
+                    }
+                }
+            }
+            return !finished;
+        }
+
+        TransactedFileBTreeAllocatorBTree::Key TransactedFileBTreeAllocatorBTree::Iterator::GetKey () const {
+            assert (finished || (node.first != nullptr && node.second < node.first->count));
+            return finished ? Key{0, 0} : node.first->entries[node.second].key;
+        }
+
+        void TransactedFileBTreeAllocatorBTree::Iterator::Reset (
+                Node *node_,
+                ui32 index) {
+            node = NodeIndex (node_, index);
+            finished = false;
         }
 
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTreeAllocatorBTree::Node, 1, 0)
@@ -106,17 +152,17 @@ namespace thekogans {
 
         TransactedFileBTreeAllocatorBTree::Node *TransactedFileBTreeAllocatorBTree::Node::GetChild (ui32 index) {
             if (THEKOGANS_UTIL_UNLIKELY (index == 0)) {
-                if (THEKOGANS_UTIL_UNLIKELY (leftNode == nullptr && leftOffset != 0)) {
-                    leftNode = Alloc (btree, file, leftOffset);
+                if (THEKOGANS_UTIL_UNLIKELY (left == nullptr && leftOffset != 0)) {
+                    left = Alloc (btree, file, leftOffset);
                 }
-                return leftNode;
+                return left;
             }
             else {
                 --index;
-                if (THEKOGANS_UTIL_UNLIKELY (entries[index].rightNode == nullptr && entries[index].rightOffset != 0)) {
-                    entries[index].rightNode = Alloc (btree, file, entries[index].rightOffset);
+                if (THEKOGANS_UTIL_UNLIKELY (entries[index].right == nullptr && entries[index].rightOffset != 0)) {
+                    entries[index].right = Alloc (btree, file, entries[index].rightOffset);
                 }
-                return entries[index].rightNode;
+                return entries[index].right;
             }
         }
 
@@ -172,9 +218,9 @@ namespace thekogans {
                             right->RemoveEntry (0);
                         }
                         right->leftOffset = entry.rightOffset;
-                        right->leftNode = entry.rightNode;
+                        right->left = entry.right;
                         entry.rightOffset = right->offset;
-                        entry.rightNode = right;
+                        entry.right = right;
                         return false;
                     }
                 }
@@ -189,7 +235,7 @@ namespace thekogans {
             if (found) {
                 if (child != nullptr) {
                     Node *leaf = child;
-                    while (leaf->leftOffset != 0) {
+                    while (Node *leftChild = leaf->GetChild (0)) {
                         leaf = leaf->GetChild (0);
                     }
                     entries[index].key = leaf->entries[0].key;
@@ -244,32 +290,32 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::RotateRight (
-            ui32 index,
-            Node *left,
-            Node *right) {
+                ui32 index,
+                Node *left,
+                Node *right) {
             entries[index].rightOffset = right->leftOffset;
-            entries[index].rightNode = right->leftNode;
+            entries[index].right = right->left;
             right->InsertEntry (entries[index], 0);
             ui32 lastIndex = left->count - 1;
             right->leftOffset = left->entries[lastIndex].rightOffset;
-            right->leftNode = left->entries[lastIndex].rightNode;
+            right->left = left->entries[lastIndex].right;
             left->entries[lastIndex].rightOffset = right->offset;
-            left->entries[lastIndex].rightNode = right;
+            left->entries[lastIndex].right = right;
             entries[index] = left->entries[lastIndex];
             left->RemoveEntry (lastIndex);
             SetDirty ();
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::RotateLeft (
-            ui32 index,
-            Node *left,
-            Node *right) {
+                ui32 index,
+                Node *left,
+                Node *right) {
             entries[index].rightOffset = right->leftOffset;
-            entries[index].rightNode = right->leftNode;
+            entries[index].right = right->left;
             right->leftOffset = right->entries[0].rightOffset;
-            right->leftNode = right->entries[0].rightNode;
+            right->left = right->entries[0].right;
             right->entries[0].rightOffset = right->offset;
-            right->entries[0].rightNode = right;
+            right->entries[0].right = right;
             left->Concatenate (entries[index]);
             entries[index] = right->entries[0];
             right->RemoveEntry (0);
@@ -277,16 +323,16 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::Merge (
-            ui32 index,
-            Node *left,
-            Node *right) {
+                ui32 index,
+                Node *left,
+                Node *right) {
             assert (left->count + right->count < btree->header.entriesPerNode);
             entries[index].rightOffset = right->leftOffset;
-            entries[index].rightNode = right->leftNode;
+            entries[index].right = right->left;
             left->Concatenate (entries[index]);
             left->Concatenate (right);
             RemoveEntry (index);
-            Object::FreeObject (file, right->GetOffset ());
+            btree->allocator->FreeHelper (right->GetOffset ());
             right->Release ();
         }
 
@@ -308,8 +354,8 @@ namespace thekogans {
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::InsertEntry (
-            const Entry &entry,
-            ui32 index) {
+                const Entry &entry,
+                ui32 index) {
             std::memmove (entries + index + 1, entries + index, (count++ - index) * sizeof (Entry));
             entries[index] = entry;
             SetDirty ();
@@ -322,14 +368,14 @@ namespace thekogans {
 
         void TransactedFileBTreeAllocatorBTree::Node::Reset () {
             if (THEKOGANS_UTIL_LIKELY (count > 0)) {
-                if (THEKOGANS_UTIL_LIKELY (leftNode != nullptr)) {
-                    leftNode->Release ();
-                    leftNode = nullptr;
+                if (THEKOGANS_UTIL_LIKELY (left != nullptr)) {
+                    left->Release ();
+                    left = nullptr;
                 }
                 for (ui32 i = 0; i < count; ++i) {
-                    if (THEKOGANS_UTIL_LIKELY (entries[i].rightNode != nullptr)) {
-                        entries[i].rightNode->Release ();
-                        entries[i].rightNode = nullptr;
+                    if (THEKOGANS_UTIL_LIKELY (entries[i].right != nullptr)) {
+                        entries[i].right->Release ();
+                        entries[i].right = nullptr;
                     }
                 }
                 count = 0;
@@ -364,13 +410,13 @@ namespace thekogans {
         void TransactedFileBTreeAllocatorBTree::Node::Write (Serializer &serializer) {
             serializer << MAGIC32 << count;
             if (THEKOGANS_UTIL_LIKELY (count > 0)) {
-                if (THEKOGANS_UTIL_LIKELY (leftNode != nullptr)) {
-                    leftOffset = leftNode->offset;
+                if (THEKOGANS_UTIL_LIKELY (left != nullptr)) {
+                    leftOffset = left->offset;
                 }
                 serializer << leftOffset;
                 for (ui32 i = 0; i < count; ++i) {
-                    if (THEKOGANS_UTIL_LIKELY (entries[i].rightNode != nullptr)) {
-                        entries[i].rightOffset = entries[i].rightNode->offset;
+                    if (THEKOGANS_UTIL_LIKELY (entries[i].right != nullptr)) {
+                        entries[i].rightOffset = entries[i].right->offset;
                     }
                     serializer << entries[i];
                 }
@@ -444,7 +490,7 @@ namespace thekogans {
                 root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                 Node *node = Node::Alloc (this, file, 0);
                 node->leftOffset = root->GetOffset ();
-                node->leftNode = root;
+                node->left = root;
                 node->InsertEntry (entry, 0);
                 root = node;
                 root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
@@ -459,11 +505,28 @@ namespace thekogans {
                     Node *node = root;
                     root = root->GetChild (0);
                     root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                    Object::FreeObject (file, node->GetOffset ());
+                    allocator->FreeHelper (node->GetOffset ());
                     node->Release ();
                 }
             }
             return removed;
+        }
+
+        bool TransactedFileBTreeAllocatorBTree::FindFirst (Iterator &it) const {
+            it.Clear ();
+            Node *node = root;
+            if (THEKOGANS_UTIL_LIKELY (node != nullptr && node->count > 0)) {
+                do {
+                    it.parents.push_back (Iterator::NodeIndex (node, 0));
+                    node = node->GetChild (0);
+                } while (node != nullptr);
+                it.finished = false;
+            }
+            if (!it.finished) {
+                it.node = it.parents.back ();
+                it.parents.pop_back ();
+            }
+            return !it.finished;
         }
 
         void TransactedFileBTreeAllocatorBTree::Read (Serializer &serializer) {

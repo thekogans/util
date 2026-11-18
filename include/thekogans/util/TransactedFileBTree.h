@@ -714,6 +714,10 @@ namespace thekogans {
                 TransactedFile *file,
                 TransactedFile::AddressType offset);
 
+            void AssertSorted (
+                Node *node,
+                const Key *&prevKey);
+
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
                 SetDirty ();
             }

@@ -44,4 +44,6 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
         AddressType offset,
         SizeType newSize,
         bool moveData = true) = 0;
+
+    virtual void GetFreeList (std::vector<std::pair<AddressType, SizeType>> &freeList) const = 0;
 };

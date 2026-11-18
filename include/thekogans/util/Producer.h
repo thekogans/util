@@ -247,12 +247,23 @@ namespace thekogans {
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         new ImmediateEventDeliveryPolicy) {
                 LockGuard<SpinLock> guard (spinLock);
-                return subscribers.insert (
+                auto [it, inserted] = subscribers.insert (
                     typename Subscribers::value_type (
                         &subscriber,
                         SubscriberInfo (
                             typename Subscriber<T>::WeakPtr (&subscriber),
-                            eventDeliveryPolicy))).second;
+                            eventDeliveryPolicy)));
+                if (!inserted) {
+                    // A previous subscriber at this exact heap address expired without
+                    // unsubscribing. Replace the stale tombstoned entry!
+                    if (it->second.first.IsExpired ()) {
+                        it->second = SubscriberInfo (
+                            typename Subscriber<T>::WeakPtr (&subscriber),
+                            eventDeliveryPolicy);
+                        return true;
+                    }
+                }
+                return inserted;
             }
 
             /// \brief

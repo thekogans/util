@@ -150,6 +150,7 @@ namespace thekogans {
             #include "thekogans/util/TransactedFileAllocator.h"
             #include "thekogans/util/TransactedFileRegistry.h"
             #include "thekogans/util/TransactedFileHeader.h"
+            #include "thekogans/util/TransactedFileHeapWalker.h"
 
         private:
             /// \brief

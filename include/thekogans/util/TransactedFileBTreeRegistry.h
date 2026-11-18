@@ -46,7 +46,7 @@ namespace thekogans {
                 // the Allocator interface to Object through TransactedFileBTree. So here sits an
                 // announcement to the rest of the world that yes, we are indeed an Object.
                 public virtual TransactedFile::Object,
-                private TransactedFileBTree {
+                public TransactedFileBTree {
             /// \brief
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeRegistry)

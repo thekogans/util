@@ -24,6 +24,8 @@
 namespace thekogans {
     namespace util {
 
+        struct TransactedFileBTreeAllocator;
+
         /// \struct TransactedFileBTreeAllocatorBTree TransactedFileBTreeAllocatorBTree.h
         /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
         ///
@@ -74,6 +76,7 @@ namespace thekogans {
             /// Number of \see{TransactedFileBTree::Node}s that will fit in to a \see{BlockAllocator} page.
             static const std::size_t DEFAULT_NODES_PER_PAGE = 5;
 
+            TransactedFileBTreeAllocator *allocator{nullptr};
             /// \struct TransactedFileBTreeAllocatorBTree::Header TransactedFileBTreeAllocatorBTree.h
             /// thekogans/util/TransactedFileBTreeAllocatorBTree.h
             ///
@@ -119,7 +122,7 @@ namespace thekogans {
                 TransactedFile::AddressType leftOffset{0};
                 /// \brief
                 /// Left most child node.
-                Node *leftNode{nullptr};
+                Node *left{nullptr};
                 /// \struct BTree::Node::Entry BTree.h thekogans/util/BTree.h
                 ///
                 /// \brief
@@ -133,7 +136,7 @@ namespace thekogans {
                     TransactedFile::AddressType rightOffset{0};
                     /// \brief
                     /// Right child node.
-                    Node *rightNode{nullptr};
+                    Node *right{nullptr};
 
                     /// \brief
                     /// ctor.
@@ -313,8 +316,10 @@ namespace thekogans {
             /// \see{Node}. If we're reading an existing heap, this value will come from the
             /// \see{Header}.
             TransactedFileBTreeAllocatorBTree (
+                TransactedFileBTreeAllocator *allocator_ = nullptr,
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE) :
+                allocator (allocator_),
                 header{(ui32)entriesPerNode, (ui32)nodesPerPage} {}
             /// \brief
             /// dtor.
@@ -336,6 +341,67 @@ namespace thekogans {
             /// \param[in] key Key whose entry to delete.
             /// \return true == entry deleted. false == entry not found.
             bool Remove (const Key &key);
+
+            struct _LIB_THEKOGANS_UTIL_DECL Iterator {
+            protected:
+                /// \brief
+                /// Alias for std::pair<Node *, ui32>.
+                using NodeIndex = std::pair<Node *, ui32>;
+                /// \brief
+                /// Stack of parents allowing us to navigate the tree.
+                /// The nodes store no parent pointers. They would be
+                /// a nightmare to maintain.
+                std::vector<NodeIndex> parents;
+                /// \brief
+                /// Current node we're iterating over.
+                NodeIndex node{nullptr, 0};
+                /// \brief
+                /// Flag indicating the iterator is done and will not
+                /// return true from Next again. It is only set in \see{TransactedFileBTree::FindFirst}
+                /// and \see{Next} below and only after it made sure that it properly
+                /// initialized the iterator.
+                bool finished{true};
+
+            public:
+                /// \brief
+                /// Return true if the iterator is finished.
+                /// \return true == the iterator is finished.
+                inline bool IsFinished () const {
+                    return finished;
+                }
+
+                /// \brief
+                /// Step to the next entry in the range.
+                /// \return true == Iterator is now pointing at the next entry.
+                /// Use GetKey and GetValue to examine it's contents.
+                /// false == the iterator is finished through the range or the
+                /// range was empty to begin with.
+                bool Next ();
+
+                /// \brief
+                /// If we're not finished, return the key associated with the current entry.
+                /// \return Key associated with the current entry.
+                Key GetKey () const;
+
+            private:
+                /// \brief
+                /// Clear the internal state and reset the iterator.
+                /// Used by \see{TransactedFileBTree} to manage passed in iterators.
+                void Clear ();
+                /// \brief
+                /// Reset the iterator to the given \see{Node::Entry}.
+                /// Used by \see{TransactedFileBTree} to manage passed in iterators.
+                /// \param[in] node_ \see{Node}.
+                /// \param[in] index Node entry index.
+                void Reset (
+                    Node *node_,
+                    ui32 index);
+
+                /// \brief
+                /// TransactedFileBTreeAllocatorBTree is the only one trusted to access sensitive protected data.
+                friend struct TransactedFileBTreeAllocatorBTree;
+            };
+            bool FindFirst (Iterator &it) const;
 
         protected:
             // Serializable
