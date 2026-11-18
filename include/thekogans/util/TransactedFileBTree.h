@@ -200,14 +200,6 @@ namespace thekogans {
                 /// Clear the internal state and reset the iterator.
                 /// Used by \see{TransactedFileBTree} to manage passed in iterators.
                 void Clear ();
-                /// \brief
-                /// Reset the iterator to the given \see{Node::Entry}.
-                /// Used by \see{TransactedFileBTree} to manage passed in iterators.
-                /// \param[in] node_ \see{Node}.
-                /// \param[in] index Node entry index.
-                void Reset (
-                    Node *node_,
-                    ui32 index);
 
                 /// \brief
                 /// TransactedFileBTree is the only one trusted to access sensitive protected data.

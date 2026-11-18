@@ -123,14 +123,6 @@ namespace thekogans {
             return finished ? nullptr : node.first->GetValue (node.second);
         }
 
-        void TransactedFileBTree::Iterator::Reset (
-                Node *node_,
-                ui32 index) {
-            prefix = node_->entries[index].key;
-            node = NodeIndex (node_, index);
-            finished = false;
-        }
-
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTree::Node, 1, 0)
 
         TransactedFileBTree::Node::Node (TransactedFileBTree *btree_) :

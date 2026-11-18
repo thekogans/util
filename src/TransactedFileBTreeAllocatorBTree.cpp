@@ -236,7 +236,7 @@ namespace thekogans {
                 if (child != nullptr) {
                     Node *leaf = child;
                     while (Node *leftChild = leaf->GetChild (0)) {
-                        leaf = leaf->GetChild (0);
+                        leaf = leftChild;
                     }
                     entries[index].key = leaf->entries[0].key;
                     child->Remove (leaf->entries[0].key);
