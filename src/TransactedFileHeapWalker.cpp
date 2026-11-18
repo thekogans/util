@@ -93,9 +93,44 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::HeapWalker::WalkHeap (
+        void TransactedFile::HeapWalker::CheckForOrphans (
                 TransactedFile *file,
                 Callback callback) {
+            std::vector<Block> allocatedBlocks;
+            Block block (file, TransactedFile::Header::BLOCK_OFFSET);
+            // Check block is intact.
+            block.Read ();
+            // Block 0 cannot be free.
+            if (block.IsFree ()) {
+                if (!callback (block, ERROR_FREE_BLOCK_0)) {
+                    return;
+                }
+            }
+            else {
+                allocatedBlocks.push_back (block);
+            }
+            while (!block.IsLast ()) {
+                Block next (file);
+                block.Next (next);
+                if (!next.IsFree ()) {
+                    allocatedBlocks.push_back (next);
+                }
+                block = next;
+            }
+            TransactedFile::Object::BlockMap blockMap;
+            file->GetHeader ()->GetAllocatedBlockMap (blockMap);
+            // 1. Check for physically allocated blocks that are unreachable from the root object graph (orphans/zombies).
+            for (const Block &allocatedBlock : allocatedBlocks) {
+                auto it = blockMap.find (allocatedBlock.GetOffset ());
+                if (it == blockMap.end ()) {
+                    if (!callback (allocatedBlock, ERROR_ORPHAN_BLOCK)) {
+                        return;
+                    }
+                }
+                else {
+                    blockMap.erase (it);
+                }
+            }
         }
 
     } // namespace util

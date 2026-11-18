@@ -561,6 +561,24 @@ namespace thekogans {
                     TransactedFile *file,
                     TransactedFile::AddressType offset);
 
+                virtual void GetAllocatedBlockMap (BlockMap &blockMap) override {
+                    Object::GetAllocatedBlockMap (blockMap);
+                    if (btree->header.IsValueIsObject ()) {
+                        for (ui32 i = 0; i < count; ++i) {
+                            TransactedFile::Object::SharedPtr value = GetValue (i);
+                            if (value != nullptr) {
+                                value->GetAllocatedBlockMap (blockMap);
+                            }
+                        }
+                    }
+                    for (ui32 i = 0; i <= count; ++i) {
+                        Node *child = GetChild (i);
+                        if (child != nullptr) {
+                            child->GetAllocatedBlockMap (blockMap);
+                        }
+                    }
+                }
+
                 // SerializableEvents
                 virtual void OnSerializableDirty (Serializable::SharedPtr /*serializable*/) noexcept override {
                     if (!btree->header.IsValueIsObject ()) {
@@ -706,13 +724,21 @@ namespace thekogans {
                 TransactedFile *file,
                 TransactedFile::AddressType offset);
 
-            void AssertSorted (
-                Node *node,
-                const Key *&prevKey);
+            virtual void GetAllocatedBlockMap (BlockMap &blockMap) override {
+                Object::GetAllocatedBlockMap (blockMap);
+                if (offset != 0) {
+                    assert (root != nullptr);
+                    root->GetAllocatedBlockMap (blockMap);
+                }
+            }
 
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
                 SetDirty ();
             }
+
+            void AssertSorted (
+                Node *node,
+                const Key *&prevKey);
 
         protected:
             /// \brief

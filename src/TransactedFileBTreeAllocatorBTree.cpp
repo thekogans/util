@@ -345,12 +345,11 @@ namespace thekogans {
             node->SetDirty ();
         }
 
-        void TransactedFileBTreeAllocatorBTree::Node::Concatenate (Node *node) {
-            std::memcpy (entries + count, node->entries, node->count * sizeof (Entry));
-            count += node->count;
-            node->count = 0;
+        void TransactedFileBTreeAllocatorBTree::Node::Concatenate (Node *right) {
+            std::memcpy (entries + count, right->entries, right->count * sizeof (Entry));
+            count += right->count;
+            right->count = 0;
             SetDirty ();
-            node->SetDirty ();
         }
 
         void TransactedFileBTreeAllocatorBTree::Node::InsertEntry (

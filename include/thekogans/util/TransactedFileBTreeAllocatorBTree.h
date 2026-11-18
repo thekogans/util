@@ -303,6 +303,16 @@ namespace thekogans {
                     TransactedFile *file,
                     TransactedFile::AddressType offset);
 
+                virtual void GetAllocatedBlockMap (BlockMap &blockMap) override {
+                    Object::GetAllocatedBlockMap (blockMap);
+                    for (ui32 i = 0; i <= count; ++i) {
+                        Node *child = GetChild (i);
+                        if (child != nullptr) {
+                            child->GetAllocatedBlockMap (blockMap);
+                        }
+                    }
+                }
+
                 /// \brief
                 /// Node is neither copy or move constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Node)
@@ -442,6 +452,14 @@ namespace thekogans {
             static void FreeObject (
                 TransactedFile *file,
                 TransactedFile::AddressType offset);
+
+            virtual void GetAllocatedBlockMap (BlockMap &blockMap) override {
+                Object::GetAllocatedBlockMap (blockMap);
+                if (offset != 0) {
+                    assert (root != nullptr);
+                    root->GetAllocatedBlockMap (blockMap);
+                }
+            }
 
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
                 SetDirty ();

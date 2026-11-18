@@ -1133,7 +1133,7 @@ namespace thekogans {
                 AssertSorted (node->GetChild (0), prevKey);
                 for (ui32 i = 0; i < node->count; ++i) {
                     if (prevKey != nullptr && prevKey->Compare (*node->entries[i].key) >= 0) {
-                        __builtin_debugtrap ();
+                        THEKOGANS_UTIL_DEBUG_BREAK
                     }
                     prevKey = node->entries[i].key;
                     AssertSorted (node->GetChild (i + 1), prevKey);

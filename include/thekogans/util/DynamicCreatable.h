@@ -492,12 +492,10 @@ namespace thekogans {
                 std::function<SharedPtr (ParametersType /*parameters*/)>;
             /// \brief
             /// Maps type name to it's factory method.
-            using TypeMapType = std::unordered_map<
-                HashedString, FactoryType, HashedString::Hash, HashedString::EqualTo>;
+            using TypeMapType = HashedStringMapType<FactoryType>;
             /// \brief
             /// Maps base type name to it's derived types.
-            using BaseMapType = std::unordered_map<
-                HashedString, TypeMapType, HashedString::Hash, HashedString::EqualTo>;
+            using BaseMapType = HashedStringMapType<TypeMapType>;
 
             /// \struct DynamicCreatable::TypeDictionary DynamicCreatable.h
             /// thekogans/util/DynamicCreatable.h
@@ -522,8 +520,7 @@ namespace thekogans {
             protected:
                 /// \brief
                 std::vector<HashedString> types;
-                using HashMapType = std::unordered_map<HashedString, IdType, HashedString::Hash, HashedString::EqualTo>;
-                HashMapType hashMap;
+                HashedStringMapType<IdType> hashMap;
 
             public:
                 virtual IdType GetOrCreateTypeId (const HashedString &type) override;

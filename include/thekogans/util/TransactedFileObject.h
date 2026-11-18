@@ -108,8 +108,7 @@ public:
             AddressType /*offset*/)>;
     /// \brief
     /// Maps type name to it's deleter method.
-    using DeleterMapType = std::unordered_map<
-        HashedString, DeleterType, HashedString::Hash, HashedString::EqualTo>;
+    using DeleterMapType = HashedStringMapType<DeleterType>;
 
     static DeleterMapType &GetDeleters () {
         static DeleterMapType deleters;
@@ -191,6 +190,15 @@ public:
     /// \brief
     /// Reload the internal cache from file.
     virtual void Reload ();
+
+    using BlockMap = std::unordered_map<AddressType, SerializableHeader>;
+    virtual void GetAllocatedBlockMap (BlockMap &blockMap) {
+        if (offset != 0) {
+            // Go straight to the source.
+            ObjectRange range (file, offset);
+            blockMap.insert ({offset, range.context});
+        }
+    }
 
 protected:
     // TransactedFileTransactionEvents

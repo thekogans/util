@@ -258,6 +258,9 @@ namespace thekogans {
                 return header->IsSecure ();
             }
 
+            Header::SharedPtr GetHeader () const {
+                return header;
+            }
             virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
                 return dictionary;
             }

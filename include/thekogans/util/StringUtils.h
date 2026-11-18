@@ -404,6 +404,9 @@ namespace thekogans {
             }
         };
 
+        template<typename Value>
+        using HashedStringMapType = std::unordered_map<HashedString, Value, HashedString::Hash, HashedString::EqualTo>;
+
         /// \brief
         /// Given a list of strings, return the longest common prefix.
         /// \param[in] strings List of strings whose prefix to return.

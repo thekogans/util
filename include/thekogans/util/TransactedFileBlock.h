@@ -220,6 +220,10 @@ public:
         offset (offset_),
         header (flags, size) {}
 
+    inline TransactedFile *GetFile () const {
+        return file;
+    }
+
     /// \brief
     /// Read the block from \see{TransactedFile} to get it's size.
     /// \param[in] file \see{TransactedFile} containing the block.
