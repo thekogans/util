@@ -45,9 +45,17 @@ namespace thekogans {
             struct Page;
 
             struct Storage {
-                static inline std::atomic<std::size_t> nextId{1};
-                const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
+                /// \brief
+                /// Our reference count. Can't use RefCoiunted (circular dependency).
                 std::atomic<ui32> refCount{1};
+                /// \brief
+                /// Monotonically increasing id counter.
+                static inline std::atomic<std::size_t> nextId{1};
+                /// \brief
+                /// Our id.
+                const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
+                /// \brief
+                /// Global class index broker.
                 static detail::TLCIndexBroker broker;
                 /// \brief
                 /// Our index in to the tlc array.
@@ -207,8 +215,7 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in, out] allocator Backpointer to allocator.
-                Page (Storage *storage) noexcept :
-                        header (storage) {
+                Page (Storage *storage) noexcept : header (storage) {
                     storage->masterPageList = this;
                     storage->partialPageList = this;
                 }
@@ -237,8 +244,9 @@ namespace thekogans {
             /// acquisition. In real load testing (see test_SlabAllocator) this
             /// results in ~65% speedup!
             struct TLC {
+                /// \brief
+                /// Storage (allocator) attached to this tlc slot.
                 Storage *storage{nullptr};
-                std::size_t ownerId{0};
                 /// \brief
                 /// Our own local slot cache.
                 Page::Slot *slotList{nullptr};
@@ -282,7 +290,6 @@ namespace thekogans {
                         }
                         storage->Release ();
                         storage = nullptr;
-                        ownerId = 0;
                     }
                     assert (slotList == nullptr && slotCount == 0);
                 }
@@ -303,11 +310,11 @@ namespace thekogans {
             inline TLC &GetTLC () noexcept {
                 static thread_local ThreadLifetimeManager manager;
                 TLC &tlc = caches[storage->tlcIndex];
-                if (THEKOGANS_UTIL_UNLIKELY (tlc.ownerId != storage->id)) {
+                if (THEKOGANS_UTIL_UNLIKELY (tlc.storage != storage &&
+                        (tlc.storage == nullptr || tlc.storage->id != storage->id))) {
                     tlc.Release ();
                     storage->AddRef ();
                     tlc.storage = storage;
-                    tlc.ownerId = storage->id;
                 }
                 return tlc;
             }
@@ -336,7 +343,10 @@ namespace thekogans {
                 storage (new Storage (slotSize, slotsPerPage, tlcSize)) {}
             /// \brief
             /// dtor. Return pages back to the DefaultPageAllocator.
-            ~SlabAllocatorImpl () noexcept;
+            ~SlabAllocatorImpl () noexcept {
+                ReleaseTLC ();
+                storage->Release ();
+            }
 
             inline std::size_t GetSlotsPerPage () const {
                 return storage->slotsPerPage;
@@ -355,6 +365,8 @@ namespace thekogans {
             /// return half back to the pages the slots came from.
             /// \param[in] ptr Slot to free.
             void Free (void *ptr) noexcept;
+
+            void ReleaseTLC () noexcept;
 
         private:
             /// \brief

@@ -692,8 +692,9 @@ namespace thekogans {
                 /// acquisition. In real load testing (see test_SlabAllocator) this
                 /// results in ~65% speedup!
                 struct TLC {
+                    /// \brief
+                    /// Backpointer to owning allocator (storage) instance.
                     Storage *storage{nullptr};
-                    std::size_t ownerId{0};
                     /// \brief
                     /// Our own local slot cache.
                     typename Page::Slot *slotList{nullptr};
@@ -741,7 +742,6 @@ namespace thekogans {
                             }
                             storage->Release ();
                             storage = nullptr;
-                            ownerId = 0;
                         }
                         assert (slotList == nullptr && slotCount == 0);
                     }
@@ -762,19 +762,19 @@ namespace thekogans {
                 inline TLC &GetTLC () noexcept {
                     static thread_local ThreadLifetimeManager manager;
                     TLC &tlc = caches[storage->tlcIndex];
-                    if (THEKOGANS_UTIL_UNLIKELY (tlc.ownerId != storage->id)) {
+                    if (THEKOGANS_UTIL_UNLIKELY (tlc.storage != storage &&
+                            (tlc.storage == nullptr || tlc.storage->id != storage->id))) {
                         tlc.Release ();
                         storage->AddRef ();
                         tlc.storage = storage;
-                        tlc.ownerId = storage->id;
                     }
                     return tlc;
                 }
 
                 struct StorageBaseImpl {
+                    std::atomic<ui32> refCount{1};
                     static inline std::atomic<std::size_t> nextId{1};
                     const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
-                    std::atomic<ui32> refCount{1};
                     static TLCIndexBroker broker;
                     const std::size_t tlcIndex{broker.LeaseIndex ()};
 
@@ -831,15 +831,10 @@ namespace thekogans {
 
             public:
                 ~SlabAllocator () noexcept {
-                    if constexpr (TLCSize > 0) {
-                        // 1. Drain the destroying thread's own TLC immediately.
-                        TLC &tlc = GetTLC ();
-                        if (tlc.ownerId == storage->id) {
-                            tlc.Release ();
-                        }
-                    }
+                    ReleaseTLC ();
                     storage->Release ();
                 }
+
                 /// \brief
                 /// Allocate a new slot.
                 void *Alloc () {
@@ -902,6 +897,15 @@ namespace thekogans {
                                 LockGuard<Lock> guard (storage->lock);
                                 slot->Free ();
                             }
+                        }
+                    }
+                }
+
+                inline void ReleaseTLC () noexcept {
+                    if constexpr (TLCSize > 0) {
+                        TLC &tlc = caches[storage->tlcIndex];
+                        if (tlc.storage == storage) {
+                            tlc.Release ();
                         }
                     }
                 }

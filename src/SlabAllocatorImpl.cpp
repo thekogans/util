@@ -135,14 +135,6 @@ namespace thekogans {
             SlabAllocatorImpl::TLC,
             detail::TLCIndexBroker::MAX_INDEX> SlabAllocatorImpl::caches;
 
-        SlabAllocatorImpl::~SlabAllocatorImpl () noexcept {
-            TLC &tlc = GetTLC ();
-            if (tlc.ownerId == storage->id) {
-                tlc.Release ();
-            }
-            storage->Release ();
-        }
-
         void *SlabAllocatorImpl::Alloc () {
             TLC &tlc = GetTLC ();
             // See if we have a free slot in our local cache.
@@ -182,6 +174,13 @@ namespace thekogans {
                         }
                     }
                 }
+            }
+        }
+
+        void SlabAllocatorImpl::ReleaseTLC () noexcept {
+            TLC &tlc = caches[storage->tlcIndex];
+            if (tlc.storage == storage) {
+                tlc.Release ();
             }
         }
 
