@@ -38,9 +38,13 @@ namespace thekogans {
             TransactedFile::Object::StaticInit ();
             TransactedFileBTree::Key::StaticInit ();
             StringValue::StaticInit ();
+            ClonableStringValue::StaticInit ();
             StringArrayValue::StaticInit ();
+            ClonableStringArrayValue::StaticInit ();
             AddressArrayValue::StaticInit ();
+            ClonableAddressArrayValue::StaticInit ();
             GUIDArrayValue::StaticInit ();
+            ClonableGUIDArrayValue::StaticInit ();
         }
     #endif // defined (THEKOGANS_UTIL_TYPE_Static)
 

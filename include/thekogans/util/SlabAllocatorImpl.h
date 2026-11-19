@@ -42,6 +42,65 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (SlabAllocatorImpl)
 
         private:
+            struct Page;
+
+            struct Storage {
+                static inline std::atomic<std::size_t> nextId{1};
+                const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
+                std::atomic<ui32> refCount{1};
+                static detail::TLCIndexBroker broker;
+                /// \brief
+                /// Our index in to the tlc array.
+                const std::size_t tlcIndex{broker.LeaseIndex ()};
+                /// \brief
+                /// Slot size.
+                const std::size_t slotSize;
+                /// \brief
+                /// Page size.
+                const std::size_t pageSize;
+                /// \brief
+                /// Mask that turns slots in to pages.
+                const std::size_t pageMask;
+                /// \brief
+                /// Number of slots per page.
+                const std::size_t slotsPerPage;
+                /// \brief
+                /// TLC size.
+                const std::size_t tlcSize;
+                /// \brief
+                /// Precomputed tlcSize / 2.
+                const std::size_t tlcBatchSize;
+                /// \brief
+                /// Master immutable page list.
+                Page *masterPageList{nullptr};
+                /// \brief
+                /// Partially allocated page list.
+                Page *partialPageList{nullptr};
+                /// \brief
+                /// Flag to protect from multiple threads calling the page allocator.
+                std::atomic<bool> pageAllocationInFlight{false};
+                /// \brief
+                /// Protect access to page lists.
+                /// Align the lock to it's own cache line to prevent false sharing.
+                alignas (SYSTEM_CACHE_LINE_SIZE) SpinLock lock;
+
+                Storage (
+                    std::size_t slotSize_,
+                    std::size_t slotsPerPage_,
+                    std::size_t tlcSize_);
+                ~Storage () noexcept;
+
+                void AddRef () noexcept {
+                    refCount.fetch_add (1, std::memory_order_relaxed);
+                }
+
+                void Release () noexcept {
+                    if (refCount.fetch_sub (1, std::memory_order_acq_rel) == 1) {
+                        delete this;
+                    }
+                }
+            } *storage;
+
             /// \struct SlabAllocatorImpl::Page SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
             ///
             /// \brief
@@ -95,10 +154,10 @@ namespace thekogans {
                 struct Header {
                     /// \brief
                     /// Watermark used by Slot::Free for sanity check.
-                    const ui64 magic = MAGIC64;
+                    const ui64 magic{MAGIC64};
                     /// \brief
                     /// Backpointer to allocator.
-                    SlabAllocatorImpl &allocator;
+                    Storage *storage;
                     /// \brief
                     /// Master page list structural link.
                     Page *masterNext{nullptr};
@@ -114,11 +173,11 @@ namespace thekogans {
 
                     /// \brief
                     /// ctor.
-                    /// \param[in] allocator_ Backpointer to allocator.
-                    Header (SlabAllocatorImpl &allocator_) noexcept :
-                        allocator (allocator_),
-                        masterNext (allocator.masterPageList),
-                        partialNext (allocator.partialPageList) {}
+                    /// \param[in] storage_ Backpointer to Storage.
+                    Header (Storage *storage_) noexcept :
+                        storage (storage_),
+                        masterNext (storage->masterPageList),
+                        partialNext (storage->partialPageList) {}
                 } header;
 
                 /// \brief
@@ -148,10 +207,10 @@ namespace thekogans {
                 /// \brief
                 /// ctor.
                 /// \param[in, out] allocator Backpointer to allocator.
-                Page (SlabAllocatorImpl &allocator) noexcept :
-                        header (allocator) {
-                    allocator.masterPageList = this;
-                    allocator.partialPageList = this;
+                Page (Storage *storage) noexcept :
+                        header (storage) {
+                    storage->masterPageList = this;
+                    storage->partialPageList = this;
                 }
 
                 /// \brief
@@ -170,41 +229,6 @@ namespace thekogans {
                 sizeof (Page) == SYSTEM_CACHE_LINE_SIZE,
                 "sizeof (Page) must be EXACTLY equal to SYSTEM_CACHE_LINE_SIZE.");
 
-            /// \brief
-            /// Our index in to the tlc array.
-            const std::size_t tlcIndex;
-            /// \brief
-            /// Slot size.
-            const std::size_t slotSize;
-            /// \brief
-            /// Page size.
-            const std::size_t pageSize;
-            /// \brief
-            /// Mask that turns slots in to pages.
-            const std::size_t pageMask;
-            /// \brief
-            /// Number of slots per page.
-            const std::size_t slotsPerPage;
-            /// \brief
-            /// TLC size.
-            const std::size_t tlcSize;
-            /// \brief
-            /// Precomputed tlcSize / 2.
-            const std::size_t tlcBatchSize;
-            /// \brief
-            /// Master immutable page list.
-            Page *masterPageList{nullptr};
-            /// \brief
-            /// Partially allocated page list.
-            Page *partialPageList{nullptr};
-            /// \brief
-            /// Flag to protect from multiple threads calling the page allocator.
-            std::atomic<bool> pageAllocationInFlight{false};
-            /// \brief
-            /// Protect access to page lists.
-            /// Align the lock to it's own cache line to prevent false sharing.
-            alignas (SYSTEM_CACHE_LINE_SIZE) SpinLock lock;
-
             /// \struct SlabAllocatorImpl::TLC SlabAllocatorImpl.h thekogans/util/SlabAllocatorImpl.h
             ///
             /// \brief
@@ -213,7 +237,8 @@ namespace thekogans {
             /// acquisition. In real load testing (see test_SlabAllocator) this
             /// results in ~65% speedup!
             struct TLC {
-                std::size_t pageMask{0};
+                Storage *storage{nullptr};
+                std::size_t ownerId{0};
                 /// \brief
                 /// Our own local slot cache.
                 Page::Slot *slotList{nullptr};
@@ -240,32 +265,30 @@ namespace thekogans {
                     return slot;
                 }
 
-                inline void Reset () noexcept {
-                    pageMask = 0;
-                    slotList = nullptr;
-                    slotCount = 0;
-                }
-
                 inline void Release () noexcept {
-                    if (slotList != nullptr) {
-                        Page *page = slotList->GetPage (pageMask);
-                        // We're guaranteed to have a page here because Free is the
-                        // only one that calls Push and it does a check before calling
-                        // us.
-                        LockGuard<SpinLock> guard (page->header.allocator.lock);
-                        while (slotList != nullptr) {
-                            Page::Slot *next = slotList->next;
-                            slotList->Free (pageMask);
-                            slotList = next;
+                    if (storage != nullptr) {
+                        if (slotList != nullptr) {
+                            Page *page = slotList->GetPage (storage->pageMask);
+                            // We're guaranteed to have a page here because Free is the
+                            // only one that calls Push and it does a check before calling
+                            // us.
+                            LockGuard<SpinLock> guard (page->header.storage->lock);
+                            while (slotList != nullptr) {
+                                Page::Slot *next = slotList->next;
+                                slotList->Free (storage->pageMask);
+                                slotList = next;
+                            }
+                            slotCount = 0;
                         }
-                        slotCount = 0;
+                        storage->Release ();
+                        storage = nullptr;
+                        ownerId = 0;
                     }
                     assert (slotList == nullptr && slotCount == 0);
                 }
             };
 
             static thread_local std::array<TLC, detail::TLCIndexBroker::MAX_INDEX> caches;
-            static detail::TLCIndexBroker broker;
 
             struct ThreadLifetimeManager {
                 ~ThreadLifetimeManager () noexcept {
@@ -277,9 +300,16 @@ namespace thekogans {
 
             /// \brief
             /// Return the TLC associated with this allocator.
-            static TLC &GetTLC (std::size_t tlcIndex) noexcept {
+            inline TLC &GetTLC () noexcept {
                 static thread_local ThreadLifetimeManager manager;
-                return caches[tlcIndex];
+                TLC &tlc = caches[storage->tlcIndex];
+                if (THEKOGANS_UTIL_UNLIKELY (tlc.ownerId != storage->id)) {
+                    tlc.Release ();
+                    storage->AddRef ();
+                    tlc.storage = storage;
+                    tlc.ownerId = storage->id;
+                }
+                return tlc;
             }
 
         public:
@@ -300,18 +330,19 @@ namespace thekogans {
             /// \param[in] slotsPerPage_ Number of slots per page.
             /// \param[in] tlcSize_ TLC size.
             SlabAllocatorImpl (
-                std::size_t slotSize_,
-                std::size_t slotsPerPage_ = DEFAULT_SLOTS_PER_PAGE,
-                std::size_t tlcSize_ = DEFAULT_TLC_SIZE);
+                std::size_t slotSize,
+                std::size_t slotsPerPage = DEFAULT_SLOTS_PER_PAGE,
+                std::size_t tlcSize = DEFAULT_TLC_SIZE) :
+                storage (new Storage (slotSize, slotsPerPage, tlcSize)) {}
             /// \brief
             /// dtor. Return pages back to the DefaultPageAllocator.
             ~SlabAllocatorImpl () noexcept;
 
             inline std::size_t GetSlotsPerPage () const {
-                return slotsPerPage;
+                return storage->slotsPerPage;
             }
             inline std::size_t GetTLCSize () const {
-                return tlcSize;
+                return storage->tlcSize;
             }
 
             /// \brief

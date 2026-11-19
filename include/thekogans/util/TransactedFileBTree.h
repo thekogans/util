@@ -647,14 +647,12 @@ namespace thekogans {
             /// \brief
             /// Search for the given key in the btree.
             /// \param[in] key \see{Key} to search for.
-            /// \param[out] it If found the iterator will point to the entry.
             /// \return true == found.
             Serializable::SharedPtr Find (const Key &key);
             /// \brief
             /// Insert the given key in to the btree.
             /// \param[in] key Key to insert.
             /// \param[in] value Value associated with the given key.
-            /// \param[out] it If inserted, will point at the node entry.
             /// \return true == added. false == duplicate. If false, return
             /// the current entry in it.
             bool Insert (

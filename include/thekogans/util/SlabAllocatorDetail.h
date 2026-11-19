@@ -776,7 +776,7 @@ namespace thekogans {
                     const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
                     std::atomic<ui32> refCount{1};
                     static TLCIndexBroker broker;
-                    std::size_t tlcIndex{broker.LeaseIndex ()};
+                    const std::size_t tlcIndex{broker.LeaseIndex ()};
 
                     ~StorageBaseImpl () noexcept {
                         broker.ReleaseIndex (tlcIndex);
@@ -817,8 +817,6 @@ namespace thekogans {
                 /// \brief
                 /// SlabAllocator state.
                 struct Storage : public StorageBase {
-                    THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Storage)
-
                     /// \brief
                     /// Partially allocated page list.
                     Page *partialPageList{nullptr};
@@ -829,8 +827,7 @@ namespace thekogans {
                     /// Protect access to storage.
                     /// Align the lock to it's own cache line to prevent false sharing with pageList.
                     alignas (CacheLineSize) Lock lock;
-                };
-                Storage *storage{new Storage};
+                } *storage{new Storage};
 
             public:
                 ~SlabAllocator () noexcept {
