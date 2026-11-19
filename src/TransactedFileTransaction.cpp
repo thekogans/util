@@ -47,9 +47,9 @@ namespace thekogans {
                 // STEP 1: DETERMINISTIC CONVERGENT SETTLEMENT LOOP (PHASE 1 ONLY)
                 // =========================================================================
                 file->phase = PHASE_ALLOC;
-                std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> totalCommittedObjects;
+                std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> totalCommittedObjects;
                 totalCommittedObjects.reserve (file->Producer<TransactedFileTransactionEvents>::GetSubscriberCount () * 2);
-                std::vector<Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo> currentDirtyBatch;
+                std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> currentDirtyBatch;
                 std::size_t iterations = 0;
                 static constexpr std::size_t MAX_CONVERGENCE_WAVES = 32;
                 while (file->Producer<TransactedFileTransactionEvents>::GetSubscribers (currentDirtyBatch, true) != 0) {
@@ -59,13 +59,16 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP); // Crash/Abort before corrupting disk!
                     }
                     for (const auto &subscriber : currentDirtyBatch) {
-                        subscriber.second->DeliverEvent (
-                            std::bind (
-                                &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
-                                std::placeholders::_1,
-                                file,
-                                PHASE_ALLOC),
-                            subscriber.first);
+                        auto subscriber_ = subscriber.first.GetSharedPtr ();
+                        if (subscriber_ != nullptr) {
+                            subscriber.second->DeliverEvent (
+                                std::bind (
+                                    &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
+                                    std::placeholders::_1,
+                                    file,
+                                    PHASE_ALLOC),
+                                subscriber_);
+                        }
                     }
                     if (totalCommittedObjects.empty ()) {
                         totalCommittedObjects = std::move (currentDirtyBatch);
@@ -81,19 +84,19 @@ namespace thekogans {
                 // =========================================================================
                 // STEP 1.5: DEDUPLICATE COMMITTED OBJECTS (ZERO EXTRA ALLOCATIONS)
                 // =========================================================================
-                using SubscriberInfo = Producer<TransactedFileTransactionEvents>::SharedSubscriberInfo;
+                using SubscriberInfo = Producer<TransactedFileTransactionEvents>::SubscriberInfo;
                 std::sort (
                     totalCommittedObjects.begin (),
                     totalCommittedObjects.end (),
                     [] (const SubscriberInfo &a, const SubscriberInfo &b) {
-                        return a.first.Get () < b.first.Get ();
+                        return a.first < b.first;
                     });
                 totalCommittedObjects.erase (
                     std::unique (
                         totalCommittedObjects.begin (),
                         totalCommittedObjects.end (),
                         [] (const SubscriberInfo &a, const SubscriberInfo &b) {
-                            return a.first.Get () == b.first.Get ();
+                            return a.first == b.first;
                         }),
                     totalCommittedObjects.end ());
                 // =========================================================================
@@ -101,13 +104,16 @@ namespace thekogans {
                 // =========================================================================
                 file->phase = PHASE_FLUSH;
                 for (const auto &subscriber : totalCommittedObjects) {
-                    subscriber.second->DeliverEvent (
-                        std::bind (
-                            &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
-                            std::placeholders::_1,
-                            file,
-                            PHASE_FLUSH),
-                        subscriber.first);
+                    auto subscriber_ = subscriber.first.GetSharedPtr ();
+                    if (subscriber_ != nullptr) {
+                        subscriber.second->DeliverEvent (
+                            std::bind (
+                                &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
+                                std::placeholders::_1,
+                                file,
+                                PHASE_FLUSH),
+                            subscriber_);
+                    }
                 }
                 // =========================================================================
                 // STEP 3: WRITE AHEAD LOG (WAL)

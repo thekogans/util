@@ -199,13 +199,14 @@ namespace thekogans {
                             workerCallback)) {}
             };
 
-        private:
             /// \brief
             /// Alias for std::pair<typename Subscriber<T>::WeakPtr,
             /// typename EventDeliveryPolicy::SharedPtr>.
             using SubscriberInfo = std::pair<
                 typename Subscriber<T>::WeakPtr,
                 typename EventDeliveryPolicy::SharedPtr>;
+
+        private:
             /// \brief
             /// Alias for std::unordered_map<Subscriber<T> *, SubscriberInfo>.
             using Subscribers = std::unordered_map<Subscriber<T> *, SubscriberInfo>;
@@ -283,46 +284,39 @@ namespace thekogans {
             }
 
             /// \brief
-            /// Alias for std::pair<typename Subscriber<T>::SharedPtr,
-            /// typename EventDeliveryPolicy::SharedPtr>.
-            using SharedSubscriberInfo = std::pair<
-                typename Subscriber<T>::SharedPtr,
-                typename EventDeliveryPolicy::SharedPtr>;
-
-            /// \brief
             /// Return a vector of locked (SharedPtr) subscribers.
             /// \param[out] subscribers_ std::vector of \see{SharedSubscriberInfo} pairs to return.
             /// \param[in] unsubscribe true == unsubscribe all subscribers.
             std::size_t GetSubscribers (
-                    std::vector<SharedSubscriberInfo> &subscribers_,
+                    std::vector<SubscriberInfo> &subscribers_,
                     bool unsubscribe = false) {
                 std::size_t count{0};
                 LockGuard<SpinLock> guard (spinLock);
                 if (!subscribers.empty ()) {
                     subscribers_.reserve (subscribers_.size () + subscribers.size ());
-                    for (typename Subscribers::iterator
-                            it = subscribers.begin (),
-                            end = subscribers.end (); it != end;) {
-                        typename Subscriber<T>::SharedPtr subscriber =
-                            it->second.first.GetSharedPtr ();
-                        if (subscriber != nullptr) {
-                            subscribers_.push_back (
-                                SharedSubscriberInfo (subscriber, it->second.second));
-                            ++count;
-                            ++it;
-                        }
-                        else if (!unsubscribe) {
-                            // Expired subscriber. If we're not asked to unsubscribe,
-                            // remove it here. Otherwise it will be removed by clear
-                            // below.
-                            it = subscribers.erase (it);
-                        }
-                        else {
-                            ++it;
-                        }
-                    }
                     if (unsubscribe) {
+                        for (auto &[key, subscriber] : subscribers) {
+                            subscribers_.push_back (subscriber);
+                            ++count;
+                        }
                         subscribers.clear ();
+                    }
+                    else {
+                        for (typename Subscribers::iterator
+                                 it = subscribers.begin (),
+                                 end = subscribers.end (); it != end;) {
+                            if (!it->second.first.IsExpired ()) {
+                                subscribers_.push_back (it->second);
+                                ++count;
+                                ++it;
+                            }
+                            else {
+                                // Expired subscriber. If we're not asked to unsubscribe,
+                                // remove it here. Otherwise it will be removed by clear
+                                // below.
+                                it = subscribers.erase (it);
+                            }
+                        }
                     }
                 }
                 return count;
@@ -334,10 +328,13 @@ namespace thekogans {
             void Produce (
                     const typename EventDeliveryPolicy::Event &event,
                     bool unsubscribe = false) {
-                std::vector<SharedSubscriberInfo> subscribers;
+                std::vector<SubscriberInfo> subscribers;
                 GetSubscribers (subscribers, unsubscribe);
                 for (const auto &subscriber : subscribers) {
-                    subscriber.second->DeliverEvent (event, subscriber.first);
+                    typename Subscriber<T>::SharedPtr subscriber_ = subscriber.first.GetSharedPtr ();
+                    if (subscriber_ != nullptr) {
+                        subscriber.second->DeliverEvent (event, subscriber_);
+                    }
                 }
             }
 

@@ -148,9 +148,8 @@ namespace thekogans {
                     util::GUIDArrayObject::SharedPtr componentValue = it.GetValue ();
                     for (std::size_t i = 0,
                              count = componentValue->value.size (); i < count; ++i) {
-                        util::TransactedFileBTree::Iterator jt;
-                        if (pathBTree->Find (util::GUIDKey (componentValue->value[i]), jt)) {
-                            util::StringObject::SharedPtr value = jt.GetValue ();
+                        util::StringObject::SharedPtr value = pathBTree->Find (util::GUIDKey (componentValue->value[i]));
+                        if (value != nullptr) {
                             std::string path = value->value;
                             std::vector<std::string> pathComponents;
                             util::Path (path).GetComponents (pathComponents);
@@ -199,8 +198,7 @@ namespace thekogans {
                 new util::GUIDKey (util::GUID::FromBuffer (path.data (), path.size ())));
             util::StringObject::SharedPtr pathValue =
                 util::TransactedFile::Object::Create<util::StringObject> (pathBTree->GetFile (), 0, path);
-            util::TransactedFileBTree::Iterator it;
-            if (pathBTree->Insert (pathKey, pathValue, it)) {
+            if (pathBTree->Insert (pathKey, pathValue)) {
                 Produce (
                     std::bind (
                         &RootEvents::OnRootScanPath,
@@ -216,16 +214,15 @@ namespace thekogans {
             #endif // defined (TOOLCHAIN_OS_Windows)
                 for (; it != components.end (); ++it) {
                     util::StringKey::SharedPtr componentKey (new util::StringKey (*it, true));
-                    util::TransactedFileBTree::Iterator jt;
-                    if (componentBTree->Find (*componentKey, jt)) {
-                        util::GUIDArrayObject::SharedPtr componentValue = jt.GetValue ();
+                    util::GUIDArrayObject::SharedPtr componentValue = componentBTree->Find (*componentKey);
+                    if (componentValue != nullptr) {
                         componentValue->AddValue (pathKey->key);
                     }
                     else {
                         util::GUIDArrayObject::SharedPtr componentValue =
                             util::TransactedFile::Object::Create<util::GUIDArrayObject> (
                                 componentBTree->GetFile (), 0, std::vector<util::GUID>{pathKey->key});
-                        componentBTree->Insert (componentKey, componentValue, jt);
+                        componentBTree->Insert (componentKey, componentValue);
                     }
                 }
             }

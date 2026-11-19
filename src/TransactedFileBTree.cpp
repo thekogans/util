@@ -354,7 +354,6 @@ namespace thekogans {
                         leaf->entries[0].value = nullptr;
                     }
                     SetDirty ();
-
                     // 4. Delete the promoted successor key from the right subtree and rebalance.
                     Key::SharedPtr successorKey (entries[index].key);
                     child->Remove (*successorKey);
@@ -378,9 +377,9 @@ namespace thekogans {
                         entries[index].value->Release ();
                         entries[index].value = nullptr;
                     }
-                    // else if (btree->header.IsValueIsObject () && entries[index].valueOffset != 0) {
-                    //     Object::FreeObject (file, entries[index].valueOffset);
-                    // }
+                    else if (btree->header.IsValueIsObject () && entries[index].valueOffset != 0) {
+                        Object::FreeObject (file, entries[index].valueOffset);
+                    }
                     RemoveEntry (index);
                 }
                 return true;
@@ -661,8 +660,8 @@ namespace thekogans {
                     entries[i].right->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                 }
             }
-            right->count = 0;
             Object::FreeObject (file, right->GetOffset ());
+            right->destroyed = true;
             right->Release ();
             SetDirty ();
         }
@@ -1010,6 +1009,7 @@ namespace thekogans {
                         root = root->GetChild (0);
                         root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                         Object::FreeObject (file, node->GetOffset ());
+                        node->SetDestroyed ();
                         node->Release ();
                     }
                 }

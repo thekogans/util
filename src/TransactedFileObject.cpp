@@ -171,9 +171,7 @@ namespace thekogans {
                         &ObjectEvents::OnTransactedFileObjectFreeBlock,
                         std::placeholders::_1,
                         this));
-                offset = 0;
-                size = 0;
-                destroyed = true;
+                SetDestroyed ();
             }
         }
 
@@ -213,6 +211,9 @@ namespace thekogans {
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
                 TransactedFile */*file*/,
                 int phase) noexcept {
+            if (IsDestroyed ()) {
+                return;
+            }
             if (phase == TransactedFile::Transaction::PHASE_ALLOC) {
                 AllocBlock ();
             }

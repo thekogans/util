@@ -655,6 +655,11 @@ namespace thekogans {
                     }
                 }
 
+                template<typename _U>
+                inline i32 Compare (const WeakPtr<_U> &other) const noexcept {
+                    return references < other.references ? -1 : (references > other.references ? 1 : 0);
+                }
+
                 /// \brief
                 /// Swap the contents of this WeakPtr with the one given.
                 /// \param[in,out] ptr WeakPtr with which to swap contents.
@@ -916,7 +921,7 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator == (
                 const RefCounted::WeakPtr<T1> &item1,
                 const RefCounted::WeakPtr<T2> &item2) noexcept {
-            return item1.Get () == item2.Get ();
+            return item1.Compare (item2) == 0;
         }
 
         /// \brief
@@ -930,7 +935,7 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator != (
                 const RefCounted::WeakPtr<T1> &item1,
                 const RefCounted::WeakPtr<T2> &item2) noexcept {
-            return item1.Get () != item2.Get ();
+            return item1.Compare (item2) != 0;
         }
 
         /// \brief
@@ -944,7 +949,7 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator < (
                 const RefCounted::WeakPtr<T1> &item1,
                 const RefCounted::WeakPtr<T2> &item2) noexcept {
-            return item1.Get () < item2.Get ();
+            return item1.Compare (item2) < 0;
         }
 
         /// \brief
@@ -958,7 +963,7 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator <= (
                 const RefCounted::WeakPtr<T1> &item1,
                 const RefCounted::WeakPtr<T2> &item2) noexcept {
-            return item1.Get () <= item2.Get ();
+            return item1.Compare (item2) <= 0;
         }
 
         /// \brief
@@ -972,7 +977,7 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator > (
                 const RefCounted::WeakPtr<T1> &item1,
                 const RefCounted::WeakPtr<T2> &item2) noexcept {
-            return item1.Get () > item2.Get ();
+            return item1.Compar (item2) > 0;
         }
 
         /// \brief
@@ -986,7 +991,7 @@ namespace thekogans {
         inline bool _LIB_THEKOGANS_UTIL_API operator >= (
                 const RefCounted::WeakPtr<T1> &item1,
                 const RefCounted::WeakPtr<T2> &item2) noexcept {
-            return item1.Get () >= item2.Get ();
+            return item1.Compare (item2) >= 0;
         }
 
     } // namespace util

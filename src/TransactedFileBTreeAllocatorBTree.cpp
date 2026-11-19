@@ -333,6 +333,7 @@ namespace thekogans {
             left->Concatenate (right);
             RemoveEntry (index);
             btree->allocator->FreeHelper (right->GetOffset ());
+            right->SetDestroyed ();
             right->Release ();
         }
 
@@ -505,6 +506,7 @@ namespace thekogans {
                     root = root->GetChild (0);
                     root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                     allocator->FreeHelper (node->GetOffset ());
+                    node->SetDestroyed ();
                     node->Release ();
                 }
             }

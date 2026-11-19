@@ -161,6 +161,11 @@ public:
     inline bool IsDestroyed () const {
         return destroyed;
     }
+    inline void SetDestroyed () {
+        offset = 0;
+        size = 0;
+        destroyed = true;
+    }
 
     inline bool IsDirty () {
         return file->Producer<TransactedFileTransactionEvents>::IsSubscribed (*this);

@@ -69,8 +69,8 @@ namespace thekogans {
             /// \brief
             /// Return the file.
             /// \return file.
-            inline util::TransactedFile::SharedPtr GetFile () const {
-                return file;
+            inline util::TransactedFile *GetFile () const {
+                return file.Get ();
             }
 
             /// \brief
