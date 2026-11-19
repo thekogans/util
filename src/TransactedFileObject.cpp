@@ -90,6 +90,22 @@ namespace thekogans {
             }
         }
 
+        void TransactedFile::Object::SetDestroyed () {
+            if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Structural Logic Error: TransactedFile::Object::SetDestroyed can only be "
+                    "called durring transaction in progress and allocation phases (%s).",
+                    TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+            }
+            if (file != nullptr) {
+                file->Producer<TransactedFileTransactionEvents>::Unsubscribe (*this);
+                file->Producer<TransactedFileStructureEvents>::Unsubscribe (*this);
+            }
+            offset = 0;
+            size = 0;
+            destroyed = true;
+        }
+
         void TransactedFile::Object::SetDirty () {
             THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
                 "Calling TransactedFile::Object::SetDirty on a destroyed object.");
@@ -108,6 +124,8 @@ namespace thekogans {
         void TransactedFile::Object::Init (
                 TransactedFile *file_,
                 AddressType offset_) {
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::Init on a destroyed object.");
             THEKOGANS_UTIL_ASSERT (file == nullptr,
                 "TransactedFile::Object::Init called on an already initialized object.");
             THEKOGANS_UTIL_ASSERT (file_ != nullptr,
@@ -133,7 +151,15 @@ namespace thekogans {
                     SerializableHeader header{Type (), Version (), size};
                     objectSize = UI32_SIZE + file->Size (header) + size;
                 }
-                if (offset == 0 || objectSize > Block::GetSize (file, offset)) {
+                bool needsRealloc = true;
+                if (THEKOGANS_UTIL_LIKELY (offset != 0)) {
+                    SizeType currentBlockSize = Block::GetSize (file, offset);
+                    needsRealloc =
+                        objectSize > currentBlockSize ||
+                        (objectSize < (currentBlockSize >> 1) &&
+                            (currentBlockSize - objectSize) >= TransactedFile::MIN_BLOCK_SIZE);
+                }
+                if (needsRealloc) {
                     AddressType newOffset = file->GetAllocator ()->Realloc (offset, objectSize, false);
                     if (offset != newOffset) {
                         if (offset != 0) {
@@ -195,6 +221,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr && offset != 0)) {
                 ObjectRange range (file, offset);
                 if (THEKOGANS_UTIL_LIKELY (range.context.WeakCompare (SerializableHeader{Type (), Version ()}))) {
+                    size = range.context.size;
                     Read (range);
                 }
                 else {
@@ -208,23 +235,36 @@ namespace thekogans {
             }
         }
 
+        void TransactedFile::Object::GetAllocatedBlockMap (BlockMap &blockMap) {
+            if (THEKOGANS_UTIL_LIKELY (!IsDestroyed () && file != nullptr && offset != 0)) {
+                // Go straight to the source.
+                ObjectRange range (file, offset);
+                blockMap.insert ({offset, range.context});
+            }
+        }
+
         void TransactedFile::Object::OnTransactedFileTransactionCommit (
                 TransactedFile */*file*/,
                 int phase) noexcept {
-            if (IsDestroyed ()) {
-                return;
-            }
-            if (phase == TransactedFile::Transaction::PHASE_ALLOC) {
-                AllocBlock ();
-            }
-            else if (phase == TransactedFile::Transaction::PHASE_FLUSH) {
-                Flush ();
+            // It shouldn't happen as SetDestroyed unsubscribes us from files events list.
+            // We guard here in case we got pulled out of the list (by \see{Transaction})
+            // before we were able to unsubscribe.
+            if (THEKOGANS_UTIL_LIKELY (!IsDestroyed ())) {
+                if (phase == TransactedFile::Transaction::PHASE_ALLOC) {
+                    AllocBlock ();
+                }
+                else if (phase == TransactedFile::Transaction::PHASE_FLUSH) {
+                    Flush ();
+                }
             }
         }
 
         void TransactedFile::Object::OnTransactedFileTransactionAbort (
                 TransactedFile */*file*/) noexcept {
-            Reload ();
+            // Same reasoning applies here as in OnTransactedFileTransactionCommit above.
+            if (THEKOGANS_UTIL_LIKELY (!IsDestroyed ())) {
+                Reload ();
+            }
         }
 
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::ObjectRange & _LIB_THEKOGANS_UTIL_API operator >> (

@@ -79,6 +79,7 @@ protected:
     friend struct ObjectRange;
 
 public:
+    //                         |       init       |
     // -------+----------------+------------------+
     //  file  |   == nullptr   |   != nullptr     |
     // -------+----------------+------------------+
@@ -102,10 +103,7 @@ public:
 
     /// \brief
     /// Type deleter method.
-    using DeleterType =
-        std::function<void (
-            TransactedFile */*file*/,
-            AddressType /*offset*/)>;
+    using DeleterType = std::function<void (TransactedFile */*file*/, AddressType /*offset*/)>;
     /// \brief
     /// Maps type name to it's deleter method.
     using DeleterMapType = HashedStringMapType<DeleterType>;
@@ -161,11 +159,7 @@ public:
     inline bool IsDestroyed () const {
         return destroyed;
     }
-    inline void SetDestroyed () {
-        offset = 0;
-        size = 0;
-        destroyed = true;
-    }
+    void SetDestroyed ();
 
     inline bool IsDirty () {
         return file->Producer<TransactedFileTransactionEvents>::IsSubscribed (*this);
@@ -197,13 +191,7 @@ public:
     virtual void Reload ();
 
     using BlockMap = std::unordered_map<AddressType, SerializableHeader>;
-    virtual void GetAllocatedBlockMap (BlockMap &blockMap) {
-        if (offset != 0) {
-            // Go straight to the source.
-            ObjectRange range (file, offset);
-            blockMap.insert ({offset, range.context});
-        }
-    }
+    virtual void GetAllocatedBlockMap (BlockMap &blockMap);
 
 protected:
     // TransactedFileTransactionEvents
@@ -223,8 +211,7 @@ protected:
             TransactedFile */*file*/,
             AddressSpaceType::AddressType offset_) noexcept override {
         if (offset == offset_) {
-            offset = 0;
-            destroyed = true;
+            SetDestroyed ();
         }
     }
 };
