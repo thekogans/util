@@ -20,7 +20,7 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
@@ -54,7 +54,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Synchronization lock.
-            SpinLock spinLock;
+            Mutex mutex;
 
         public:
             /// \brief

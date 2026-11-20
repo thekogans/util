@@ -36,7 +36,7 @@ namespace thekogans {
                 if (size < TransactedFile::MIN_USER_DATA_SIZE) {
                     size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
-                LockGuard<SpinLock> guard (spinLock);
+                LockGuard<Mutex> guard (mutex);
                 TransactedFileBTreeAllocatorBTree::Key result = Find ({size, 0});
                 // If we got a block see if it's too big.
                 if (result.offset != 0) {
@@ -66,8 +66,8 @@ namespace thekogans {
                     //               |               |
                     //          result.offset  page boundary
                     //
-                    // ui64 pageOffset = result.offset & file->GetPageMask ();
-                    // ui64 remainder = file->GetPageSize () - pageOffset;
+                    // TransactedFile::AddressType pageOffset = result.offset & file->GetPageMask ();
+                    // TransactedFile::SizeType remainder = file->GetPageSize () - pageOffset;
                     // prev.offset = result.offset;
                     // prev.size = remainder - Block::HEADER_SIZE;
                     //
@@ -83,10 +83,10 @@ namespace thekogans {
                     //
                     // next.offset = result.offset + size + Block::SIZE;
                     // next.size = result.size - size - Block::SIZE;
-                    ui64 remainder = result.size - size;
+                    TransactedFile::SizeType remainder = result.size - size;
                     if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
                         // Check to see if the block would straddle a page boundary...
-                        ui64 pageOffset = result.offset & file->GetPageMask ();
+                        TransactedFile::AddressType pageOffset = result.offset & file->GetPageMask ();
                         if (pageOffset + size + TransactedFile::Block::HEADER_SIZE > file->GetPageSize ()) {
                             // ...it would. Now check to see if the block would fit aligned...
                             remainder = file->GetPageSize () - pageOffset;
@@ -137,7 +137,7 @@ namespace thekogans {
                     // Ranges that straddle page boundaries incur an
                     // allocation/copy/deallocation penalty.
                     // Calculate the remainder left in the last page.
-                    ui64 remainder = file->GetPageSize () - (file->GetSizeEx () & file->GetPageMask ());
+                    TransactedFile::SizeType remainder = file->GetPageSize () - (file->GetSizeEx () & file->GetPageMask ());
                     // If we don't fit in to remainder and, if the remainder
                     // can be turned in to another block and we fit into one
                     // page, all is well. Go ahead and create a spacer block
@@ -193,7 +193,7 @@ namespace thekogans {
                     "the master metadata bootstrap anchor page at offset " THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
-            LockGuard<SpinLock> guard (spinLock);
+            LockGuard<Mutex> guard (mutex);
             FreeHelper (offset);
         }
 
@@ -238,9 +238,9 @@ namespace thekogans {
                 else if (block.GetSize () > size) {
                     // Shrink the block.
                     // If the new size leaves room for another block, split existing block.
-                    ui64 remainder = block.GetSize () - size;
+                    TransactedFile::SizeType remainder = block.GetSize () - size;
                     if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
-                        LockGuard<SpinLock> guard (spinLock);
+                        LockGuard<Mutex> guard (mutex);
                         // If this block happens to be the last physical block on the heap,
                         // do not split it into a ghost free-list chunk—truncate the file tail cleanly instead!
                         if (THEKOGANS_UTIL_UNLIKELY (block.IsLast ())) {
@@ -275,9 +275,9 @@ namespace thekogans {
             return offset;
         }
 
-        void TransactedFileBTreeAllocator::GetFreeList (
+        std::size_t TransactedFileBTreeAllocator::GetFreeList (
                 std::vector<std::pair<TransactedFile::AddressType, TransactedFile::SizeType>> &freeList) const {
-            LockGuard<SpinLock> guard (const_cast<SpinLock &> (spinLock));
+            LockGuard<Mutex> guard (const_cast<Mutex &> (mutex));
             freeList.clear ();
             TransactedFileBTreeAllocatorBTree::Iterator it;
             for (FindFirst (it); !it.IsFinished (); it.Next ()) {
@@ -285,6 +285,7 @@ namespace thekogans {
                 freeList.emplace_back (key.offset, key.size);
             }
             std::sort (freeList.begin (), freeList.end ());
+            return freeList.size ();
         }
 
         void TransactedFileBTreeAllocator::FreeHelper (TransactedFile::AddressType offset) {

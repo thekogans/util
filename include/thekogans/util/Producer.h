@@ -311,9 +311,7 @@ namespace thekogans {
                                 ++it;
                             }
                             else {
-                                // Expired subscriber. If we're not asked to unsubscribe,
-                                // remove it here. Otherwise it will be removed by clear
-                                // below.
+                                // Expired subscriber.
                                 it = subscribers.erase (it);
                             }
                         }

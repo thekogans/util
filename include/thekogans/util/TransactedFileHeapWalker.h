@@ -40,10 +40,60 @@ struct _LIB_THEKOGANS_UTIL_DECL HeapWalker {
     };
 
     using Callback = std::function<bool (const Block &block, std::size_t errorCode)>;
-    void ValidateHeap (
+
+    static void ValidateHeap (
         TransactedFile *file,
         Callback callback);
-    void CheckForOrphans (
+    static void CheckForOrphans (
         TransactedFile *file,
         Callback callback);
+
+    struct Stats {
+        SizeType arenaSize{0};
+        std::size_t totalBlocks{0};
+        std::size_t pageStraddlingBlocks{0};
+        SizeType pageStraddlingPayloadBytes{0};
+        SizeType pageStraddlingBlockBytes{0};
+        std::size_t allocatedBlocks{0};
+        SizeType allocatedPayloadBytes{0};
+        SizeType allocatedBlockBytes{0};
+        std::size_t freeBlocks{0};
+        SizeType freePayloadBytes{0};
+        SizeType freeBlockBytes{0};
+        SizeType largestFreePayload{0};
+        SizeType smallestFreePayload{std::numeric_limits<SizeType>::max ()};
+        // Buckets: <=64, <=256, <=1024, <=4096, <=16384, >16384
+        std::array<std::pair<std::size_t, TransactedFile::SizeType>, 6> freeSizeHistogram{};
+
+        void Clear () {
+            arenaSize = 0;
+            totalBlocks = 0;
+            pageStraddlingBlocks = 0;
+            pageStraddlingPayloadBytes = 0;
+            pageStraddlingBlockBytes = 0;
+            allocatedBlocks = 0;
+            allocatedPayloadBytes = 0;
+            allocatedBlockBytes = 0;
+            freeBlocks = 0;
+            freePayloadBytes = 0;
+            freeBlockBytes = 0;
+            largestFreePayload = 0;
+            smallestFreePayload = std::numeric_limits<SizeType>::max ();
+            freeSizeHistogram[0] = {0, 0};
+            freeSizeHistogram[1] = {0, 0};
+            freeSizeHistogram[2] = {0, 0};
+            freeSizeHistogram[3] = {0, 0};
+            freeSizeHistogram[4] = {0, 0};
+            freeSizeHistogram[5] = {0, 0};
+        }
+
+        f64 GetFragmentationRatio () const noexcept {
+            return freePayloadBytes == 0 ?
+                0.0 :
+                1.0 - (static_cast<f64> (largestFreePayload) / static_cast<f64> (freePayloadBytes));
+        }
+    };
+    static void GetStats (
+        TransactedFile *file,
+        Stats &stats);
 };

@@ -389,19 +389,59 @@ namespace thekogans {
                 static constexpr std::size_t value = calcSlotSize ();
             };
 
+            template<
+                typename T = ui64,
+                std::size_t wordCount = 8>
             struct TLCIndexBroker {
+            private:
+                static constexpr std::size_t WORD_BITS = BitWidth<T>::value;
+                std::atomic<T> leasedBits[wordCount]{};
+
+            public:
+                static constexpr std::size_t MAX_INDEX = WORD_BITS * wordCount;
+
+                std::size_t LeaseIndex () {
+                    for (std::size_t word = 0; word < wordCount; ++word) {
+                        T current = leasedBits[word].load (std::memory_order_relaxed);
+                        while (true) {
+                            std::size_t freeBit = countr_one (current);
+                            if (freeBit >= WORD_BITS) {
+                                break; // This 64-bit word is full; move to next word.
+                            }
+                            T next = current | (static_cast<T> (1) << freeBit);
+                            if (leasedBits[word].compare_exchange_weak (
+                                    current, next,
+                                    std::memory_order_acquire,
+                                    std::memory_order_relaxed)) {
+                                return word * WORD_BITS + freeBit;
+                            }
+                        }
+                    }
+                    throw std::runtime_error ("Exceeded maximum concurrent allocators.");
+                }
+
+                void ReleaseIndex (std::size_t id) noexcept {
+                    assert (id < MAX_INDEX);
+                    std::size_t word = id / WORD_BITS;
+                    std::size_t bit = id % WORD_BITS;
+                    leasedBits[word].fetch_and (~(static_cast<T> (1) << bit), std::memory_order_release);
+                }
+            };
+
+            template<typename T>
+            struct TLCIndexBroker<T, 1> {
             private:
                 // A bitmask where a '0' bit means the ID is free, and '1' means leased.
                 // 64 slots is usually massive for concurrent active allocators.
                 // Expand to an array of atomics if you need more.
-                std::atomic<ui64> leasedBits{0};
+                std::atomic<T> leasedBits{0};
 
             public:
-                static constexpr std::size_t MAX_INDEX = BitWidth<ui64>::value;
+                static constexpr std::size_t MAX_INDEX = BitWidth<T>::value;
 
                 // Leases a unique ID in a non-blocking constant-time loop
                 std::size_t LeaseIndex () {
-                    ui64 current = leasedBits.load (std::memory_order_relaxed);
+                    T current = leasedBits.load (std::memory_order_relaxed);
                     while (true) {
                         // Find the first available zero bit.
                         std::size_t freeBit = countr_one (current);
@@ -409,21 +449,23 @@ namespace thekogans {
                             // Out of IDs! Handle catastrophic overflow or expand bitmask.
                             throw std::runtime_error ("Exceeded maximum concurrent allocators.");
                         }
-                        ui64 next = current | (1ULL << freeBit);
+                        T next = current | (static_cast<T> (1) << freeBit);
                         if (leasedBits.compare_exchange_weak (current, next,
                                 std::memory_order_acquire,
                                 std::memory_order_relaxed)) {
-                            return static_cast<std::size_t> (freeBit);
+                            return freeBit;
                         }
                         // If exchange failed, current is updated automatically; retry loop.
                     }
                 }
 
                 // Returns the ID back to the pool instantly
-                void ReleaseIndex (std::size_t id) {
-                    leasedBits.fetch_and (~(1ULL << id), std::memory_order_release);
+                void ReleaseIndex (std::size_t id) noexcept {
+                    leasedBits.fetch_and (~(static_cast<T> (1) << id), std::memory_order_release);
                 }
             };
+
+            using SmallTLCIndexBroker = TLCIndexBroker<ui64, 1>;
 
             /// \struct SlabAllocator SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
             ///
@@ -747,7 +789,7 @@ namespace thekogans {
                     }
                 };
 
-                static thread_local std::array<TLC, TLCIndexBroker::MAX_INDEX> caches;
+                static thread_local std::array<TLC, TLCIndexBroker<ui64, 1>::MAX_INDEX> caches;
 
                 struct ThreadLifetimeManager {
                     ~ThreadLifetimeManager () noexcept {
@@ -775,7 +817,7 @@ namespace thekogans {
                     std::atomic<ui32> refCount{1};
                     static inline std::atomic<std::size_t> nextId{1};
                     const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
-                    static TLCIndexBroker broker;
+                    static TLCIndexBroker<ui64, 1> broker;
                     const std::size_t tlcIndex{broker.LeaseIndex ()};
 
                     ~StorageBaseImpl () noexcept {
@@ -959,9 +1001,9 @@ namespace thekogans {
             template<typename T, typename... Policies>
             thread_local std::array<
                 typename SlabAllocator<T, Policies...>::TLC,
-                TLCIndexBroker::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
+                TLCIndexBroker<ui64, 1>::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
             template<typename T, typename... Policies>
-            TLCIndexBroker SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
+            TLCIndexBroker<ui64, 1> SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
         } // namespace detail
 
     } // namespace util

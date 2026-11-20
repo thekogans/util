@@ -19,7 +19,7 @@
 #define __thekogans_util_TransactedFileBTreeAllocator_h
 
 #include "thekogans/util/Config.h"
-#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
 #include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/TransactedFileBTreeAllocatorBTree.h"
 
@@ -53,7 +53,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Synchronization lock.
-            SpinLock spinLock;
+            Mutex mutex;
 
         public:
             /// \brief
@@ -91,7 +91,7 @@ namespace thekogans {
                 TransactedFile::SizeType newSize,
                 bool moveData = true) override;
 
-            virtual void GetFreeList (
+            virtual std::size_t GetFreeList (
                 std::vector<std::pair<TransactedFile::AddressType, TransactedFile::SizeType>> &freeList) const override;
 
         private:

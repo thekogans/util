@@ -276,13 +276,18 @@ public:
     /// Return true if this is the first block in the heap.
     /// \return true == first block in the heap.
     inline bool IsFirst () const {
-        return GetOffset () == BLOCK_0_OFFSET;
+        return offset == BLOCK_0_OFFSET;
     }
     /// \brief
     /// Return true if this is the last block in the heap.
     /// \return true == last block in the heap.
     inline bool IsLast () const {
-        return GetOffset () + GetSize () + HEADER_SIZE == file->GetSizeEx ();
+        return offset + header.size + HEADER_SIZE == file->GetSizeEx ();
+    }
+
+    inline bool IsStraddlingPage () const {
+        SizeType pageOffset = offset & file->GetPageMask ();
+        return pageOffset < HEADER_SIZE || pageOffset + header.size + HEADER_SIZE > file->GetPageSize ();
     }
 
     /// \brief

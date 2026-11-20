@@ -133,5 +133,66 @@ namespace thekogans {
             }
         }
 
+        void TransactedFile::HeapWalker::GetStats (
+                TransactedFile *file,
+                Stats &stats) {
+            stats.Clear ();
+            Block block (file, TransactedFile::Header::BLOCK_OFFSET);
+            // Check block is intact.
+            block.Read ();
+            // Block 0 cannot be free.
+            if (!block.IsFree ()) {
+                stats.arenaSize = file->GetSizeEx ();
+                stats.totalBlocks = 1;
+                stats.allocatedBlocks = 1;
+                TransactedFile::SizeType blockSize = block.GetSize ();
+                stats.allocatedPayloadBytes = blockSize;
+                stats.allocatedBlockBytes = blockSize + TransactedFile::Block::SIZE;
+            }
+            else {
+                // FIXME: throw something
+                assert (0);
+            }
+            while (!block.IsLast ()) {
+                Block next (file);
+                block.Next (next);
+                TransactedFile::SizeType nextSize = next.GetSize ();
+                ++stats.totalBlocks;
+                if (next.IsStraddlingPage ()) {
+                    ++stats.pageStraddlingBlocks;
+                    stats.pageStraddlingPayloadBytes += nextSize;
+                    stats.pageStraddlingBlockBytes += nextSize + TransactedFile::Block::SIZE;
+                }
+                if (!next.IsFree ()) {
+                    ++stats.allocatedBlocks;
+                    stats.allocatedPayloadBytes += nextSize;
+                    stats.allocatedBlockBytes += nextSize + TransactedFile::Block::SIZE;
+                }
+                else  {
+                    ++stats.freeBlocks;
+                    stats.freePayloadBytes += nextSize;
+                    stats.freeBlockBytes += nextSize + TransactedFile::Block::SIZE;
+                    if (stats.largestFreePayload < nextSize) {
+                        stats.largestFreePayload = nextSize;
+                    }
+                    if (stats.smallestFreePayload > nextSize) {
+                        stats.smallestFreePayload = nextSize;
+                    }
+                    std::size_t blockIndex =
+                        nextSize <= 64 ? 0 :
+                        nextSize <= 256 ? 1 :
+                        nextSize <= 1024 ? 2 :
+                        nextSize <= 4096 ? 3 :
+                        nextSize <= 16384 ? 4 : 5;
+                    ++stats.freeSizeHistogram[blockIndex].first;
+                    stats.freeSizeHistogram[blockIndex].second += nextSize;
+                }
+                block = next;
+            }
+            if (stats.freeBlocks == 0) {
+                stats.smallestFreePayload = 0;
+            }
+        }
+
     } // namespace util
 } // namespace thekogans

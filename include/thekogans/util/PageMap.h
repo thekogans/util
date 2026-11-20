@@ -33,6 +33,30 @@
 namespace thekogans {
     namespace util {
 
+        // this will be the new page cache.
+        //
+        //     static constexpr std::size_t PAGE_CACHE_SIZE = 16; // power of 2
+        //     static constexpr std::size_t PAGE_CACHE_MASK = PAGE_CACHE_SIZE - 1;
+        //     Page *pageCache[PAGE_CACHE_SIZE]{nullptr};
+        //     inline Page *LookupCachedPage (AddressType offset) const noexcept {
+        //         AddressType pageOffset = offset & ~pageMask;
+        //         Page *page = pageCache[(pageOffset >> pageShift) & PAGE_CACHE_MASK];
+        //         return (page != nullptr && page->offset == pageOffset) ? page : nullptr;
+        //     }
+        //
+        // this will go in to GetPageHelper.
+        //
+        //     pageCache[(pageOffset >> pageShift) & PAGE_CACHE_MASK] = page;
+        //
+        // this will go in to DeleteChild.
+        //
+        //     AddressType pageOffset = offset & ~pageMask;
+        //     std::size_t slot = (pageOffset >> pageShift) & PAGE_CACHE_MASK;
+        //     if (pageCache[slot] == page) {
+        //         pageCache[slot] = nullptr;
+        //     }
+
+
         /// \struct PageMap PageMap.h thekogans/util/PageMap.h
         ///
         /// \brief

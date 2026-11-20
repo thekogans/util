@@ -20,7 +20,7 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/SpinLock.h"
+#include "thekogans/util/Mutex.h"
 #include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/util/TransactedFile.h"
@@ -41,7 +41,7 @@ namespace thekogans {
         private:
             /// \brief
             /// Synchronization lock.
-            SpinLock spinLock;
+            Mutex mutex;
 
         public:
             static const std::size_t DEFAULT_ENTRIES_PER_NODE = 256;
@@ -59,37 +59,25 @@ namespace thekogans {
             /// Search for the given key in the btree.
             /// \param[in] key \see{Key} to search for.
             /// \return true == found.
-            inline Serializable::SharedPtr Find (const Key &key) {
-                LockGuard<SpinLock> guard (spinLock);
-                return TransactedFileBTree::Find (key);
-            }
+            Serializable::SharedPtr Find (const Key &key);
             /// \brief
             /// Insert the given key in to the btree.
             /// \param[in] key Key to insert.
             /// \param[in] value Value associated with the given key.
             /// \return true == added. false == duplicate. If false, return
             /// the current entry in it.
-            inline bool Insert (
-                    Key::SharedPtr key,
-                    Serializable::SharedPtr value) {
-                LockGuard<SpinLock> guard (spinLock);
-                return TransactedFileBTree::Insert (key, value);
-            }
+            bool Insert (
+                Key::SharedPtr key,
+                Serializable::SharedPtr value);
             /// \brief
             /// Delete the given key from the btree.
             /// \param[in] key Key to delete.
             /// \return true == entry deleted. false == entry not found.
-            inline bool Remove (const Key &key) {
-                LockGuard<SpinLock> guard (spinLock);
-                return TransactedFileBTree::Remove (key);
-            }
+            bool Remove (const Key &key);
 
             virtual void Init (
-                    TransactedFile *file,
-                    TransactedFile::AddressType offset) override {
-                LockGuard<SpinLock> guard (spinLock);
-                TransactedFileBTree::Init (file, offset);
-            }
+                TransactedFile *file,
+                TransactedFile::AddressType offset) override;
 
             /// \brief
             /// TransactedFileMTBTree is neither copy constructable, nor assignable.

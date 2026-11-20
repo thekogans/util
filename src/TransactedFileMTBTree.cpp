@@ -24,5 +24,29 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileMTBTree, 1, 0)
 
+        Serializable::SharedPtr TransactedFileMTBTree::Find (const Key &key) {
+            LockGuard<Mutex> guard (mutex);
+            return TransactedFileBTree::Find (key);
+        }
+
+        bool TransactedFileMTBTree::Insert (
+                Key::SharedPtr key,
+                Serializable::SharedPtr value) {
+            LockGuard<Mutex> guard (mutex);
+            return TransactedFileBTree::Insert (key, value);
+        }
+
+        bool TransactedFileMTBTree::Remove (const Key &key) {
+            LockGuard<Mutex> guard (mutex);
+            return TransactedFileBTree::Remove (key);
+        }
+
+        void TransactedFileMTBTree::Init (
+                TransactedFile *file,
+                TransactedFile::AddressType offset) {
+            LockGuard<Mutex> guard (mutex);
+            TransactedFileBTree::Init (file, offset);
+        }
+
     } // namespace util
 } // namespace thekogans
