@@ -219,7 +219,7 @@ namespace thekogans {
                         }
                         right->leftOffset = entry.rightOffset;
                         right->left = entry.right;
-                        entry.rightOffset = right->offset;
+                        entry.rightOffset = right->GetOffset ();
                         entry.right = right;
                         return false;
                     }

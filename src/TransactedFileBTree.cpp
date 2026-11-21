@@ -414,7 +414,6 @@ namespace thekogans {
                     leaf->entries->Unsubscribe (leaf, btree->header.IsValueIsObject (), false);
                     leaf->entries->value = nullptr;
                     leaf->entries->valueOffset = 0;
-                    leaf->SetDirty ();
                     // 4. Delete the promoted successor key from the right subtree and rebalance.
                     Key::SharedPtr successorKey (entries[index].key);
                     child->Remove (*successorKey);
@@ -485,9 +484,9 @@ namespace thekogans {
         //           /      \                /     \
         //         C0        C1            C2       C3
         void TransactedFileBTree::Node::RotateRight (
-                ui32 index,
-                Node *left,
-                Node *right) {
+            ui32 index,
+            Node *left,
+            Node *right) {
             // 1. Demote separator entries[index] into right[0] with right's old left child.
             Entry demoted = entries[index];
             demoted.rightOffset = right->leftOffset;
@@ -526,9 +525,9 @@ namespace thekogans {
         //            /     \                 /      \
         //          C0       C1             C2        C3
         void TransactedFileBTree::Node::RotateLeft (
-                ui32 index,
-                Node *left,
-                Node *right) {
+            ui32 index,
+            Node *left,
+            Node *right) {
             // 1. Demote separator entries[index] to end of left with right's old left child.
             Entry demoted = entries[index];
             demoted.rightOffset = right->leftOffset;
@@ -567,9 +566,9 @@ namespace thekogans {
         //             /     |     \
         //           C0     C1     C2
         void TransactedFileBTree::Node::Merge (
-                ui32 index,
-                Node *left,
-                Node *right) {
+            ui32 index,
+            Node *left,
+            Node *right) {
             assert (left->count + right->count < btree->header.entriesPerNode);
             Entry separator = entries[index];
             RemoveEntry (index);
@@ -584,8 +583,8 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::SetLeft (
-                Node *child,
-                TransactedFile::AddressType offset) {
+            Node *child,
+            TransactedFile::AddressType offset) {
             if (left != nullptr) {
                 left->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
             }
@@ -594,7 +593,6 @@ namespace thekogans {
             if (left != nullptr) {
                 left->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }
-            //SetDirty ();
         }
 
         void TransactedFileBTree::Node::SetEntry (
@@ -908,9 +906,7 @@ namespace thekogans {
                     // its first.
                     root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
                     Node *node = Node::Alloc (this, file, 0);
-                    node->leftOffset = root->GetOffset ();
-                    node->left = root;
-                    node->left->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+                    node->SetLeft (root, root->GetOffset ());
                     node->InsertEntry (entry, 0);
                     root = node;
                     root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
@@ -938,8 +934,7 @@ namespace thekogans {
                         Node *node = root;
                         root = root->GetChild (0);
                         root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                        node->leftOffset = 0;
-                        node->left = nullptr;
+                        node->SetLeft (nullptr, 0);
                         Object::FreeObject (file, node->GetOffset ());
                         node->SetDestroyed ();
                         node->Release ();
