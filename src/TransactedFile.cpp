@@ -193,15 +193,13 @@ namespace thekogans {
                     endianness, path, secure, dictionary, allocator, registry, exists && overwrite), false);
         }
 
-        TransactedFile::SizeType TransactedFile::Grow (
-                SizeType amount) {
-            SizeType oldSize = size;
+        TransactedFile::AddressType TransactedFile::Grow (SizeType amount) {
+            AddressType offset = size + Block::HEADER_SIZE;
             size += MIN (pageMap->GetMaxOffset () - size, amount);
-            return oldSize;
+            return offset;
         }
 
-        TransactedFile::SizeType TransactedFile::Shrink (
-                SizeType amount) {
+        TransactedFile::SizeType TransactedFile::Shrink (SizeType amount) {
             size -= MIN (amount, size.load (std::memory_order_relaxed));
             pageMap->Shrink (size);
             return size;

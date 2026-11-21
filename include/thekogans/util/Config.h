@@ -227,10 +227,12 @@ namespace thekogans {
         /// Its volatile so that the optimizer leaves it alone.
         /// \param[in] data Block t zero out.
         /// \param[in] size Block size (in bytes).
+        /// \param[in] zero Byte pattern to fill data with.
         /// \return if data != nullptr && size > 0, size oterwise 0.
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
             volatile void *data,
-            std::size_t size);
+            std::size_t size,
+            char zero = 0);
 
     } // namespace util
 } // namespace thekogans

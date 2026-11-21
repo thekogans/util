@@ -113,7 +113,7 @@ namespace thekogans {
             Object::Init (file, offset);
             if (offset == 0) {
                 std::size_t size = UI32_SIZE + GetSize (*file);
-                this->offset = file->Grow (Block::SIZE + size) + BLOCK_OFFSET;
+                this->offset = file->Grow (Block::SIZE + size);
                 Block block (file, this->offset, 0, size);
                 block.Write ();
                 {

@@ -185,6 +185,7 @@ namespace thekogans {
                 /// false == the iterator is finished through the range or the
                 /// range was empty to begin with.
                 bool Next ();
+                bool Prev ();
 
                 /// \brief
                 /// If we're not finished, return the key associated with the current entry.
@@ -332,6 +333,77 @@ namespace thekogans {
                         key (key_),
                         valueOffset (valueOffset_),
                         value (value_) {}
+
+                    void Unsubscribe (
+                            Node *node,
+                            bool isValueisObject,
+                            bool unsubscribeRight = true) {
+                        if (value != nullptr) {
+                            if (!isValueisObject) {
+                                value->Producer<SerializableEvents>::Unsubscribe (*node);
+                            }
+                            else {
+                                TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
+                                object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
+                            }
+                        }
+                        if (unsubscribeRight && right != nullptr) {
+                            right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
+                        }
+                    }
+
+                    void Subscribe (
+                            Node *node,
+                            bool isValueisObject,
+                            bool subscribeRight = true) {
+                        if (value != nullptr) {
+                            if (!isValueisObject) {
+                                value->Producer<SerializableEvents>::Subscribe (*node);
+                            }
+                            else {
+                                TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
+                                object->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+                            }
+                        }
+                        if (subscribeRight && right != nullptr) {
+                            right->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+                        }
+                    }
+
+                    void Destroy (
+                            Node *node,
+                            bool isValueisObject,
+                            TransactedFile *file) {
+                        if (isValueisObject) {
+                            if (value != nullptr) {
+                                TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
+                                object->FreeBlock ();
+                            }
+                            else if (valueOffset != 0) {
+                                Object::DestroyObject (file, valueOffset);
+                            }
+                        }
+                        Reset (node, isValueisObject, false);
+                    }
+
+                    void Reset (
+                            Node *node,
+                            bool isValueisObject,
+                            bool resetRight = true) {
+                        Unsubscribe (node, isValueisObject, resetRight);
+                        if (THEKOGANS_UTIL_LIKELY (key != nullptr)) {
+                            key->Release ();
+                            key = nullptr;
+                        }
+                        if (THEKOGANS_UTIL_LIKELY (value != nullptr)) {
+                            value->Release ();
+                            value = nullptr;
+                        }
+                        if (resetRight && right != nullptr) {
+                            right->Release ();
+                            right = nullptr;
+                        }
+                    }
                 } *entries;
 
                 /// \brief
@@ -400,6 +472,9 @@ namespace thekogans {
                 /// entry in the node that matches the given prefix.
                 /// \return true == found the prefix and it's the first occurence.
                 bool FindFirstPrefix (
+                    const Key &prefix,
+                    ui32 &index) const;
+                bool FindLastPrefix (
                     const Key &prefix,
                     ui32 &index) const;
                 /// \brief
@@ -477,22 +552,12 @@ namespace thekogans {
                     ui32 index,
                     Node *left,
                     Node *right);
-                /// \brief
-                /// Split the full node in the middle
-                /// (splitIndex = btree->header.entriesPerNode / 2).
-                /// \param[out] right Node that will receive entries >= splitIndex.
-                void Split (Node *right);
-                /// \brief
-                /// Add the given node's entries to this one. The empty node
-                /// is deleted after.
-                /// \param[in] node Node whose entries are to be added.
-                void Concatenate (Node *node);
-                /// \brief
-                /// Add the given \see{Entry} to the end of the list.
-                /// \param[in] entry \see{Entry} to add.
-                inline void Concatenate (const Entry &entry) {
-                    InsertEntry (entry, count);
-                }
+                void SetLeft (
+                    Node *child,
+                    TransactedFile::AddressType offset);
+                void SetEntry (
+                    ui32 index,
+                    const Entry &entry);
                 /// \brief
                 /// Insert the given entry at the given index.
                 /// \param[in] entry \see{Entry} to insert.
@@ -504,6 +569,11 @@ namespace thekogans {
                 /// Remove the entry at the given index.
                 /// \param[in] index Index of entry to remove.
                 void RemoveEntry (ui32 index);
+                void MoveEntries (
+                    Node *src,
+                    ui32 srcIndex,
+                    ui32 dstIndex,
+                    ui32 moveCount);
                 /// \brief
                 /// Return true if the node is empty.
                 /// \return true == node is empty.
@@ -679,6 +749,7 @@ namespace thekogans {
             /// it.prefix (or smallest element if it.prefix == nullptr). false == the
             /// iterator is empty.
             bool FindFirst (Iterator &it);
+            bool FindLast (Iterator &it);
 
         protected:
             // Serializable

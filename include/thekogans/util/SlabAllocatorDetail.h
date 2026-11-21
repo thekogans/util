@@ -789,7 +789,7 @@ namespace thekogans {
                     }
                 };
 
-                static thread_local std::array<TLC, TLCIndexBroker<ui64, 1>::MAX_INDEX> caches;
+                static thread_local std::array<TLC, SmallTLCIndexBroker::MAX_INDEX> caches;
 
                 struct ThreadLifetimeManager {
                     ~ThreadLifetimeManager () noexcept {
@@ -817,7 +817,7 @@ namespace thekogans {
                     std::atomic<ui32> refCount{1};
                     static inline std::atomic<std::size_t> nextId{1};
                     const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
-                    static TLCIndexBroker<ui64, 1> broker;
+                    static SmallTLCIndexBroker broker;
                     const std::size_t tlcIndex{broker.LeaseIndex ()};
 
                     ~StorageBaseImpl () noexcept {
@@ -1001,9 +1001,9 @@ namespace thekogans {
             template<typename T, typename... Policies>
             thread_local std::array<
                 typename SlabAllocator<T, Policies...>::TLC,
-                TLCIndexBroker<ui64, 1>::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
+                SmallTLCIndexBroker::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
             template<typename T, typename... Policies>
-            TLCIndexBroker<ui64, 1> SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
+            SmallTLCIndexBroker SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
         } // namespace detail
 
     } // namespace util

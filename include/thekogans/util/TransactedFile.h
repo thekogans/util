@@ -287,8 +287,8 @@ namespace thekogans {
             /// \brief
             /// Grow the file by the given amount.
             /// \param[in] amount Amount to grow the file by.
-            /// \return Old file size.
-            SizeType Grow (SizeType amount);
+            /// \return Offset of the new block.
+            AddressType Grow (SizeType amount);
             /// \brief
             /// Shrink the file by the given amount.
             /// \param[in] amount Amount to shrink the file by.

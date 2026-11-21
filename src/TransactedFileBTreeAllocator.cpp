@@ -149,7 +149,7 @@ namespace thekogans {
                             size <= (file->GetPageSize () - TransactedFile::Block::SIZE)) {
                         TransactedFile::Block prev (
                             file,
-                            file->Grow (remainder) + TransactedFile::Block::HEADER_SIZE,
+                            file->Grow (remainder),
                             TransactedFile::Block::FLAGS_FREE,
                             remainder - TransactedFile::Block::SIZE);
                         prev.Write ();
@@ -165,7 +165,7 @@ namespace thekogans {
                         size = remainder - TransactedFile::Block::SIZE;
                     }
                     // No free block large enough is found? Grow the file.
-                    offset = file->Grow (TransactedFile::Block::SIZE + size) + TransactedFile::Block::HEADER_SIZE;
+                    offset = file->Grow (TransactedFile::Block::SIZE + size);
                     // Most file systems will fill the new space with '0' bytes
                     // but we can't take a chance and do it ourselves.
                     if (file->IsSecure ()) {
@@ -223,17 +223,45 @@ namespace thekogans {
                     size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
                 if (block.GetSize () < size) {
-                    // Grow the block.
-                    offset = Alloc (size);
-                    if (moveData) {
-                        TransactedFile::Range oldRange (
-                            file, block.GetOffset (), block.GetSize ());
-                        TransactedFile::Range range (file, offset, size, false);
-                        range.Seek (oldRange.Read (range.GetDataPtr (), MIN (block.GetSize (), size)), SEEK_CUR);
-                        // Assume that Alloc always gives back clean blocks.
-                        // No need to manually clear the rest of range.
+                    // See if there's an ajacent free block we can grow in to.
+                    bool grownInPlace = false;
+                    {
+                        LockGuard<Mutex> guard (mutex);
+                        TransactedFile::Block next (file);
+                        if (THEKOGANS_UTIL_UNLIKELY (block.Next (next) && next.IsFree ())) {
+                            TransactedFile::SizeType available =
+                                block.GetSize () + next.GetSize () + TransactedFile::Block::SIZE;
+                            if (available >= size) {
+                                Remove ({next.GetSize (), next.GetOffset ()});
+                                // See if we need to split up next.
+                                if (available - size >= TransactedFile::MIN_BLOCK_SIZE) {
+                                    next.SetOffset (block.GetOffset () + size + TransactedFile::Block::SIZE);
+                                    next.SetSize (available - size - TransactedFile::Block::SIZE);
+                                    next.Write ();
+                                    Insert ({next.GetSize (), next.GetOffset ()});
+                                }
+                                else {
+                                    size = available;
+                                }
+                                block.SetSize (size);
+                                block.Write ();
+                                grownInPlace = true;
+                            }
+                        }
                     }
-                    Free (block.GetOffset ());
+                    if (THEKOGANS_UTIL_LIKELY (!grownInPlace)) {
+                        // Reallocate the block.
+                        offset = Alloc (size);
+                        if (moveData) {
+                            TransactedFile::Range oldRange (
+                                file, block.GetOffset (), block.GetSize ());
+                            TransactedFile::Range range (file, offset, size, false);
+                            range.Seek (oldRange.Read (range.GetDataPtr (), MIN (block.GetSize (), size)), SEEK_CUR);
+                            // Assume that Alloc always gives back clean blocks.
+                            // No need to manually clear the rest of range.
+                        }
+                        Free (block.GetOffset ());
+                    }
                 }
                 else if (block.GetSize () > size) {
                     // Shrink the block.
@@ -249,18 +277,21 @@ namespace thekogans {
                             file->Shrink (remainder);
                         }
                         else {
-                            TransactedFile::Block next (
-                                file,
-                                offset + size + TransactedFile::Block::SIZE,
-                                TransactedFile::Block::FLAGS_FREE,
-                                remainder - TransactedFile::Block::SIZE);
+                            TransactedFile::Block next (file);
+                            if (block.Next (next) && next.IsFree ()) {
+                                Remove ({next.GetSize (), next.GetOffset ()});
+                                remainder += next.GetSize () + TransactedFile::Block::SIZE;
+                            }
+                            next.SetOffset (offset + size + TransactedFile::Block::SIZE);
+                            next.SetFree (true);
+                            next.SetSize (remainder - TransactedFile::Block::SIZE);
                             next.Write ();
+                            Insert ({next.GetSize (), next.GetOffset ()});
                             if (file->IsSecure ()) {
                                 TransactedFile::Range range (file, next.GetOffset (), next.GetSize (), false);
                                 range.Seek (
                                     SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                             }
-                            Insert ({next.GetSize (), next.GetOffset ()});
                             block.SetSize (size);
                             block.Write ();
                         }
@@ -279,9 +310,9 @@ namespace thekogans {
                 std::vector<std::pair<TransactedFile::AddressType, TransactedFile::SizeType>> &freeList) const {
             LockGuard<Mutex> guard (const_cast<Mutex &> (mutex));
             freeList.clear ();
-            TransactedFileBTreeAllocatorBTree::Iterator it;
+            Iterator it;
             for (FindFirst (it); !it.IsFinished (); it.Next ()) {
-                const TransactedFileBTreeAllocatorBTree::Key &key = it.GetKey ();
+                const Key &key = it.GetKey ();
                 freeList.emplace_back (key.offset, key.size);
             }
             std::sort (freeList.begin (), freeList.end ());

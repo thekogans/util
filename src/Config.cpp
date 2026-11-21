@@ -35,13 +35,14 @@ namespace thekogans {
 
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
                 volatile void *data,
-                std::size_t size) {
+                std::size_t size,
+                char zero) {
             if (data != nullptr && size > 0) {
                 // Cast to a volatile character pointer so every byte write is legally un-optimizable.
                 volatile char *p = static_cast<volatile char *>(const_cast<void *>(data));
                 std::size_t count = size;
                 while (count--) {
-                    *p++ = 0;
+                    *p++ = zero;
                 }
                 return size;
             }

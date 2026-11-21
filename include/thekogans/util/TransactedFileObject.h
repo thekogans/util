@@ -175,7 +175,7 @@ public:
         AddressType offset_);
 
     /// \brief
-    /// If needed allocate space from \see{TransactedFile::Allocator}.
+    /// If needed (re)allocate space using \see{TransactedFile::GetAllocator}.
     virtual void AllocBlock ();
     /// \brief
     /// Default free implementation for single block objects.
@@ -218,17 +218,20 @@ protected:
 
 struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
     /// \brief
-    /// ctor.
-    /// \param[in] file \see{TransactedFile} to buffer.
-    /// \param[in] offset File offset.
-    /// \param[in] type Expecting type when reading.
-    /// \param[in] reading true == Range will be used for reading.
-    /// false == Range will be used for writting.
-    /// \param[in] allocator \see{util::Allocator} if we need to allocate.
+    /// ctor. Reading.
+    /// \param[in] file \see{TransactedFile} where the objects lives.
+    /// \param[in] offset Object block offset within the file.
+    /// \param[in] allocator \see{util::Allocator} in case \see{Range} needs to allocate.
     ObjectRange (
         TransactedFile *file,
         TransactedFile::AddressType offset,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
+    /// \brief
+    /// ctor. Writing.
+    /// \param[in] file \see{TransactedFile} where the objects lives.
+    /// \param[in] offset Object block offset within the file.
+    /// \param[in] object Object we're writing. Use size to construct the header.
+    /// \param[in] allocator \see{util::Allocator} in case \see{Range} needs to allocate.
     ObjectRange (
         TransactedFile *file,
         TransactedFile::AddressType offset,
