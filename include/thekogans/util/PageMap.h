@@ -33,30 +33,6 @@
 namespace thekogans {
     namespace util {
 
-        // this will be the new page cache.
-        //
-        //     static constexpr std::size_t PAGE_CACHE_SIZE = 16; // power of 2
-        //     static constexpr std::size_t PAGE_CACHE_MASK = PAGE_CACHE_SIZE - 1;
-        //     Page *pageCache[PAGE_CACHE_SIZE]{nullptr};
-        //     inline Page *LookupCachedPage (AddressType offset) const noexcept {
-        //         AddressType pageOffset = offset & ~pageMask;
-        //         Page *page = pageCache[(pageOffset >> pageShift) & PAGE_CACHE_MASK];
-        //         return (page != nullptr && page->offset == pageOffset) ? page : nullptr;
-        //     }
-        //
-        // this will go in to GetPageHelper.
-        //
-        //     pageCache[(pageOffset >> pageShift) & PAGE_CACHE_MASK] = page;
-        //
-        // this will go in to DeleteChild.
-        //
-        //     AddressType pageOffset = offset & ~pageMask;
-        //     std::size_t slot = (pageOffset >> pageShift) & PAGE_CACHE_MASK;
-        //     if (pageCache[slot] == page) {
-        //         pageCache[slot] = nullptr;
-        //     }
-
-
         /// \struct PageMap PageMap.h thekogans/util/PageMap.h
         ///
         /// \brief
@@ -797,7 +773,7 @@ namespace thekogans {
                 /// \param[in] child \see{Node} to delete.
                 /// \return true == the child was deleted.
                 /// false == the child has outstanding refereces.
-                virtual bool DeleteChild (Node *child) {
+                bool DeleteChild (Node *child) {
                     // This check is here mostly for Page as Segment
                     // and Internal don't have reference counts and
                     // are not visible outside of PageMap. We need it
@@ -808,6 +784,13 @@ namespace thekogans {
                         bitmask[child->index >> BitMaskShift] &=
                             ~(static_cast<BitMaskType> (1) << (child->index & BitMaskMod));
                         childList.erase (child);
+                        Page *page = dynamic_cast<Page *> (child);
+                        if (page != nullptr) {
+                            std::size_t slot = (page->offset >> this->pageMap.bitsPerPage) & PAGE_CACHE_MASK;
+                            if (this->pageMap.pageCache[slot] == page) {
+                                this->pageMap.pageCache[slot] = nullptr;
+                            }
+                        }
                         child->Release ();
                         return true;
                     }
@@ -865,21 +848,6 @@ namespace thekogans {
 
             protected:
                 /// \brief
-                /// Delete the given child.
-                /// \param[in] child \see{Page} to delete.
-                /// \return true == the \see{Page} was deleted.
-                /// false == the \see{Page} has outstanding refereces.
-                virtual bool DeleteChild (Node *child) override {
-                    if (Parent::DeleteChild (child)) {
-                        if (this->pageMap.lastGetPagePage == static_cast<Page *> (child)) {
-                            this->pageMap.lastGetPagePage = nullptr;
-                        }
-                        return true;
-                    }
-                    return false;
-                }
-
-                /// \brief
                 /// Segment is neither copy or move constructable, nor assignable.
                 THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (Segment)
             };
@@ -936,8 +904,14 @@ namespace thekogans {
             /// The root of the tree.
             Node *root{nullptr};
             /// \brief
+            /// Page cache size.
+            static constexpr std::size_t PAGE_CACHE_SIZE = 32; // power of 2
+            /// \brief
+            /// Mask used in cache slot calculation.
+            static constexpr std::size_t PAGE_CACHE_MASK = PAGE_CACHE_SIZE - 1;
+            /// \brief
             /// Last accessed page cache promoting locality of reference.
-            Page *lastGetPagePage{nullptr};
+            Page *pageCache[PAGE_CACHE_SIZE]{nullptr};
             /// \brief
             /// Synchronization lock.
             Lock lock;
@@ -1183,6 +1157,14 @@ namespace thekogans {
 
         private:
             /// \brief
+            /// Given a page offset (offset & ~pageMask), look up the corresponding page is in the cache.
+            /// \param[in] offset A page offset to look up.
+            /// \return The corresponding page, nullptr if not in the cache.
+            inline Page *LookupCachedPage (AddressType offset) const noexcept {
+                Page *page = pageCache[(offset >> bitsPerPage) & PAGE_CACHE_MASK];
+                return (page != nullptr && page->offset == offset) ? page : nullptr;
+            }
+            /// \brief
             /// Return the \see{Page} that contains the given offset.
             /// \param[in] offset Offset whose page to return.
             /// \param[in] pageSource Optional \see{PageSource}
@@ -1196,7 +1178,8 @@ namespace thekogans {
                     return nullptr;
                 }
                 offset &= ~pageMask;
-                if (lastGetPagePage == nullptr || lastGetPagePage->offset != offset) {
+                Page *page = LookupCachedPage (offset);
+                if (page == nullptr) {
                     Node *node = GetRoot ();
                     // This is the address dissassembly engine used to
                     // break up the addresses (offset) in service of a
@@ -1229,13 +1212,13 @@ namespace thekogans {
                     // call to GetPage is sufficiently close to this one
                     // (locality of reference).
                     std::size_t index = (offset & segmentMask) >> bitsPerPage;
-                    lastGetPagePage = static_cast<Page *> (
+                    pageCache[(offset >> bitsPerPage) & PAGE_CACHE_MASK] = page = static_cast<Page *> (
                         static_cast<Segment *> (node)->GetChild (index,
                             [offset, pageSource] (PageMap &pageMap, std::size_t index) -> Node * {
                                 return Page::Alloc (pageMap, index, offset, pageSource);
                             }));
                 }
-                return lastGetPagePage;
+                return page;
             }
 
             /// \brief

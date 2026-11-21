@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <vector>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
@@ -22,6 +25,60 @@
 
 namespace thekogans {
     namespace util {
+
+        namespace {
+            bool has_non_zero (
+                    const ui8 *begin,
+                    const ui8 *end) noexcept {
+                const auto *p = begin;
+                // Fast path for tiny blocks (e.g., 32 bytes)
+                if (end - p < 64) {
+                    while (p < end) {
+                        if (*p != 0) {
+                            return true;
+                        }
+                        ++p;
+                    }
+                    return false;
+                }
+                // 1. Align to UI64_SIZE-byte boundary
+                while ((reinterpret_cast<std::uintptr_t> (p) & 7u) != 0) {
+                    if (*p != 0) {
+                        return true;
+                    }
+                    ++p;
+                }
+                // 2. Unrolled 32-byte (4 x ui64) scan
+                while (end - p >= 32) {
+                    ui64 w0, w1, w2, w3;
+                    std::memcpy (&w0, p, UI64_SIZE);
+                    std::memcpy (&w1, p + UI64_SIZE, UI64_SIZE);
+                    std::memcpy (&w2, p + 16, UI64_SIZE);
+                    std::memcpy (&w3, p + 24, UI64_SIZE);
+                    if ((w0 | w1 | w2 | w3) != 0) {
+                        return true;
+                    }
+                    p += 32;
+                }
+                // 3. Remaining UI64_SIZE-byte words
+                while (end - p >= UI64_SIZE) {
+                    ui64 w;
+                    std::memcpy (&w, p, UI64_SIZE);
+                    if (w != 0) {
+                        return true;
+                    }
+                    p += UI64_SIZE;
+                }
+                // 4. Final 0..7 tail bytes
+                while (p < end) {
+                    if (*p != 0) {
+                        return true;
+                    }
+                    ++p;
+                }
+                return false;
+            }
+        }
 
         void TransactedFile::HeapWalker::ValidateHeap (
                 TransactedFile *file,
@@ -48,16 +105,10 @@ namespace thekogans {
                 if (next.IsFree ()) {
                     if (file->IsSecure ()) {
                         Range range (file, next.GetOffset (), next.GetSize ());
-                        for (SizeType i = 0, count = next.GetSize (); i < count; ++i) {
-                            ui8 byte;
-                            range >> byte;
-                            if (byte != 0) {
-                                // Garbage in the payload of a secure heap.
-                                if (!callback (next, ERROR_GARBAGE_IN_PAYLOAD)) {
-                                    return;
-                                }
-                                break;
-                            }
+                        // Garbage in the payload of a secure heap.
+                        if (has_non_zero (range.GetDataPtr (), range.GetDataPtr () + range.GetDataAvailable ()) &&
+                                !callback (next, ERROR_GARBAGE_IN_PAYLOAD)) {
+                            return;
                         }
                     }
                     freeBlockList.push_back (next);
@@ -75,6 +126,7 @@ namespace thekogans {
             // Collect all {size, offset} pairs from the allocator's free-list B-tree.
             std::vector<std::pair<AddressType, SizeType>> allocatorFreeList;
             file->GetAllocator ()->GetFreeList (allocatorFreeList);
+            std::sort (allocatorFreeList.begin (), allocatorFreeList.end ());
             // 1. Verify exact count match (no leaked free blocks, no phantom B-tree entries).
             if (freeBlockList.size () != allocatorFreeList.size ()) {
                 // Report count mismatch
@@ -118,17 +170,35 @@ namespace thekogans {
                 block = next;
             }
             TransactedFile::Object::BlockMap blockMap;
-            file->GetHeader ()->GetAllocatedBlockMap (blockMap);
-            // 1. Check for physically allocated blocks that are unreachable from the root object graph (orphans/zombies).
+            TransactedFile::Object::BlockMap duplicatesMap;
+            file->GetHeader ()->GetAllocatedBlockMap (blockMap, &duplicatesMap);
+            // 1. Check for physically allocated blocks that are
+            // unreachable from the root object graph
+            // (orphans/zombies).
             for (const Block &allocatedBlock : allocatedBlocks) {
-                auto it = blockMap.find (allocatedBlock.GetOffset ());
+                auto it = blockMap.find (allocatedBlock);
                 if (it == blockMap.end ()) {
                     if (!callback (allocatedBlock, ERROR_ORPHAN_BLOCK)) {
                         return;
                     }
                 }
                 else {
+                    if (allocatedBlock.GetSize () < it->second.size) {
+                        if (!callback (it->first, ERROR_TRUNCATED_BLOCK)) {
+                            return;
+                        }
+                    }
                     blockMap.erase (it);
+                }
+            }
+            for (const auto &[block, header] : duplicatesMap) {
+                if (!callback (block, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
+                    return;
+                }
+            }
+            for (const auto &[block, header] : blockMap) {
+                if (!callback (block, ERROR_DANGLING_BLOCK_REFERENCE)) {
+                    return;
                 }
             }
         }

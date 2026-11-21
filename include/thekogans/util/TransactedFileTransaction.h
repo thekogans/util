@@ -50,17 +50,7 @@ struct _LIB_THEKOGANS_UTIL_DECL Transaction {
     /// \brief
     /// ctor.
     /// \param[in] file_ \see{TransactedFile} to transact.
-    explicit Transaction (TransactedFile *file_) :
-            file (file_),
-            guard (file->mutex) {
-        if (THEKOGANS_UTIL_LIKELY (file->phase == PHASE_NONE)) {
-            file->phase = PHASE_IN_PROGRESS;
-        }
-        else {
-            THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                "Nested transactions are not supported.");
-        }
-    }
+    explicit Transaction (TransactedFile *file_);
     /// \brief
     /// dtor. Abort an uncommitted transaction.
     ~Transaction ();

@@ -154,6 +154,10 @@ namespace thekogans {
                             remainder - TransactedFile::Block::SIZE);
                         prev.Write ();
                         Insert ({prev.GetSize (), prev.GetOffset ()});
+                        if (file->IsSecure ()) {
+                            TransactedFile::Range range (file, prev.GetOffset (), prev.GetSize (), false);
+                            range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                        }
                     }
                     // Otherwise, we fit in the ramainder. Check if what will remain
                     // after our allocation would be too small for a block and cause
@@ -219,6 +223,12 @@ namespace thekogans {
                 }
                 TransactedFile::Block block (file, offset);
                 block.Read ();
+                if (block.IsFree ()) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Attempting to reallocate an unallocated block @"
+                        THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
                 if (size < TransactedFile::MIN_USER_DATA_SIZE) {
                     size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
@@ -242,6 +252,11 @@ namespace thekogans {
                                 }
                                 else {
                                     size = available;
+                                }
+                                if (file->IsSecure ()) {
+                                    TransactedFile::Range range (file,
+                                        block.GetOffset () + block.GetSize (), TransactedFile::Block::SIZE, false);
+                                    range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                                 }
                                 block.SetSize (size);
                                 block.Write ();
@@ -274,6 +289,11 @@ namespace thekogans {
                         if (THEKOGANS_UTIL_UNLIKELY (block.IsLast ())) {
                             block.SetSize (size);
                             block.Write ();
+                            if (file->IsSecure ()) {
+                                TransactedFile::Range range (file,
+                                    block.GetOffset () + block.GetSize () + TransactedFile::Block::HEADER_SIZE, remainder, false);
+                                range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                            }
                             file->Shrink (remainder);
                         }
                         else {
@@ -362,17 +382,24 @@ namespace thekogans {
                         // Expand to swallow the next.
                         block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + next.GetSize ());
                     }
+                    if (file->IsSecure ()) {
+                        // If we're the last block and we're about to
+                        // be lopped off, back up to cover the header
+                        // and extend the range to cover the footer.
+                        if (THEKOGANS_UTIL_UNLIKELY (block.IsLast ())) {
+                            clearOffset -= TransactedFile::Block::HEADER_SIZE;
+                            clearLength += TransactedFile::Block::SIZE; // HEADER_SIZE + FOOTER_SIZE
+                        }
+                        TransactedFile::Range range (file, clearOffset, clearLength, false);
+                        range.Seek (
+                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                    }
                     // If we're not the last block...
                     if (THEKOGANS_UTIL_LIKELY (!block.IsLast ())) {
                         // ...add it to the free list.
                         Insert ({block.GetSize (), block.GetOffset ()});
                         block.SetFree (true);
                         block.Write ();
-                        if (file->IsSecure ()) {
-                            TransactedFile::Range range (file, clearOffset, clearLength, false);
-                            range.Seek (
-                                SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
-                        }
                     }
                     else {
                         // If we are, truncate the heap.

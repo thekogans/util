@@ -235,11 +235,17 @@ namespace thekogans {
             }
         }
 
-        void TransactedFile::Object::GetAllocatedBlockMap (BlockMap &blockMap) {
+        void TransactedFile::Object::GetAllocatedBlockMap (
+                BlockMap &blockMap,
+                BlockMap *duplicatesMap) {
             if (THEKOGANS_UTIL_LIKELY (!IsDestroyed () && file != nullptr && offset != 0)) {
                 // Go straight to the source.
+                Block block (file, offset);
+                block.Read ();
                 ObjectRange range (file, offset);
-                blockMap.insert ({offset, range.context});
+                if (!blockMap.insert ({block, range.context}).second && duplicatesMap != nullptr) {
+                    duplicatesMap->insert ({block, range.context});
+                }
             }
         }
 

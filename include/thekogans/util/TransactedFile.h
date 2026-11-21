@@ -329,6 +329,37 @@ namespace thekogans {
             THEKOGANS_UTIL_DISALLOW_COPY_MOVE_AND_ASSIGN (TransactedFile)
         };
 
+        inline bool operator == (
+                const TransactedFile::Block &block1,
+                const TransactedFile::Block &block2) noexcept {
+            return block1.GetOffset () == block2.GetOffset ();
+        }
+        inline bool operator != (
+                const TransactedFile::Block &block1,
+                const TransactedFile::Block &block2) noexcept {
+            return !(block1 == block2);
+        }
+        inline bool operator < (
+                const TransactedFile::Block &block1,
+                const TransactedFile::Block &block2) noexcept {
+            return block1.GetOffset () < block2.GetOffset ();
+        }
+        inline bool operator <= (
+                const TransactedFile::Block &block1,
+                const TransactedFile::Block &block2) noexcept {
+            return block1.GetOffset () <= block2.GetOffset ();
+        }
+        inline bool operator > (
+                const TransactedFile::Block &block1,
+                const TransactedFile::Block &block2) noexcept {
+            return block1.GetOffset () > block2.GetOffset ();
+        }
+        inline bool operator >= (
+                const TransactedFile::Block &block1,
+                const TransactedFile::Block &block2) noexcept {
+            return block1.GetOffset () >= block2.GetOffset ();
+        }
+
         _LIB_THEKOGANS_UTIL_DECL TransactedFile::ObjectRange & _LIB_THEKOGANS_UTIL_API operator >> (
             TransactedFile::ObjectRange &range,
             TransactedFile::Object::SharedPtr &object);
@@ -349,5 +380,20 @@ namespace thekogans {
 
     } // namespace util
 } // namespace thekogans
+
+namespace std {
+
+    /// \struct hash<thekogans::util::TransactedFile::Block> TransactedFile.h thekogans/util/TransactedFile.h
+    ///
+    /// \brief
+    /// Implementation of std::hash for thekogans::util::TransactedFile::Block.
+    template <>
+    struct hash<thekogans::util::TransactedFile::Block> {
+        size_t operator () (const thekogans::util::TransactedFile::Block &block) const {
+            return thekogans::util::FastIntHash (block.GetOffset ());
+        }
+    };
+
+} // namespace std
 
 #endif // __thekogans_util_TransactedFile_h

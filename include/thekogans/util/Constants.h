@@ -847,6 +847,16 @@ namespace thekogans {
             return countr_zero (static_cast<T> (~val));
         }
 
+        inline std::size_t FastIntHash  (ui64 x) noexcept {
+            x += 0x9e3779b97f4a7c15ULL;
+            x ^= x >> 30;
+            x *= 0xbf58476d1ce4e5b9ULL;
+            x ^= x >> 27;
+            x *= 0x94d049bb133111ebULL;
+            x ^= x >> 31;
+            return static_cast<std::size_t> (x);
+        }
+
     } // namespace util
 } // namespace thekogans
 

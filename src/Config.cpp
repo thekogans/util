@@ -15,14 +15,10 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include "thekogans/util/Config.h"
 #if defined (THEKOGANS_UTIL_TYPE_Static)
     #include "thekogans/util/DynamicCreatable.h"
 #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-#include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/StringUtils.h"
-#include "thekogans/util/LoggerMgr.h"
-#include "thekogans/util/ConsoleLogger.h"
-#include "thekogans/util/Console.h"
 
 namespace thekogans {
     namespace util {
@@ -38,12 +34,9 @@ namespace thekogans {
                 std::size_t size,
                 char zero) {
             if (data != nullptr && size > 0) {
-                // Cast to a volatile character pointer so every byte write is legally un-optimizable.
-                volatile char *p = static_cast<volatile char *>(const_cast<void *>(data));
-                std::size_t count = size;
-                while (count--) {
-                    *p++ = zero;
-                }
+                using memset_t = void *(*)(void *, int, std::size_t);
+                static volatile memset_t volatile_memset = &std::memset;
+                volatile_memset (const_cast<void *> (data), static_cast<unsigned char> (zero), size);
                 return size;
             }
             return 0;

@@ -26,6 +26,18 @@
 namespace thekogans {
     namespace util {
 
+        TransactedFile::Transaction::Transaction (TransactedFile *file_) :
+                file (file_),
+                guard (file->mutex) {
+            if (THEKOGANS_UTIL_LIKELY (file->phase == PHASE_NONE)) {
+                file->phase = PHASE_IN_PROGRESS;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                    "Nested transactions are not supported.");
+            }
+        }
+
         TransactedFile::Transaction::~Transaction () {
             if (file->phase != PHASE_NONE) {
                 file->phase = PHASE_ABORT;

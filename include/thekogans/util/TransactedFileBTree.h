@@ -631,20 +631,22 @@ namespace thekogans {
                     TransactedFile *file,
                     TransactedFile::AddressType offset);
 
-                virtual void GetAllocatedBlockMap (BlockMap &blockMap) override {
-                    Object::GetAllocatedBlockMap (blockMap);
+                virtual void GetAllocatedBlockMap (
+                        BlockMap &blockMap,
+                        BlockMap *duplicatesMap = nullptr) override {
+                    Object::GetAllocatedBlockMap (blockMap, duplicatesMap);
                     if (btree->header.IsValueIsObject ()) {
                         for (ui32 i = 0; i < count; ++i) {
                             TransactedFile::Object::SharedPtr value = GetValue (i);
                             if (value != nullptr) {
-                                value->GetAllocatedBlockMap (blockMap);
+                                value->GetAllocatedBlockMap (blockMap, duplicatesMap);
                             }
                         }
                     }
                     for (ui32 i = 0; i <= count; ++i) {
                         Node *child = GetChild (i);
                         if (child != nullptr) {
-                            child->GetAllocatedBlockMap (blockMap);
+                            child->GetAllocatedBlockMap (blockMap, duplicatesMap);
                         }
                     }
                 }
@@ -793,11 +795,13 @@ namespace thekogans {
                 TransactedFile *file,
                 TransactedFile::AddressType offset);
 
-            virtual void GetAllocatedBlockMap (BlockMap &blockMap) override {
-                Object::GetAllocatedBlockMap (blockMap);
+            virtual void GetAllocatedBlockMap (
+                    BlockMap &blockMap,
+                    BlockMap *duplicatesMap = nullptr) override {
+                Object::GetAllocatedBlockMap (blockMap, duplicatesMap);
                 if (offset != 0) {
                     assert (root != nullptr);
-                    root->GetAllocatedBlockMap (blockMap);
+                    root->GetAllocatedBlockMap (blockMap, duplicatesMap);
                 }
             }
 

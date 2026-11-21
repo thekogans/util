@@ -27,6 +27,9 @@ struct _LIB_THEKOGANS_UTIL_DECL HeapWalker {
     static constexpr std::size_t ERROR_FREE_COUNT_MISMATCH = 5;
     static constexpr std::size_t ERROR_BLOCK_MISSING_FROM_FREE_LIST = 6;
     static constexpr std::size_t ERROR_ORPHAN_BLOCK = 7;
+    static constexpr std::size_t ERROR_TRUNCATED_BLOCK = 8;
+    static constexpr std::size_t ERROR_DUPLICATE_BLOCK_REFERENCE = 9;
+    static constexpr std::size_t ERROR_DANGLING_BLOCK_REFERENCE = 10;
 
     static constexpr const char * const errorStrings[] = {
         "ERROR_NONE",
@@ -36,7 +39,10 @@ struct _LIB_THEKOGANS_UTIL_DECL HeapWalker {
         "ERROR_FREE_LAST_BLOCK",
         "ERROR_FREE_COUNT_MISMATCH",
         "ERROR_BLOCK_MISSING_FROM_FREE_LIST",
-        "ERROR_ORPHAN_BLOCK"
+        "ERROR_ORPHAN_BLOCK",
+        "ERROR_TRUNCATED_BLOCK",
+        "ERROR_DUPLICATE_BLOCK_REFERENCE",
+        "ERROR_DANGLING_BLOCK_REFERENCE"
     };
 
     using Callback = std::function<bool (const Block &block, std::size_t errorCode)>;
