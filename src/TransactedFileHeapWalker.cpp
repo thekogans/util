@@ -19,6 +19,7 @@
 #include <cstdint>
 #include <cstring>
 #include <vector>
+#include <unordered_set>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/StringUtils.h"
 #include "thekogans/util/TransactedFile.h"
@@ -148,55 +149,78 @@ namespace thekogans {
         void TransactedFile::HeapWalker::CheckForOrphans (
                 TransactedFile *file,
                 Callback callback) {
-            std::vector<Block> allocatedBlocks;
+            std::unordered_set<Block> allocatedBlockSet;
             Block block (file, TransactedFile::Header::BLOCK_OFFSET);
-            // Check block is intact.
             block.Read ();
-            // Block 0 cannot be free.
             if (block.IsFree ()) {
                 if (!callback (block, ERROR_FREE_BLOCK_0)) {
                     return;
                 }
             }
             else {
-                allocatedBlocks.push_back (block);
+                allocatedBlockSet.insert (block);
             }
             while (!block.IsLast ()) {
                 Block next (file);
                 block.Next (next);
                 if (!next.IsFree ()) {
-                    allocatedBlocks.push_back (next);
+                    allocatedBlockSet.insert (next);
                 }
                 block = next;
             }
-            TransactedFile::Object::BlockMap blockMap;
-            TransactedFile::Object::BlockMap duplicatesMap;
-            file->GetHeader ()->GetAllocatedBlockMap (blockMap, &duplicatesMap);
-            // 1. Check for physically allocated blocks that are
-            // unreachable from the root object graph
-            // (orphans/zombies).
-            for (const Block &allocatedBlock : allocatedBlocks) {
-                auto it = blockMap.find (allocatedBlock);
-                if (it == blockMap.end ()) {
+            TransactedFile::Object::BlockMap allocatorBlockMap;
+            TransactedFile::Object::BlockMap referencedBlockMap;
+            file->GetHeader ()->GetBlockMap (allocatorBlockMap, referencedBlockMap);
+            // 1. Validate all non-owning references BEFORE draining allocatorBlockMap.
+            for (const auto &[refBlock, refInfo] : referencedBlockMap) {
+                auto physIt = allocatedBlockSet.find (refBlock);
+                if (physIt == allocatedBlockSet.end ()) {
+                    // Points to a freed/coalesced block.
+                    if (!callback (refBlock, ERROR_DANGLING_WEAK_REFERENCE)) {
+                        return;
+                    }
+                }
+                else if (allocatorBlockMap.find (refBlock) == allocatorBlockMap.end ()) {
+                    // Physically allocated, but has no live owner (points to an orphan!).
+                    if (!callback (refBlock, ERROR_ORPHAN_WEAK_REFERENCE)) {
+                        return;
+                    }
+                }
+                else if (physIt->GetSize () < refInfo.header.size) {
+                    if (!callback (*physIt, ERROR_TRUNCATED_BLOCK)) {
+                        return;
+                    }
+                }
+            }
+            // 2. Validate physically allocated blocks against the single-owner tree.
+            for (const Block &allocatedBlock : allocatedBlockSet) {
+                auto it = allocatorBlockMap.find (allocatedBlock);
+                if (it == allocatorBlockMap.end ()) {
                     if (!callback (allocatedBlock, ERROR_ORPHAN_BLOCK)) {
                         return;
                     }
                 }
                 else {
-                    if (allocatedBlock.GetSize () < it->second.size) {
-                        if (!callback (it->first, ERROR_TRUNCATED_BLOCK)) {
+                    if (it->second.count > 1) {
+                        if (!callback (allocatedBlock, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
                             return;
                         }
                     }
-                    blockMap.erase (it);
+                    if (allocatedBlock.GetSize () < it->second.header.size) {
+                        if (!callback (allocatedBlock, ERROR_TRUNCATED_BLOCK)) {
+                            return;
+                        }
+                    }
+                    allocatorBlockMap.erase (it);
                 }
             }
-            for (const auto &[block, header] : duplicatesMap) {
-                if (!callback (block, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
-                    return;
+            // 3. Report any claimed owned blocks that don't exist in allocatedBlockSet.
+            for (const auto &[block, info] : allocatorBlockMap) {
+                if (info.count > 1) {
+                    if (!callback (block, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
+                        return;
+                    }
                 }
-            }
-            for (const auto &[block, header] : blockMap) {
                 if (!callback (block, ERROR_DANGLING_BLOCK_REFERENCE)) {
                     return;
                 }

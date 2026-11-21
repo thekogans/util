@@ -58,21 +58,6 @@ namespace thekogans {
                 return FSTAT_FUNC (handle, &buf) == 0 ? buf.st_blksize : 0;
             #endif // defined (TOOLCHAIN_OS_Windows)
             }
-
-            struct HandleGuard {
-                THEKOGANS_UTIL_HANDLE handle;
-                bool dismissed = false;
-                ~HandleGuard () {
-                    if (!dismissed && handle != THEKOGANS_UTIL_INVALID_HANDLE_VALUE) {
-                        // If we exit via exception, close the handle immediately
-                    #if defined (TOOLCHAIN_OS_Windows)
-                        ::CloseHandle (handle);
-                    #else
-                        ::close (handle);
-                    #endif
-                    }
-                }
-            };
         }
 
         TransactedFile::TransactedFile (const std::string &path) :
@@ -99,7 +84,6 @@ namespace thekogans {
             fcntl (handle, F_NOCACHE, 1);
         #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
-            HandleGuard guard{handle};
             size = GetSize ();
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Range magicRange (this, 0, UI32_SIZE);
@@ -124,7 +108,6 @@ namespace thekogans {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Expecting Header as the first block in %s", path.c_str ());
             }
-            guard.dismissed = true;
         }
 
         TransactedFile::TransactedFile (
@@ -160,12 +143,10 @@ namespace thekogans {
             fcntl (handle, F_NOCACHE, 1);
         #endif // defined (TOOLCHAIN_OS_OSX)
         #endif // defined (TOOLCHAIN_OS_Windows)
-            HandleGuard guard{handle};
             pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Transaction transaction (this);
             header = Object::Create<Header> (this, 0, secure);
             transaction.Commit ();
-            guard.dismissed = true;
         }
 
         TransactedFile::SharedPtr TransactedFile::Open (const std::string &path) {

@@ -190,10 +190,18 @@ public:
     /// Reload the internal cache from file.
     virtual void Reload ();
 
-    using BlockMap = std::unordered_map<Block, SerializableHeader>;
-    virtual void GetAllocatedBlockMap (
-        BlockMap &blockMap,
-        BlockMap *duplicatesMap = nullptr);
+    struct BlockInfo {
+        SerializableHeader header;
+        std::size_t count{1};
+    };
+    using BlockMap = std::unordered_map<Block, BlockInfo>;
+    virtual void GetBlockMap (
+        BlockMap &allocatedBlockMap,
+        BlockMap &referencedBlockMap) {}
+    static void RecordReference (
+        TransactedFile *file,
+        AddressType offset,
+        BlockMap &blockMap);
 
 protected:
     // TransactedFileTransactionEvents

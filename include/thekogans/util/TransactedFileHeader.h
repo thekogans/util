@@ -76,26 +76,26 @@ public:
         TransactedFile *file,
         TransactedFile::AddressType offset) noexcept override;
 
-    virtual void GetAllocatedBlockMap (
-            BlockMap &blockMap,
-            BlockMap *duplicatesMap = nullptr) override {
-        Object::GetAllocatedBlockMap (blockMap, duplicatesMap);
+    virtual void GetBlockMap (
+            BlockMap &allocatedBlockMap,
+            BlockMap &referencedBlockMap) override {
+        RecordReference (file, offset, allocatedBlockMap);
         {
             Object::SharedPtr object = file->dictionary;
             if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
-                object->GetAllocatedBlockMap (blockMap, duplicatesMap);
+                object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
             }
         }
         {
             Object::SharedPtr object = file->allocator;
             if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
-                object->GetAllocatedBlockMap (blockMap, duplicatesMap);
+                object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
             }
         }
         {
             Object::SharedPtr object = file->registry;
             if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
-                object->GetAllocatedBlockMap (blockMap, duplicatesMap);
+                object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
             }
         }
     }

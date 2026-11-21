@@ -303,14 +303,14 @@ namespace thekogans {
                     TransactedFile *file,
                     TransactedFile::AddressType offset);
 
-                virtual void GetAllocatedBlockMap (
-                        BlockMap &blockMap,
-                        BlockMap *duplicatesMap = nullptr) override {
-                    Object::GetAllocatedBlockMap (blockMap, duplicatesMap);
+                virtual void GetBlockMap (
+                        BlockMap &allocatedBlockMap,
+                        BlockMap &referencedBlockMap) override {
+                    RecordReference (file, offset, allocatedBlockMap);
                     for (ui32 i = 0; i <= count; ++i) {
                         Node *child = GetChild (i);
                         if (child != nullptr) {
-                            child->GetAllocatedBlockMap (blockMap, duplicatesMap);
+                            child->GetBlockMap (allocatedBlockMap, referencedBlockMap);
                         }
                     }
                 }
@@ -455,13 +455,13 @@ namespace thekogans {
                 TransactedFile *file,
                 TransactedFile::AddressType offset);
 
-            virtual void GetAllocatedBlockMap (
-                    BlockMap &blockMap,
-                    BlockMap *duplicatesMap = nullptr) override {
-                Object::GetAllocatedBlockMap (blockMap, duplicatesMap);
+            virtual void GetBlockMap (
+                    BlockMap &allocatedBlockMap,
+                    BlockMap &referencedBlockMap) override {
+                RecordReference (file, offset, allocatedBlockMap);
                 if (offset != 0) {
                     assert (root != nullptr);
-                    root->GetAllocatedBlockMap (blockMap, duplicatesMap);
+                    root->GetBlockMap (allocatedBlockMap, referencedBlockMap);
                 }
             }
 
