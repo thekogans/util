@@ -919,13 +919,13 @@ namespace thekogans {
         public:
             /// \brief
             /// Default \see{Page} alignment.
-            static const std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
+            static constexpr std::size_t DEFAULT_PAGE_ALIGNMENT = 4096;
             /// \brief
             /// Default number of \see{Internal} nodes per \see{SlabAllocatorImpl} page.
-            static const std::size_t DEFAULT_INTERNAL_NODES_PER_PAGE = 16;
+            static constexpr std::size_t DEFAULT_INTERNAL_NODES_PER_PAGE = 16;
             /// \brief
             /// Default number of \see{Segment} nodes per \see{SlabAllocatorImpl} page.
-            static const std::size_t DEFAULT_SEGMENT_NODES_PER_PAGE = 8;
+            static constexpr std::size_t DEFAULT_SEGMENT_NODES_PER_PAGE = 8;
 
             /// \brief
             /// ctor.
@@ -950,14 +950,14 @@ namespace thekogans {
                     bitsPerPage (bitsPerPage_),
                     maxOffset (
                         bitsPerAddress == BitWidth<AddressType>::value ?
-                            ~(AddressType)0 : (((AddressType)1 << bitsPerAddress) - 1)),
+                            ~static_cast<AddressType> (0) : ((static_cast<AddressType> (1) << bitsPerAddress) - 1)),
                     nodesPerInternal (1 << bitsPerLevel),
                     pagesPerSegment (1 << (bitsPerSegment - bitsPerPage)),
-                    segmentMask (((AddressType)1 << bitsPerSegment) - 1),
+                    segmentMask ((static_cast<AddressType> (1) << bitsPerSegment) - 1),
                     pageSize (1 << bitsPerPage),
                     pageMask (pageSize - 1),
                     levelShift (bitsPerAddress - bitsPerLevel),
-                    levelMask ((((AddressType)1 << bitsPerLevel) - 1) << levelShift),
+                    levelMask (((static_cast<AddressType> (1) << bitsPerLevel) - 1) << levelShift),
                     internalAllocator (Internal::Size (nodesPerInternal), internalNodesPerPage, internalNodesPerPage / 4),
                     segmentAllocator (Segment::Size (pagesPerSegment), segmentNodesPerPage, segmentNodesPerPage / 4),
                     pageAllocator (pageAlignment, allocator) {
@@ -1013,8 +1013,53 @@ namespace thekogans {
             typename Page::SharedPtr GetPage (
                     AddressType offset,
                     PageSource *pageSource) {
+                // Quick bounds check.
+                if (THEKOGANS_UTIL_UNLIKELY (offset > maxOffset)) {
+                    return nullptr;
+                }
+                offset &= ~pageMask;
                 LockGuard<Lock> guard (lock);
-                return GetPageHelper (offset, pageSource);
+                Page *page = LookupCachedPage (offset);
+                if (page == nullptr) {
+                    Node *node = GetRoot ();
+                    // This is the address dissassembly engine used to
+                    // break up the addresses (offset) in service of a
+                    // virtual tree walk.
+                    // Begging the compiler to put these in to registers.
+                    std::size_t levelShift_ = levelShift;
+                    AddressType levelMask_ = levelMask;
+                    // We begin the tree walk with the root node and take a
+                    // bite off the levels portion of the address at every loop
+                    // step, as we step internal structure nodes on our way
+                    // to visit the final segment node that will have our page.
+                    // NOTE: This algorithm is sensitive to the corner case
+                    // where one segment covers the entire address space. In
+                    // that case GetRoot above will return that segment and
+                    // this while loop will not be executed.
+                    while (levelMask_ != 0) {
+                        std::size_t index = (offset & levelMask_) >> levelShift_;
+                        levelShift_ -= bitsPerLevel;
+                        levelMask_ >>= bitsPerLevel;
+                        node = (static_cast<Internal *> (node))->GetChild (index,
+                            [levelMask_] (PageMap &pageMap, std::size_t index) -> Node * {
+                                return levelMask_ == 0 ?
+                                    Segment::Alloc (pageMap, index) :
+                                    Internal::Alloc (pageMap, index);
+                            });
+                    }
+                    // Since tree leafs are segments, ask the one we got for the
+                    // page correponding to the given address.
+                    // Cache the result so that we can reuse it if the next
+                    // call to GetPage is sufficiently close to this one
+                    // (locality of reference).
+                    std::size_t index = (offset & segmentMask) >> bitsPerPage;
+                    pageCache[(offset >> bitsPerPage) & PAGE_CACHE_MASK] = page = static_cast<Page *> (
+                        static_cast<Segment *> (node)->GetChild (index,
+                            [offset, pageSource] (PageMap &pageMap, std::size_t index) -> Node * {
+                                return Page::Alloc (pageMap, index, offset, pageSource);
+                            }));
+                }
+                return page;
             }
 
             /// \Brief
@@ -1163,62 +1208,6 @@ namespace thekogans {
             inline Page *LookupCachedPage (AddressType offset) const noexcept {
                 Page *page = pageCache[(offset >> bitsPerPage) & PAGE_CACHE_MASK];
                 return (page != nullptr && page->offset == offset) ? page : nullptr;
-            }
-            /// \brief
-            /// Return the \see{Page} that contains the given offset.
-            /// \param[in] offset Offset whose page to return.
-            /// \param[in] pageSource Optional \see{PageSource}
-            /// where \see{Page} bits come from.
-            /// \return \see{Page} that contains the given offset.
-            typename Page::SharedPtr GetPageHelper (
-                    AddressType offset,
-                    PageSource *pageSource) {
-                // Quick bounds check.
-                if (THEKOGANS_UTIL_UNLIKELY (offset > maxOffset)) {
-                    return nullptr;
-                }
-                offset &= ~pageMask;
-                Page *page = LookupCachedPage (offset);
-                if (page == nullptr) {
-                    Node *node = GetRoot ();
-                    // This is the address dissassembly engine used to
-                    // break up the addresses (offset) in service of a
-                    // virtual tree walk.
-                    // Begging the compiler to put these in to registers.
-                    std::size_t levelShift_ = levelShift;
-                    AddressType levelMask_ = levelMask;
-                    // We begin the tree walk with the root node and take a
-                    // bite off the levels portion of the address at every loop
-                    // step, as we step internal structure nodes on our way
-                    // to visit the final segment node that will have our page.
-                    // NOTE: This algorithm is sensitive to the corner case
-                    // where one segment covers the entire address space. In
-                    // that case GetRoot above will return that segment and
-                    // this while loop will not be executed.
-                    while (levelMask_ != 0) {
-                        std::size_t index = (offset & levelMask_) >> levelShift_;
-                        levelShift_ -= bitsPerLevel;
-                        levelMask_ >>= bitsPerLevel;
-                        node = (static_cast<Internal *> (node))->GetChild (index,
-                            [levelMask_] (PageMap &pageMap, std::size_t index) -> Node * {
-                                return levelMask_ == 0 ?
-                                    Segment::Alloc (pageMap, index) :
-                                    Internal::Alloc (pageMap, index);
-                            });
-                    }
-                    // Since tree leafs are segments, ask the one we got for the
-                    // page correponding to the given address.
-                    // Cache the result so that we can reuse it if the next
-                    // call to GetPage is sufficiently close to this one
-                    // (locality of reference).
-                    std::size_t index = (offset & segmentMask) >> bitsPerPage;
-                    pageCache[(offset >> bitsPerPage) & PAGE_CACHE_MASK] = page = static_cast<Page *> (
-                        static_cast<Segment *> (node)->GetChild (index,
-                            [offset, pageSource] (PageMap &pageMap, std::size_t index) -> Node * {
-                                return Page::Alloc (pageMap, index, offset, pageSource);
-                            }));
-                }
-                return page;
             }
 
             /// \brief

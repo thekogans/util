@@ -260,8 +260,8 @@ namespace thekogans {
                 util::Serializer &serializer,
                 Root::SharedPtr &root) {
             std::string path;
-            util::TransactedFile::AddressSpaceType::AddressType pathBTreeOffset;
-            util::TransactedFile::AddressSpaceType::AddressType componentBTreeOffset;
+            util::TransactedFile::AddressType pathBTreeOffset;
+            util::TransactedFile::AddressType componentBTreeOffset;
             bool active;
             serializer >> path >> pathBTreeOffset >> componentBTreeOffset >> active;
             root.Reset (new Root (path, pathBTreeOffset, componentBTreeOffset, active));

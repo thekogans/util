@@ -75,8 +75,8 @@ namespace thekogans {
         public:
             Root (
                 std::string path_ = std::string (),
-                util::TransactedFile::AddressSpaceType::AddressType pathBTreeOffset = 0,
-                util::TransactedFile::AddressSpaceType::AddressType componentBTreeOffset = 0,
+                util::TransactedFile::AddressType pathBTreeOffset = 0,
+                util::TransactedFile::AddressType componentBTreeOffset = 0,
                 bool active_ = true) :
                 path (path_),
                 pathBTree (
@@ -107,8 +107,8 @@ namespace thekogans {
             inline std::size_t Size () const {
                 return
                     util::Serializer::Size (path) +
-                    util::TransactedFile::AddressSpaceType::AddressTypeSize +
-                    util::TransactedFile::AddressSpaceType::AddressTypeSize +
+                    util::TransactedFile::AddressTypeSize +
+                    util::TransactedFile::AddressTypeSize +
                     util::Serializer::Size (active);
             }
 

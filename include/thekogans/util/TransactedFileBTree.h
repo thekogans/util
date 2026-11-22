@@ -675,8 +675,8 @@ namespace thekogans {
             /// for your needs. Once the heap is created though, this
             /// value is set in stone and the only way to change it is
             /// to delete the file and try again.
-            static const std::size_t DEFAULT_ENTRIES_PER_NODE = 256;
-            static const std::size_t DEFAULT_NODES_PER_PAGE = 16;
+            static constexpr std::size_t DEFAULT_ENTRIES_PER_NODE = 256;
+            static constexpr std::size_t DEFAULT_NODES_PER_PAGE = 16;
 
             /// \brief
             /// ctor.

@@ -33,6 +33,7 @@ namespace thekogans {
                 range >> flags >> size;
             }
             else {
+                THEKOGANS_UTIL_DEBUG_BREAK
                 throw Exception (
                     header ? Exception::CORRUPT_HEADER : Exception::CORRUPT_FOOTER,
                     FormatString (
