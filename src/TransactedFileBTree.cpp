@@ -484,9 +484,9 @@ namespace thekogans {
         //           /      \                /     \
         //         C0        C1            C2       C3
         void TransactedFileBTree::Node::RotateRight (
-            ui32 index,
-            Node *left,
-            Node *right) {
+                ui32 index,
+                Node *left,
+                Node *right) {
             // 1. Demote separator entries[index] into right[0] with right's old left child.
             Entry demoted = entries[index];
             demoted.rightOffset = right->leftOffset;
@@ -525,9 +525,9 @@ namespace thekogans {
         //            /     \                 /      \
         //          C0       C1             C2        C3
         void TransactedFileBTree::Node::RotateLeft (
-            ui32 index,
-            Node *left,
-            Node *right) {
+                ui32 index,
+                Node *left,
+                Node *right) {
             // 1. Demote separator entries[index] to end of left with right's old left child.
             Entry demoted = entries[index];
             demoted.rightOffset = right->leftOffset;
@@ -566,9 +566,9 @@ namespace thekogans {
         //             /     |     \
         //           C0     C1     C2
         void TransactedFileBTree::Node::Merge (
-            ui32 index,
-            Node *left,
-            Node *right) {
+                ui32 index,
+                Node *left,
+                Node *right) {
             assert (left->count + right->count < btree->header.entriesPerNode);
             Entry separator = entries[index];
             RemoveEntry (index);
@@ -583,8 +583,8 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::SetLeft (
-            Node *child,
-            TransactedFile::AddressType offset) {
+                Node *child,
+                TransactedFile::AddressType offset) {
             if (left != nullptr) {
                 left->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
             }
@@ -664,7 +664,11 @@ namespace thekogans {
         }
 
         void TransactedFileBTree::Node::Reset () {
+            Node *l = left;
             SetLeft (nullptr, 0);
+            if (l != nullptr) {
+                l->Release ();
+            }
             for (ui32 i = 0; i < count; ++i) {
                 entries[i].Reset (this, btree->header.IsValueIsObject ());
             }

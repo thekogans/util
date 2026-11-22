@@ -178,7 +178,12 @@ namespace thekogans {
             /// \brief
             /// ctor. Used by Open.x
             /// \param[in] path File path.
-            TransactedFile (const std::string &path);
+            TransactedFile (
+                const std::string &path,
+                std::size_t bitsPerSegment,
+                std::size_t bitsPerLevel,
+                std::size_t bitsPerPage,
+                std::size_t bitsPerAddress);
             /// \brief
             /// ctor. Used by Create.
             /// \param[in] endianness File endianness.
@@ -195,14 +200,23 @@ namespace thekogans {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary_,
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_,
-                bool forceTruncate);
+                bool forceTruncate,
+                std::size_t bitsPerSegment,
+                std::size_t bitsPerLevel,
+                std::size_t bitsPerPage,
+                std::size_t bitsPerAddress);
 
         public:
             /// \brief
             /// Open the file.
             /// \param[in] path Path to file to open.
             /// \return Open file pointer.
-            static SharedPtr Open (const std::string &path);
+            static SharedPtr Open (
+                const std::string &path,
+                std::size_t bitsPerSegment = 32,
+                std::size_t bitsPerLevel = 8,
+                std::size_t bitsPerPage = 20,
+                std::size_t bitsPerAddress = BitWidth<AddressType>::value);
             /// \brief
             /// Create the file.
             /// \param[in] endianness File endianness.
@@ -218,7 +232,11 @@ namespace thekogans {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary,
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry,
-                bool overwrite = false);
+                bool overwrite = false,
+                std::size_t bitsPerSegment = 32,
+                std::size_t bitsPerLevel = 8,
+                std::size_t bitsPerPage = 20,
+                std::size_t bitsPerAddress = BitWidth<AddressType>::value);
 
             /// \brief
             /// Return the file path.
@@ -236,6 +254,13 @@ namespace thekogans {
             }
 
             /// \brief
+            /// Return the maximum address space offset.
+            /// \return maxOffset.
+            inline AddressType GetMaxOffset () const {
+                return PageMap64::GetMaxOffset ();
+            }
+
+            /// \brief
             /// Return page size.
             /// \return pageMap->GetPageSize ().
             inline std::size_t GetPageSize () const {
@@ -248,6 +273,10 @@ namespace thekogans {
                 return PageMap64::GetPageMask ();
             }
 
+            inline void ClearPageCache () {
+                PageMap64::Clear (false);
+            }
+
             /// \brief
             /// Return true if secure.
             /// \return true == secure.
@@ -255,9 +284,6 @@ namespace thekogans {
                 return header->IsSecure ();
             }
 
-            Header::SharedPtr GetHeader () const {
-                return header;
-            }
             virtual DynamicCreatable::TypeDictionary::SharedPtr GetTypeDictionary () const override {
                 return dictionary;
             }
@@ -279,6 +305,12 @@ namespace thekogans {
             }
             inline bool CheckCanMutate () const {
                 return phase == Transaction::PHASE_IN_PROGRESS || phase == Transaction::PHASE_ALLOC;
+            }
+
+            inline void GetBlockMap (
+                    Object::BlockMap &allocatedBlockMap,
+                    Object::BlockMap &referencedBlockMap) {
+                header->GetBlockMap (allocatedBlockMap, referencedBlockMap);
             }
 
             /// \brief

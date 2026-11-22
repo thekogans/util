@@ -242,7 +242,7 @@ namespace thekogans {
                     child->Remove (leaf->entries[0].key);
                     SetDirty ();
                     if (child->IsPoor ()) {
-                        RestoreBalance (index);
+                        RestoreBalance (index + 1);
                     }
                 }
                 else {

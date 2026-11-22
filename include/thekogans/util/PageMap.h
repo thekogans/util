@@ -66,6 +66,29 @@ namespace thekogans {
         /// Ex:
         ///
         /// AddressType = ui32
+        /// bitsPerAddress = 22
+        /// bitsPerSegment = 16
+        /// bitsPerLevel = 6
+        /// bitsPerPage = 16
+        ///
+        /// msb                                                   lsb
+        /// |------------------- bitsPerAddress -------------------|
+        /// |----------------+----------- bitsPerSegmen -----------|
+        /// +----------------+-------------------------------------+
+        /// |                |------------ bitsPerPage ------------|
+        /// +----------------+-------------------------------------+
+        /// 21               15                                    0
+        ///
+        /// levelCount = (bitsPerAddress - bitsPerSegment) / bitsPerLevel; (22 - 16) / 6 = 1
+        /// pageSize = 1 << bitsPerPage; 1 << 16 = 64KB
+        /// pagesPerSegment = 1 << (bitsPerSegment - bitsPerPage); 1 << (16 - 16) = 1
+        ///
+        /// This will cover the entire 22 bit address space with 64 64K segments,
+        /// containing 1 64KB pages.
+        ///
+        /// Ex:
+        ///
+        /// AddressType = ui32
         /// bitsPerAddress = 32
         /// bitsPerSegment = 32
         /// bitsPerLevel = 0
@@ -191,11 +214,9 @@ namespace thekogans {
         /// =========================================================================================
         ///
         /// \tparam T The type that will represent addresses.
-        /// \tparam bitsPerAddress Narrow the address space to this many bits (default as wide as T).
         /// \tparam Lock Any of the standard locks to use for synchronization.
         template<
             typename T,
-            std::size_t bitsPerAddress = BitWidth<T>::value,
             typename Lock = SpinLock>
         struct PageMap : public virtual RefCounted {
             /// \brief
@@ -278,6 +299,9 @@ namespace thekogans {
             /// \brief
             /// \see{Page} size in bits.
             const std::size_t bitsPerPage;
+            /// \brief
+            /// Narrow the address space down to this many bits.
+            const std::size_t bitsPerAddress;
             /// \brief
             /// This is the very last valid address space offset (before it overflows).
             const AddressType maxOffset;
@@ -786,7 +810,7 @@ namespace thekogans {
                         childList.erase (child);
                         Page *page = dynamic_cast<Page *> (child);
                         if (page != nullptr) {
-                            std::size_t slot = (page->offset >> this->pageMap.bitsPerPage) & PAGE_CACHE_MASK;
+                            std::size_t slot = this->pageMap.GetCacheSlot (page->offset);
                             if (this->pageMap.pageCache[slot] == page) {
                                 this->pageMap.pageCache[slot] = nullptr;
                             }
@@ -932,6 +956,7 @@ namespace thekogans {
             /// \param[in] bitsPerSegment_ How many address bits represent a segment.
             /// \param[in] bitsPerLevel_ How many address bits represent a level.
             /// \param[in] bitsPerPage_ How many address bits represent a page.
+            /// \param[in] bitsPerAddress Narrow the address space to this many bits (default as wide as T).
             /// \param[in] pageAlignment Page alignment. Certain uses of PageMap (file buffering)
             /// require aligned pages to perform direct I/O (bypassing OS buffering).
             /// \param[in] internalNodesPerPage Number of \see{Internal} nodes per \see{SlabAllocatorImpl} page.
@@ -941,6 +966,7 @@ namespace thekogans {
                     std::size_t bitsPerSegment_,
                     std::size_t bitsPerLevel_,
                     std::size_t bitsPerPage_,
+                    std::size_t bitsPerAddress_ = BitWidth<T>::value,
                     std::size_t pageAlignment = DEFAULT_PAGE_ALIGNMENT,
                     std::size_t internalNodesPerPage = DEFAULT_INTERNAL_NODES_PER_PAGE,
                     std::size_t segmentNodesPerPage = DEFAULT_SEGMENT_NODES_PER_PAGE,
@@ -948,6 +974,7 @@ namespace thekogans {
                     bitsPerSegment (bitsPerSegment_),
                     bitsPerLevel (bitsPerLevel_),
                     bitsPerPage (bitsPerPage_),
+                    bitsPerAddress (bitsPerAddress_),
                     maxOffset (
                         bitsPerAddress == BitWidth<AddressType>::value ?
                             ~static_cast<AddressType> (0) : ((static_cast<AddressType> (1) << bitsPerAddress) - 1)),
@@ -1053,7 +1080,7 @@ namespace thekogans {
                     // call to GetPage is sufficiently close to this one
                     // (locality of reference).
                     std::size_t index = (offset & segmentMask) >> bitsPerPage;
-                    pageCache[(offset >> bitsPerPage) & PAGE_CACHE_MASK] = page = static_cast<Page *> (
+                    pageCache[GetCacheSlot (offset)] = page = static_cast<Page *> (
                         static_cast<Segment *> (node)->GetChild (index,
                             [offset, pageSource] (PageMap &pageMap, std::size_t index) -> Node * {
                                 return Page::Alloc (pageMap, index, offset, pageSource);
@@ -1201,12 +1228,15 @@ namespace thekogans {
             }
 
         private:
+            inline std::size_t GetCacheSlot (AddressType offset) const noexcept {
+                return (offset >> bitsPerPage) & PAGE_CACHE_MASK;
+            }
             /// \brief
             /// Given a page offset (offset & ~pageMask), look up the corresponding page is in the cache.
             /// \param[in] offset A page offset to look up.
             /// \return The corresponding page, nullptr if not in the cache.
             inline Page *LookupCachedPage (AddressType offset) const noexcept {
-                Page *page = pageCache[(offset >> bitsPerPage) & PAGE_CACHE_MASK];
+                Page *page = pageCache[GetCacheSlot (offset)];
                 return (page != nullptr && page->offset == offset) ? page : nullptr;
             }
 

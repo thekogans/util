@@ -124,14 +124,16 @@ protected:
         void Read (
             TransactedFile *file,
             AddressType offset,
-            bool header);
+            bool header,
+            ui32 expectedMagic = MAGIC32);
         /// \brief
         /// Write the header to the disk.
         /// \param[in] file TransactedFile to write to.
         /// \param[in] offset Offset where the header begins.
         void Write (
             TransactedFile *file,
-            AddressType offset) const;
+            AddressType offset,
+            ui32 magic = MAGIC32) const;
     } header;
 
 public:
@@ -295,23 +297,27 @@ public:
     /// \param[out] prev Where to put the previous block.
     /// \return true == prev contains previous block.
     /// false == we're the first block.
-    bool Prev (Block &prev) const;
+    bool Prev (
+        Block &prev,
+        ui32 expectedMagic = MAGIC32) const;
     /// \brief
     /// If not last, return the block right after this one.
     /// \param[out] next Where to put the next block.
     /// \return true == next contains the next block.
     /// false == we're the last block.
-    bool Next (Block &next) const;
+    bool Next (
+        Block &next,
+        ui32 expectedMagic = MAGIC32) const;
 
     /// \brief
     /// Read the block.
-    void Read ();
+    void Read (ui32 expectedMagic = MAGIC32);
     /// \brief
     /// Write the block.
-    void Write () const;
+    void Write (ui32 magic = MAGIC32) const;
     /// \brief
     /// Zero out the block (both header and footer).
-    void Clear () const;
+    void Clear (char zero = 0) const;
 
     /// \brief
     /// Needs access to \see{Header}.

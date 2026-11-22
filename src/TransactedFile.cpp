@@ -60,7 +60,12 @@ namespace thekogans {
             }
         }
 
-        TransactedFile::TransactedFile (const std::string &path) :
+        TransactedFile::TransactedFile (
+                const std::string &path,
+                std::size_t bitsPerSegment,
+                std::size_t bitsPerLevel,
+                std::size_t bitsPerPage,
+                std::size_t bitsPerAddress) :
             #if defined (TOOLCHAIN_OS_Windows)
                 File (
                     HostEndian,
@@ -74,7 +79,12 @@ namespace thekogans {
             #elif defined (TOOLCHAIN_OS_OSX)
                 File (HostEndian, path, O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH),
             #endif // defined (TOOLCHAIN_OS_Windows)
-                PageMap64 (32, 8, 20, GetPhysicalSectorSize (handle)),
+                PageMap64 (
+                    bitsPerSegment,
+                    bitsPerLevel,
+                    bitsPerPage,
+                    bitsPerAddress,
+                    GetPhysicalSectorSize (handle)),
                 size (GetSize ()),
                 // TransactedFileTypeDictionary implements an internal system
                 // dictionary to allow us to bootstrap the header.
@@ -115,7 +125,11 @@ namespace thekogans {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary_,
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_,
-                bool forceTruncate) :
+                bool forceTruncate,
+                std::size_t bitsPerSegment,
+                std::size_t bitsPerLevel,
+                std::size_t bitsPerPage,
+                std::size_t bitsPerAddress) :
             #if defined (TOOLCHAIN_OS_Windows)
                 File (
                     endianness,
@@ -137,7 +151,12 @@ namespace thekogans {
                     O_RDWR | O_CREAT | (forceTruncate ? O_TRUNC : O_EXCL),
                     S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH),
             #endif // defined (TOOLCHAIN_OS_Windows)
-                PageMap64 (32, 8, 20, GetPhysicalSectorSize (handle)),
+                PageMap64 (
+                    bitsPerSegment,
+                    bitsPerLevel,
+                    bitsPerPage,
+                    bitsPerAddress,
+                    GetPhysicalSectorSize (handle)),
                 dictionary (dictionary_),
                 allocator (allocator_),
                 registry (registry_) {
@@ -149,10 +168,16 @@ namespace thekogans {
             transaction.Commit ();
         }
 
-        TransactedFile::SharedPtr TransactedFile::Open (const std::string &path) {
+        TransactedFile::SharedPtr TransactedFile::Open (
+                const std::string &path,
+                std::size_t bitsPerSegment,
+                std::size_t bitsPerLevel,
+                std::size_t bitsPerPage,
+                std::size_t bitsPerAddress) {
             if (Path (path).Exists ()) {
                 Transaction::CommitLog (path);
-                return SharedPtr (new TransactedFile (path));
+                return SharedPtr (
+                    new TransactedFile (path, bitsPerSegment, bitsPerLevel, bitsPerPage, bitsPerAddress));
             }
             return nullptr;
         }
@@ -164,14 +189,32 @@ namespace thekogans {
                 DynamicCreatable::TypeDictionary::SharedPtr dictionary,
                 Allocator::SharedPtr allocator,
                 Registry::SharedPtr registry,
-                bool overwrite) {
+                bool overwrite,
+                std::size_t bitsPerSegment,
+                std::size_t bitsPerLevel,
+                std::size_t bitsPerPage,
+                std::size_t bitsPerAddress) {
             bool exists = Path (path).Exists ();
             if (exists && !overwrite) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION ("%s exists.", path.c_str ());
             }
+            std::string logPath = Transaction::GetLogPath (path);
+            if (Path (logPath).Exists ()) {
+                File::Delete (logPath);
+            }
             return SharedPtr (
                 new TransactedFile (
-                    endianness, path, secure, dictionary, allocator, registry, exists && overwrite));
+                    endianness,
+                    path,
+                    secure,
+                    dictionary,
+                    allocator,
+                    registry,
+                    exists && overwrite,
+                    bitsPerSegment,
+                    bitsPerLevel,
+                    bitsPerPage,
+                    bitsPerAddress));
         }
 
         TransactedFile::AddressType TransactedFile::Grow (SizeType amount) {

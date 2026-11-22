@@ -444,8 +444,7 @@ namespace thekogans {
                     std::ostringstream &stream,
                     const ui8 *ptr,
                     std::size_t columns) {
-                for (const ui8 *begin = ptr,
-                        *end = ptr + columns; begin != end; ++begin) {
+                for (const ui8 *begin = ptr, *end = ptr + columns; begin != end; ++begin) {
                     const char ch[2] = {
                         isprint (*begin) ? (char)*begin : (char)'.', (char)'\0'
                     };
@@ -459,22 +458,24 @@ namespace thekogans {
                 const void *buffer,
                 std::size_t length,
                 bool upperCase) {
-            if (buffer != nullptr && length > 0) {
+            if (buffer != nullptr) {
                 std::ostringstream stream;
-                const ui8 *ptr = (const ui8 *)buffer;
-                const std::size_t charsPerRow = 16;
-                std::size_t rows = length / charsPerRow;
-                const char *hexTable = upperCase ? hexTableUpper : hexTableLower;
-                for (std::size_t i = 0; i < rows; ++i) {
-                    HexFormatRow (stream, ptr, charsPerRow, hexTable);
-                    ASCIIFormatRow (stream, ptr, charsPerRow);
-                    ptr += charsPerRow;
-                }
-                std::size_t remainder = length % charsPerRow;
-                if (remainder > 0) {
-                    HexFormatRow (stream, ptr, remainder, hexTable);
-                    stream << std::string ((charsPerRow - remainder) * 3, ' ');
-                    ASCIIFormatRow (stream, ptr, remainder);
+                if (length > 0) {
+                    const ui8 *ptr = (const ui8 *)buffer;
+                    const std::size_t charsPerRow = 16;
+                    std::size_t rows = length / charsPerRow;
+                    const char *hexTable = upperCase ? hexTableUpper : hexTableLower;
+                    for (std::size_t i = 0; i < rows; ++i) {
+                        HexFormatRow (stream, ptr, charsPerRow, hexTable);
+                        ASCIIFormatRow (stream, ptr, charsPerRow);
+                        ptr += charsPerRow;
+                    }
+                    std::size_t remainder = length % charsPerRow;
+                    if (remainder > 0) {
+                        HexFormatRow (stream, ptr, remainder, hexTable);
+                        stream << std::string ((charsPerRow - remainder) * 3, ' ');
+                        ASCIIFormatRow (stream, ptr, remainder);
+                    }
                 }
                 return stream.str ();
             }

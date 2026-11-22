@@ -28,6 +28,62 @@ namespace thekogans {
     namespace util {
 
         namespace {
+            bool has_non_fill_byte (
+                    const std::uint8_t *begin,
+                    const std::uint8_t *end,
+                    ui8 fill = 0) noexcept {
+                const auto *p = begin;
+                // Fast path for tiny blocks (e.g., 32 bytes)
+                if (end - p < 64) {
+                    while (p < end) {
+                        if (*p != fill) {
+                            return true;
+                        }
+                        ++p;
+                    }
+                    return false;
+                }
+                // 1. Align to 8-byte boundary
+                while ((reinterpret_cast<std::uintptr_t> (p) & 7u) != 0) {
+                    if (*p != fill) {
+                        return true;
+                    }
+                    ++p;
+                }
+                // Broadcast fill byte across all 8 lanes of a 64-bit word
+                const ui64 pattern = 0x0101010101010101ULL * fill;
+                // 2. Unrolled 32-byte (4 x uint64_t) scan
+                while (end - p >= 32) {
+                    ui64 w0, w1, w2, w3;
+                    std::memcpy (&w0, p, 8);
+                    std::memcpy (&w1, p + 8, 8);
+                    std::memcpy (&w2, p + 16, 8);
+                    std::memcpy (&w3, p + 24, 8);
+
+                    if (((w0 ^ pattern) | (w1 ^ pattern) | (w2 ^ pattern) | (w3 ^ pattern)) != 0) {
+                        return true;
+                    }
+                    p += 32;
+                }
+                // 3. Remaining 8-byte words
+                while (end - p >= 8) {
+                    ui64 w;
+                    std::memcpy (&w, p, 8);
+                    if ((w ^ pattern) != 0) {
+                        return true;
+                    }
+                    p += 8;
+                }
+                // 4. Final 0..7 tail bytes
+                while (p < end) {
+                    if (*p != fill) {
+                        return true;
+                    }
+                    ++p;
+                }
+                return false;
+            }
+
             bool has_non_zero (
                     const ui8 *begin,
                     const ui8 *end) noexcept {
@@ -107,7 +163,9 @@ namespace thekogans {
                     if (file->IsSecure ()) {
                         Range range (file, next.GetOffset (), next.GetSize ());
                         // Garbage in the payload of a secure heap.
-                        if (has_non_zero (range.GetDataPtr (), range.GetDataPtr () + range.GetDataAvailable ()) &&
+                        if (has_non_fill_byte (range.GetDataPtr (),
+                                range.GetDataPtr () + range.GetDataAvailable (),
+                                TransactedFile::Allocator::FREE_POISON) &&
                                 !callback (next, ERROR_GARBAGE_IN_PAYLOAD)) {
                             return;
                         }
@@ -170,7 +228,7 @@ namespace thekogans {
             }
             TransactedFile::Object::BlockMap allocatorBlockMap;
             TransactedFile::Object::BlockMap referencedBlockMap;
-            file->GetHeader ()->GetBlockMap (allocatorBlockMap, referencedBlockMap);
+            file->GetBlockMap (allocatorBlockMap, referencedBlockMap);
             // 1. Validate all non-owning references BEFORE draining allocatorBlockMap.
             for (const auto &[refBlock, refInfo] : referencedBlockMap) {
                 auto physIt = allocatedBlockSet.find (refBlock);

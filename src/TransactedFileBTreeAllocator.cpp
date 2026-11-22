@@ -156,7 +156,7 @@ namespace thekogans {
                         Insert ({prev.GetSize (), prev.GetOffset ()});
                         if (file->IsSecure ()) {
                             TransactedFile::Range range (file, prev.GetOffset (), prev.GetSize (), false);
-                            range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                            range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), ALLOC_POISON), SEEK_CUR);
                         }
                     }
                     // Otherwise, we fit in the ramainder. Check if what will remain
@@ -174,7 +174,7 @@ namespace thekogans {
                     // but we can't take a chance and do it ourselves.
                     if (file->IsSecure ()) {
                         TransactedFile::Range range (file, offset, size, false);
-                        range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                        range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), ALLOC_POISON), SEEK_CUR);
                     }
                 }
                 // By now we got our block by either reusing a free one or growing the file.
@@ -247,7 +247,7 @@ namespace thekogans {
                                 if (file->IsSecure ()) {
                                     TransactedFile::Range range (file,
                                         block.GetOffset () + block.GetSize (), TransactedFile::Block::SIZE, false);
-                                    range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                                    range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), REALLOC_POISON), SEEK_CUR);
                                 }
                                 if (available - size >= TransactedFile::MIN_BLOCK_SIZE) {
                                     next.SetOffset (block.GetOffset () + size + TransactedFile::Block::SIZE);
@@ -292,7 +292,7 @@ namespace thekogans {
                             if (file->IsSecure ()) {
                                 TransactedFile::Range range (file,
                                     block.GetOffset () + block.GetSize () + TransactedFile::Block::HEADER_SIZE, remainder, false);
-                                range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                                range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), REALLOC_POISON), SEEK_CUR);
                             }
                             file->Shrink (remainder);
                         }
@@ -310,7 +310,7 @@ namespace thekogans {
                             if (file->IsSecure ()) {
                                 TransactedFile::Range range (file, next.GetOffset (), next.GetSize (), false);
                                 range.Seek (
-                                    SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                                    SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), REALLOC_POISON), SEEK_CUR);
                             }
                             block.SetSize (size);
                             block.Write ();
@@ -392,14 +392,14 @@ namespace thekogans {
                         }
                         TransactedFile::Range range (file, clearOffset, clearLength, false);
                         range.Seek (
-                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), FREE_POISON), SEEK_CUR);
                     }
                     // If we're not the last block...
                     if (THEKOGANS_UTIL_LIKELY (!block.IsLast ())) {
-                        // ...add it to the free list.
-                        Insert ({block.GetSize (), block.GetOffset ()});
                         block.SetFree (true);
                         block.Write ();
+                        // ...add it to the free list.
+                        Insert ({block.GetSize (), block.GetOffset ()});
                     }
                     else {
                         // If we are, truncate the heap.

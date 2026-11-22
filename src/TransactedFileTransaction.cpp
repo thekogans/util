@@ -148,7 +148,7 @@ namespace thekogans {
                 // At this point the log is commited and closed.
                 // If we can't complete the commit (exception),
                 // next time Open (above) will use CommitLog
-                // before opening the file->
+                // before opening the file.
                 file->PageMap64::Flush (*file, clearCache);
                 file->SetSize (file->size);
                 file->File::Flush ();

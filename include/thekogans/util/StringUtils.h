@@ -51,6 +51,9 @@ namespace thekogans {
         /// \brief
         /// ui64 format string.
         #define THEKOGANS_UTIL_UI64_FORMAT "%I64u"
+        /// \brief
+        /// ui64 hex format string.
+        #define THEKOGANS_UTIL_UI64_HEX_FORMAT "%I64x"
     #else // defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// i32 format string.
@@ -64,6 +67,9 @@ namespace thekogans {
         /// \brief
         /// ui64 format string.
         #define THEKOGANS_UTIL_UI64_FORMAT "%" PRIu64
+        /// \brief
+        /// ui64 hex format string.
+        #define THEKOGANS_UTIL_UI64_HEX_FORMAT "%" PRIx64
     #endif // defined (TOOLCHAIN_OS_Windows)
         /// \brief
         /// f32 format string.

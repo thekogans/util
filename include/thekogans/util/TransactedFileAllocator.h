@@ -23,6 +23,16 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
     /// Allocator is a \see{util::DynamicCreatable} abstract base.
     THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (Allocator)
 
+#if defined (THEKOGANS_UTIL_CONFIG_Debug)
+    static constexpr ui8 ALLOC_POISON = 0xCD;
+    static constexpr ui8 REALLOC_POISON = 0xCE;
+    static constexpr ui8 FREE_POISON = 0xDD;
+#else // defined (THEKOGANS_UTIL_CONFIG_Debug)
+    static constexpr ui8 ALLOC_POISON = 0;
+    static constexpr ui8 REALLOC_POISON = 0;
+    static constexpr ui8 FREE_POISON = 0;
+#endif // defined (THEKOGANS_UTIL_CONFIG_Debug)
+
     /// \brief
     /// Allocate a block.
     /// \param[in] size Size of block to allocate.
