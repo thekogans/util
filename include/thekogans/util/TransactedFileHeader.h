@@ -77,28 +77,8 @@ public:
         TransactedFile::AddressType offset) noexcept override;
 
     virtual void GetBlockMap (
-            BlockMap &allocatedBlockMap,
-            BlockMap &referencedBlockMap) override {
-        RecordReference (file, offset, allocatedBlockMap);
-        {
-            Object::SharedPtr object = file->dictionary;
-            if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
-                object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-            }
-        }
-        {
-            Object::SharedPtr object = file->allocator;
-            if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
-                object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-            }
-        }
-        {
-            Object::SharedPtr object = file->registry;
-            if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
-                object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-            }
-        }
-    }
+        BlockMap &allocatedBlockMap,
+        BlockMap &referencedBlockMap) override;
 
     virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
         SetDirty ();

@@ -244,6 +244,11 @@ namespace thekogans {
                             if (available >= size) {
                                 Remove ({next.GetSize (), next.GetOffset ()});
                                 // See if we need to split up next.
+                                if (file->IsSecure ()) {
+                                    TransactedFile::Range range (file,
+                                        block.GetOffset () + block.GetSize (), TransactedFile::Block::SIZE, false);
+                                    range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
+                                }
                                 if (available - size >= TransactedFile::MIN_BLOCK_SIZE) {
                                     next.SetOffset (block.GetOffset () + size + TransactedFile::Block::SIZE);
                                     next.SetSize (available - size - TransactedFile::Block::SIZE);
@@ -252,11 +257,6 @@ namespace thekogans {
                                 }
                                 else {
                                     size = available;
-                                }
-                                if (file->IsSecure ()) {
-                                    TransactedFile::Range range (file,
-                                        block.GetOffset () + block.GetSize (), TransactedFile::Block::SIZE, false);
-                                    range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable ()), SEEK_CUR);
                                 }
                                 block.SetSize (size);
                                 block.Write ();

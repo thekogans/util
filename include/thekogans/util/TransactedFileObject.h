@@ -196,8 +196,10 @@ public:
     };
     using BlockMap = std::unordered_map<Block, BlockInfo>;
     virtual void GetBlockMap (
-        BlockMap &allocatedBlockMap,
-        BlockMap &referencedBlockMap) {}
+            BlockMap &allocatedBlockMap,
+            BlockMap &referencedBlockMap) {
+        RecordReference (file, offset, allocatedBlockMap);
+    }
     static void RecordReference (
         TransactedFile *file,
         AddressType offset,

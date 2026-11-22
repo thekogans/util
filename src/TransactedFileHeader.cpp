@@ -140,5 +140,29 @@ namespace thekogans {
             }
         }
 
+        void TransactedFile::Header::GetBlockMap (
+                BlockMap &allocatedBlockMap,
+                BlockMap &referencedBlockMap) {
+            RecordReference (file, offset, allocatedBlockMap);
+            {
+                Object::SharedPtr object = file->dictionary;
+                if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
+                    object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
+                }
+            }
+            {
+                Object::SharedPtr object = file->allocator;
+                if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
+                    object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
+                }
+            }
+            {
+                Object::SharedPtr object = file->registry;
+                if (THEKOGANS_UTIL_LIKELY (object != nullptr)) {
+                    object->GetBlockMap (allocatedBlockMap, referencedBlockMap);
+                }
+            }
+        }
+
     } // namespace util
 } // namespace thekogans
