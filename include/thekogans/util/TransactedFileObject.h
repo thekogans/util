@@ -219,7 +219,7 @@ protected:
 
     virtual void OnTransactedFileOffsetDestroyed (
             TransactedFile */*file*/,
-            AddressSpaceType::AddressType offset_) noexcept override {
+            AddressType offset_) noexcept override {
         if (offset == offset_) {
             SetDestroyed ();
         }

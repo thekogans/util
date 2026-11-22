@@ -197,7 +197,7 @@ namespace thekogans {
             typename T,
             std::size_t bitsPerAddress = BitWidth<T>::value,
             typename Lock = SpinLock>
-        struct PageMap : public RefCounted {
+        struct PageMap : public virtual RefCounted {
             /// \brief
             /// Rename T to something more appropriate that's
             /// visible outside the template.

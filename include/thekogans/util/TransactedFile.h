@@ -132,16 +132,16 @@ namespace thekogans {
         /// \brief
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFile :
                 private File,
+                private PageMap64,
+                private PageMap64::PageSource,
                 public Producer<TransactedFileTransactionEvents>,
-                public Producer<TransactedFileStructureEvents>,
-                public PageMap64::PageSource {
+                public Producer<TransactedFileStructureEvents> {
             THEKOGANS_UTIL_DECLARE_REF_COUNTED_POINTERS (TransactedFile)
 
-            using AddressSpaceType = PageMap64;
-            using AddressType = AddressSpaceType::AddressType;
-            static constexpr std::size_t AddressTypeSize = AddressSpaceType::AddressTypeSize;
-            using SizeType = AddressSpaceType::SizeType;
-            static constexpr std::size_t SizeTypeSize = AddressSpaceType::SizeTypeSize;
+            using AddressType = PageMap64::AddressType;
+            static constexpr std::size_t AddressTypeSize = PageMap64::AddressTypeSize;
+            using SizeType = PageMap64::SizeType;
+            static constexpr std::size_t SizeTypeSize = PageMap64::SizeTypeSize;
 
             #include "thekogans/util/TransactedFileTransaction.h"
             #include "thekogans/util/TransactedFileRange.h"
@@ -156,9 +156,6 @@ namespace thekogans {
             /// \brief
             /// File size.
             std::atomic<SizeType> size{0};
-            /// \brief
-            /// File \see{PageMap} used to map file pages.
-            AddressSpaceType::SharedPtr pageMap;
             /// \brief
             /// File header.
             Header::SharedPtr header;
@@ -242,13 +239,13 @@ namespace thekogans {
             /// Return page size.
             /// \return pageMap->GetPageSize ().
             inline std::size_t GetPageSize () const {
-                return pageMap->GetPageSize ();
+                return PageMap64::GetPageSize ();
             }
             /// \brief
             /// Return page mask.
             /// \return pageMap->GetPageMask ().
             inline std::size_t GetPageMask () const {
-                return pageMap->GetPageMask ();
+                return PageMap64::GetPageMask ();
             }
 
             /// \brief
@@ -307,8 +304,8 @@ namespace thekogans {
                     AddressType offset,
                     void *buffer,
                     SizeType count) override {
-                Seek (offset, SEEK_SET);
-                return Read (buffer, count);
+                File::Seek (offset, SEEK_SET);
+                return File::Read (buffer, count);
             }
             /// \brief
             /// Write raw bytes.
@@ -320,8 +317,8 @@ namespace thekogans {
                     AddressType offset,
                     const void *buffer,
                     SizeType count) override {
-                Seek (offset, SEEK_SET);
-                return Write (buffer, count);
+                File::Seek (offset, SEEK_SET);
+                return File::Write (buffer, count);
             }
 
             /// \brief

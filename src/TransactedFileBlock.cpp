@@ -24,7 +24,7 @@ namespace thekogans {
 
         void TransactedFile::Block::Header::Read (
                 TransactedFile *file,
-                AddressSpaceType::AddressType offset,
+                AddressType offset,
                 bool header) {
             Range range (file, offset, SIZE);
             ui32 magic;
@@ -46,7 +46,7 @@ namespace thekogans {
 
         void TransactedFile::Block::Header::Write (
                 TransactedFile *file,
-                AddressSpaceType::AddressType offset) const {
+                AddressType offset) const {
             Range range (file, offset, SIZE, false);
             range << MAGIC32 << flags << size;
         }
@@ -59,7 +59,7 @@ namespace thekogans {
 
         ui64 TransactedFile::Block::GetSize (
                 TransactedFile *file,
-                AddressSpaceType::AddressType offset) {
+                AddressType offset) {
             Block block (file, offset);
             block.Read ();
             return block.GetSize ();

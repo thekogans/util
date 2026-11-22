@@ -84,7 +84,7 @@ namespace thekogans {
                     ++file->stats.ownerReadingRanges;
                 #endif // defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                     // and, if it's a read request, buffer the underlying file range.
-                    file->pageMap->Read (offset, file, data, length);
+                    file->PageMap64::Read (offset, file, data, length);
                 }
             #if defined (THEKOGANS_UTIL_TRANSACTED_FILE_RANGE_GET_STATS)
                 else {
@@ -94,7 +94,7 @@ namespace thekogans {
             }
             else {
                 // ...otherwise, read/write directly from/into the page.
-                page = file->pageMap->GetPage (offset, file);
+                page = file->GetPage (offset, file);
                 data = page->data + pageOffset;
             }
         }
@@ -102,7 +102,7 @@ namespace thekogans {
         TransactedFile::Range::~Range () {
             if (THEKOGANS_UTIL_UNLIKELY (owner)) {
                 if (!reading && position > 0) {
-                    file->pageMap->Write (offset, file, data, position);
+                    file->PageMap64::Write (offset, file, data, position);
                 }
                 allocator->Free (data, length);
             }

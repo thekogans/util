@@ -21,8 +21,8 @@
 #else // defined (TOOLCHAIN_OS_Windows)
     #if defined (TOOLCHAIN_OS_Linux)
         #include "thekogans/util/os/linux/LinuxUtils.h"
-    #elif defined (TOOLCHAIN_OS_OSH)
-        #include "thekogans/util/os/windows/OSXUtils.h"
+    #elif defined (TOOLCHAIN_OS_OSX)
+        #include "thekogans/util/os/osx/OSXUtils.h"
     #endif // defined (TOOLCHAIN_OS_Linux)
     #include <fcntl.h>
 #endif // defined (TOOLCHAIN_OS_Windows)
@@ -61,31 +61,29 @@ namespace thekogans {
         }
 
         TransactedFile::TransactedFile (const std::string &path) :
+            #if defined (TOOLCHAIN_OS_Windows)
+                File (
+                    HostEndian,
+                    path,
+                    GENERIC_READ | GENERIC_WRITE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    OPEN_EXISTING,
+                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
+            #elif defined (TOOLCHAIN_OS_Linux)
+                File (HostEndian, path, O_RDWR | O_DIRECT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH),
+            #elif defined (TOOLCHAIN_OS_OSX)
+                File (HostEndian, path, O_RDWR, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH),
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                PageMap64 (32, 8, 20, GetPhysicalSectorSize (handle)),
+                size (GetSize ()),
                 // TransactedFileTypeDictionary implements an internal system
                 // dictionary to allow us to bootstrap the header.
                 dictionary (new TransactedFileTypeDictionary) {
-            AddRef ();
-            // Turn off OS page buffering. With PageMap's page alignment,
-            // we don't need the cost of extra copying.
-        #if defined (TOOLCHAIN_OS_Windows)
-            File::Open (
-                path,
-                GENERIC_READ | GENERIC_WRITE,
-                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                OPEN_EXISTING,
-                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            i32 flags = O_RDWR;
-        #if defined (TOOLCHAIN_OS_Linux)
-            flags |= O_DIRECT;
-        #endif // defined (TOOLCHAIN_OS_Linux)
-            File::Open (path, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         #if defined (TOOLCHAIN_OS_OSX)
             fcntl (handle, F_NOCACHE, 1);
         #endif // defined (TOOLCHAIN_OS_OSX)
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            size = GetSize ();
-            pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
+            // Turn off OS page buffering. With PageMap's page alignment,
+            // we don't need the cost of extra copying.
             Range magicRange (this, 0, UI32_SIZE);
             ui32 magic;
             magicRange >> magic;
@@ -118,32 +116,34 @@ namespace thekogans {
                 Allocator::SharedPtr allocator_,
                 Registry::SharedPtr registry_,
                 bool forceTruncate) :
-                File (endianness),
+            #if defined (TOOLCHAIN_OS_Windows)
+                File (
+                    endianness,
+                    path,
+                    GENERIC_READ | GENERIC_WRITE,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+                    forceTruncate ? TRUNCATE_EXISTING : CREATE_NEW,
+                    FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH),
+            #elif defined (TOOLCHAIN_OS_Linux)
+                File (
+                    endianness,
+                    path,
+                    O_RDWR | O_CREAT | (forceTruncate ? O_TRUNC : O_EXCL) | O_DIRECT,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH),
+            #elif defined (TOOLCHAIN_OS_OSX)
+                File (
+                    endianness,
+                    path,
+                    O_RDWR | O_CREAT | (forceTruncate ? O_TRUNC : O_EXCL),
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH),
+            #endif // defined (TOOLCHAIN_OS_Windows)
+                PageMap64 (32, 8, 20, GetPhysicalSectorSize (handle)),
                 dictionary (dictionary_),
                 allocator (allocator_),
                 registry (registry_) {
-            AddRef ();
-            // Turn off OS page buffering. With PageMap's page alignment,
-            // we don't need the cost of extra copying.
-        #if defined (TOOLCHAIN_OS_Windows)
-            File::Open (
-                path,
-                GENERIC_READ | GENERIC_WRITE,
-                FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
-                forceTruncate ? TRUNCATE_EXISTING : CREATE_NEW,
-                FILE_ATTRIBUTE_NORMAL | FILE_FLAG_NO_BUFFERING | FILE_FLAG_WRITE_THROUGH);
-        #else // defined (TOOLCHAIN_OS_Windows)
-            i32 flags = O_RDWR | O_CREAT;
-            flags |= forceTruncate ? O_TRUNC : O_EXCL;
-        #if defined (TOOLCHAIN_OS_Linux)
-            flags |= O_DIRECT;
-        #endif // defined (TOOLCHAIN_OS_Linux)
-            File::Open (path, flags, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
         #if defined (TOOLCHAIN_OS_OSX)
             fcntl (handle, F_NOCACHE, 1);
         #endif // defined (TOOLCHAIN_OS_OSX)
-        #endif // defined (TOOLCHAIN_OS_Windows)
-            pageMap.Reset (new AddressSpaceType (32, 8, 20, GetPhysicalSectorSize (handle)));
             Transaction transaction (this);
             header = Object::Create<Header> (this, 0, secure);
             transaction.Commit ();
@@ -152,7 +152,7 @@ namespace thekogans {
         TransactedFile::SharedPtr TransactedFile::Open (const std::string &path) {
             if (Path (path).Exists ()) {
                 Transaction::CommitLog (path);
-                return SharedPtr (new TransactedFile (path), false);
+                return SharedPtr (new TransactedFile (path));
             }
             return nullptr;
         }
@@ -171,18 +171,18 @@ namespace thekogans {
             }
             return SharedPtr (
                 new TransactedFile (
-                    endianness, path, secure, dictionary, allocator, registry, exists && overwrite), false);
+                    endianness, path, secure, dictionary, allocator, registry, exists && overwrite));
         }
 
         TransactedFile::AddressType TransactedFile::Grow (SizeType amount) {
             AddressType offset = size + Block::HEADER_SIZE;
-            size += MIN (pageMap->GetMaxOffset () - size, amount);
+            size += MIN (GetMaxOffset () - size, amount);
             return offset;
         }
 
         TransactedFile::SizeType TransactedFile::Shrink (SizeType amount) {
             size -= MIN (amount, size.load (std::memory_order_relaxed));
-            pageMap->Shrink (size);
+            PageMap64::Shrink (size);
             return size;
         }
 

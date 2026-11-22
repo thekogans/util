@@ -42,7 +42,7 @@ namespace thekogans {
             if (file->phase != PHASE_NONE) {
                 file->phase = PHASE_ABORT;
                 file->size = file->GetSize ();
-                file->pageMap->Clear (true);
+                file->Clear (true);
                 file->Producer<TransactedFileTransactionEvents>::Produce (
                     std::bind (
                         &TransactedFileTransactionEvents::OnTransactedFileTransactionAbort,
@@ -138,8 +138,8 @@ namespace thekogans {
                         file->endianness,
                         logPath,
                         SimpleFile::ReadWrite | SimpleFile::Create | SimpleFile::Truncate);
-                    log << (ui32)0 << (ui32)0 << file->size << (SizeType)file->pageMap->GetPageSize ();
-                    std::size_t count = file->pageMap->Log (log);
+                    log << (ui32)0 << (ui32)0 << file->size << (SizeType)file->GetPageSize ();
+                    std::size_t count = file->Log (log);
                     log.Flush ();
                     log.Seek (0, SEEK_SET);
                     log << MAGIC32 << (ui32)count;
@@ -149,9 +149,9 @@ namespace thekogans {
                 // If we can't complete the commit (exception),
                 // next time Open (above) will use CommitLog
                 // before opening the file->
-                file->pageMap->Flush (*file, clearCache);
+                file->PageMap64::Flush (*file, clearCache);
                 file->SetSize (file->size);
-                file->Flush ();
+                file->File::Flush ();
                 File::Delete (logPath);
                 file->phase = PHASE_NONE;
             }

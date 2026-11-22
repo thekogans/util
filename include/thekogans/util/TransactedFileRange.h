@@ -91,7 +91,7 @@ protected:
     std::size_t position;
     /// \brief
     /// \see{PageMap::Page} associated with this range.
-    AddressSpaceType::Page::SharedPtr page;
+    Page::SharedPtr page;
     /// \brief
     /// true == We straddle a \see{PageMap::Page} boundary.
     /// We allocated data and need to copy and free it in the dtor.
