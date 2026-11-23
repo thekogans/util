@@ -460,7 +460,7 @@ namespace thekogans {
                 ui8 * const data;
                 /// \brief
                 /// true == data is modified.
-                bool dirty;
+                std::atomic<bool> dirty{false};
 
                 /// \brief
                 /// ctor.
@@ -477,8 +477,7 @@ namespace thekogans {
                         PageSource *pageSource) :
                         Node (pageMap, index),
                         offset (offset_),
-                        data (static_cast<ui8 *> (pageMap.pageAllocator.Alloc (pageMap.pageSize))),
-                        dirty (false) {
+                        data (static_cast<ui8 *> (pageMap.pageAllocator.Alloc (pageMap.pageSize))) {
                     SizeType countRead = 0;
                     if (THEKOGANS_UTIL_LIKELY (pageSource != nullptr)) {
                         countRead = pageSource->ReadPage (offset, data, pageMap.pageSize);
@@ -491,6 +490,18 @@ namespace thekogans {
                 virtual ~Page () {
                     this->pageMap.pageAllocator.Free (data, this->pageMap.pageSize);
                     this->pageMap.pageList.erase (this);
+                }
+
+                inline void SetDirty () noexcept {
+                    if (!dirty.load (std::memory_order_relaxed)) {
+                        dirty.store (true, std::memory_order_release);
+                    }
+                }
+                inline bool IsDirty () const noexcept {
+                    return dirty.load (std::memory_order_acquire);
+                }
+                inline void ClearDirty () noexcept {
+                    dirty.store (false, std::memory_order_relaxed);
                 }
 
                 // Node
@@ -508,7 +519,7 @@ namespace thekogans {
                 /// \return true == page should be deleted, false == page does not match
                 /// the given dirty state criteria.
                 virtual bool Clear (bool dirty_) override {
-                    return dirty == dirty_;
+                    return IsDirty () == dirty_;
                 }
 
                 /// \brief
@@ -518,7 +529,7 @@ namespace thekogans {
                 virtual void Log (
                         Serializer &log,
                         std::size_t &count) override {
-                    if (dirty) {
+                    if (IsDirty ()) {
                         log << offset;
                         log.Write (data, this->pageMap.pageSize);
                         ++count;
@@ -534,9 +545,9 @@ namespace thekogans {
                 virtual bool Flush (
                         PageSource &pageSink,
                         bool clearCache = false) override {
-                    if (dirty) {
+                    if (IsDirty ()) {
                         pageSink.WritePage (offset, data, this->pageMap.pageSize);
-                        dirty = false;
+                        ClearDirty ();
                     }
                     return clearCache;
                 }
@@ -555,7 +566,7 @@ namespace thekogans {
                             // being less). If this is the last page, we clear that
                             // part which falls outside the new address space 'size'.
                             SecureZeroMemory (data + consumed, this->pageMap.pageSize - consumed);
-                            dirty = true;
+                            SetDirty ();
                         }
                         return false;
                     }
@@ -1150,7 +1161,7 @@ namespace thekogans {
                         // Calculate the amount we can write to this page...
                         SizeType countToWrite = MIN (pageSize - pageOffset, count);
                         std::memcpy (page->data + pageOffset, ptr, countToWrite);
-                        page->dirty = true;
+                        page->SetDirty ();
                         countWritten += countToWrite;
                         // Check for overflow.
                         if (THEKOGANS_UTIL_UNLIKELY (maxOffset - offset < countToWrite)) {

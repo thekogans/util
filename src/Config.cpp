@@ -32,11 +32,11 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
                 volatile void *data,
                 std::size_t size,
-                char zero) {
+                std::uint8_t zero) {
             if (data != nullptr && size > 0) {
                 using memset_t = void *(*)(void *, int, std::size_t);
                 static volatile memset_t volatile_memset = &std::memset;
-                volatile_memset (const_cast<void *> (data), static_cast<unsigned char> (zero), size);
+                volatile_memset (const_cast<void *> (data), zero, size);
                 return size;
             }
             return 0;

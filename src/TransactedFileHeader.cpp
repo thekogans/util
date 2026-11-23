@@ -110,11 +110,12 @@ namespace thekogans {
         void TransactedFile::Header::Init (
                 TransactedFile *file,
                 TransactedFile::AddressType offset) noexcept {
+            THEKOGANS_UTIL_ASSERT (offset == 0 || offset == BLOCK_OFFSET,
+                "Violated Structural Invariant: Header offset must be @" THEKOGANS_UTIL_UI64_FORMAT, offset);
             Object::Init (file, offset);
             if (offset == 0) {
-                std::size_t size = UI32_SIZE + GetSize (*file);
-                this->offset = file->Grow (Block::SIZE + size);
-                Block block (file, this->offset, 0, size);
+                Block block (file, this->offset = BLOCK_OFFSET, 0, UI32_SIZE + GetSize (*file));
+                file->size = Block::SIZE + block.GetSize ();
                 block.Write ();
                 {
                     Object::SharedPtr object = file->dictionary;

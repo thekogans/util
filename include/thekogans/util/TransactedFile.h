@@ -313,17 +313,6 @@ namespace thekogans {
                 header->GetBlockMap (allocatedBlockMap, referencedBlockMap);
             }
 
-            /// \brief
-            /// Grow the file by the given amount.
-            /// \param[in] amount Amount to grow the file by.
-            /// \return Offset of the new block.
-            AddressType Grow (SizeType amount);
-            /// \brief
-            /// Shrink the file by the given amount.
-            /// \param[in] amount Amount to shrink the file by.
-            /// \return New file size.
-            SizeType Shrink (SizeType amount);
-
         protected:
             // PageSource
             /// \brief

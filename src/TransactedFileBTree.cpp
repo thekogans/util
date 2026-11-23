@@ -208,6 +208,77 @@ namespace thekogans {
 
         THEKOGANS_UTIL_IMPLEMENT_TRANSACTED_FILE_OBJECT (thekogans::util::TransactedFileBTree::Node, 1, 0)
 
+        void TransactedFileBTree::Node::Entry::Unsubscribe (
+                Node *node,
+                bool isValueisObject,
+                bool unsubscribeRight) {
+            if (value != nullptr) {
+                if (!isValueisObject) {
+                    value->Producer<SerializableEvents>::Unsubscribe (*node);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
+                    object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
+                }
+            }
+            if (unsubscribeRight && right != nullptr) {
+                right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
+            }
+        }
+
+        void TransactedFileBTree::Node::Entry::Subscribe (
+                Node *node,
+                bool isValueisObject,
+                bool subscribeRight) {
+            if (value != nullptr) {
+                if (!isValueisObject) {
+                    value->Producer<SerializableEvents>::Subscribe (*node);
+                }
+                else {
+                    TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
+                    object->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+                }
+            }
+            if (subscribeRight && right != nullptr) {
+                right->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
+            }
+        }
+
+        void TransactedFileBTree::Node::Entry::Destroy (
+                Node *node,
+                bool isValueisObject,
+                TransactedFile *file) {
+            if (isValueisObject) {
+                if (value != nullptr) {
+                    TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
+                    object->FreeBlock ();
+                }
+                else if (valueOffset != 0) {
+                    Object::DestroyObject (file, valueOffset);
+                }
+            }
+            Reset (node, isValueisObject, false);
+        }
+
+        void TransactedFileBTree::Node::Entry::Reset (
+                Node *node,
+                bool isValueisObject,
+                bool resetRight) {
+            Unsubscribe (node, isValueisObject, resetRight);
+            if (THEKOGANS_UTIL_LIKELY (key != nullptr)) {
+                key->Release ();
+                key = nullptr;
+            }
+            if (THEKOGANS_UTIL_LIKELY (value != nullptr)) {
+                value->Release ();
+                value = nullptr;
+            }
+            if (resetRight && right != nullptr) {
+                right->Release ();
+                right = nullptr;
+            }
+        }
+
         TransactedFileBTree::Node::Node (TransactedFileBTree *btree_) :
                 btree (btree_),
                 entries ((Entry *)(this + 1)) {
@@ -824,6 +895,31 @@ namespace thekogans {
                     }
                 }
                 else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "offset @" THEKOGANS_UTIL_UI64_FORMAT "is not pointing to %s (%s)" ,
+                        offset,
+                        TYPE.c_str (),
+                        range.context.type.c_str ());
+                }
+            }
+        }
+
+        void TransactedFileBTree::Node::GetBlockMap (
+                BlockMap &allocatedBlockMap,
+                BlockMap &referencedBlockMap) {
+            RecordReference (file, offset, allocatedBlockMap);
+            if (btree->header.IsValueIsObject ()) {
+                for (ui32 i = 0; i < count; ++i) {
+                    TransactedFile::Object::SharedPtr value = GetValue (i);
+                    if (value != nullptr) {
+                        value->GetBlockMap (allocatedBlockMap, referencedBlockMap);
+                    }
+                }
+            }
+            for (ui32 i = 0; i <= count; ++i) {
+                Node *child = GetChild (i);
+                if (child != nullptr) {
+                    child->GetBlockMap (allocatedBlockMap, referencedBlockMap);
                 }
             }
         }
@@ -908,12 +1004,12 @@ namespace thekogans {
                     // The path to the leaf node is full.
                     // Create a new root node and make the entry
                     // its first.
+                    Node *newRoot = Node::Alloc (this, file, 0);
+                    newRoot->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                     root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                    Node *node = Node::Alloc (this, file, 0);
-                    node->SetLeft (root, root->GetOffset ());
-                    node->InsertEntry (entry, 0);
-                    root = node;
-                    root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                    newRoot->SetLeft (root, root->GetOffset ());
+                    newRoot->InsertEntry (entry, 0);
+                    root = newRoot;
                     result = Node::Inserted;
                 }
                 // If we inserted the key/value pair, take ownership.
@@ -934,14 +1030,14 @@ namespace thekogans {
                 bool removed = root->Remove (key);
                 if (removed) {
                     if (THEKOGANS_UTIL_UNLIKELY (root->IsEmpty () && root->GetChild (0) != nullptr)) {
+                        Node *newRoot = root->GetChild (0);
+                        newRoot->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
                         root->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*this);
-                        Node *node = root;
-                        root = root->GetChild (0);
-                        root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                        node->SetLeft (nullptr, 0);
-                        Object::FreeObject (file, node->GetOffset ());
-                        node->SetDestroyed ();
-                        node->Release ();
+                        root->SetLeft (nullptr, 0);
+                        Object::FreeObject (file, root->GetOffset ());
+                        root->SetDestroyed ();
+                        root->Release ();
+                        root = newRoot;
                     }
                 }
                 return removed;
@@ -1074,6 +1170,21 @@ namespace thekogans {
             serializer << MAGIC32 << header;
         }
 
+        void TransactedFileBTree::Init (
+                TransactedFile *file,
+                TransactedFile::AddressType offset) {
+            Object::Init (file, offset);
+            if (offset == 0) {
+                nodeAllocator.Reset (
+                    new SlabAllocatorImpl (
+                        Node::Size (header.entriesPerNode),
+                        header.nodesPerPage,
+                        header.nodesPerPage / 4));
+                root = Node::Alloc (this, file, 0);
+                root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+            }
+        }
+
         void TransactedFileBTree::FreeObject (
                 TransactedFile *file,
                 TransactedFile::AddressType offset) {
@@ -1094,6 +1205,16 @@ namespace thekogans {
                             offset);
                     }
                 }
+            }
+        }
+
+        void TransactedFileBTree::GetBlockMap (
+                BlockMap &allocatedBlockMap,
+                BlockMap &referencedBlockMap) {
+            RecordReference (file, offset, allocatedBlockMap);
+            if (offset != 0) {
+                assert (root != nullptr);
+                root->GetBlockMap (allocatedBlockMap, referencedBlockMap);
             }
         }
 

@@ -177,7 +177,12 @@ namespace thekogans {
             if (Path (path).Exists ()) {
                 Transaction::CommitLog (path);
                 return SharedPtr (
-                    new TransactedFile (path, bitsPerSegment, bitsPerLevel, bitsPerPage, bitsPerAddress));
+                    new TransactedFile (
+                        path,
+                        bitsPerSegment,
+                        bitsPerLevel,
+                        bitsPerPage,
+                        bitsPerAddress));
             }
             return nullptr;
         }
@@ -215,18 +220,6 @@ namespace thekogans {
                     bitsPerLevel,
                     bitsPerPage,
                     bitsPerAddress));
-        }
-
-        TransactedFile::AddressType TransactedFile::Grow (SizeType amount) {
-            AddressType offset = size + Block::HEADER_SIZE;
-            size += MIN (GetMaxOffset () - size, amount);
-            return offset;
-        }
-
-        TransactedFile::SizeType TransactedFile::Shrink (SizeType amount) {
-            size -= MIN (amount, size.load (std::memory_order_relaxed));
-            PageMap64::Shrink (size);
-            return size;
         }
 
     } // namespace util

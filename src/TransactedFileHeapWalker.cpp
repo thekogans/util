@@ -185,7 +185,6 @@ namespace thekogans {
             // Collect all {size, offset} pairs from the allocator's free-list B-tree.
             std::vector<std::pair<AddressType, SizeType>> allocatorFreeList;
             file->GetAllocator ()->GetFreeList (allocatorFreeList);
-            std::sort (allocatorFreeList.begin (), allocatorFreeList.end ());
             // 1. Verify exact count match (no leaked free blocks, no phantom B-tree entries).
             if (freeBlockList.size () != allocatorFreeList.size ()) {
                 // Report count mismatch

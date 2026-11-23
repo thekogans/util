@@ -320,11 +320,8 @@ namespace thekogans {
 
                     /// \brief
                     /// ctor.
-                    /// NOTE: Because of the way we allocate Node this ctor
-                    /// is here for show. It will never be called as we're
-                    /// treating Entry as POT. It actually gets initialized
-                    /// in the operator >>.
                     /// \param[in] key_ Entry key.
+                    /// \param[in] valueOffset_ Entry value offset.
                     /// \param[in] value_ Entry value.
                     Entry (
                         Key *key_ = nullptr,
@@ -335,75 +332,21 @@ namespace thekogans {
                         value (value_) {}
 
                     void Unsubscribe (
-                            Node *node,
-                            bool isValueisObject,
-                            bool unsubscribeRight = true) {
-                        if (value != nullptr) {
-                            if (!isValueisObject) {
-                                value->Producer<SerializableEvents>::Unsubscribe (*node);
-                            }
-                            else {
-                                TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
-                                object->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
-                            }
-                        }
-                        if (unsubscribeRight && right != nullptr) {
-                            right->Producer<TransactedFile::ObjectEvents>::Unsubscribe (*node);
-                        }
-                    }
-
+                        Node *node,
+                        bool isValueisObject,
+                        bool unsubscribeRight = true);
                     void Subscribe (
-                            Node *node,
-                            bool isValueisObject,
-                            bool subscribeRight = true) {
-                        if (value != nullptr) {
-                            if (!isValueisObject) {
-                                value->Producer<SerializableEvents>::Subscribe (*node);
-                            }
-                            else {
-                                TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
-                                object->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
-                            }
-                        }
-                        if (subscribeRight && right != nullptr) {
-                            right->Producer<TransactedFile::ObjectEvents>::Subscribe (*node);
-                        }
-                    }
-
+                        Node *node,
+                        bool isValueisObject,
+                        bool subscribeRight = true);
                     void Destroy (
-                            Node *node,
-                            bool isValueisObject,
-                            TransactedFile *file) {
-                        if (isValueisObject) {
-                            if (value != nullptr) {
-                                TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
-                                object->FreeBlock ();
-                            }
-                            else if (valueOffset != 0) {
-                                Object::DestroyObject (file, valueOffset);
-                            }
-                        }
-                        Reset (node, isValueisObject, false);
-                    }
-
+                        Node *node,
+                        bool isValueisObject,
+                        TransactedFile *file);
                     void Reset (
-                            Node *node,
-                            bool isValueisObject,
-                            bool resetRight = true) {
-                        Unsubscribe (node, isValueisObject, resetRight);
-                        if (THEKOGANS_UTIL_LIKELY (key != nullptr)) {
-                            key->Release ();
-                            key = nullptr;
-                        }
-                        if (THEKOGANS_UTIL_LIKELY (value != nullptr)) {
-                            value->Release ();
-                            value = nullptr;
-                        }
-                        if (resetRight && right != nullptr) {
-                            right->Release ();
-                            right = nullptr;
-                        }
-                    }
+                        Node *node,
+                        bool isValueisObject,
+                        bool resetRight = true);
                 } *entries;
 
                 /// \brief
@@ -632,24 +575,8 @@ namespace thekogans {
                     TransactedFile::AddressType offset);
 
                 virtual void GetBlockMap (
-                        BlockMap &allocatedBlockMap,
-                        BlockMap &referencedBlockMap) override {
-                    RecordReference (file, offset, allocatedBlockMap);
-                    if (btree->header.IsValueIsObject ()) {
-                        for (ui32 i = 0; i < count; ++i) {
-                            TransactedFile::Object::SharedPtr value = GetValue (i);
-                            if (value != nullptr) {
-                                value->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-                            }
-                        }
-                    }
-                    for (ui32 i = 0; i <= count; ++i) {
-                        Node *child = GetChild (i);
-                        if (child != nullptr) {
-                            child->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-                        }
-                    }
-                }
+                    BlockMap &allocatedBlockMap,
+                    BlockMap &referencedBlockMap) override;
 
                 // SerializableEvents
                 virtual void OnSerializableDirty (Serializable::SharedPtr /*serializable*/) noexcept override {
@@ -773,19 +700,8 @@ namespace thekogans {
         public:
             // TransactedFile::Object
             virtual void Init (
-                    TransactedFile *file,
-                    TransactedFile::AddressType offset) override {
-                Object::Init (file, offset);
-                if (offset == 0) {
-                    nodeAllocator.Reset (
-                        new SlabAllocatorImpl (
-                            Node::Size (header.entriesPerNode),
-                            header.nodesPerPage,
-                            header.nodesPerPage / 4));
-                    root = Node::Alloc (this, file, 0);
-                    root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                }
-            }
+                TransactedFile *file,
+                TransactedFile::AddressType offset) override;
 
             /// \brief
             /// Delete the btree.
@@ -796,14 +712,8 @@ namespace thekogans {
                 TransactedFile::AddressType offset);
 
             virtual void GetBlockMap (
-                    BlockMap &allocatedBlockMap,
-                    BlockMap &referencedBlockMap) override {
-                RecordReference (file, offset, allocatedBlockMap);
-                if (offset != 0) {
-                    assert (root != nullptr);
-                    root->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-                }
-            }
+                BlockMap &allocatedBlockMap,
+                BlockMap &referencedBlockMap) override;
 
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
                 SetDirty ();

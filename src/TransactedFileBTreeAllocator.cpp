@@ -132,6 +132,11 @@ namespace thekogans {
                     }
                 }
                 else {
+                    // Guard against overflow (as unlikely as that sounds).
+                    if (THEKOGANS_UTIL_UNLIKELY (
+                            file->GetMaxOffset () - file->GetSizeEx () < size + TransactedFile::Block::SIZE)) {
+                        return 0;
+                    }
                     // If not, we need to grow the file.
                     // Do your best to not straddle a page boundary.
                     // Ranges that straddle page boundaries incur an
@@ -149,14 +154,15 @@ namespace thekogans {
                             size <= (file->GetPageSize () - TransactedFile::Block::SIZE)) {
                         TransactedFile::Block prev (
                             file,
-                            file->Grow (remainder),
+                            GrowFile (file, remainder),
                             TransactedFile::Block::FLAGS_FREE,
                             remainder - TransactedFile::Block::SIZE);
                         prev.Write ();
                         Insert ({prev.GetSize (), prev.GetOffset ()});
                         if (file->IsSecure ()) {
                             TransactedFile::Range range (file, prev.GetOffset (), prev.GetSize (), false);
-                            range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), ALLOC_POISON), SEEK_CUR);
+                            range.Seek (
+                                SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), ALLOC_POISON), SEEK_CUR);
                         }
                     }
                     // Otherwise, we fit in the ramainder. Check if what will remain
@@ -169,7 +175,7 @@ namespace thekogans {
                         size = remainder - TransactedFile::Block::SIZE;
                     }
                     // No free block large enough is found? Grow the file.
-                    offset = file->Grow (TransactedFile::Block::SIZE + size);
+                    offset = GrowFile (file, TransactedFile::Block::SIZE + size);
                     // Most file systems will fill the new space with '0' bytes
                     // but we can't take a chance and do it ourselves.
                     if (file->IsSecure ()) {
@@ -294,7 +300,7 @@ namespace thekogans {
                                     block.GetOffset () + block.GetSize () + TransactedFile::Block::HEADER_SIZE, remainder, false);
                                 range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), REALLOC_POISON), SEEK_CUR);
                             }
-                            file->Shrink (remainder);
+                            ShrinkFile (file, remainder);
                         }
                         else {
                             TransactedFile::Block next (file);
@@ -403,7 +409,7 @@ namespace thekogans {
                     }
                     else {
                         // If we are, truncate the heap.
-                        file->Shrink (TransactedFile::Block::SIZE + block.GetSize ());
+                        ShrinkFile (file, TransactedFile::Block::SIZE + block.GetSize ());
                     }
                 }
                 else {

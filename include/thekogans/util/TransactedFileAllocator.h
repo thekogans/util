@@ -56,4 +56,21 @@ struct _LIB_THEKOGANS_UTIL_DECL Allocator : public virtual RefCounted {
         bool moveData = true) = 0;
 
     virtual std::size_t GetFreeList (std::vector<std::pair<AddressType, SizeType>> &freeList) const = 0;
+
+protected:
+    inline AddressType GrowFile (
+            TransactedFile *file,
+            SizeType blockSize) noexcept {
+        AddressType offset = file->size + Block::HEADER_SIZE;
+        file->size += blockSize;
+        return offset;
+    }
+
+    inline SizeType ShrinkFile (
+            TransactedFile *file,
+            SizeType blockSize) noexcept {
+        file->size -= blockSize;
+        file->Shrink (file->size);
+        return file->size;
+    }
 };

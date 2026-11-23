@@ -232,7 +232,7 @@ namespace thekogans {
         _LIB_THEKOGANS_UTIL_DECL std::size_t _LIB_THEKOGANS_UTIL_API SecureZeroMemory (
             volatile void *data,
             std::size_t size,
-            char zero = 0);
+            std::uint8_t zero = 0);
 
     } // namespace util
 } // namespace thekogans

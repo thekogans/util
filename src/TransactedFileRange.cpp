@@ -107,7 +107,7 @@ namespace thekogans {
                 allocator->Free (data, length);
             }
             else if (!reading && position > 0) {
-                page->dirty = true;
+                page->SetDirty ();
             }
         }
 
