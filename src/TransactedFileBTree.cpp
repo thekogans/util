@@ -246,15 +246,14 @@ namespace thekogans {
 
         void TransactedFileBTree::Node::Entry::Destroy (
                 Node *node,
-                bool isValueisObject,
-                TransactedFile *file) {
+                bool isValueisObject) {
             if (isValueisObject) {
                 if (value != nullptr) {
                     TransactedFile::Object::SharedPtr object = Serializable::SharedPtr (value);
                     object->FreeBlock ();
                 }
                 else if (valueOffset != 0) {
-                    Object::DestroyObject (file, valueOffset);
+                    Object::DestroyObject (node->GetFile (), valueOffset);
                 }
             }
             Reset (node, isValueisObject, false);
@@ -472,7 +471,7 @@ namespace thekogans {
                         leaf = leftChild;
                     }
                     // 1. Free the deleted entry resources leaving the right child intact.
-                    entries[index].Destroy (this, btree->header.IsValueIsObject (), file);
+                    entries[index].Destroy (this, btree->header.IsValueIsObject ());
                     // 2. Promote leaf->entries's key & value into entries[index], preserving entries[index].right!
                     Entry promoted = entries[index];
                     promoted.key = leaf->entries->key;
@@ -493,7 +492,7 @@ namespace thekogans {
                     }
                 }
                 else {
-                    entries[index].Destroy (this, btree->header.IsValueIsObject (), file);
+                    entries[index].Destroy (this, btree->header.IsValueIsObject ());
                     RemoveEntry (index);
                 }
                 return true;
@@ -998,7 +997,7 @@ namespace thekogans {
                             THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
                     }
                 }
-                Node::Entry entry (key.Get (), valueOffset, value.Get ());
+                Node::Entry entry{key.Get (), valueOffset, value.Get ()};
                 Node::InsertResult result = root->Insert (entry);
                 if (THEKOGANS_UTIL_UNLIKELY (result == Node::Overflow)) {
                     // The path to the leaf node is full.

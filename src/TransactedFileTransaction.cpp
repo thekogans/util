@@ -21,6 +21,7 @@
 #include "thekogans/util/File.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/Constants.h"
+#include "thekogans/util/Vectorizer.h"
 #include "thekogans/util/TransactedFile.h"
 
 namespace thekogans {
@@ -115,6 +116,38 @@ namespace thekogans {
                 // STEP 2: UNIFIED FLUSH PASS (PHASE 2 ONLY)
                 // =========================================================================
                 file->phase = PHASE_FLUSH;
+#if 1
+                struct FlushJob : public Vectorizer::Job {
+                    TransactedFile *file;
+                    std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &totalCommittedObjects;
+                    FlushJob (
+                        TransactedFile *file_,
+                        std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &totalCommittedObjects_) :
+                        file (file_),
+                        totalCommittedObjects (totalCommittedObjects_) {}
+                    virtual void Execute (
+                            std::size_t startIndex,
+                            std::size_t endIndex,
+                            std::size_t /*rank*/) noexcept {
+                        for (; startIndex < endIndex; ++startIndex) {
+                            auto subscriber = totalCommittedObjects[startIndex].first.GetSharedPtr ();
+                            if (subscriber != nullptr) {
+                                totalCommittedObjects[startIndex].second->DeliverEvent (
+                                    std::bind (
+                                        &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
+                                        std::placeholders::_1,
+                                        file,
+                                        PHASE_FLUSH),
+                                    subscriber);
+                            }
+                        }
+                    }
+                    virtual std::size_t Size () const noexcept {
+                        return totalCommittedObjects.size ();
+                    }
+                } flushJob (file, totalCommittedObjects);
+                GlobalVectorizer::Instance ()->Execute (flushJob);
+#else
                 for (const auto &subscriber : totalCommittedObjects) {
                     auto subscriber_ = subscriber.first.GetSharedPtr ();
                     if (subscriber_ != nullptr) {
@@ -127,6 +160,7 @@ namespace thekogans {
                             subscriber_);
                     }
                 }
+#endif
                 // =========================================================================
                 // STEP 3: WRITE AHEAD LOG (WAL)
                 // =========================================================================

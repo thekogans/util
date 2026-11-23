@@ -81,6 +81,12 @@ namespace thekogans {
                 return !NeedType () && !NeedVersion () && !NeedSize ();
             }
 
+            inline void Clear () noexcept {
+                type = HashedString::Empty;
+                version = 0;
+                size = 0;
+            }
+
             inline bool WeakCompare (const SerializableHeader &other) const noexcept {
                 return type == other.type && version <= other.version;
             }

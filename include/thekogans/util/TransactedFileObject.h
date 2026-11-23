@@ -237,6 +237,7 @@ struct _LIB_THEKOGANS_UTIL_DECL ObjectRange : public BlockRange {
     ObjectRange (
         TransactedFile *file,
         TransactedFile::AddressType offset,
+        bool nothrow = false,
         util::Allocator::SharedPtr allocator = DefaultAllocator::Instance ());
     /// \brief
     /// ctor. Writing.

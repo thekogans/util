@@ -15,6 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
+#include <unordered_set>
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/TransactedFile.h"
 #include "thekogans/util/TransactedFileBTreeAllocator.h"
@@ -37,12 +38,37 @@ namespace thekogans {
                     size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
                 LockGuard<Mutex> guard (mutex);
-                TransactedFileBTreeAllocatorBTree::Key result = Find ({size, 0});
+                TransactedFileBTreeAllocatorBTree::Key result;
+                if (size <= nodeBlockSize && header.freeNodeOffset != 0) {
+                    result.size = nodeBlockSize;
+                    result.offset = header.freeNodeOffset;
+                    TransactedFile::Block block (file, header.freeNodeOffset);
+                    block.Read ();
+                    if (block.IsFree () && block.IsAllocatorBlock ()) {
+                        TransactedFile::Range range (file, header.freeNodeOffset, TransactedFile::AddressTypeSize);
+                        range >> header.freeNodeOffset;
+                        SetDirty ();
+                    }
+                    else {
+                        THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                            "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
+                            ", expecting a free BTree::Node block.",
+                            header.freeNodeOffset);
+                    }
+                }
+                else {
+                    // Else look for a free block large enough to satisfy the request.
+                    result = Find ({size, 0});
+                    if (result.offset != 0) {
+                        // Got it!
+                        assert (result.size >= size);
+                        Remove (result);
+                    }
+                }
                 // If we got a block see if it's too big.
                 if (result.offset != 0) {
                     // Got it!
                     assert (result.size >= size);
-                    Remove (result);
                     // If the block we got is bigger than we need, split it.
                     //
                     // we need to go from:
@@ -116,8 +142,13 @@ namespace thekogans {
                                 result.offset + size + TransactedFile::Block::SIZE,
                                 TransactedFile::Block::FLAGS_FREE,
                                 remainder - TransactedFile::Block::SIZE);
-                            next.Write ();
-                            Insert ({next.GetSize (), next.GetOffset ()});
+                            if (!next.IsLast ()) {
+                                next.Write ();
+                                Insert ({next.GetSize (), next.GetOffset ()});
+                            }
+                            else {
+                                ShrinkFile (file, TransactedFile::Block::SIZE + next.GetSize ());
+                            }
                         }
                         else {
                             // ...otherwise adjust size to reflect true free block size.
@@ -176,16 +207,15 @@ namespace thekogans {
                     }
                     // No free block large enough is found? Grow the file.
                     offset = GrowFile (file, TransactedFile::Block::SIZE + size);
-                    // Most file systems will fill the new space with '0' bytes
-                    // but we can't take a chance and do it ourselves.
-                    if (file->IsSecure ()) {
-                        TransactedFile::Range range (file, offset, size, false);
-                        range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), ALLOC_POISON), SEEK_CUR);
-                    }
                 }
                 // By now we got our block by either reusing a free one or growing the file.
                 TransactedFile::Block block (file, offset, 0, size);
                 block.Write ();
+                if (file->IsSecure ()) {
+                    TransactedFile::Range range (file, block.GetOffset (), block.GetSize (), false);
+                    range.Seek (
+                        SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), ALLOC_POISON), SEEK_CUR);
+                }
             }
             return offset;
         }
@@ -203,8 +233,80 @@ namespace thekogans {
                     "the master metadata bootstrap anchor page at offset " THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
             }
-            LockGuard<Mutex> guard (mutex);
-            FreeHelper (offset);
+            // To honor the Allocator policy, we ignore NULL pointers.
+            if (offset != 0) {
+                LockGuard<Mutex> guard (mutex);
+                TransactedFile::Block block (file, offset);
+                block.Read ();
+                if (!block.IsFree ()) {
+                    TransactedFile::AddressType clearOffset = block.GetOffset ();
+                    TransactedFile::SizeType clearLength = block.GetSize ();
+                    // Consolidate adjacent free blocks.
+                    TransactedFile::Block prev (file);
+                    if (block.Prev (prev) && prev.IsFree () && !prev.IsAllocatorBlock ()) {
+                        Remove ({prev.GetSize (), prev.GetOffset ()});
+                        if (file->IsSecure ()) {
+                            // Assume prev body is clear.
+                            clearOffset -= TransactedFile::Block::SIZE;
+                            clearLength += TransactedFile::Block::SIZE;
+                        }
+                        else {
+                            // Since block will grow to occupy prev,
+                            // it's offset is no longer valid.
+                            TransactedFile::Block oldBlock (file, block.GetOffset ());
+                            oldBlock.Clear ();
+                        }
+                        // Back up to cover the prev.
+                        block.SetOffset (block.GetOffset () - TransactedFile::Block::SIZE - prev.GetSize ());
+                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + prev.GetSize ());
+                    }
+                    TransactedFile::Block next (file);
+                    if (block.Next (next) && next.IsFree () && !next.IsAllocatorBlock ()) {
+                        Remove ({next.GetSize (), next.GetOffset ()});
+                        if (file->IsSecure ()) {
+                            // Assume next body is clear.
+                            clearLength += TransactedFile::Block::SIZE;
+                        }
+                        else {
+                            // Since block will grow to occupy next,
+                            // next offset is no longer valid.
+                            TransactedFile::Block oldNext (file, next.GetOffset ());
+                            oldNext.Clear ();
+                        }
+                        // Expand to swallow the next.
+                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + next.GetSize ());
+                    }
+                    if (file->IsSecure ()) {
+                        // If we're the last block and we're about to
+                        // be lopped off, back up to cover the header
+                        // and extend the range to cover the footer.
+                        if (THEKOGANS_UTIL_UNLIKELY (block.IsLast ())) {
+                            clearOffset -= TransactedFile::Block::HEADER_SIZE;
+                            clearLength += TransactedFile::Block::SIZE; // HEADER_SIZE + FOOTER_SIZE
+                        }
+                        TransactedFile::Range range (file, clearOffset, clearLength, false);
+                        range.Seek (
+                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), FREE_POISON), SEEK_CUR);
+                    }
+                    // If we're not the last block...
+                    if (THEKOGANS_UTIL_LIKELY (!block.IsLast ())) {
+                        block.SetFree (true);
+                        block.Write ();
+                        // ...add it to the free list.
+                        Insert ({block.GetSize (), block.GetOffset ()});
+                    }
+                    else {
+                        // If we are, truncate the heap.
+                        ShrinkFile (file, TransactedFile::Block::SIZE + block.GetSize ());
+                    }
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Attempting to free an unallocated block @"
+                        THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+            }
         }
 
         TransactedFile::AddressType TransactedFileBTreeAllocator::Realloc (
@@ -244,7 +346,7 @@ namespace thekogans {
                     {
                         LockGuard<Mutex> guard (mutex);
                         TransactedFile::Block next (file);
-                        if (THEKOGANS_UTIL_UNLIKELY (block.Next (next) && next.IsFree ())) {
+                        if (THEKOGANS_UTIL_UNLIKELY (block.Next (next) && next.IsFree () && !next.IsAllocatorBlock ())) {
                             TransactedFile::SizeType available =
                                 block.GetSize () + next.GetSize () + TransactedFile::Block::SIZE;
                             if (available >= size) {
@@ -304,7 +406,7 @@ namespace thekogans {
                         }
                         else {
                             TransactedFile::Block next (file);
-                            if (block.Next (next) && next.IsFree ()) {
+                            if (block.Next (next) && next.IsFree () && !next.IsAllocatorBlock ()) {
                                 Remove ({next.GetSize (), next.GetOffset ()});
                                 remainder += next.GetSize () + TransactedFile::Block::SIZE;
                             }
@@ -341,81 +443,73 @@ namespace thekogans {
                 const Key &key = it.GetKey ();
                 freeList.emplace_back (key.offset, key.size);
             }
+            std::unordered_set<TransactedFile::AddressType> visitedFreeNodeOffsets;
+            TransactedFile::AddressType freeNodeOffset = header.freeNodeOffset;
+            while (freeNodeOffset != 0) {
+                if (visitedFreeNodeOffsets.insert (freeNodeOffset).second) {
+                    freeList.emplace_back (freeNodeOffset, nodeBlockSize);
+                    TransactedFile::Range range (file, freeNodeOffset, TransactedFile::AddressTypeSize);
+                    range >> freeNodeOffset;
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Cycle detected in TransactedFileBTreeAllocator::GetFreeList @" THEKOGANS_UTIL_UI64_FORMAT,
+                        freeNodeOffset);
+                }
+            }
             std::sort (freeList.begin (), freeList.end ());
             return freeList.size ();
         }
 
-        void TransactedFileBTreeAllocator::FreeHelper (TransactedFile::AddressType offset) {
-            // To honor the Allocator policy, we ignore NULL pointers.
-            if (offset != 0) {
+        TransactedFile::AddressType TransactedFileBTreeAllocator::AllocNode () {
+            TransactedFile::AddressType offset = 0;
+            if (header.freeNodeOffset != 0) {
+                offset = header.freeNodeOffset;
                 TransactedFile::Block block (file, offset);
                 block.Read ();
-                if (!block.IsFree ()) {
-                    TransactedFile::AddressType clearOffset = block.GetOffset ();
-                    TransactedFile::SizeType clearLength = block.GetSize ();
-                    // Consolidate adjacent free blocks.
-                    TransactedFile::Block prev (file);
-                    if (block.Prev (prev) && prev.IsFree ()) {
-                        Remove ({prev.GetSize (), prev.GetOffset ()});
-                        if (file->IsSecure ()) {
-                            // Assume prev body is clear.
-                            clearOffset -= TransactedFile::Block::SIZE;
-                            clearLength += TransactedFile::Block::SIZE;
-                        }
-                        else {
-                            // Since block will grow to occupy prev,
-                            // it's offset is no longer valid.
-                            TransactedFile::Block oldBlock (file, block.GetOffset ());
-                            oldBlock.Clear ();
-                        }
-                        // Back up to cover the prev.
-                        block.SetOffset (block.GetOffset () - TransactedFile::Block::SIZE - prev.GetSize ());
-                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + prev.GetSize ());
-                    }
-                    TransactedFile::Block next (file);
-                    if (block.Next (next) && next.IsFree ()) {
-                        Remove ({next.GetSize (), next.GetOffset ()});
-                        if (file->IsSecure ()) {
-                            // Assume next body is clear.
-                            clearLength += TransactedFile::Block::SIZE;
-                        }
-                        else {
-                            // Since block will grow to occupy next,
-                            // next offset is no longer valid.
-                            TransactedFile::Block oldNext (file, next.GetOffset ());
-                            oldNext.Clear ();
-                        }
-                        // Expand to swallow the next.
-                        block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + next.GetSize ());
-                    }
-                    if (file->IsSecure ()) {
-                        // If we're the last block and we're about to
-                        // be lopped off, back up to cover the header
-                        // and extend the range to cover the footer.
-                        if (THEKOGANS_UTIL_UNLIKELY (block.IsLast ())) {
-                            clearOffset -= TransactedFile::Block::HEADER_SIZE;
-                            clearLength += TransactedFile::Block::SIZE; // HEADER_SIZE + FOOTER_SIZE
-                        }
-                        TransactedFile::Range range (file, clearOffset, clearLength, false);
-                        range.Seek (
-                            SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), FREE_POISON), SEEK_CUR);
-                    }
-                    // If we're not the last block...
-                    if (THEKOGANS_UTIL_LIKELY (!block.IsLast ())) {
-                        block.SetFree (true);
-                        block.Write ();
-                        // ...add it to the free list.
-                        Insert ({block.GetSize (), block.GetOffset ()});
-                    }
-                    else {
-                        // If we are, truncate the heap.
-                        ShrinkFile (file, TransactedFile::Block::SIZE + block.GetSize ());
-                    }
+                if (block.IsFree () && block.IsAllocatorBlock ()) {
+                    TransactedFile::Range range (file, block.GetOffset (), TransactedFile::AddressTypeSize);
+                    range >> header.freeNodeOffset;
+                    SetDirty ();
                 }
                 else {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                        "Attempting to free an unallocated block @"
-                        THEKOGANS_UTIL_UI64_FORMAT,
+                        "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
+                        ", expecting a free BTree::Node block.",
+                        offset);
+                }
+            }
+            else {
+                offset = GrowFile (file, TransactedFile::Block::SIZE + nodeBlockSize);
+            }
+            TransactedFile::Block block (file, offset, TransactedFile::Block::FLAGS_ALLOCATOR_BLOCK, nodeBlockSize);
+            block.Write ();
+            if (file->IsSecure ()) {
+                TransactedFile::Range range (file, block.GetOffset (), block.GetSize (), false);
+                range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), ALLOC_POISON), SEEK_CUR);
+            }
+            return offset;
+        }
+
+        void TransactedFileBTreeAllocator::FreeNode (TransactedFile::AddressType offset) {
+            if (offset != 0) {
+                TransactedFile::Block block (file, offset);
+                block.Read ();
+                if (!block.IsFree () && block.IsAllocatorBlock ()) {
+                    block.SetFree (true);
+                    block.Write ();
+                    TransactedFile::Range range (file, block.GetOffset (), block.GetSize (), false);
+                    range << header.freeNodeOffset;
+                    if (file->IsSecure ()) {
+                        range.Seek (SecureZeroMemory (range.GetDataPtr (), range.GetDataAvailable (), FREE_POISON), SEEK_CUR);
+                    }
+                    header.freeNodeOffset = offset;
+                    SetDirty ();
+                }
+                else {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Heap corruption @" THEKOGANS_UTIL_UI64_FORMAT
+                        ", expecting an allocated BTree::Node block.",
                         offset);
                 }
             }

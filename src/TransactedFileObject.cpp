@@ -243,7 +243,8 @@ namespace thekogans {
                 // Go straight to the source.
                 Block block (file, offset);
                 block.Read ();
-                ObjectRange range (file, offset);
+                // We're collecting diagnostics here. An empty range context is appropriate.
+                ObjectRange range (file, offset, true);
                 auto [it, inserted] = blockMap.try_emplace (block, BlockInfo{range.context});
                 if (!inserted) {
                     ++it->second.count;
@@ -297,25 +298,34 @@ namespace thekogans {
         TransactedFile::ObjectRange::ObjectRange (
                 TransactedFile *file,
                 TransactedFile::AddressType offset,
+                bool nothrow,
                 util::Allocator::SharedPtr allocator) :
                 BlockRange (file, offset, true, allocator) {
+            context.Clear ();
             ui32 magic;
             *this >> magic;
-            if (THEKOGANS_UTIL_UNLIKELY (magic != Object::MAGIC)) {
+            if (THEKOGANS_UTIL_LIKELY (magic == Object::MAGIC)) {
+                *this >> context;
+                if (THEKOGANS_UTIL_UNLIKELY (context.NeedType ()) && THEKOGANS_UTIL_LIKELY (!nothrow)) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Invalid TransactedFile::Object type @" THEKOGANS_UTIL_UI64_FORMAT,
+                        offset);
+                }
+                if (THEKOGANS_UTIL_UNLIKELY (context.NeedVersion ()) && THEKOGANS_UTIL_LIKELY (!nothrow)) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Invalid TransactedFile::Object version for type %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                        context.type.c_str (), offset);
+                }
+                if (THEKOGANS_UTIL_UNLIKELY (context.NeedSize ()) && THEKOGANS_UTIL_LIKELY (!nothrow)) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Invalid TransactedFile::Object size for type %s @" THEKOGANS_UTIL_UI64_FORMAT,
+                        context.type.c_str (), offset);
+                }
+            }
+            else if (THEKOGANS_UTIL_LIKELY (!nothrow)) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "Corrupt TransactedFile::Object: @" THEKOGANS_UTIL_UI64_FORMAT,
                     offset);
-            }
-            *this >> context;
-            if (THEKOGANS_UTIL_UNLIKELY (context.NeedType ())) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Invalid TransactedFile::Object type @" THEKOGANS_UTIL_UI64_FORMAT,
-                    offset);
-            }
-            if (THEKOGANS_UTIL_UNLIKELY (context.NeedVersion ())) {
-                THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
-                    "Invalid TransactedFile::Object version for type %s @" THEKOGANS_UTIL_UI64_FORMAT,
-                    context.type.c_str (), offset);
             }
         }
 

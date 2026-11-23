@@ -90,6 +90,7 @@ namespace thekogans {
                 /// \brief
                 /// Root node offset.
                 TransactedFile::AddressType rootOffset{0};
+                TransactedFile::AddressType freeNodeOffset{0};
 
                 /// \brief
                 /// Size of header on disk.
@@ -97,8 +98,10 @@ namespace thekogans {
                     UI32_SIZE +     // magic
                     UI32_SIZE +     // entriesPerNode
                     UI32_SIZE +     // nodesPerPage
-                    TransactedFile::AddressTypeSize;  // rootOffset
+                    TransactedFile::AddressTypeSize +  // rootOffset
+                    TransactedFile::AddressTypeSize;   // freeNodeOffset
             } header;
+            std::size_t nodeBlockSize;
             /// \brief
             /// An instance of \see{SlabAllocatorImpl} to allocate \see{Node}s.
             SlabAllocatorImpl::SharedPtr nodeAllocator;
@@ -130,19 +133,13 @@ namespace thekogans {
                 struct Entry {
                     /// \brief
                     /// Entry key.
-                    Key key;
+                    Key key{0, 0};
                     /// \brief
                     /// Right child node offset.
                     TransactedFile::AddressType rightOffset{0};
                     /// \brief
                     /// Right child node.
                     Node *right{nullptr};
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] key_ Entry key.
-                    Entry (const Key &key_ = {0, 0}) :
-                        key (key_) {}
                 } *entries;
 
                 /// \brief
@@ -155,6 +152,7 @@ namespace thekogans {
                 /// dtor.
                 virtual ~Node ();
 
+                static std::size_t BlockSize (std::size_t entriesPerNode);
                 /// \brief
                 /// Given the number of entries, return the node size in bytes.
                 /// \param[in] entriesPerNode Entries per node.
@@ -283,10 +281,7 @@ namespace thekogans {
                 /// Return the node size.
                 /// \return btree.allocator.btreeNodeFileSize.
                 virtual std::size_t Size (Serializer &serializer) noexcept override {
-                                                    // key         rightOffset
-                    constexpr std::size_t ENTRY_SIZE = Key::SIZE + TransactedFile::AddressTypeSize;
-                        // magic       count       leftOffset                        entries
-                    return UI32_SIZE + UI32_SIZE + TransactedFile::AddressTypeSize + btree->header.entriesPerNode * ENTRY_SIZE;
+                    return BlockSize (btree->header.entriesPerNode);
                 }
                 /// \brief
                 /// Read the node.
@@ -302,18 +297,15 @@ namespace thekogans {
                 static void FreeObject (
                     TransactedFile *file,
                     TransactedFile::AddressType offset);
+                static void FreeNode (
+                    TransactedFile *file,
+                    TransactedFile::AddressType offset);
+
+                virtual void AllocBlock () override;
 
                 virtual void GetBlockMap (
-                        BlockMap &allocatedBlockMap,
-                        BlockMap &referencedBlockMap) override {
-                    RecordReference (file, offset, allocatedBlockMap);
-                    for (ui32 i = 0; i <= count; ++i) {
-                        Node *child = GetChild (i);
-                        if (child != nullptr) {
-                            child->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-                        }
-                    }
-                }
+                    BlockMap &allocatedBlockMap,
+                    BlockMap &referencedBlockMap) override;
 
                 /// \brief
                 /// Node is neither copy or move constructable, nor assignable.
@@ -332,7 +324,8 @@ namespace thekogans {
                 std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
                 std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE) :
                 allocator (allocator_),
-                header{(ui32)entriesPerNode, (ui32)nodesPerPage} {}
+                header{(ui32)entriesPerNode, (ui32)nodesPerPage},
+                nodeBlockSize (Node::Size (entriesPerNode)) {}
             /// \brief
             /// dtor.
             virtual ~TransactedFileBTreeAllocatorBTree ();
@@ -434,19 +427,8 @@ namespace thekogans {
 
             // TransactedFile::Object
             virtual void Init (
-                    TransactedFile *file,
-                    TransactedFile::AddressType offset) override {
-                Object::Init (file, offset);
-                if (offset == 0) {
-                    nodeAllocator.Reset (
-                        new SlabAllocatorImpl (
-                            Node::Size (header.entriesPerNode),
-                            header.nodesPerPage,
-                            header.nodesPerPage / 4));
-                    root = Node::Alloc (this, file, 0);
-                    root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                }
-            }
+                TransactedFile *file,
+                TransactedFile::AddressType offset) override;
 
             /// \brief
             /// Free \see{Header} block using \see{TransactedFileBTreeAllocator::FreeBTreeNode}.
@@ -456,39 +438,12 @@ namespace thekogans {
                 TransactedFile::AddressType offset);
 
             virtual void GetBlockMap (
-                    BlockMap &allocatedBlockMap,
-                    BlockMap &referencedBlockMap) override {
-                RecordReference (file, offset, allocatedBlockMap);
-                if (offset != 0) {
-                    assert (root != nullptr);
-                    root->GetBlockMap (allocatedBlockMap, referencedBlockMap);
-                }
-            }
+                BlockMap &allocatedBlockMap,
+                BlockMap &referencedBlockMap) override;
 
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
                 SetDirty ();
             }
-
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Node::Entry &entry);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Node::Entry &entry);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator << (
-                Serializer &serializer,
-                const Header &header);
-            /// \brief
-            /// Needs access to private members.
-            friend Serializer &operator >> (
-                Serializer &serializer,
-                Header &header);
 
             /// \brief
             /// BTree is neither copy or move constructable, nor assignable.

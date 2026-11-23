@@ -91,10 +91,10 @@ namespace thekogans {
             }
         }
 
-        detail::TLCIndexBroker<ui64, 1> SlabAllocatorImpl::Storage::broker;
+        detail::TLCIndexBroker<ui64> SlabAllocatorImpl::Storage::broker;
         thread_local std::array<
             SlabAllocatorImpl::TLC,
-            detail::SmallTLCIndexBroker::MAX_INDEX> SlabAllocatorImpl::caches;
+            detail::TLCIndexBroker<ui64>::MAX_INDEX> SlabAllocatorImpl::caches;
 
         void *SlabAllocatorImpl::Alloc () {
             TLC &tlc = GetTLC ();

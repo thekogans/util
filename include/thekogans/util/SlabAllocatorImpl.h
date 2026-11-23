@@ -56,7 +56,7 @@ namespace thekogans {
                 const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
                 /// \brief
                 /// Global class index broker.
-                static detail::SmallTLCIndexBroker broker;
+                static detail::TLCIndexBroker<ui64> broker;
                 /// \brief
                 /// Our index in to the tlc array.
                 const std::size_t tlcIndex{broker.LeaseIndex ()};
@@ -295,7 +295,7 @@ namespace thekogans {
                 }
             };
 
-            static thread_local std::array<TLC, detail::SmallTLCIndexBroker::MAX_INDEX> caches;
+            static thread_local std::array<TLC, detail::TLCIndexBroker<ui64>::MAX_INDEX> caches;
 
             struct ThreadLifetimeManager {
                 ~ThreadLifetimeManager () noexcept {

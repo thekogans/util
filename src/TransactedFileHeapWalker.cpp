@@ -154,14 +154,21 @@ namespace thekogans {
                 Block next (file);
                 block.Next (next);
                 // Two consecutive free blocks.
-                if (block.IsFree () && next.IsFree ()) {
+                if (block.IsFree () && !block.IsAllocatorBlock () &&
+                        next.IsFree () && !next.IsAllocatorBlock ()) {
                     if (!callback (block, ERROR_TWO_CONSECUTIVE_FREE_BLOCKS)) {
                         return;
                     }
                 }
                 if (next.IsFree ()) {
                     if (file->IsSecure ()) {
-                        Range range (file, next.GetOffset (), next.GetSize ());
+                        TransactedFile::AddressType nextOffset = next.GetOffset ();
+                        TransactedFile::SizeType nextSize = next.GetSize ();
+                        if (next.IsAllocatorBlock ()) {
+                            nextOffset += TransactedFile::AddressTypeSize;
+                            nextSize -= TransactedFile::AddressTypeSize;
+                        }
+                        Range range (file, nextOffset, nextSize);
                         // Garbage in the payload of a secure heap.
                         if (has_non_fill_byte (range.GetDataPtr (),
                                 range.GetDataPtr () + range.GetDataAvailable (),
@@ -176,7 +183,7 @@ namespace thekogans {
                 block = next;
             }
             // Last block is free.
-            if (block.IsFree ()) {
+            if (block.IsFree () && !block.IsAllocatorBlock ()) {
                 if (!callback (block, ERROR_FREE_LAST_BLOCK)) {
                     return;
                 }

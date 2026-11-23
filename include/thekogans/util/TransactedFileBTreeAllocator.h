@@ -95,7 +95,8 @@ namespace thekogans {
                 std::vector<std::pair<TransactedFile::AddressType, TransactedFile::SizeType>> &freeList) const override;
 
         private:
-            void FreeHelper (TransactedFile::AddressType offset);
+            TransactedFile::AddressType AllocNode ();
+            void FreeNode (TransactedFile::AddressType offset);
 
             friend struct TransactedFileBTreeAllocatorBTree;
             friend struct TransactedFileBTreeAllocatorBTree::Node;

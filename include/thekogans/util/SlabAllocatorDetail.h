@@ -390,8 +390,8 @@ namespace thekogans {
             };
 
             template<
-                typename T = ui64,
-                std::size_t wordCount = 8>
+                typename T,
+                std::size_t wordCount = 1>
             struct TLCIndexBroker {
             private:
                 static constexpr std::size_t WORD_BITS = BitWidth<T>::value;
@@ -464,8 +464,6 @@ namespace thekogans {
                     leasedBits.fetch_and (~(static_cast<T> (1) << id), std::memory_order_release);
                 }
             };
-
-            using SmallTLCIndexBroker = TLCIndexBroker<ui64, 1>;
 
             /// \struct SlabAllocator SlabAllocatorDetail.h thekogans/util/SlabAllocatorDetail.h
             ///
@@ -789,7 +787,7 @@ namespace thekogans {
                     }
                 };
 
-                static thread_local std::array<TLC, SmallTLCIndexBroker::MAX_INDEX> caches;
+                static thread_local std::array<TLC, TLCIndexBroker<ui64>::MAX_INDEX> caches;
 
                 struct ThreadLifetimeManager {
                     ~ThreadLifetimeManager () noexcept {
@@ -817,7 +815,7 @@ namespace thekogans {
                     std::atomic<ui32> refCount{1};
                     static inline std::atomic<std::size_t> nextId{1};
                     const std::size_t id{nextId.fetch_add (1, std::memory_order_relaxed)};
-                    static SmallTLCIndexBroker broker;
+                    static TLCIndexBroker<ui64> broker;
                     const std::size_t tlcIndex{broker.LeaseIndex ()};
 
                     ~StorageBaseImpl () noexcept {
@@ -1001,9 +999,9 @@ namespace thekogans {
             template<typename T, typename... Policies>
             thread_local std::array<
                 typename SlabAllocator<T, Policies...>::TLC,
-                SmallTLCIndexBroker::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
+                TLCIndexBroker<ui64>::MAX_INDEX> SlabAllocator<T, Policies...>::caches;
             template<typename T, typename... Policies>
-            SmallTLCIndexBroker SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
+            TLCIndexBroker<ui64> SlabAllocator<T, Policies...>::StorageBaseImpl::broker;
         } // namespace detail
 
     } // namespace util

@@ -116,6 +116,19 @@ protected:
         }
 
         /// \brief
+        /// Return true if FLAGS_ALLOCATOR_BLOCK is set.
+        /// \return true if FLAGS_ALLOCATOR_BLOCK is set.
+        inline bool IsAllocatorBlock () const {
+            return flags.Test (FLAGS_ALLOCATOR_BLOCK);
+        }
+        /// \brief
+        /// Set/clear the FLAGS_ALLOCATOR_BLOCK flag.
+        /// \param[in] free true == set, false == clear
+        inline void SetAllocatorBlock (bool allocatorBlock) {
+            flags.Set (FLAGS_ALLOCATOR_BLOCK, allocatorBlock);
+        }
+
+        /// \brief
         /// Read the header from the disk.
         /// \param[in] file File to read from.
         /// \param[in] offset Offset where the header begins.
@@ -198,6 +211,7 @@ public:
     /// \brief
     /// If this flag is set, the block is free. Otherwise it's allocated.
     static constexpr ui32 FLAGS_FREE = 1;
+    static constexpr ui32 FLAGS_ALLOCATOR_BLOCK = 2;
     /// \brief
     /// Exposed because header is private.
     static constexpr std::size_t HEADER_SIZE = Header::SIZE;
@@ -259,6 +273,19 @@ public:
     /// \param[in] free true == set, false == clear
     inline void SetFree (bool free) {
         header.SetFree (free);
+    }
+
+    /// \brief
+    /// Return true if FLAGS_ALLOCATOR_BLOCK is set.
+    /// \return true if FLAGS_ALLOCATOR_BLOCK is set.
+    inline bool IsAllocatorBlock () const {
+        return header.IsAllocatorBlock ();
+    }
+    /// \brief
+    /// Set/clear the FLAGS_ALLOCATOR_BLOCK flag.
+    /// \param[in] free true == set, false == clear
+    inline void SetAllocatorBlock (bool allocatorBlock) {
+        header.SetAllocatorBlock (allocatorBlock);
     }
 
     /// \brief

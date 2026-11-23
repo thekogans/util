@@ -304,32 +304,19 @@ namespace thekogans {
                 struct Entry {
                     /// \brief
                     /// Entry key.
-                    Key *key;
+                    Key *key{nullptr};
                     /// \brief
                     /// Value block offset.
-                    TransactedFile::AddressType valueOffset;
+                    TransactedFile::AddressType valueOffset{0};
                     /// \brief
                     /// \see{Serializable} encapsulating the value.
-                    Serializable *value;
+                    Serializable *value{nullptr};
                     /// \brief
                     /// Right child node block offset.
                     TransactedFile::AddressType rightOffset{0};
                     /// \brief
                     /// Right child node.
                     Node *right{nullptr};
-
-                    /// \brief
-                    /// ctor.
-                    /// \param[in] key_ Entry key.
-                    /// \param[in] valueOffset_ Entry value offset.
-                    /// \param[in] value_ Entry value.
-                    Entry (
-                        Key *key_ = nullptr,
-                        TransactedFile::AddressType valueOffset_ = 0,
-                        Serializable *value_ = nullptr) :
-                        key (key_),
-                        valueOffset (valueOffset_),
-                        value (value_) {}
 
                     void Unsubscribe (
                         Node *node,
@@ -341,8 +328,7 @@ namespace thekogans {
                         bool subscribeRight = true);
                     void Destroy (
                         Node *node,
-                        bool isValueisObject,
-                        TransactedFile *file);
+                        bool isValueisObject);
                     void Reset (
                         Node *node,
                         bool isValueisObject,
