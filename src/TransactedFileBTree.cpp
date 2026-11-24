@@ -78,7 +78,7 @@ namespace thekogans {
             finished = true;
         }
 
-        bool TransactedFileBTree::Iterator::Next () {
+        bool TransactedFileBTree::Iterator::Next (bool ignorePrefix) {
             if (!finished) {
                 ++node.second;
                 Node *child = node.first->GetChild (node.second);
@@ -86,7 +86,7 @@ namespace thekogans {
                 if (child != nullptr) {
                     parents.push_back (NodeIndex (node.first, node.second));
                     while (child != nullptr) {
-                        if (prefix == nullptr) {
+                        if (ignorePrefix || prefix == nullptr) {
                             parents.push_back (NodeIndex (child, 0));
                             child = child->GetChild (0);
                         }
@@ -94,11 +94,8 @@ namespace thekogans {
                             ui32 index = 0;
                             if (child->FindFirstPrefix (*prefix, index)) {
                                 parents.push_back (NodeIndex (child, index));
-                                child = child->GetChild (index);
                             }
-                            else {
-                                child = child->GetChild (index);
-                            }
+                            child = child->GetChild (index);
                         }
                     }
                 }
@@ -119,7 +116,7 @@ namespace thekogans {
                     }
                 }
                 if (node.second < node.first->count) {
-                    finished = prefix != nullptr &&
+                    finished = !ignorePrefix && prefix != nullptr &&
                         prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
                 }
                 else {
@@ -132,13 +129,14 @@ namespace thekogans {
             return !finished;
         }
 
-        bool TransactedFileBTree::Iterator::Prev () {
+
+        bool TransactedFileBTree::Iterator::Prev (bool ignorePrefix) {
             if (!finished) {
                 Node *child = node.first->GetChild (node.second);
                 std::size_t savedDepth = parents.size ();
                 if (child != nullptr) {
                     parents.push_back (NodeIndex (node.first, node.second));
-                    while (child != nullptr) {
+                    while (ignorePrefix || child != nullptr) {
                         if (prefix == nullptr) {
                             parents.push_back (NodeIndex (child, child->count - 1));
                             child = child->GetChild (child->count);
@@ -416,6 +414,43 @@ namespace thekogans {
                 }
             }
             return false;
+        }
+
+        bool TransactedFileBTree::Node::FindUpperBound (
+                const Key &prefix,
+                ui32 &index) const {
+            ui32 low = 0;
+            ui32 high = count;
+            while (low < high) {
+                ui32 mid = low + ((high - low) >> 1);
+                if (prefix.PrefixCompare (*entries[mid].key) < 0) {
+                    high = mid;
+                }
+                else {
+                    low = mid + 1;
+                }
+            }
+            index = low;
+            return index < count;
+        }
+
+        // In Node: first entry >= `prefix` (either matching `prefix` or strictly greater than `prefix`).
+        bool TransactedFileBTree::Node::FindLowerBound (
+                const Key &prefix,
+                ui32 &index) const {
+            ui32 low = 0;
+            ui32 high = count;
+            while (low < high) {
+                ui32 mid = low + ((high - low) >> 1);
+                if (prefix.PrefixCompare (*entries[mid].key) <= 0) {
+                    high = mid;
+                }
+                else {
+                    low = mid + 1;
+                }
+            }
+            index = low;
+            return index < count;
         }
 
         TransactedFileBTree::Node::InsertResult TransactedFileBTree::Node::Insert (Entry &entry) {
@@ -1047,9 +1082,10 @@ namespace thekogans {
             }
         }
 
-        bool TransactedFileBTree::FindFirst (Iterator &it) {
-            if (THEKOGANS_UTIL_LIKELY (it.prefix == nullptr || it.prefix->IsKindOf (header.keyContext.type))) {
-                it.Clear ();
+        TransactedFileBTree::Iterator TransactedFileBTree::FindFirst (Key::SharedPtr prefix) {
+            if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                Iterator it (prefix);
+                std::size_t matchDepth = 0;
                 Node *node = root;
                 if (THEKOGANS_UTIL_LIKELY (node != nullptr && node->count > 0)) {
                     if (THEKOGANS_UTIL_UNLIKELY (it.prefix == nullptr)) {
@@ -1057,27 +1093,28 @@ namespace thekogans {
                             it.parents.push_back (Iterator::NodeIndex (node, 0));
                             node = node->GetChild (0);
                         } while (node != nullptr);
+                        matchDepth = it.parents.size ();
                         it.finished = false;
                     }
                     else {
                         while (node != nullptr) {
                             ui32 index = 0;
-                            if (node->FindFirstPrefix (*it.prefix, index)) {
-                                it.parents.push_back (Iterator::NodeIndex (node, index));
+                            bool found = node->FindFirstPrefix (*it.prefix, index);
+                            it.parents.push_back (Iterator::NodeIndex (node, index));
+                            if (found) {
+                                matchDepth = it.parents.size ();
                                 it.finished = false;
-                            }
-                            else if (!it.finished) {
-                                break;
                             }
                             node = node->GetChild (index);
                         }
                     }
                 }
                 if (!it.finished) {
+                    it.parents.resize (matchDepth);
                     it.node = it.parents.back ();
                     it.parents.pop_back ();
                 }
-                return !it.finished;
+                return it;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
@@ -1085,9 +1122,10 @@ namespace thekogans {
             }
         }
 
-        bool TransactedFileBTree::FindLast (Iterator &it) {
-            if (THEKOGANS_UTIL_LIKELY (it.prefix == nullptr || it.prefix->IsKindOf (header.keyContext.type))) {
-                it.Clear ();
+        TransactedFileBTree::Iterator TransactedFileBTree::FindLast (Key::SharedPtr prefix) {
+            if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                Iterator it (prefix);
+                std::size_t matchDepth = 0;
                 Node *node = root;
                 if (THEKOGANS_UTIL_LIKELY (node != nullptr && node->count > 0)) {
                     if (THEKOGANS_UTIL_UNLIKELY (it.prefix == nullptr)) {
@@ -1095,13 +1133,16 @@ namespace thekogans {
                             it.parents.push_back (Iterator::NodeIndex (node, node->count - 1));
                             node = node->GetChild (node->count);
                         } while (node != nullptr);
+                        matchDepth = it.parents.size ();
                         it.finished = false;
                     }
                     else {
                         while (node != nullptr) {
                             ui32 index = 0;
-                            if (node->FindLastPrefix (*it.prefix, index)) {
-                                it.parents.push_back (Iterator::NodeIndex (node, index));
+                            bool found = node->FindLastPrefix (*it.prefix, index);
+                            it.parents.push_back (Iterator::NodeIndex (node, index));
+                            if (found) {
+                                matchDepth = it.parents.size ();
                                 it.finished = false;
                                 node = node->GetChild (index + 1);
                             }
@@ -1114,10 +1155,81 @@ namespace thekogans {
                     }
                 }
                 if (!it.finished) {
+                    it.parents.resize (matchDepth);
                     it.node = it.parents.back ();
                     it.parents.pop_back ();
                 }
-                return !it.finished;
+                return it;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        TransactedFileBTree::Iterator TransactedFileBTree::LowerBound (Key::SharedPtr prefix) {
+            if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                Iterator it (nullptr);
+                std::size_t matchDepth = 0;
+                Node *node = root;
+                if (THEKOGANS_UTIL_LIKELY (node != nullptr && node->count > 0)) {
+                    if (THEKOGANS_UTIL_UNLIKELY (prefix == nullptr)) {
+                        do {
+                            it.parents.push_back (Iterator::NodeIndex (node, 0));
+                            node = node->GetChild (0);
+                        } while (node != nullptr);
+                        matchDepth = it.parents.size ();
+                        it.finished = false;
+                    }
+                    else {
+                        while (node != nullptr) {
+                            ui32 index = 0;
+                            bool found = node->FindLowerBound (*prefix, index);
+                            it.parents.push_back (Iterator::NodeIndex (node, index));
+                            if (found) {
+                                matchDepth = it.parents.size ();
+                                it.finished = false;
+                            }
+                            node = node->GetChild (index);
+                        }
+                    }
+                }
+                if (!it.finished) {
+                    it.parents.resize (matchDepth);
+                    it.node = it.parents.back ();
+                    it.parents.pop_back ();
+                }
+                return it;
+            }
+            else {
+                THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
+                    THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
+            }
+        }
+
+        TransactedFileBTree::Iterator TransactedFileBTree::UpperBound (Key::SharedPtr prefix) {
+            if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                Iterator it (nullptr);
+                std::size_t matchDepth = 0;
+                Node *node = root;
+                if (THEKOGANS_UTIL_LIKELY (node != nullptr && node->count > 0 && prefix != nullptr)) {
+                    while (node != nullptr) {
+                        ui32 index = 0;
+                        bool found = node->FindUpperBound (*prefix, index);
+                        it.parents.push_back (Iterator::NodeIndex (node, index));
+                        if (found) {
+                            matchDepth = it.parents.size ();
+                            it.finished = false;
+                        }
+                        node = node->GetChild (index);
+                    }
+                }
+                if (!it.finished) {
+                    it.parents.resize (matchDepth);
+                    it.node = it.parents.back ();
+                    it.parents.pop_back ();
+                }
+                return it;
             }
             else {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (

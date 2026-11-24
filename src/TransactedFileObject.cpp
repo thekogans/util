@@ -316,7 +316,7 @@ namespace thekogans {
                         "Invalid TransactedFile::Object version for type %s @" THEKOGANS_UTIL_UI64_FORMAT,
                         context.type.c_str (), offset);
                 }
-                if (THEKOGANS_UTIL_UNLIKELY (context.NeedSize ()) && THEKOGANS_UTIL_LIKELY (!nothrow)) {
+                if (THEKOGANS_UTIL_UNLIKELY (context.size > GetDataAvailable ()) && THEKOGANS_UTIL_LIKELY (!nothrow)) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Invalid TransactedFile::Object size for type %s @" THEKOGANS_UTIL_UI64_FORMAT,
                         context.type.c_str (), offset);

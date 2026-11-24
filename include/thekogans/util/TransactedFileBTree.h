@@ -178,14 +178,39 @@ namespace thekogans {
                     return finished;
                 }
 
+                Iterator (Iterator &&) noexcept = default;
+                Iterator &operator = (Iterator &&) noexcept = default;
+
                 /// \brief
                 /// Step to the next entry in the range.
                 /// \return true == Iterator is now pointing at the next entry.
                 /// Use GetKey and GetValue to examine it's contents.
                 /// false == the iterator is finished through the range or the
                 /// range was empty to begin with.
-                bool Next ();
-                bool Prev ();
+                bool Next (bool ignorePrefix = false);
+                bool Prev (bool ignorePrefix = false);
+
+                inline Iterator &operator ++ () {
+                    Next (true);
+                    return *this;
+                }
+                inline Iterator &operator -- () {
+                    Prev (true);
+                    return *this;
+                }
+
+                inline bool operator == (const Iterator &other) const {
+                    if (finished && other.finished) {
+                        return true;
+                    }
+                    if (finished != other.finished) {
+                        return false;
+                    }
+                    return node == other.node; // same Node* and same entry index!
+                }
+                inline bool operator != (const Iterator &other) const {
+                    return !(*this == other);
+                }
 
                 /// \brief
                 /// If we're not finished, return the key associated with the current entry.
@@ -415,6 +440,13 @@ namespace thekogans {
                 bool Find (
                     const Key &key,
                     ui32 &index) const;
+                bool FindUpperBound (
+                    const Key &prefix,
+                    ui32 &index) const;
+                bool FindLowerBound (
+                    const Key &prefix,
+                    ui32 &index) const;
+
                 /// \enum
                 /// Insert return codes.
                 enum InsertResult {
@@ -663,8 +695,21 @@ namespace thekogans {
             /// \return true == The iterator is pointing to the first occurance of
             /// it.prefix (or smallest element if it.prefix == nullptr). false == the
             /// iterator is empty.
-            bool FindFirst (Iterator &it);
-            bool FindLast (Iterator &it);
+            Iterator FindFirst (Key::SharedPtr prefix = nullptr);
+            Iterator FindLast (Key::SharedPtr prefix = nullptr);
+
+            Iterator LowerBound (Key::SharedPtr prefix);
+            Iterator UpperBound (Key::SharedPtr prefix);
+
+            inline Iterator Begin () {
+                return FindFirst ();
+            }
+            inline Iterator RBegin () {
+                return FindLast ();
+            }
+            inline Iterator End () {
+                return Iterator (); // finished == true
+            }
 
         protected:
             // Serializable

@@ -517,7 +517,7 @@ namespace thekogans {
                     {
                         LockGuard<Mutex> guard (btree->allocator->mutex);
                         offset = btree->allocator->AllocNode ();
-                        size = btree->nodeBlockSize;
+                        size = BlockSize (btree->header.entriesPerNode);
                     }
                     Producer<ObjectEvents>::Produce (
                         std::bind (
