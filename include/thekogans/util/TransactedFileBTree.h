@@ -23,6 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RWLock.h"
+#include "thekogans/util/RWLockGuard.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Clonable.h"
 #include "thekogans/util/ToStringConvertible.h"
@@ -711,6 +712,85 @@ namespace thekogans {
             }
             inline Iterator End () {
                 return Iterator (); // finished == true
+            }
+
+            // Forward scan over [firstPrefix, lastPrefix) (or full tree when both are nullptr):
+            // Acquires `first` and `last` once, steps `batchSize` entries per lock acquisition,
+            // releases the lock while invoking `callback(key, value)`, and resumes directly from `first`.
+            template<typename Callback>
+            void ForEach (
+                    TransactedFileBTree::Key::SharedPtr firstPrefix,
+                    TransactedFileBTree::Key::SharedPtr lastPrefix,
+                    Callback &&callback,
+                    std::size_t batchSize = 64) {
+                THEKOGANS_UTIL_ASSERT (batchSize > 0, "batchSize must be > 0.");
+                using Entry = std::pair<TransactedFileBTree::Key::SharedPtr, Serializable::SharedPtr>;
+                std::vector<Entry> batch;
+                batch.reserve (batchSize);
+                TransactedFileBTree::Iterator first;
+                TransactedFileBTree::Iterator last;
+                {
+                    RWLockGuard<RWLock> guard (rwLock, true);
+                    first = LowerBound (firstPrefix);
+                    last = UpperBound (lastPrefix);
+                }
+                while (true) {
+                    batch.clear ();
+                    {
+                        RWLockGuard<RWLock> guard (rwLock, true);
+                        for (; first != last && batch.size () < batchSize; ++first) {
+                            batch.emplace_back (first.GetKey (), first.GetValue ());
+                        }
+                    }
+                    if (batch.empty ()) {
+                        break;
+                    }
+                    for (const auto &[key, value] : batch) {
+                        if (!callback (key, value)) {
+                            return;
+                        }
+                    }
+                    if (batch.size () < batchSize) {
+                        break;
+                    }
+                }
+            }
+
+            // Symmetric reverse scan over `prefix` (or full tree when `prefix == nullptr`):
+            template<typename Callback>
+            void ForEachReverse (
+                    TransactedFileBTree::Key::SharedPtr prefix,
+                    Callback &&callback,
+                    std::size_t batchSize = 64) {
+                THEKOGANS_UTIL_ASSERT (batchSize > 0, "batchSize must be > 0.");
+                using Entry = std::pair<TransactedFileBTree::Key::SharedPtr, Serializable::SharedPtr>;
+                std::vector<Entry> batch;
+                batch.reserve (batchSize);
+                TransactedFileBTree::Iterator it;
+                {
+                    RWLockGuard<RWLock> guard (rwLock, true);
+                    it = FindLast (prefix);
+                }
+                while (true) {
+                    batch.clear ();
+                    {
+                        RWLockGuard<RWLock> guard (rwLock, true);
+                        for (; !it.IsFinished () && batch.size () < batchSize; it.Prev ()) {
+                            batch.emplace_back (it.GetKey (), it.GetValue ());
+                        }
+                    }
+                    if (batch.empty ()) {
+                        break;
+                    }
+                    for (const auto &[key, value] : batch) {
+                        if (!callback (key, value)) {
+                            return;
+                        }
+                    }
+                    if (batch.size () < batchSize) {
+                        break;
+                    }
+                }
             }
 
         protected:
