@@ -302,10 +302,25 @@ namespace thekogans {
                 util::Allocator::SharedPtr allocator) :
                 BlockRange (file, offset, true, allocator) {
             context.Clear ();
-            ui32 magic;
-            *this >> magic;
+            ui32 magic = 0;
+            try {
+                *this >> magic;
+            }
+            catch (...) {
+                if (!nothrow) {
+                    throw;
+                }
+            }
             if (THEKOGANS_UTIL_LIKELY (magic == Object::MAGIC)) {
-                *this >> context;
+                try {
+                    *this >> context;
+                }
+                catch (...) {
+                    if (!nothrow) {
+                        throw;
+                    }
+                    return;
+                }
                 if (THEKOGANS_UTIL_UNLIKELY (context.NeedType ()) && THEKOGANS_UTIL_LIKELY (!nothrow)) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Invalid TransactedFile::Object type @" THEKOGANS_UTIL_UI64_FORMAT,

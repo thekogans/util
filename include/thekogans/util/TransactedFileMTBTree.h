@@ -75,6 +75,85 @@ namespace thekogans {
             /// \return true == entry deleted. false == entry not found.
             bool Remove (const Key &key);
 
+            // Forward scan over [firstPrefix, lastPrefix) (or full tree when both are nullptr):
+            // Acquires `first` and `last` once, steps `batchSize` entries per lock acquisition,
+            // releases the lock while invoking `callback(key, value)`, and resumes directly from `first`.
+            template<typename Callback>
+            void ForEach (
+                    TransactedFileBTree::Key::SharedPtr firstPrefix,
+                    TransactedFileBTree::Key::SharedPtr lastPrefix,
+                    Callback &&callback,
+                    std::size_t batchSize = 64) {
+                THEKOGANS_UTIL_ASSERT (batchSize > 0, "batchSize must be > 0.");
+                using Entry = std::pair<TransactedFileBTree::Key::SharedPtr, Serializable::SharedPtr>;
+                std::vector<Entry> batch;
+                batch.reserve (batchSize);
+                TransactedFileBTree::Iterator first;
+                TransactedFileBTree::Iterator last;
+                {
+                    LockGuard<Mutex> guard (mutex);
+                    first = LowerBound (firstPrefix);
+                    last = UpperBound (lastPrefix);
+                }
+                while (true) {
+                    batch.clear ();
+                    {
+                        LockGuard<Mutex> guard (mutex);
+                        for (; first != last && batch.size () < batchSize; ++first) {
+                            batch.emplace_back (first.GetKey (), first.GetValue ());
+                        }
+                    }
+                    if (batch.empty ()) {
+                        break;
+                    }
+                    for (const auto &[key, value] : batch) {
+                        if (!callback (key, value)) {
+                            return;
+                        }
+                    }
+                    if (batch.size () < batchSize) {
+                        break;
+                    }
+                }
+            }
+
+            // Symmetric reverse scan over `prefix` (or full tree when `prefix == nullptr`):
+            template<typename Callback>
+            void ForEachReverse (
+                    TransactedFileBTree::Key::SharedPtr prefix,
+                    Callback &&callback,
+                    std::size_t batchSize = 64) {
+                THEKOGANS_UTIL_ASSERT (batchSize > 0, "batchSize must be > 0.");
+                using Entry = std::pair<TransactedFileBTree::Key::SharedPtr, Serializable::SharedPtr>;
+                std::vector<Entry> batch;
+                batch.reserve (batchSize);
+                TransactedFileBTree::Iterator it;
+                {
+                    LockGuard<Mutex> guard (mutex);
+                    it = FindLast (prefix);
+                }
+                while (true) {
+                    batch.clear ();
+                    {
+                        LockGuard<Mutex> guard (mutex);
+                        for (; !it.IsFinished () && batch.size () < batchSize; it.Prev ()) {
+                            batch.emplace_back (it.GetKey (), it.GetValue ());
+                        }
+                    }
+                    if (batch.empty ()) {
+                        break;
+                    }
+                    for (const auto &[key, value] : batch) {
+                        if (!callback (key, value)) {
+                            return;
+                        }
+                    }
+                    if (batch.size () < batchSize) {
+                        break;
+                    }
+                }
+            }
+
             virtual void Init (
                 TransactedFile *file,
                 TransactedFile::AddressType offset) override;

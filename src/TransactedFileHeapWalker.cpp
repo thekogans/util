@@ -145,7 +145,7 @@ namespace thekogans {
             block.Read ();
             // Block 0 cannot be free.
             if (block.IsFree ()) {
-                if (!callback (block, ERROR_FREE_BLOCK_0)) {
+                if (!callback (block, {}, ERROR_FREE_BLOCK_0)) {
                     return;
                 }
             }
@@ -156,7 +156,7 @@ namespace thekogans {
                 // Two consecutive free blocks.
                 if (block.IsFree () && !block.IsAllocatorBlock () &&
                         next.IsFree () && !next.IsAllocatorBlock ()) {
-                    if (!callback (block, ERROR_TWO_CONSECUTIVE_FREE_BLOCKS)) {
+                    if (!callback (block, {}, ERROR_TWO_CONSECUTIVE_FREE_BLOCKS)) {
                         return;
                     }
                 }
@@ -173,7 +173,7 @@ namespace thekogans {
                         if (has_non_fill_byte (range.GetDataPtr (),
                                 range.GetDataPtr () + range.GetDataAvailable (),
                                 TransactedFile::Allocator::FREE_POISON) &&
-                                !callback (next, ERROR_GARBAGE_IN_PAYLOAD)) {
+                                !callback (next, {}, ERROR_GARBAGE_IN_PAYLOAD)) {
                             return;
                         }
                     }
@@ -184,7 +184,7 @@ namespace thekogans {
             }
             // Last block is free.
             if (block.IsFree () && !block.IsAllocatorBlock ()) {
-                if (!callback (block, ERROR_FREE_LAST_BLOCK)) {
+                if (!callback (block, {}, ERROR_FREE_LAST_BLOCK)) {
                     return;
                 }
             }
@@ -195,7 +195,7 @@ namespace thekogans {
             // 1. Verify exact count match (no leaked free blocks, no phantom B-tree entries).
             if (freeBlockList.size () != allocatorFreeList.size ()) {
                 // Report count mismatch
-                if (!callback (Block (file), ERROR_FREE_COUNT_MISMATCH)) {
+                if (!callback (Block (file), {}, ERROR_FREE_COUNT_MISMATCH)) {
                     return;
                 }
             }
@@ -203,7 +203,7 @@ namespace thekogans {
             for (const Block &freeBlock : freeBlockList) {
                 std::pair<AddressType, SizeType> expected{freeBlock.GetOffset (), freeBlock.GetSize ()};
                 if (!std::binary_search (allocatorFreeList.begin (), allocatorFreeList.end (), expected)) {
-                    if (!callback (freeBlock, ERROR_BLOCK_MISSING_FROM_FREE_LIST)) {
+                    if (!callback (freeBlock, {}, ERROR_BLOCK_MISSING_FROM_FREE_LIST)) {
                         return;
                     }
                 }
@@ -217,7 +217,7 @@ namespace thekogans {
             Block block (file, TransactedFile::Header::BLOCK_OFFSET);
             block.Read ();
             if (block.IsFree ()) {
-                if (!callback (block, ERROR_FREE_BLOCK_0)) {
+                if (!callback (block, {}, ERROR_FREE_BLOCK_0)) {
                     return;
                 }
             }
@@ -240,18 +240,18 @@ namespace thekogans {
                 auto physIt = allocatedBlockSet.find (refBlock);
                 if (physIt == allocatedBlockSet.end ()) {
                     // Points to a freed/coalesced block.
-                    if (!callback (refBlock, ERROR_DANGLING_WEAK_REFERENCE)) {
+                    if (!callback (refBlock, refInfo, ERROR_DANGLING_WEAK_REFERENCE)) {
                         return;
                     }
                 }
                 else if (allocatorBlockMap.find (refBlock) == allocatorBlockMap.end ()) {
                     // Physically allocated, but has no live owner (points to an orphan!).
-                    if (!callback (refBlock, ERROR_ORPHAN_WEAK_REFERENCE)) {
+                    if (!callback (refBlock, refInfo, ERROR_ORPHAN_WEAK_REFERENCE)) {
                         return;
                     }
                 }
                 else if (physIt->GetSize () < refInfo.header.size) {
-                    if (!callback (*physIt, ERROR_TRUNCATED_BLOCK)) {
+                    if (!callback (*physIt, refInfo, ERROR_TRUNCATED_BLOCK)) {
                         return;
                     }
                 }
@@ -260,18 +260,19 @@ namespace thekogans {
             for (const Block &allocatedBlock : allocatedBlockSet) {
                 auto it = allocatorBlockMap.find (allocatedBlock);
                 if (it == allocatorBlockMap.end ()) {
-                    if (!callback (allocatedBlock, ERROR_ORPHAN_BLOCK)) {
+                    ObjectRange range (file, allocatedBlock.GetOffset (), true);
+                    if (!callback (allocatedBlock, {range.context, 0}, ERROR_ORPHAN_BLOCK)) {
                         return;
                     }
                 }
                 else {
                     if (it->second.count > 1) {
-                        if (!callback (allocatedBlock, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
+                        if (!callback (allocatedBlock, it->second, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
                             return;
                         }
                     }
                     if (allocatedBlock.GetSize () < it->second.header.size) {
-                        if (!callback (allocatedBlock, ERROR_TRUNCATED_BLOCK)) {
+                        if (!callback (allocatedBlock, it->second, ERROR_TRUNCATED_BLOCK)) {
                             return;
                         }
                     }
@@ -281,11 +282,11 @@ namespace thekogans {
             // 3. Report any claimed owned blocks that don't exist in allocatedBlockSet.
             for (const auto &[block, info] : allocatorBlockMap) {
                 if (info.count > 1) {
-                    if (!callback (block, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
+                    if (!callback (block, info, ERROR_DUPLICATE_BLOCK_REFERENCE)) {
                         return;
                     }
                 }
-                if (!callback (block, ERROR_DANGLING_BLOCK_REFERENCE)) {
+                if (!callback (block, info, ERROR_DANGLING_BLOCK_REFERENCE)) {
                     return;
                 }
             }

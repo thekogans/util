@@ -49,7 +49,10 @@ struct _LIB_THEKOGANS_UTIL_DECL HeapWalker {
         "ERROR_ORPHAN_WEAK_REFERENCE"
     };
 
-    using Callback = std::function<bool (const Block &block, std::size_t errorCode)>;
+    using Callback = std::function<bool (
+        const Block &block,
+        const Object::BlockInfo &info,
+        std::size_t errorCode)>;
 
     static void ValidateHeap (
         TransactedFile *file,
