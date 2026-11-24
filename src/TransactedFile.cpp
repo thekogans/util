@@ -90,15 +90,15 @@ namespace thekogans {
                 // dictionary to allow us to bootstrap the header.
                 dictionary (new TransactedFileTypeDictionary) {
         #if defined (TOOLCHAIN_OS_OSX)
-            fcntl (handle, F_NOCACHE, 1);
-        #endif // defined (TOOLCHAIN_OS_OSX)
             // Turn off OS page buffering. With PageMap's page alignment,
             // we don't need the cost of extra copying.
+            fcntl (handle, F_NOCACHE, 1);
+        #endif // defined (TOOLCHAIN_OS_OSX)
             Range magicRange (this, 0, UI32_SIZE);
             ui32 magic;
             magicRange >> magic;
             if (THEKOGANS_UTIL_LIKELY (magic == MAGIC32)) {
-                // Log is host endian.
+                // File is host endian.
             }
             else if (ByteSwap<GuestEndian, HostEndian> (magic) == MAGIC32) {
                 // File is guest endian.
