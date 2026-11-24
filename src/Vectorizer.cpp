@@ -120,14 +120,7 @@ namespace thekogans {
                     job = &job_;
                     if (chunkSize_ == SIZE_T_MAX ||
                             chunkSize_ * (workers.size () + 1) < job->Size ()) {
-                        workerCount = workers.size () + 1;
-                        chunkSize = job->Size () / workerCount;
-                        if (workerCount * chunkSize < job->Size ()) {
-                            // Since we are holding workers constant, we
-                            // must update chunkSize to account for the
-                            // remainder.
-                            ++chunkSize;
-                        }
+                        chunkSize = GetDefaultChunkSize (job->Size ());
                     }
                     else {
                         chunkSize = MIN (chunkSize_, job->Size ());

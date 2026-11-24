@@ -40,6 +40,9 @@ namespace thekogans {
             /// \brief
             /// StringValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringValue)
+            /// \brief
+            /// StringKey has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (StringValue)
 
             /// \brief
             /// The actual string.
@@ -82,6 +85,9 @@ namespace thekogans {
             /// \brief
             /// StringValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ClonableStringValue)
+            /// \brief
+            /// StringKey has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (ClonableStringValue)
 
             /// \brief
             /// ctor.

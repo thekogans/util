@@ -151,6 +151,21 @@ namespace thekogans {
             ~Vectorizer ();
 
             /// \brief
+            /// Return Vectorizer vector width.
+            /// \return Vector width.
+            inline std::size_t Width () const noexcept {
+                return workers.size () + 1;
+            }
+
+            inline std::size_t GetDefaultChunkSize (std::size_t jobSize) const noexcept {
+                std::size_t defaultChunkSize = jobSize / Width ();
+                if (Width () * defaultChunkSize < jobSize) {
+                    ++defaultChunkSize;
+                }
+                return defaultChunkSize;
+            }
+
+            /// \brief
             /// In order to provide fine grained control over job
             /// chunking (and because applications know the complexity
             /// of their own jobs), Execute takes a chunkSize_ parameter.

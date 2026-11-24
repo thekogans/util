@@ -22,6 +22,7 @@
 #include <vector>
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
+#include "thekogans/util/RWLock.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Clonable.h"
 #include "thekogans/util/ToStringConvertible.h"
@@ -612,6 +613,7 @@ namespace thekogans {
                     SetDirty ();
                 }
             } *root{nullptr};
+            RWLock rwLock;
 
             /// \brief
             /// Default number of entries per node.

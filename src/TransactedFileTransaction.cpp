@@ -44,12 +44,40 @@ namespace thekogans {
                 file->phase = PHASE_ABORT;
                 file->size = file->GetSize ();
                 file->Clear (true);
-                file->Producer<TransactedFileTransactionEvents>::Produce (
-                    std::bind (
-                        &TransactedFileTransactionEvents::OnTransactedFileTransactionAbort,
-                        std::placeholders::_1,
-                        file),
-                    true);
+
+                std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> totalAbortedObjects;
+                if (file->Producer<TransactedFileTransactionEvents>::GetSubscribers (totalAbortedObjects, true) != 0) {
+                    struct AbortJob : public Vectorizer::Job {
+                        TransactedFile *file;
+                        std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &totalAbortedObjects;
+                        AbortJob (
+                            TransactedFile *file_,
+                            std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &totalAbortedObjects_) :
+                            file (file_),
+                            totalAbortedObjects (totalAbortedObjects_) {}
+                        virtual void Execute (
+                                std::size_t startIndex,
+                                std::size_t endIndex,
+                                std::size_t /*rank*/) noexcept {
+                            for (; startIndex < endIndex; ++startIndex) {
+                                auto subscriber = totalAbortedObjects[startIndex].first.GetSharedPtr ();
+                                if (subscriber != nullptr) {
+                                    totalAbortedObjects[startIndex].second->DeliverEvent (
+                                        std::bind (
+                                            &TransactedFileTransactionEvents::OnTransactedFileTransactionAbort,
+                                            std::placeholders::_1,
+                                            file),
+                                        subscriber);
+                                }
+                            }
+                        }
+                        virtual std::size_t Size () const noexcept {
+                            return totalAbortedObjects.size ();
+                        }
+                    } abortJob (file, totalAbortedObjects);
+                    GlobalVectorizer::Instance ()->Execute (
+                        abortJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (abortJob.Size ()), 128));
+                }
                 file->phase = PHASE_NONE;
             }
         }
@@ -71,7 +99,6 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP); // Crash/Abort before corrupting disk!
                     }
-#if 1
                     struct AllocJob : public Vectorizer::Job {
                         TransactedFile *file;
                         std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &currentDirtyBatch;
@@ -101,21 +128,8 @@ namespace thekogans {
                             return currentDirtyBatch.size ();
                         }
                     } allocJob (file, currentDirtyBatch);
-                    GlobalVectorizer::Instance ()->Execute (allocJob, 32);
-#else
-                    for (const auto &subscriber : currentDirtyBatch) {
-                        auto subscriber_ = subscriber.first.GetSharedPtr ();
-                        if (subscriber_ != nullptr) {
-                            subscriber.second->DeliverEvent (
-                                std::bind (
-                                    &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
-                                    std::placeholders::_1,
-                                    file,
-                                    PHASE_ALLOC),
-                                subscriber_);
-                        }
-                    }
-#endif
+                    GlobalVectorizer::Instance ()->Execute (
+                        allocJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (allocJob.Size ()), 128));
                     if (totalCommittedObjects.empty ()) {
                         totalCommittedObjects = std::move (currentDirtyBatch);
                     }
@@ -149,7 +163,6 @@ namespace thekogans {
                 // STEP 2: UNIFIED FLUSH PASS (PHASE 2 ONLY)
                 // =========================================================================
                 file->phase = PHASE_FLUSH;
-#if 1
                 struct FlushJob : public Vectorizer::Job {
                     TransactedFile *file;
                     std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &totalCommittedObjects;
@@ -179,21 +192,8 @@ namespace thekogans {
                         return totalCommittedObjects.size ();
                     }
                 } flushJob (file, totalCommittedObjects);
-                GlobalVectorizer::Instance ()->Execute (flushJob, 16);
-#else
-                for (const auto &subscriber : totalCommittedObjects) {
-                    auto subscriber_ = subscriber.first.GetSharedPtr ();
-                    if (subscriber_ != nullptr) {
-                        subscriber.second->DeliverEvent (
-                            std::bind (
-                                &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
-                                std::placeholders::_1,
-                                file,
-                                PHASE_FLUSH),
-                            subscriber_);
-                    }
-                }
-#endif
+                GlobalVectorizer::Instance ()->Execute (
+                    flushJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (flushJob.Size ()), 128));
                 // =========================================================================
                 // STEP 3: WRITE AHEAD LOG (WAL)
                 // =========================================================================

@@ -51,12 +51,6 @@ namespace thekogans {
             /// Declare \see{RefCounted} pointers.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTreeRegistry)
 
-        private:
-            /// \brief
-            /// Synchronization lock.
-            Mutex mutex;
-
-        public:
             /// \brief
             /// Default number of entries per \see{TransactedFileBTree::Node}.
             static const std::size_t DEFAULT_ENTRIES_PER_NODE = 32;

@@ -16,7 +16,7 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstring>
-#include "thekogans/util/Heap.h"
+#include "thekogans/util/RWLockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFileBTree.h"
@@ -316,32 +316,64 @@ namespace thekogans {
             return entries[index].key;
         }
 
-        Serializable::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
-            if (THEKOGANS_UTIL_UNLIKELY (entries[index].value == nullptr && entries[index].valueOffset != 0)) {
-                TransactedFile::ObjectRange valueRange (file, entries[index].valueOffset);
-                TransactedFile::Object::SharedPtr value;
-                valueRange >> value;
-                value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-                entries[index].value = value.Release ();
+        namespace {
+            constexpr std::size_t FAULT_IN_STRIPE_COUNT = 64;
+            Mutex faultInStripes[FAULT_IN_STRIPE_COUNT];
+
+            inline Mutex &GetFaultInStripe (
+                const void *node,
+                ui32 slot) noexcept {
+                std::uintptr_t hash =
+                    (reinterpret_cast<std::uintptr_t> (node) >> 6) ^
+                    (static_cast<std::uintptr_t> (slot) * 2654435761u);
+                return faultInStripes[hash & (FAULT_IN_STRIPE_COUNT - 1)];
             }
-            return entries[index].value;
+        }
+
+        Serializable::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
+            Serializable *val = __atomic_load_n (&entries[index].value, __ATOMIC_ACQUIRE);
+            if (THEKOGANS_UTIL_UNLIKELY (val == nullptr && entries[index].valueOffset != 0)) {
+                LockGuard<Mutex> guard (GetFaultInStripe (this, index + 1024));
+                val = __atomic_load_n (&entries[index].value, __ATOMIC_ACQUIRE);
+                if (val == nullptr) {
+                    TransactedFile::ObjectRange valueRange (file, entries[index].valueOffset);
+                    TransactedFile::Object::SharedPtr value;
+                    valueRange >> value;
+                    value->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                    val = value.Release ();
+                    __atomic_store_n (&entries[index].value, val, __ATOMIC_RELEASE);
+                }
+            }
+            return val;
         }
 
         TransactedFileBTree::Node *TransactedFileBTree::Node::GetChild (ui32 index) {
             if (THEKOGANS_UTIL_UNLIKELY (index == 0)) {
-                if (THEKOGANS_UTIL_UNLIKELY (left == nullptr && leftOffset != 0)) {
-                    left = Alloc (btree, file, leftOffset);
-                    left->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                Node *child = __atomic_load_n (&left, __ATOMIC_ACQUIRE);
+                if (THEKOGANS_UTIL_UNLIKELY (child == nullptr && leftOffset != 0)) {
+                    LockGuard<Mutex> guard (GetFaultInStripe (this, 0));
+                    child = __atomic_load_n (&left, __ATOMIC_ACQUIRE);
+                    if (child == nullptr) {
+                        child = Alloc (btree, file, leftOffset);
+                        child->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                        __atomic_store_n (&left, child, __ATOMIC_RELEASE);
+                    }
                 }
-                return left;
+                return child;
             }
             else {
                 --index;
-                if (THEKOGANS_UTIL_UNLIKELY (entries[index].right == nullptr && entries[index].rightOffset != 0)) {
-                    entries[index].right = Alloc (btree, file, entries[index].rightOffset);
-                    entries[index].right->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                Node *child = __atomic_load_n (&entries[index].right, __ATOMIC_ACQUIRE);
+                if (THEKOGANS_UTIL_UNLIKELY (child == nullptr && entries[index].rightOffset != 0)) {
+                    LockGuard<Mutex> guard (GetFaultInStripe (this, index + 1));
+                    child = __atomic_load_n (&entries[index].right, __ATOMIC_ACQUIRE);
+                    if (child == nullptr) {
+                        child = Alloc (btree, file, entries[index].rightOffset);
+                        child->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
+                        __atomic_store_n (&entries[index].right, child, __ATOMIC_RELEASE);
+                    }
                 }
-                return entries[index].right;
+                return child;
             }
         }
 
@@ -1002,6 +1034,7 @@ namespace thekogans {
 
         Serializable::SharedPtr TransactedFileBTree::Find (const Key &key) {
             if (THEKOGANS_UTIL_LIKELY (key.IsKindOf (header.keyContext.type))) {
+                RWLockGuard guard (rwLock, true);
                 ui32 index = 0;
                 for (Node *node = root; node != nullptr; node = node->GetChild (index)) {
                     if (node->Find (key, index)) {
@@ -1024,6 +1057,7 @@ namespace thekogans {
                     ((header.IsValueIsObject () &&
                         dynamic_refcounted_sharedptr_cast<TransactedFile::Object> (value) != nullptr) ||
                         header.valueContext.NeedType () || value->IsKindOf (header.valueContext.type)))) {
+                RWLockGuard guard (rwLock, false);
                 key = key->Clone ();
                 TransactedFile::AddressType valueOffset = 0;
                 if (!header.IsValueIsObject ()) {
@@ -1071,6 +1105,7 @@ namespace thekogans {
 
         bool TransactedFileBTree::Remove (const Key &key) {
             if (THEKOGANS_UTIL_LIKELY (key.IsKindOf (header.keyContext.type))) {
+                RWLockGuard guard (rwLock, false);
                 bool removed = root->Remove (key);
                 if (removed) {
                     if (THEKOGANS_UTIL_UNLIKELY (root->IsEmpty () && root->GetChild (0) != nullptr)) {
@@ -1094,6 +1129,7 @@ namespace thekogans {
 
         TransactedFileBTree::Iterator TransactedFileBTree::FindFirst (Key::SharedPtr prefix) {
             if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                RWLockGuard guard (rwLock, true);
                 Iterator it (prefix);
                 std::size_t matchDepth = 0;
                 Node *node = root;
@@ -1134,6 +1170,7 @@ namespace thekogans {
 
         TransactedFileBTree::Iterator TransactedFileBTree::FindLast (Key::SharedPtr prefix) {
             if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                RWLockGuard guard (rwLock, true);
                 Iterator it (prefix);
                 std::size_t matchDepth = 0;
                 Node *node = root;
@@ -1179,6 +1216,7 @@ namespace thekogans {
 
         TransactedFileBTree::Iterator TransactedFileBTree::LowerBound (Key::SharedPtr prefix) {
             if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                RWLockGuard guard (rwLock, true);
                 Iterator it (nullptr);
                 std::size_t matchDepth = 0;
                 Node *node = root;
@@ -1219,6 +1257,7 @@ namespace thekogans {
 
         TransactedFileBTree::Iterator TransactedFileBTree::UpperBound (Key::SharedPtr prefix) {
             if (THEKOGANS_UTIL_LIKELY (prefix == nullptr || prefix->IsKindOf (header.keyContext.type))) {
+                RWLockGuard guard (rwLock, true);
                 Iterator it (nullptr);
                 std::size_t matchDepth = 0;
                 Node *node = root;
