@@ -71,6 +71,38 @@ namespace thekogans {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP); // Crash/Abort before corrupting disk!
                     }
+#if 1
+                    struct AllocJob : public Vectorizer::Job {
+                        TransactedFile *file;
+                        std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &currentDirtyBatch;
+                        AllocJob (
+                            TransactedFile *file_,
+                            std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &currentDirtyBatch_) :
+                            file (file_),
+                            currentDirtyBatch (currentDirtyBatch_) {}
+                        virtual void Execute (
+                                std::size_t startIndex,
+                                std::size_t endIndex,
+                                std::size_t /*rank*/) noexcept {
+                            for (; startIndex < endIndex; ++startIndex) {
+                                auto subscriber = currentDirtyBatch[startIndex].first.GetSharedPtr ();
+                                if (subscriber != nullptr) {
+                                    currentDirtyBatch[startIndex].second->DeliverEvent (
+                                        std::bind (
+                                            &TransactedFileTransactionEvents::OnTransactedFileTransactionCommit,
+                                            std::placeholders::_1,
+                                            file,
+                                            PHASE_ALLOC),
+                                        subscriber);
+                                }
+                            }
+                        }
+                        virtual std::size_t Size () const noexcept {
+                            return currentDirtyBatch.size ();
+                        }
+                    } allocJob (file, currentDirtyBatch);
+                    GlobalVectorizer::Instance ()->Execute (allocJob, 32);
+#else
                     for (const auto &subscriber : currentDirtyBatch) {
                         auto subscriber_ = subscriber.first.GetSharedPtr ();
                         if (subscriber_ != nullptr) {
@@ -83,6 +115,7 @@ namespace thekogans {
                                 subscriber_);
                         }
                     }
+#endif
                     if (totalCommittedObjects.empty ()) {
                         totalCommittedObjects = std::move (currentDirtyBatch);
                     }
@@ -146,7 +179,7 @@ namespace thekogans {
                         return totalCommittedObjects.size ();
                     }
                 } flushJob (file, totalCommittedObjects);
-                GlobalVectorizer::Instance ()->Execute (flushJob);
+                GlobalVectorizer::Instance ()->Execute (flushJob, 16);
 #else
                 for (const auto &subscriber : totalCommittedObjects) {
                     auto subscriber_ = subscriber.first.GetSharedPtr ();

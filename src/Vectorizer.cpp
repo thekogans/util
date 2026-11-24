@@ -108,7 +108,8 @@ namespace thekogans {
             if (job_.Size () > 0) {
                 // If we are running on a uni-processor, don't waste time with
                 // setup.
-                if (!workers.empty ()) {
+                if (!workers.empty () &&
+                        (chunkSize_ == SIZE_T_MAX || job_.Size () > chunkSize_)) {
                     // Vectorizer is, as it's name implies, a global
                     // resource. It is not re-entrant. We therefore need to
                     // serialize access to the one and only entry point.

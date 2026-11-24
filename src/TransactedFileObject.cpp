@@ -146,8 +146,8 @@ namespace thekogans {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
                 std::size_t objectSize = 0;
                 {
-                    Serializer::ContextGuard guard (*file);
-                    size = Size (*file);
+                    Range range (file, 0, 0);
+                    size = Size (range);
                     SerializableHeader header{Type (), Version (), size};
                     objectSize = UI32_SIZE + file->Size (header) + size;
                 }

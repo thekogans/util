@@ -129,34 +129,44 @@ namespace thekogans {
             return !finished;
         }
 
-
         bool TransactedFileBTree::Iterator::Prev (bool ignorePrefix) {
             if (!finished) {
                 Node *child = node.first->GetChild (node.second);
                 std::size_t savedDepth = parents.size ();
                 if (child != nullptr) {
+                    std::size_t matchDepth = 0;
                     parents.push_back (NodeIndex (node.first, node.second));
-                    while (ignorePrefix || child != nullptr) {
-                        if (prefix == nullptr) {
-                            parents.push_back (NodeIndex (child, child->count - 1));
+                    while (child != nullptr) {
+                        if (ignorePrefix || prefix == nullptr) {
+                            parents.push_back (NodeIndex (child, child->count));
+                            matchDepth = parents.size ();
                             child = child->GetChild (child->count);
                         }
                         else {
                             ui32 index = 0;
                             if (child->FindLastPrefix (*prefix, index)) {
-                                parents.push_back (NodeIndex (child, index));
+                                parents.push_back (NodeIndex (child, index + 1));
+                                matchDepth = parents.size ();
                                 child = child->GetChild (index + 1);
                             }
                             else {
+                                parents.push_back (NodeIndex (child, index));
                                 child = child->GetChild (index);
                             }
                         }
+                    }
+                    if (matchDepth > 0) {
+                        parents.resize (matchDepth);
+                    }
+                    else {
+                        parents.resize (savedDepth + 1);
                     }
                 }
                 if (parents.size () > savedDepth + 1) {
                     // Found a matching predecessor inside `child`'s subtree.
                     node = parents.back ();
                     parents.pop_back ();
+                    --node.second;
                 }
                 else {
                     // Either `child == nullptr` or `child`'s subtree contained no matching prefix entries.
@@ -184,7 +194,7 @@ namespace thekogans {
                     }
                 }
                 if (!finished) {
-                    finished = prefix != nullptr &&
+                    finished = !ignorePrefix && prefix != nullptr &&
                         prefix->PrefixCompare (*node.first->entries[node.second].key) != 0;
                 }
             }
@@ -1130,7 +1140,7 @@ namespace thekogans {
                 if (THEKOGANS_UTIL_LIKELY (node != nullptr && node->count > 0)) {
                     if (THEKOGANS_UTIL_UNLIKELY (it.prefix == nullptr)) {
                         do {
-                            it.parents.push_back (Iterator::NodeIndex (node, node->count - 1));
+                            it.parents.push_back (Iterator::NodeIndex (node, node->count));
                             node = node->GetChild (node->count);
                         } while (node != nullptr);
                         matchDepth = it.parents.size ();
@@ -1140,15 +1150,14 @@ namespace thekogans {
                         while (node != nullptr) {
                             ui32 index = 0;
                             bool found = node->FindLastPrefix (*it.prefix, index);
-                            it.parents.push_back (Iterator::NodeIndex (node, index));
                             if (found) {
+                                it.parents.push_back (Iterator::NodeIndex (node, index + 1));
                                 matchDepth = it.parents.size ();
                                 it.finished = false;
                                 node = node->GetChild (index + 1);
                             }
                             else {
-                                // `index` is the child slot where `prefix` belongs (even if no entry in
-                                // `node` matched `prefix`, a descendant under `GetChild(index)` might).
+                                it.parents.push_back (Iterator::NodeIndex (node, index));
                                 node = node->GetChild (index);
                             }
                         }
@@ -1158,6 +1167,7 @@ namespace thekogans {
                     it.parents.resize (matchDepth);
                     it.node = it.parents.back ();
                     it.parents.pop_back ();
+                    --it.node.second;
                 }
                 return it;
             }
