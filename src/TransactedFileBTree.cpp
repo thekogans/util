@@ -1350,21 +1350,6 @@ namespace thekogans {
             serializer << MAGIC32 << header;
         }
 
-        void TransactedFileBTree::Init (
-                TransactedFile *file,
-                TransactedFile::AddressType offset) {
-            Object::Init (file, offset);
-            if (offset == 0) {
-                nodeAllocator.Reset (
-                    new SlabAllocatorImpl (
-                        Node::Size (header.entriesPerNode),
-                        Node::SlotsPerPage (header.entriesPerNode),
-                        Node::TLCSize (header.entriesPerNode)));
-                root = Node::Alloc (this, file, 0);
-                root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
-            }
-        }
-
         void TransactedFileBTree::FreeObject (
                 TransactedFile *file,
                 TransactedFile::AddressType offset) {
@@ -1385,6 +1370,21 @@ namespace thekogans {
                             offset);
                     }
                 }
+            }
+        }
+
+        void TransactedFileBTree::Init (
+                TransactedFile *file,
+                TransactedFile::AddressType offset) {
+            Object::Init (file, offset);
+            if (offset == 0) {
+                nodeAllocator.Reset (
+                    new SlabAllocatorImpl (
+                        Node::Size (header.entriesPerNode),
+                        Node::SlotsPerPage (header.entriesPerNode),
+                        Node::TLCSize (header.entriesPerNode)));
+                root = Node::Alloc (this, file, 0);
+                root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }
         }
 

@@ -409,10 +409,10 @@ namespace thekogans {
                                 break; // This 64-bit word is full; move to next word.
                             }
                             T next = current | (static_cast<T> (1) << freeBit);
-                            if (leasedBits[word].compare_exchange_weak (
+                            if (THEKOGANS_UTIL_LIKELY (leasedBits[word].compare_exchange_weak (
                                     current, next,
                                     std::memory_order_acquire,
-                                    std::memory_order_relaxed)) {
+                                    std::memory_order_relaxed))) {
                                 return word * WORD_BITS + freeBit;
                             }
                         }
@@ -450,9 +450,10 @@ namespace thekogans {
                             throw std::runtime_error ("Exceeded maximum concurrent allocators.");
                         }
                         T next = current | (static_cast<T> (1) << freeBit);
-                        if (leasedBits.compare_exchange_weak (current, next,
+                        if (THEKOGANS_UTIL_UNLIKELY (leasedBits.compare_exchange_weak (
+                                current, next,
                                 std::memory_order_acquire,
-                                std::memory_order_relaxed)) {
+                                std::memory_order_relaxed))) {
                             return freeBit;
                         }
                         // If exchange failed, current is updated automatically; retry loop.
@@ -765,7 +766,7 @@ namespace thekogans {
                     /// dtor. Return our locally cached slots back to the global page pool.
                     inline void Release () noexcept {
                         if (storage != nullptr) {
-                            if (slotList != nullptr) {
+                            if (THEKOGANS_UTIL_LIKELY (slotList != nullptr)) {
                                 Page *page = slotList->GetPage ();
                                 // Even though, technically, GetPage can return nullptr,
                                 // these are our internal slots not some random void *
@@ -827,7 +828,7 @@ namespace thekogans {
                     }
 
                     void Release () noexcept {
-                        if (refCount.fetch_sub (1, std::memory_order_acq_rel) == 1) {
+                        if (THEKOGANS_UTIL_UNLIKELY (refCount.fetch_sub (1, std::memory_order_acq_rel) == 1)) {
                             delete this;
                         }
                     }
@@ -889,12 +890,12 @@ namespace thekogans {
                             LockGuard<Lock> guard (storage->lock);
                             while (tlc.slotCount < batchTarget) {
                                 // Inner loop aggressively drains whatever pages are currently available.
-                                while (tlc.slotCount < batchTarget && storage->partialPageList != nullptr) {
+                                while (tlc.slotCount < batchTarget && THEKOGANS_UTIL_LIKELY (storage->partialPageList != nullptr)) {
                                     tlc.Push (storage->partialPageList->Alloc ());
                                 }
                                 // If inner loop broke but target isn't met, the pool is dry.
                                 // Seed a fresh page from the OS and let the outer loop repeat the harvest.
-                                if (tlc.slotCount < batchTarget) {
+                                if (THEKOGANS_UTIL_UNLIKELY (tlc.slotCount < batchTarget)) {
                                     assert (storage->partialPageList == nullptr);
                                     AllocPage ();
                                 }
@@ -960,7 +961,7 @@ namespace thekogans {
                         storage->lock.Acquire ();
                     }
                     // ...we need to allocate it.
-                    if (storage->partialPageList == nullptr) {
+                    if (THEKOGANS_UTIL_LIKELY (storage->partialPageList == nullptr)) {
                         // Set the in flight flag before releasing the lock so that no other thread
                         // tries to allocate a page too.
                         storage->pageAllocationInFlight.store (true, std::memory_order_relaxed);

@@ -20,8 +20,6 @@
 
 #include <string>
 #include "thekogans/util/Config.h"
-#include "thekogans/util/Mutex.h"
-#include "thekogans/util/LockGuard.h"
 #include "thekogans/util/TransactedFileBTree.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFile.h"

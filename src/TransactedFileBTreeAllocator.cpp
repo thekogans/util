@@ -33,11 +33,11 @@ namespace thekogans {
                     TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
             }
             TransactedFile::AddressType offset = 0;
-            if (size > 0) {
-                if (size < TransactedFile::MIN_USER_DATA_SIZE) {
+            if (THEKOGANS_UTIL_LIKELY (size > 0)) {
+                if (THEKOGANS_UTIL_UNLIKELY (size < TransactedFile::MIN_USER_DATA_SIZE)) {
                     size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
-                LockGuard<Mutex> guard (mutex);
+                LockGuard<SpinLock> guard (spinLock);
                 TransactedFileBTreeAllocatorBTree::Key result;
                 if (size <= nodeBlockSize && header.freeNodeOffset != 0) {
                     result.size = nodeBlockSize;
@@ -113,7 +113,7 @@ namespace thekogans {
                     if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
                         // Check to see if the block would straddle a page boundary...
                         TransactedFile::AddressType pageOffset = result.offset & file->GetPageMask ();
-                        if (pageOffset + size + TransactedFile::Block::HEADER_SIZE > file->GetPageSize ()) {
+                        if (THEKOGANS_UTIL_UNLIKELY (pageOffset + size + TransactedFile::Block::HEADER_SIZE > file->GetPageSize ())) {
                             // ...it would. Now check to see if the block would fit aligned...
                             remainder = file->GetPageSize () - pageOffset;
                             if (remainder >= TransactedFile::MIN_BLOCK_SIZE && result.size >= remainder + size) {
@@ -135,14 +135,14 @@ namespace thekogans {
                         offset = result.offset;
                         // We check to see if there's enough remaining after allocation to split the block...
                         remainder = result.size - size;
-                        if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
+                        if (THEKOGANS_UTIL_LIKELY (remainder >= TransactedFile::MIN_BLOCK_SIZE)) {
                             // ...there is. Add a free block.
                             TransactedFile::Block next (
                                 file,
                                 result.offset + size + TransactedFile::Block::SIZE,
                                 TransactedFile::Block::FLAGS_FREE,
                                 remainder - TransactedFile::Block::SIZE);
-                            if (!next.IsLast ()) {
+                            if (THEKOGANS_UTIL_LIKELY (!next.IsLast ())) {
                                 next.Write ();
                                 Insert ({next.GetSize (), next.GetOffset ()});
                             }
@@ -180,7 +180,7 @@ namespace thekogans {
                     // and align us with a page boundary. Otherwise, because
                     // there can be no gaps between blocks, we will straddle
                     // a page boundary.
-                    if (remainder < size + TransactedFile::Block::SIZE &&
+                    if (THEKOGANS_UTIL_UNLIKELY (remainder < size + TransactedFile::Block::SIZE) &&
                             remainder >= TransactedFile::MIN_BLOCK_SIZE &&
                             size <= (file->GetPageSize () - TransactedFile::Block::SIZE)) {
                         TransactedFile::Block prev (
@@ -199,8 +199,8 @@ namespace thekogans {
                     // Otherwise, we fit in the ramainder. Check if what will remain
                     // after our allocation would be too small for a block and cause
                     // the next allocation to straddle the page boundry...
-                    else if (remainder >= size + TransactedFile::Block::SIZE &&
-                            (remainder - size - TransactedFile::Block::SIZE) < TransactedFile::MIN_BLOCK_SIZE) {
+                    else if (THEKOGANS_UTIL_LIKELY (remainder >= size + TransactedFile::Block::SIZE) &&
+                            THEKOGANS_UTIL_UNLIKELY ((remainder - size - TransactedFile::Block::SIZE) < TransactedFile::MIN_BLOCK_SIZE)) {
                         // ...it is. Round up the size request to align the next
                         // allocation to a page boundary.
                         size = remainder - TransactedFile::Block::SIZE;
@@ -234,16 +234,18 @@ namespace thekogans {
                     offset);
             }
             // To honor the Allocator policy, we ignore NULL pointers.
-            if (offset != 0) {
-                LockGuard<Mutex> guard (mutex);
+            if (THEKOGANS_UTIL_LIKELY (offset != 0)) {
+                LockGuard<SpinLock> guard (spinLock);
                 TransactedFile::Block block (file, offset);
                 block.Read ();
-                if (!block.IsFree ()) {
+                if (THEKOGANS_UTIL_LIKELY (!block.IsFree ())) {
                     TransactedFile::AddressType clearOffset = block.GetOffset ();
                     TransactedFile::SizeType clearLength = block.GetSize ();
                     // Consolidate adjacent free blocks.
                     TransactedFile::Block prev (file);
-                    if (block.Prev (prev) && prev.IsFree () && !prev.IsAllocatorBlock ()) {
+                    if (THEKOGANS_UTIL_LIKELY (block.Prev (prev)) &&
+                            prev.IsFree () &&
+                            THEKOGANS_UTIL_LIKELY (!prev.IsAllocatorBlock ())) {
                         Remove ({prev.GetSize (), prev.GetOffset ()});
                         if (file->IsSecure ()) {
                             // Assume prev body is clear.
@@ -261,7 +263,7 @@ namespace thekogans {
                         block.SetSize (block.GetSize () + TransactedFile::Block::SIZE + prev.GetSize ());
                     }
                     TransactedFile::Block next (file);
-                    if (block.Next (next) && next.IsFree () && !next.IsAllocatorBlock ()) {
+                    if (THEKOGANS_UTIL_LIKELY (block.Next (next)) && next.IsFree () && THEKOGANS_UTIL_LIKELY (!next.IsAllocatorBlock ())) {
                         Remove ({next.GetSize (), next.GetOffset ()});
                         if (file->IsSecure ()) {
                             // Assume next body is clear.
@@ -319,32 +321,32 @@ namespace thekogans {
                     "in progress and allocation phases (%s).",
                     TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
             }
-            if (offset == 0) {
+            if (THEKOGANS_UTIL_UNLIKELY (offset == 0)) {
                 offset = Alloc (size);
             }
-            else if (size > 0) {
+            else if (THEKOGANS_UTIL_LIKELY (size > 0)) {
                 if (THEKOGANS_UTIL_UNLIKELY (offset == TransactedFile::Header::BLOCK_OFFSET)) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Catastrophic Heap Invariance Violation: Attempted to reallocate "
-                        "the master metadata bootstrap anchor page at offset " THEKOGANS_UTIL_UI64_FORMAT,
+                        "the master metadata bootstrap anchor page @" THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
                 TransactedFile::Block block (file, offset);
                 block.Read ();
-                if (block.IsFree ()) {
+                if (THEKOGANS_UTIL_UNLIKELY (block.IsFree ())) {
                     THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                         "Attempting to reallocate an unallocated block @"
                         THEKOGANS_UTIL_UI64_FORMAT,
                         offset);
                 }
-                if (size < TransactedFile::MIN_USER_DATA_SIZE) {
+                if (THEKOGANS_UTIL_UNLIKELY (size < TransactedFile::MIN_USER_DATA_SIZE)) {
                     size = TransactedFile::MIN_USER_DATA_SIZE;
                 }
                 if (block.GetSize () < size) {
                     // See if there's an ajacent free block we can grow in to.
                     bool grownInPlace = false;
                     {
-                        LockGuard<Mutex> guard (mutex);
+                        LockGuard<SpinLock> guard (spinLock);
                         TransactedFile::Block next (file);
                         if (THEKOGANS_UTIL_UNLIKELY (block.Next (next) && next.IsFree () && !next.IsAllocatorBlock ())) {
                             TransactedFile::SizeType available =
@@ -375,7 +377,7 @@ namespace thekogans {
                     if (THEKOGANS_UTIL_LIKELY (!grownInPlace)) {
                         // Reallocate the block.
                         offset = Alloc (size);
-                        if (moveData) {
+                        if (THEKOGANS_UTIL_UNLIKELY (moveData)) {
                             TransactedFile::Range oldRange (
                                 file, block.GetOffset (), block.GetSize ());
                             TransactedFile::Range range (file, offset, size, false);
@@ -386,12 +388,12 @@ namespace thekogans {
                         Free (block.GetOffset ());
                     }
                 }
-                else if (block.GetSize () > size) {
+                else if (THEKOGANS_UTIL_UNLIKELY (block.GetSize () > size)) {
                     // Shrink the block.
                     // If the new size leaves room for another block, split existing block.
                     TransactedFile::SizeType remainder = block.GetSize () - size;
                     if (remainder >= TransactedFile::MIN_BLOCK_SIZE) {
-                        LockGuard<Mutex> guard (mutex);
+                        LockGuard<SpinLock> guard (spinLock);
                         // If this block happens to be the last physical block on the heap,
                         // do not split it into a ghost free-list chunk—truncate the file tail cleanly instead!
                         if (THEKOGANS_UTIL_UNLIKELY (block.IsLast ())) {
@@ -436,17 +438,17 @@ namespace thekogans {
 
         std::size_t TransactedFileBTreeAllocator::GetFreeList (
                 std::vector<std::pair<TransactedFile::AddressType, TransactedFile::SizeType>> &freeList) const {
-            LockGuard<Mutex> guard (const_cast<Mutex &> (mutex));
+            LockGuard<SpinLock> guard (const_cast<SpinLock &> (spinLock));
             freeList.clear ();
             Iterator it;
-            for (FindFirst (it); !it.IsFinished (); it.Next ()) {
+            for (FindFirst (it); THEKOGANS_UTIL_UNLIKELY (!it.IsFinished ()); it.Next ()) {
                 const Key &key = it.GetKey ();
                 freeList.emplace_back (key.offset, key.size);
             }
             std::unordered_set<TransactedFile::AddressType> visitedFreeNodeOffsets;
             TransactedFile::AddressType freeNodeOffset = header.freeNodeOffset;
             while (freeNodeOffset != 0) {
-                if (visitedFreeNodeOffsets.insert (freeNodeOffset).second) {
+                if (THEKOGANS_UTIL_LIKELY (visitedFreeNodeOffsets.insert (freeNodeOffset).second)) {
                     freeList.emplace_back (freeNodeOffset, nodeBlockSize);
                     TransactedFile::Range range (file, freeNodeOffset, TransactedFile::AddressTypeSize);
                     range >> freeNodeOffset;
@@ -467,7 +469,7 @@ namespace thekogans {
                 offset = header.freeNodeOffset;
                 TransactedFile::Block block (file, offset);
                 block.Read ();
-                if (block.IsFree () && block.IsAllocatorBlock ()) {
+                if (THEKOGANS_UTIL_LIKELY (block.IsFree () && block.IsAllocatorBlock ())) {
                     TransactedFile::Range range (file, block.GetOffset (), TransactedFile::AddressTypeSize);
                     range >> header.freeNodeOffset;
                     SetDirty ();
@@ -495,7 +497,7 @@ namespace thekogans {
             if (offset != 0) {
                 TransactedFile::Block block (file, offset);
                 block.Read ();
-                if (!block.IsFree () && block.IsAllocatorBlock ()) {
+                if (THEKOGANS_UTIL_LIKELY (!block.IsFree () && block.IsAllocatorBlock ())) {
                     block.SetFree (true);
                     block.Write ();
                     TransactedFile::Range range (file, block.GetOffset (), block.GetSize (), false);

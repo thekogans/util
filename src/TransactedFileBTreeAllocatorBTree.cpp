@@ -493,19 +493,14 @@ namespace thekogans {
                         TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
                 }
                 TransactedFileBTreeAllocator::SharedPtr allocator = file->GetAllocator ();
-                if (allocator != nullptr) {
-                    allocator->FreeNode (offset);
-                    file->Producer<TransactedFileStructureEvents>::Produce (
-                        std::bind (
-                            &TransactedFileStructureEvents::OnTransactedFileOffsetDestroyed,
-                            std::placeholders::_1,
-                            file,
-                            offset));
-                }
-                else {
-                    // throw
-                    assert (0);
-                }
+                assert (allocator != nullptr);
+                allocator->FreeNode (offset);
+                file->Producer<TransactedFileStructureEvents>::Produce (
+                    std::bind (
+                        &TransactedFileStructureEvents::OnTransactedFileOffsetDestroyed,
+                        std::placeholders::_1,
+                        file,
+                        offset));
             }
         }
 
@@ -515,7 +510,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
                 if (offset == 0) {
                     {
-                        LockGuard<Mutex> guard (btree->allocator->mutex);
+                        LockGuard<SpinLock> guard (btree->allocator->spinLock);
                         offset = btree->allocator->AllocNode ();
                         size = BlockSize (btree->header.entriesPerNode);
                     }

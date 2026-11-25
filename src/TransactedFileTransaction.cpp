@@ -27,6 +27,10 @@
 namespace thekogans {
     namespace util {
 
+        namespace {
+            static constexpr std::size_t MIN_VECTORIZER_CHUNK_SIZE = 100;
+        }
+
         TransactedFile::Transaction::Transaction (TransactedFile *file_) :
                 file (file_),
                 guard (file->mutex) {
@@ -85,7 +89,10 @@ namespace thekogans {
                         }
                     } reloadJob (file, totalAbortedObjects);
                     GlobalVectorizer::Instance ()->Execute (
-                        reloadJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (reloadJob.Size ()), 128));
+                        reloadJob,
+                        MAX (
+                            GlobalVectorizer::Instance ()->GetDefaultChunkSize (reloadJob.Size ()),
+                            MIN_VECTORIZER_CHUNK_SIZE));
                 }
                 file->phase = PHASE_NONE;
             }
@@ -148,7 +155,10 @@ namespace thekogans {
                         }
                     } allocJob (file, currentDirtyBatch);
                     GlobalVectorizer::Instance ()->Execute (
-                        allocJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (allocJob.Size ()), 128));
+                        allocJob,
+                        MAX (
+                            GlobalVectorizer::Instance ()->GetDefaultChunkSize (allocJob.Size ()),
+                            MIN_VECTORIZER_CHUNK_SIZE));
                     if (totalCommittedObjects.empty ()) {
                         totalCommittedObjects = std::move (currentDirtyBatch);
                     }
@@ -212,7 +222,10 @@ namespace thekogans {
                     }
                 } flushJob (file, totalCommittedObjects);
                 GlobalVectorizer::Instance ()->Execute (
-                    flushJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (flushJob.Size ()), 128));
+                    flushJob,
+                    MAX (
+                        GlobalVectorizer::Instance ()->GetDefaultChunkSize (flushJob.Size ()),
+                        MIN_VECTORIZER_CHUNK_SIZE));
                 // =========================================================================
                 // STEP 3: WRITE AHEAD LOG (WAL)
                 // =========================================================================

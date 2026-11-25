@@ -36,8 +36,8 @@ namespace thekogans {
                 tlcSize (tlcSize_),
                 tlcBatchSize (tlcSize > 2 ? tlcSize / 2 : 1) {
             // Validate input.
-            if (slotSize < sizeof (Page::Slot *) || slotsPerPage == 0 ||
-                tlcSize == 0 || tlcSize > slotsPerPage) {
+            if (THEKOGANS_UTIL_UNLIKELY (slotSize < sizeof (Page::Slot *) || slotsPerPage == 0 ||
+                    tlcSize == 0 || tlcSize > slotsPerPage)) {
                 THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                     THEKOGANS_UTIL_OS_ERROR_CODE_EINVAL);
             }
@@ -55,7 +55,7 @@ namespace thekogans {
 
         SlabAllocatorImpl::Page::Slot *SlabAllocatorImpl::Page::Alloc () noexcept {
             Slot *slot = nullptr;
-            if (header.freeList != nullptr) {
+            if (THEKOGANS_UTIL_UNLIKELY (header.freeList != nullptr)) {
                 slot = header.freeList;
                 header.freeList = slot->next;
             }
@@ -105,7 +105,8 @@ namespace thekogans {
                 while (tlc.slotCount < storage->tlcBatchSize) {
                     // As long as there are partial pages to harvest and
                     // we haven't drank are fill...
-                    while (tlc.slotCount < storage->tlcBatchSize && storage->partialPageList != nullptr) {
+                    while (tlc.slotCount < storage->tlcBatchSize &&
+                            THEKOGANS_UTIL_LIKELY (storage->partialPageList != nullptr)) {
                         tlc.Push (storage->partialPageList->Alloc ());
                     }
                     // ...the above loop broke because, a) we're full or
@@ -123,7 +124,7 @@ namespace thekogans {
         void SlabAllocatorImpl::Free (void *ptr) noexcept {
             if (THEKOGANS_UTIL_LIKELY (ptr != nullptr)) {
                 Page::Slot *slot = reinterpret_cast<Page::Slot *> (ptr);
-                if (slot->GetPage (storage->pageMask)) {
+                if (THEKOGANS_UTIL_LIKELY (slot->GetPage (storage->pageMask))) {
                     TLC &tlc = GetTLC ();
                     tlc.Push (slot);
                     // If we have no more room in our local cache batch
@@ -140,7 +141,7 @@ namespace thekogans {
 
         void SlabAllocatorImpl::ReleaseTLC () noexcept {
             TLC &tlc = caches[storage->tlcIndex];
-            if (tlc.storage == storage) {
+            if (THEKOGANS_UTIL_LIKELY (tlc.storage == storage)) {
                 tlc.Release ();
             }
         }
