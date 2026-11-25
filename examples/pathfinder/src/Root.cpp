@@ -140,8 +140,9 @@ namespace thekogans {
             // maintained without regard to case. All searches
             // must be performed caseless too.
             util::StringKey originalPrefix (*patternBegin);
-            util::TransactedFileBTree::Iterator it (new util::StringKey (*patternBegin, true));
-            for (componentBTree->FindFirst (it); !it.IsFinished (); it.Next ()) {
+            for (util::TransactedFileBTree::Iterator it =
+                    componentBTree->FindFirst (new util::StringKey (*patternBegin, true));
+                    !it.IsFinished (); ++it) {
                 // To honor the case request we filter out everything that
                 // doesn't match.
                 if (ignoreCase || originalPrefix.PrefixCompare (*it.GetKey ()) == 0) {
