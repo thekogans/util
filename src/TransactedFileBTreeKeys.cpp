@@ -27,6 +27,33 @@ namespace thekogans {
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::StringKey, 1, 0, TransactedFileBTree::Key::TYPE)
 
+#if 1
+        i32 StringKey::PrefixCompare (const Key &key_) const {
+            if (THEKOGANS_UTIL_LIKELY (key_.Type () == TYPE)) {
+                const std::string &rhs = static_cast<const StringKey &> (key_).key;
+                return ignoreCase ?
+                    StringCompareIgnoreCase (key.c_str (), rhs.c_str (), key.size ()) :
+                    StringCompare (key.c_str (), rhs.c_str (), key.size ());
+            }
+            std::string rhs = key_.ToString ();
+            return ignoreCase ?
+                StringCompareIgnoreCase (key.c_str (), rhs.c_str (), key.size ()) :
+                StringCompare (key.c_str (), rhs.c_str (), key.size ());
+        }
+
+        i32 StringKey::Compare (const Key &key_) const {
+            if (THEKOGANS_UTIL_LIKELY (key_.Type () == TYPE)) {
+                const std::string &rhs = static_cast<const StringKey &> (key_).key;
+                return ignoreCase ?
+                    StringCompareIgnoreCase (key.c_str (), rhs.c_str ()) :
+                    StringCompare (key.c_str (), rhs.c_str ());
+            }
+            std::string rhs = key_.ToString ();
+            return ignoreCase ?
+                StringCompareIgnoreCase (key.c_str (), rhs.c_str ()) :
+                StringCompare (key.c_str (), rhs.c_str ());
+        }
+#else
         i32 StringKey::PrefixCompare (const Key &key_) const {
             return ignoreCase ?
                 StringCompareIgnoreCase (key.c_str (), key_.ToString ().c_str (), key.size ()) :
@@ -38,6 +65,7 @@ namespace thekogans {
                 StringCompareIgnoreCase (key.c_str (), key_.ToString ().c_str ()) :
                 StringCompare (key.c_str (), key_.ToString ().c_str ());
         }
+#endif
 
         THEKOGANS_UTIL_IMPLEMENT_SERIALIZABLE (
             thekogans::util::GUIDKey, 1, GUID::SIZE, TransactedFileBTree::Key::TYPE)

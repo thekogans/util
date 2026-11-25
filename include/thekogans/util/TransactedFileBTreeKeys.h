@@ -41,7 +41,10 @@ namespace thekogans {
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (StringKey)
             /// \brief
             /// StringKey has a private heap to help with memory fragmentation.
-            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (StringKey)
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (
+                StringKey,
+                Policy::SlotsPerPage<1024>,
+                Policy::TLCSize<256>)
 
             /// \brief
             /// The actual key.

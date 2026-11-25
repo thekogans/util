@@ -247,24 +247,30 @@ namespace thekogans {
                     Subscriber<T> &subscriber,
                     typename EventDeliveryPolicy::SharedPtr eventDeliveryPolicy =
                         new ImmediateEventDeliveryPolicy) {
-                LockGuard<SpinLock> guard (spinLock);
-                auto [it, inserted] = subscribers.insert (
-                    typename Subscribers::value_type (
-                        &subscriber,
-                        SubscriberInfo (
-                            typename Subscriber<T>::WeakPtr (&subscriber),
-                            eventDeliveryPolicy)));
-                if (!inserted) {
-                    // A previous subscriber at this exact heap address expired without
-                    // unsubscribing. Replace the stale tombstoned entry!
-                    if (it->second.first.IsExpired ()) {
-                        it->second = SubscriberInfo (
-                            typename Subscriber<T>::WeakPtr (&subscriber),
-                            eventDeliveryPolicy);
-                        return true;
+                std::pair<typename Subscribers::iterator, bool> result{subscribers.end (), false};
+                {
+                    LockGuard<SpinLock> guard (spinLock);
+                    result = subscribers.insert (
+                        typename Subscribers::value_type (
+                            &subscriber,
+                            SubscriberInfo (
+                                typename Subscriber<T>::WeakPtr (&subscriber),
+                                eventDeliveryPolicy)));
+                    if (!result.second) {
+                        // A previous subscriber at this exact heap address expired without
+                        // unsubscribing. Replace the stale tombstoned entry!
+                        if (result.first->second.first.IsExpired ()) {
+                            result.first->second = SubscriberInfo (
+                                typename Subscriber<T>::WeakPtr (&subscriber),
+                                eventDeliveryPolicy);
+                            result.second = true;
+                        }
                     }
                 }
-                return inserted;
+                if (THEKOGANS_UTIL_LIKELY (result.second)) {
+                    OnNewSubscriber (subscriber, eventDeliveryPolicy);
+                }
+                return result.second;
             }
 
             /// \brief
@@ -343,6 +349,10 @@ namespace thekogans {
                 LockGuard<SpinLock> guard (spinLock);
                 return subscribers.size ();
             }
+
+            virtual void OnNewSubscriber (
+                Subscriber<T> & /*subscriber*/,
+                typename EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) {}
 
             /// \brief
             /// Producer is neither copy or move constructable, nor assignable.

@@ -16,7 +16,6 @@
 // along with libthekogans_util. If not, see <http://www.gnu.org/licenses/>.
 
 #include <cstring>
-#include "thekogans/util/RWLockGuard.h"
 #include "thekogans/util/Exception.h"
 #include "thekogans/util/TransactedFileBTreeKeys.h"
 #include "thekogans/util/TransactedFileBTree.h"
@@ -298,8 +297,18 @@ namespace thekogans {
             Reset ();
         }
 
-        std::size_t TransactedFileBTree::Node::Size (std::size_t entriesPerNode) {
+        std::size_t TransactedFileBTree::Node::Size (std::size_t entriesPerNode) noexcept {
             return sizeof (Node) + entriesPerNode * sizeof (Entry);
+        }
+
+        std::size_t TransactedFileBTree::Node::SlotsPerPage (std::size_t entriesPerNode) noexcept {
+            std::size_t slots = 32768 / Size (entriesPerNode);
+            return slots < 32 ? 32 : (slots > 512 ? 512 : slots);
+        }
+
+        std::size_t TransactedFileBTree::Node::TLCSize (std::size_t entriesPerNode) noexcept {
+            std::size_t tlc = SlotsPerPage (entriesPerNode) / 2;
+            return tlc < 16 ? 16 : (tlc > 128 ? 128 : tlc);
         }
 
         TransactedFileBTree::Node *TransactedFileBTree::Node::Alloc (
@@ -318,9 +327,9 @@ namespace thekogans {
 
         namespace {
             constexpr std::size_t FAULT_IN_STRIPE_COUNT = 64;
-            Mutex faultInStripes[FAULT_IN_STRIPE_COUNT];
+            SpinLock faultInStripes[FAULT_IN_STRIPE_COUNT];
 
-            inline Mutex &GetFaultInStripe (
+            inline SpinLock &GetFaultInStripe (
                 const void *node,
                 ui32 slot) noexcept {
                 std::uintptr_t hash =
@@ -333,7 +342,7 @@ namespace thekogans {
         Serializable::SharedPtr TransactedFileBTree::Node::GetValue (ui32 index) {
             Serializable *val = __atomic_load_n (&entries[index].value, __ATOMIC_ACQUIRE);
             if (THEKOGANS_UTIL_UNLIKELY (val == nullptr && entries[index].valueOffset != 0)) {
-                LockGuard<Mutex> guard (GetFaultInStripe (this, index + 1024));
+                LockGuard<SpinLock> guard (GetFaultInStripe (this, index + 1024));
                 val = __atomic_load_n (&entries[index].value, __ATOMIC_ACQUIRE);
                 if (val == nullptr) {
                     TransactedFile::ObjectRange valueRange (file, entries[index].valueOffset);
@@ -351,7 +360,7 @@ namespace thekogans {
             if (THEKOGANS_UTIL_UNLIKELY (index == 0)) {
                 Node *child = __atomic_load_n (&left, __ATOMIC_ACQUIRE);
                 if (THEKOGANS_UTIL_UNLIKELY (child == nullptr && leftOffset != 0)) {
-                    LockGuard<Mutex> guard (GetFaultInStripe (this, 0));
+                    LockGuard<SpinLock> guard (GetFaultInStripe (this, 0));
                     child = __atomic_load_n (&left, __ATOMIC_ACQUIRE);
                     if (child == nullptr) {
                         child = Alloc (btree, file, leftOffset);
@@ -365,7 +374,7 @@ namespace thekogans {
                 --index;
                 Node *child = __atomic_load_n (&entries[index].right, __ATOMIC_ACQUIRE);
                 if (THEKOGANS_UTIL_UNLIKELY (child == nullptr && entries[index].rightOffset != 0)) {
-                    LockGuard<Mutex> guard (GetFaultInStripe (this, index + 1));
+                    LockGuard<SpinLock> guard (GetFaultInStripe (this, index + 1));
                     child = __atomic_load_n (&entries[index].right, __ATOMIC_ACQUIRE);
                     if (child == nullptr) {
                         child = Alloc (btree, file, entries[index].rightOffset);
@@ -1319,8 +1328,8 @@ namespace thekogans {
             nodeAllocator.Reset (
                 new SlabAllocatorImpl (
                     Node::Size (header.entriesPerNode),
-                    header.nodesPerPage,
-                    header.nodesPerPage / 4));
+                    Node::SlotsPerPage (header.entriesPerNode),
+                    Node::TLCSize (header.entriesPerNode)));
             root = Node::Alloc (this, file, header.rootOffset);
             root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
         }
@@ -1338,8 +1347,8 @@ namespace thekogans {
                 nodeAllocator.Reset (
                     new SlabAllocatorImpl (
                         Node::Size (header.entriesPerNode),
-                        header.nodesPerPage,
-                        header.nodesPerPage / 4));
+                        Node::SlotsPerPage (header.entriesPerNode),
+                        Node::TLCSize (header.entriesPerNode)));
                 root = Node::Alloc (this, file, 0);
                 root->Producer<TransactedFile::ObjectEvents>::Subscribe (*this);
             }

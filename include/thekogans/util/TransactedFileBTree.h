@@ -23,6 +23,7 @@
 #include "thekogans/util/Config.h"
 #include "thekogans/util/Types.h"
 #include "thekogans/util/RWLock.h"
+#include "thekogans/util/SpinRWLock.h"
 #include "thekogans/util/RWLockGuard.h"
 #include "thekogans/util/Serializable.h"
 #include "thekogans/util/Clonable.h"
@@ -50,7 +51,8 @@ namespace thekogans {
         /// And value can be any \see{Serializable} derived type.
         struct _LIB_THEKOGANS_UTIL_DECL TransactedFileBTree :
                 public virtual TransactedFile::Object,
-                public Subscriber<TransactedFile::ObjectEvents> {
+                public Subscriber<TransactedFile::ObjectEvents>,
+                public Producer<TransactedFileTransactionEvents> {
             /// \brief
             /// TransactedFileBTree is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (TransactedFileBTree)
@@ -375,7 +377,9 @@ namespace thekogans {
                 /// Given the number of entries, return the node size in bytes.
                 /// \param[in] entriesPerNode Entries per node.
                 /// \return Size of node in memory.
-                static std::size_t Size (std::size_t entriesPerNode);
+                static std::size_t Size (std::size_t entriesPerNode) noexcept;
+                static std::size_t SlotsPerPage (std::size_t entriesPerNode) noexcept;
+                static std::size_t TLCSize (std::size_t entriesPerNode) noexcept;
                 /// \brief
                 /// Allocate a node.
                 /// \param[in] btree TransactedFileBTree to which this node belongs.
@@ -614,7 +618,7 @@ namespace thekogans {
                     SetDirty ();
                 }
             } *root{nullptr};
-            RWLock rwLock;
+            SpinRWLock rwLock;
 
             /// \brief
             /// Default number of entries per node.
@@ -730,14 +734,13 @@ namespace thekogans {
                 TransactedFileBTree::Iterator first;
                 TransactedFileBTree::Iterator last;
                 {
-                    RWLockGuard<RWLock> guard (rwLock, true);
                     first = LowerBound (firstPrefix);
                     last = UpperBound (lastPrefix);
                 }
                 while (true) {
                     batch.clear ();
                     {
-                        RWLockGuard<RWLock> guard (rwLock, true);
+                        RWLockGuard<SpinRWLock> guard (rwLock, true);
                         for (; first != last && batch.size () < batchSize; ++first) {
                             batch.emplace_back (first.GetKey (), first.GetValue ());
                         }
@@ -768,13 +771,12 @@ namespace thekogans {
                 batch.reserve (batchSize);
                 TransactedFileBTree::Iterator it;
                 {
-                    RWLockGuard<RWLock> guard (rwLock, true);
                     it = FindLast (prefix);
                 }
                 while (true) {
                     batch.clear ();
                     {
-                        RWLockGuard<RWLock> guard (rwLock, true);
+                        RWLockGuard<SpinRWLock> guard (rwLock, true);
                         for (; !it.IsFinished () && batch.size () < batchSize; it.Prev ()) {
                             batch.emplace_back (it.GetKey (), it.GetValue ());
                         }
