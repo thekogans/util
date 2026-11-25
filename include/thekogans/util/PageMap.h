@@ -1042,6 +1042,11 @@ namespace thekogans {
                 return pageMask;
             }
 
+            inline std::size_t GetWorkingSetCount () {
+                LockGuard<Lock> guard (lock);
+                return pageList.size ();
+            }
+
             /// \brief
             /// Return the \see{Page} that contains the given offset.
             /// \param[in] offset Offset whose page to return.

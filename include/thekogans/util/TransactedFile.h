@@ -277,6 +277,10 @@ namespace thekogans {
                 PageMap64::Clear (false);
             }
 
+            inline std::size_t GetWorkingSetCount () {
+                return PageMap64::GetWorkingSetCount ();
+            }
+
             /// \brief
             /// Return true if secure.
             /// \return true == secure.

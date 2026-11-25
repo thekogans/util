@@ -44,13 +44,22 @@ namespace thekogans {
                 file->phase = PHASE_ABORT;
                 file->size = file->GetSize ();
                 file->Clear (true);
-
                 std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> totalAbortedObjects;
                 if (file->Producer<TransactedFileTransactionEvents>::GetSubscribers (totalAbortedObjects, true) != 0) {
-                    struct AbortJob : public Vectorizer::Job {
+                    for (std::size_t i = 0; i < totalAbortedObjects.size (); ++i) {
+                        typename Subscriber<TransactedFileTransactionEvents>::SharedPtr subscriber =
+                            totalAbortedObjects[i].first.GetSharedPtr ();
+                        if (subscriber != nullptr) {
+                            Producer<TransactedFileTransactionEvents>::SharedPtr producer = subscriber;
+                            if (producer != nullptr) {
+                                producer->GetSubscribers (totalAbortedObjects, true);
+                            }
+                        }
+                    }
+                    struct ReloadJob : public Vectorizer::Job {
                         TransactedFile *file;
                         std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &totalAbortedObjects;
-                        AbortJob (
+                        ReloadJob (
                             TransactedFile *file_,
                             std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &totalAbortedObjects_) :
                             file (file_),
@@ -74,9 +83,9 @@ namespace thekogans {
                         virtual std::size_t Size () const noexcept {
                             return totalAbortedObjects.size ();
                         }
-                    } abortJob (file, totalAbortedObjects);
+                    } reloadJob (file, totalAbortedObjects);
                     GlobalVectorizer::Instance ()->Execute (
-                        abortJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (abortJob.Size ()), 128));
+                        reloadJob, MAX (GlobalVectorizer::Instance ()->GetDefaultChunkSize (reloadJob.Size ()), 128));
                 }
                 file->phase = PHASE_NONE;
             }
@@ -98,6 +107,16 @@ namespace thekogans {
                     if (THEKOGANS_UTIL_UNLIKELY (++iterations > MAX_CONVERGENCE_WAVES)) {
                         THEKOGANS_UTIL_THROW_ERROR_CODE_EXCEPTION (
                             THEKOGANS_UTIL_OS_ERROR_CODE_ELOOP); // Crash/Abort before corrupting disk!
+                    }
+                    for (std::size_t i = 0; i < currentDirtyBatch.size (); ++i) {
+                        typename Subscriber<TransactedFileTransactionEvents>::SharedPtr subscriber =
+                            currentDirtyBatch[i].first.GetSharedPtr ();
+                        if (subscriber != nullptr) {
+                            Producer<TransactedFileTransactionEvents>::SharedPtr producer = subscriber;
+                            if (producer != nullptr) {
+                                producer->GetSubscribers (currentDirtyBatch, true);
+                            }
+                        }
                     }
                     struct AllocJob : public Vectorizer::Job {
                         TransactedFile *file;

@@ -161,7 +161,7 @@ public:
     }
     void SetDestroyed ();
 
-    inline bool IsDirty () {
+    virtual bool IsDirty () {
         return file->Producer<TransactedFileTransactionEvents>::IsSubscribed (*this);
     }
     /// \brief

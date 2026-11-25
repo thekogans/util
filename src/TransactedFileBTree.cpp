@@ -34,7 +34,6 @@ namespace thekogans {
             size +=
                 Serializer::Size (flags) +
                 Serializer::Size (entriesPerNode) +
-                Serializer::Size (nodesPerPage) +
                 Serializer::Size (rootOffset);
             return size;
         }
@@ -46,7 +45,7 @@ namespace thekogans {
                 Serializer::ContextGuard guard (serializer);
                 serializer << header.keyContext << header.valueContext;
             }
-            serializer << header.flags << header.entriesPerNode << header.nodesPerPage << header.rootOffset;
+            serializer << header.flags << header.entriesPerNode << header.rootOffset;
             return serializer;
         }
 
@@ -57,7 +56,7 @@ namespace thekogans {
                 Serializer::ContextGuard guard (serializer);
                 serializer >> header.keyContext >> header.valueContext;
             }
-            serializer >> header.flags >> header.entriesPerNode >> header.nodesPerPage >> header.rootOffset;
+            serializer >> header.flags >> header.entriesPerNode >> header.rootOffset;
             return serializer;
         }
 
@@ -989,6 +988,21 @@ namespace thekogans {
             }
         }
 
+        void TransactedFileBTree::Node::SetDirty () {
+            THEKOGANS_UTIL_ASSERT (!IsDestroyed (),
+                "Calling TransactedFile::Object::SetDirty on a destroyed object.");
+            if (THEKOGANS_UTIL_LIKELY (file != nullptr)) {
+                if (THEKOGANS_UTIL_UNLIKELY (!file->CheckCanMutate ())) {
+                    THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
+                        "Structural Logic Error: TransactedFile::Object::SetDirty can only be "
+                        "called durring transaction in progress and allocation phases (%s).",
+                        TransactedFile::Transaction::phaseName[file->GetTransactionPhase ()]);
+                }
+                btree->Producer<TransactedFileTransactionEvents>::Subscribe (*this);
+                Serializable::SetDirty ();
+            }
+        }
+
         void TransactedFileBTree::Node::GetBlockMap (
                 BlockMap &allocatedBlockMap,
                 BlockMap &referencedBlockMap) {
@@ -1015,19 +1029,16 @@ namespace thekogans {
                 const SerializableHeader &keyContext,
                 const SerializableHeader &valueContext,
                 bool valueIsObject,
-                std::size_t entriesPerNode,
-                std::size_t nodesPerPage) :
+                std::size_t entriesPerNode) :
                 header (
                     keyContext,
                     valueContext,
                     valueIsObject ? Header::FLAGS_VALUE_IS_OBJECT : 0,
-                    (ui32)entriesPerNode,
-                    (ui32)nodesPerPage),
+                    (ui32)entriesPerNode),
                 keyFactory (Key::GetTypeFactory (keyContext.type)),
                 valueFactory (TransactedFile::Object::GetTypeFactory (valueContext.type)) {
             if (THEKOGANS_UTIL_UNLIKELY ((!keyContext.NeedType () && !Key::IsType (keyContext.type)) ||
-                    (!valueContext.NeedType () && !Serializable::IsType (valueContext.type)) ||
-                    entriesPerNode < 3 || nodesPerPage < 4)) {
+                    (!valueContext.NeedType () && !Serializable::IsType (valueContext.type)) || entriesPerNode < 3)) {
                 THEKOGANS_UTIL_THROW_STRING_EXCEPTION (
                     "key (%s) / value (%s) types are not valid.",
                     keyContext.type.c_str (), valueContext.type.c_str ());
@@ -1302,7 +1313,7 @@ namespace thekogans {
                 Header header_;
                 serializer >> header_;
                 if (THEKOGANS_UTIL_LIKELY ((header.keyContext.NeedType () ||
-                        header.keyContext == header_.keyContext) &&
+                            header.keyContext == header_.keyContext) &&
                         (header.valueContext.NeedType () ||
                             header.valueContext == header_.valueContext))) {
                     header = header_;

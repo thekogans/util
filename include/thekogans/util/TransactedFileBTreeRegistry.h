@@ -54,9 +54,6 @@ namespace thekogans {
             /// \brief
             /// Default number of entries per \see{TransactedFileBTree::Node}.
             static const std::size_t DEFAULT_ENTRIES_PER_NODE = 32;
-            /// \brief
-            /// Number of \see{TransactedFileBTree::Node}s that will fit in to a \see{SlabAllocatorImpl} page.
-            static const std::size_t DEFAULT_NODES_PER_PAGE = 5;
 
             /// \brief
             /// ctor.
@@ -68,14 +65,12 @@ namespace thekogans {
             /// \param[in] nodesPerPage Number of \see{TransactedFileBTree::Node}s per allocator page.
             TransactedFileBTreeRegistry (
                 bool valueIsObject = true,
-                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE) :
+                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE) :
                 TransactedFileBTree (
                     StringKey::GetContext (),
                     SerializableHeader (),
                     valueIsObject,
-                    entriesPerNode,
-                    nodesPerPage) {}
+                    entriesPerNode) {}
 
             /// \brief
             /// Given a key, retrieve the associated value. If key is not found, return nullptr.

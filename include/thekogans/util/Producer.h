@@ -293,7 +293,7 @@ namespace thekogans {
             /// Return a vector of locked (SharedPtr) subscribers.
             /// \param[out] subscribers_ std::vector of \see{SharedSubscriberInfo} pairs to return.
             /// \param[in] unsubscribe true == unsubscribe all subscribers.
-            std::size_t GetSubscribers (
+            virtual std::size_t GetSubscribers (
                     std::vector<SubscriberInfo> &subscribers_,
                     bool unsubscribe = false) {
                 std::size_t count{0};

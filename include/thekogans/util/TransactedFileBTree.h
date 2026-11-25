@@ -257,7 +257,6 @@ namespace thekogans {
                 /// \brief
                 /// Entries per node.
                 ui32 entriesPerNode;
-                ui32 nodesPerPage;
                 /// \brief
                 /// Root node offset.
                 TransactedFile::AddressType rootOffset;
@@ -271,13 +270,11 @@ namespace thekogans {
                     const SerializableHeader &keyContext_ = SerializableHeader (),
                     const SerializableHeader &valueContext_ = SerializableHeader (),
                     ui32 flags_ = 0,
-                    ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE,
-                    ui32 nodesPerPage_ = DEFAULT_NODES_PER_PAGE) :
+                    ui32 entriesPerNode_ = DEFAULT_ENTRIES_PER_NODE) :
                     keyContext (keyContext_),
                     valueContext (valueContext_),
                     flags (flags_),
                     entriesPerNode (entriesPerNode_),
-                    nodesPerPage (nodesPerPage_),
                     rootOffset (0) {}
 
                 /// \brief
@@ -598,6 +595,7 @@ namespace thekogans {
                     TransactedFile *file,
                     TransactedFile::AddressType offset);
 
+                virtual void SetDirty () override;
                 virtual void GetBlockMap (
                     BlockMap &allocatedBlockMap,
                     BlockMap &referencedBlockMap) override;
@@ -628,7 +626,6 @@ namespace thekogans {
             /// value is set in stone and the only way to change it is
             /// to delete the file and try again.
             static constexpr std::size_t DEFAULT_ENTRIES_PER_NODE = 256;
-            static constexpr std::size_t DEFAULT_NODES_PER_PAGE = 16;
 
             /// \brief
             /// ctor.
@@ -643,11 +640,6 @@ namespace thekogans {
             /// \param[in] entriesPerNode If we're creating the btree, contains entries per
             /// \see{Node}. If we're reading an existing btree, this value will come from the
             /// \see{Header}.
-            /// \param[in] nodesPerPage \see{Node}s are allocated using a \see{SlabAllocatorImpl}.
-            /// This value sets the number of nodes that will fit on it's page. It's a subtle
-            /// tunning parameter that might result in slight performance gains (depending on
-            /// your situation). For the most part leaving it alone is the most sensible thing
-            /// to do.
             /// \param[in] allocator This is the \see{Allocator} used to allocate pages
             /// for the \see{SlabAllocatorImpl}. As with the previous parameter, the same
             /// advice aplies.
@@ -662,8 +654,7 @@ namespace thekogans {
                 const SerializableHeader &keyContext = SerializableHeader (),
                 const SerializableHeader &valueContext = SerializableHeader (),
                 bool valueIsObject = false,
-                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE,
-                std::size_t nodesPerPage = DEFAULT_NODES_PER_PAGE);
+                std::size_t entriesPerNode = DEFAULT_ENTRIES_PER_NODE);
             /// \brief
             /// dtor.
             virtual ~TransactedFileBTree ();
@@ -814,10 +805,6 @@ namespace thekogans {
 
         public:
             // TransactedFile::Object
-            virtual void Init (
-                TransactedFile *file,
-                TransactedFile::AddressType offset) override;
-
             /// \brief
             /// Delete the btree.
             /// \param[in] file \see{TransactedFile} to which the btree belongs.
@@ -826,11 +813,61 @@ namespace thekogans {
                 TransactedFile *file,
                 TransactedFile::AddressType offset);
 
+            virtual bool IsDirty () override {
+                return GetOffset () == 0 || root == nullptr || header.rootOffset != root->GetOffset ();
+            }
+            virtual void Init (
+                TransactedFile *file,
+                TransactedFile::AddressType offset) override;
+
+            virtual void AllocBlock () override {
+                if (IsDirty ()) {
+                    Object::AllocBlock ();
+                }
+            }
+            virtual void Flush () override {
+                if (IsDirty ()) {
+                    Object::Flush ();
+                }
+            }
+            virtual void Reload () override {
+                if (IsDirty ()) {
+                    Object::Reload ();
+                }
+            }
+
             virtual void GetBlockMap (
                 BlockMap &allocatedBlockMap,
                 BlockMap &referencedBlockMap) override;
 
             virtual void OnTransactedFileObjectAllocBlock (Object::SharedPtr /*object*/) noexcept override {
+                SetDirty ();
+            }
+
+            using Producer<TransactedFile::ObjectEvents>::GetSubscribers;
+            using Producer<SerializableEvents>::GetSubscribers;
+            using Producer<TransactedFileTransactionEvents>::GetSubscribers;
+
+            using Producer<TransactedFile::ObjectEvents>::OnNewSubscriber;
+            using Producer<SerializableEvents>::OnNewSubscriber;
+            using Producer<TransactedFileTransactionEvents>::OnNewSubscriber;
+
+            virtual std::size_t GetSubscribers (
+                    std::vector<Producer<TransactedFileTransactionEvents>::SubscriberInfo> &subscribers_,
+                    bool unsubscribe = false) override {
+                std::size_t count = 0;
+                if (file->GetTransactionPhase () != TransactedFile::Transaction::PHASE_ABORT || !IsDirty ()) {
+                    count = Producer<TransactedFileTransactionEvents>::GetSubscribers (subscribers_, unsubscribe);
+                }
+                else {
+                    Producer<TransactedFileTransactionEvents>::Unsubscribe ();
+                }
+                return count;
+            }
+
+            virtual void OnNewSubscriber (
+                    Subscriber<TransactedFileTransactionEvents> & /*subscriber*/,
+                    Producer<TransactedFileTransactionEvents>::EventDeliveryPolicy::SharedPtr /*eventDeliveryPolicy*/) override {
                 SetDirty ();
             }
 
