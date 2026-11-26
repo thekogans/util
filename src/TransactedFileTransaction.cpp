@@ -71,7 +71,7 @@ namespace thekogans {
                         virtual void Execute (
                                 std::size_t startIndex,
                                 std::size_t endIndex,
-                                std::size_t /*rank*/) noexcept {
+                                std::size_t /*rank*/) noexcept override {
                             for (; startIndex < endIndex; ++startIndex) {
                                 auto subscriber = totalAbortedObjects[startIndex].first.GetSharedPtr ();
                                 if (subscriber != nullptr) {
@@ -84,7 +84,7 @@ namespace thekogans {
                                 }
                             }
                         }
-                        virtual std::size_t Size () const noexcept {
+                        virtual std::size_t Size () const noexcept override {
                             return totalAbortedObjects.size ();
                         }
                     } reloadJob (file, totalAbortedObjects);
@@ -136,7 +136,7 @@ namespace thekogans {
                         virtual void Execute (
                                 std::size_t startIndex,
                                 std::size_t endIndex,
-                                std::size_t /*rank*/) noexcept {
+                                std::size_t /*rank*/) noexcept override {
                             for (; startIndex < endIndex; ++startIndex) {
                                 auto subscriber = currentDirtyBatch[startIndex].first.GetSharedPtr ();
                                 if (subscriber != nullptr) {
@@ -150,7 +150,7 @@ namespace thekogans {
                                 }
                             }
                         }
-                        virtual std::size_t Size () const noexcept {
+                        virtual std::size_t Size () const noexcept override {
                             return currentDirtyBatch.size ();
                         }
                     } allocJob (file, currentDirtyBatch);
@@ -203,7 +203,7 @@ namespace thekogans {
                     virtual void Execute (
                             std::size_t startIndex,
                             std::size_t endIndex,
-                            std::size_t /*rank*/) noexcept {
+                            std::size_t /*rank*/) noexcept override {
                         for (; startIndex < endIndex; ++startIndex) {
                             auto subscriber = totalCommittedObjects[startIndex].first.GetSharedPtr ();
                             if (subscriber != nullptr) {
@@ -217,7 +217,7 @@ namespace thekogans {
                             }
                         }
                     }
-                    virtual std::size_t Size () const noexcept {
+                    virtual std::size_t Size () const noexcept override {
                         return totalCommittedObjects.size ();
                     }
                 } flushJob (file, totalCommittedObjects);
@@ -246,7 +246,7 @@ namespace thekogans {
                 }
                 // At this point the log is commited and closed.
                 // If we can't complete the commit (exception),
-                // next time Open (above) will use CommitLog
+                // next time TransactedFile::Open will use CommitLog
                 // before opening the file.
                 file->PageMap64::Flush (*file, clearCache);
                 file->SetSize (file->size);

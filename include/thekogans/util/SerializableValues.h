@@ -187,8 +187,11 @@ namespace thekogans {
                 public ArrayValue<T>,
                 public virtual Clonable {
             /// \brief
-            /// StringArrayValue is a \see{Serializable}.
+            /// ClonableArrayValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ClonableArrayValue<T>)
+            /// \brief
+            /// ClonableArrayValue has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (ClonableArrayValue<T>)
 
             ClonableArrayValue (const std::vector<T> &value = std::vector<T> {}) :
                 ArrayValue<T> (value) {}

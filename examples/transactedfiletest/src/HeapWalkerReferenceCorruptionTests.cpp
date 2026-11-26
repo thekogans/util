@@ -16,9 +16,11 @@ struct ReferenceObject :
         public Subscriber<TransactedFile::ObjectEvents> {
     THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (ReferenceObject)
 
+private:
     TransactedFile::AddressType reference{0};
     Object::WeakPtr object{nullptr};
 
+public:
     ReferenceObject (Object::SharedPtr object_ = nullptr) {
         if (object_ != nullptr) {
             TrackObject (*object_);
@@ -38,6 +40,7 @@ struct ReferenceObject :
         object.Reset (&object_);
     }
 
+protected:
     // Serializable
     virtual void Read (Serializer &serializer) override {
         ui32 magic;
@@ -69,6 +72,7 @@ struct ReferenceObject :
         }
     }
 
+public:
     static constexpr std::size_t SIZE = UI32_SIZE + TransactedFile::AddressTypeSize;
 };
 
