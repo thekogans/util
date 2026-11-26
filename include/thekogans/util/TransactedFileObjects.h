@@ -38,6 +38,9 @@ namespace thekogans {
             /// \brief
             /// StringObject is a \see{TransactedFile::Object}.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (StringObject)
+            /// \brief
+            /// StringObject has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (StringObject)
 
             /// \brief
             /// ctor.
@@ -63,6 +66,9 @@ namespace thekogans {
             /// \brief
             /// StringArrayObject is a \see{TransactedFile::Object}.
             THEKOGANS_UTIL_DECLARE_TRANSACTED_FILE_OBJECT (ArrayObject<T>)
+            /// \brief
+            /// StringObject has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (ArrayObject<T>)
 
             /// \brief
             /// ctor.

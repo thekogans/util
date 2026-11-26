@@ -110,6 +110,9 @@ namespace thekogans {
             /// \brief
             /// StringArrayValue is a \see{Serializable}.
             THEKOGANS_UTIL_DECLARE_SERIALIZABLE (ArrayValue<T>)
+            /// \brief
+            /// StringKey has a private heap to help with memory fragmentation.
+            THEKOGANS_UTIL_IMPLEMENT_GLOBAL_SLAB_ALLOCATOR_FUNCTIONS (ArrayValue<T>)
 
             /// \brief
             /// The actual array.

@@ -4,6 +4,7 @@
 #include <atomic>
 #include <thread>
 #include <random>
+#include <thekogans/util/Path.h>
 #include <thekogans/util/TransactedFile.h>
 #include <thekogans/util/TransactedFileTypeDictionary.h>
 #include <thekogans/util/TransactedFileBTreeAllocator.h>
@@ -1092,16 +1093,23 @@ void TestTransactedFileBTreeIteratorEdgeCases (const std::string &dbPath) {
     }
 }
 
+void RunAllocatorEdgeCaseTests (const std::string &baseDir);
+void RunHeapWalkerCorruptionTests (const std::string &baseDir);
+void RunHeapWalkerReferenceCorruptionTests (const std::string &baseDir);
+
 int main (
         int argc,
         const char *argv[]) {
-    #if defined (THEKOGANS_UTIL_TYPE_Static)
-        StaticInit ();
-    #endif // defined (THEKOGANS_UTIL_TYPE_Static)
-        //RunAllocatorTest ("test.db");
-        //RunMultiThreadedTortureTest ("test.db");
-        RunTransactedFileTortureTest ("test.db");
-        //TestTransactedFileBTreeIterators ("test.db");
-        //TestTransactedFileBTreeIteratorEdgeCases ("test.db");
+#if defined (THEKOGANS_UTIL_TYPE_Static)
+    StaticInit ();
+#endif // defined (THEKOGANS_UTIL_TYPE_Static)
+    //RunAllocatorTest ("test.db");
+    //RunMultiThreadedTortureTest ("test.db");
+    //RunTransactedFileTortureTest ("test.db");
+    //TestTransactedFileBTreeIterators ("test.db");
+    //TestTransactedFileBTreeIteratorEdgeCases ("test.db");
+    RunAllocatorEdgeCaseTests (Path::GetCurrDirectory ());
+    RunHeapWalkerCorruptionTests (Path::GetCurrDirectory ());
+    RunHeapWalkerReferenceCorruptionTests (Path::GetCurrDirectory ());
     return 0;
 }

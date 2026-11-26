@@ -11,6 +11,9 @@
                 name = "util"/>
   </dependencies>
   <cpp_sources prefix = "src">
+    <cpp_source>AllocatorEdgeCaseTests.cpp</cpp_source>
+    <cpp_source>HeapWalkerCorruptionTests.cpp</cpp_source>
+    <cpp_source>HeapWalkerReferenceCorruptionTests.cpp</cpp_source>
     <cpp_source>main.cpp</cpp_source>
   </cpp_sources>
   <if condition = "$(TOOLCHAIN_OS) == 'Windows'">

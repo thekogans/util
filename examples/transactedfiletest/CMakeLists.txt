@@ -38,6 +38,9 @@ target_include_directories(thekogans_transactedfiletest PRIVATE
 
 # Program Source Units
 target_sources(thekogans_transactedfiletest PRIVATE
+    src/AllocatorEdgeCaseTests.cpp
+    src/HeapWalkerCorruptionTests.cpp
+    src/HeapWalkerReferenceCorruptionTests.cpp
     src/main.cpp
 )
 
